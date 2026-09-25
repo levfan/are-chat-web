@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+# 注意：src/auto-imports.d.ts 与 src/components.d.ts 由 unplugin 生成，但**必须提交**：
+# 它们是 vue-tsc 解析自动导入（Element Plus 组件/API）类型声明的依据，
+# 干净克隆下若缺失，`pnpm typecheck` 与 IDE 会直接报错（vite build 虽能重建，但 typecheck 脚本是独立执行的）。
+*.local
+.DS_Store
+# IDE 产物（后端 .gitignore 同款规则）
+.idea/
+*.iml
+.vscode/

@@ -1,0 +1,411 @@
+<template>
+  <el-dialog v-model="visible" title="个人中心" width="420px">
+    <div class="profile-form">
+      <div class="avatar-row">
+        <ImAvatar :name="auth.username" :color="draftAvatar" :size="64" />
+        <div class="avatar-hint">
+          <div class="avatar-label">头像颜色</div>
+          <div class="avatar-sub">取用户名首字作为头像</div>
+        </div>
+      </div>
+      <div class="color-grid">
+        <button
+          v-for="(color, index) in AVATAR_COLORS"
+          :key="color"
+          type="button"
+          class="color-option"
+          :class="{ picked: draftAvatar === `c${index}` }"
+          :style="{ background: color }"
+          data-testid="avatar-option"
+          @click="draftAvatar = `c${index}`"
+        >
+          <el-icon v-if="draftAvatar === `c${index}`" color="#fff"><Check /></el-icon>
+        </button>
+      </div>
+      <el-input v-model="draftNickname" placeholder="昵称" maxlength="32" data-testid="nickname-input" />
+      <el-input
+        v-model="draftSignature"
+        type="textarea"
+        :rows="2"
+        placeholder="个性签名"
+        maxlength="100"
+        data-testid="signature-input"
+      />
+      <div class="presence-row">
+        <span class="presence-label">在线状态</span>
+        <el-radio-group v-model="draftStatus" data-testid="presence-select">
+          <el-radio-button value="online">在线</el-radio-button>
+          <el-radio-button value="busy">忙碌</el-radio-button>
+          <el-radio-button value="away">离开</el-radio-button>
+        </el-radio-group>
+      </div>
+
+      <el-divider class="divider" />
+
+      <!-- 39/40/63/64/67 外观与彩蛋设置（即时生效，不占用保存按钮） -->
+      <div class="setting-block">
+        <div class="setting-title">皮肤主题（63）</div>
+        <div class="skin-grid">
+          <button
+            v-for="skin in SKINS"
+            :key="skin.id"
+            type="button"
+            class="skin-option"
+            :class="{ picked: draftSkin === skin.id }"
+            :style="{ background: skin.gradient }"
+            :title="skin.label"
+            data-testid="skin-option"
+            @click="pickSkin(skin.id)"
+          >
+            <span class="skin-label">{{ skin.label }}</span>
+            <el-icon v-if="draftSkin === skin.id" color="#fff"><Check /></el-icon>
+          </button>
+        </div>
+
+        <div class="setting-title">聊天背景（64）</div>
+        <div class="bg-grid">
+          <button
+            v-for="bg in CHAT_BACKGROUNDS"
+            :key="bg.id"
+            type="button"
+            class="bg-option"
+            :class="[`bg-preview-${bg.id}`, { picked: draftBg === bg.id }]"
+            data-testid="chatbg-option"
+            @click="pickBackground(bg.id)"
+          >
+            <span class="bg-label">{{ bg.label }}</span>
+          </button>
+        </div>
+
+        <div class="setting-title">聊天字号</div>
+        <el-radio-group v-model="draftFont" size="small" data-testid="font-select" @change="(v) => pickFont(String(v))">
+          <el-radio-button v-for="font in FONTS" :key="font.id" :value="font.id">{{ font.label }}</el-radio-button>
+        </el-radio-group>
+
+        <div class="setting-title">拍一拍后缀（67）</div>
+        <el-input
+          v-model="draftPokeSuffix"
+          size="small"
+          maxlength="100"
+          placeholder="例如：的小脑袋（拍一拍时展示）"
+          data-testid="poke-suffix-input"
+          @change="pickPokeSuffix"
+        />
+
+        <div class="setting-title">发送快捷键（52）</div>
+        <el-radio-group v-model="draftSendKey" size="small" data-testid="sendkey-select">
+          <el-radio-button value="enter">Enter 发送</el-radio-button>
+          <el-radio-button value="ctrl-enter">Ctrl+Enter 发送</el-radio-button>
+        </el-radio-group>
+        <div class="setting-title">桌面通知（45）</div>
+        <div class="notify-row">
+          <span class="notify-hint">页面不可见时弹系统通知</span>
+          <el-switch v-model="draftNotify" data-testid="notify-switch" @change="onNotifyChange" />
+        </div>
+        <p v-if="notifyHint" class="notify-hint-text" data-testid="notify-hint">{{ notifyHint }}</p>
+      </div>
+
+      <!-- 53 登录会话信息 -->
+      <div v-if="auth.loginAt" class="session-info" data-testid="session-info">
+        本次登录：{{ formatChatTime(auth.loginAt) }}
+      </div>
+    </div>
+    <template #footer>
+      <el-button @click="visible = false">取消</el-button>
+      <el-button type="primary" data-testid="profile-save" @click="onSave">保存</el-button>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Check } from '@element-plus/icons-vue'
+import { useAuthStore } from '@/stores/auth'
+import { useImStore } from '@/stores/im'
+import { AVATAR_COLORS, isAvatarColorKey } from '@/utils/imFormat'
+import { formatChatTime } from '@/utils/imFormat'
+import {
+  CHAT_BACKGROUNDS,
+  FONTS,
+  SKINS,
+  currentBackground,
+  currentPokeSuffix,
+  currentFont,
+  currentSendKey,
+  currentSkin,
+  saveBackground,
+  saveFont,
+  savePokeSuffix,
+  saveSendKey,
+  saveSkin,
+  type SendKeyMode,
+} from '@/utils/settings'
+import { notificationEnabled, setNotificationEnabled } from '@/utils/notify'
+import ImAvatar from './ImAvatar.vue'
+
+const props = defineProps<{ modelValue: boolean }>()
+const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
+
+const auth = useAuthStore()
+const im = useImStore()
+
+const visible = ref(props.modelValue)
+const draftAvatar = ref('c0')
+const draftNickname = ref('')
+const draftSignature = ref('')
+const draftStatus = ref<'online' | 'busy' | 'away'>('online')
+
+// 外观/行为设置草稿（即时生效，不占用保存按钮）
+const draftSkin = ref(currentSkin())
+const draftBg = ref(currentBackground())
+const draftFont = ref(currentFont())
+const draftSendKey = ref<SendKeyMode>(currentSendKey())
+const draftPokeSuffix = ref(currentPokeSuffix())
+const draftNotify = ref(notificationEnabled())
+const notifyHint = ref('')
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    visible.value = value
+    if (value && im.myProfile) {
+      // 兼容旧数据：非颜色档位（如历史 emoji）回落到默认档
+      draftAvatar.value = isAvatarColorKey(im.myProfile.avatar) ? (im.myProfile.avatar as string) : 'c0'
+      draftNickname.value = im.myProfile.nickname
+      draftSignature.value = im.myProfile.signature
+      draftStatus.value = im.myProfile.presenceStatus ?? 'online'
+      draftSkin.value = currentSkin()
+      draftBg.value = currentBackground()
+      draftFont.value = currentFont()
+      draftSendKey.value = currentSendKey()
+      draftPokeSuffix.value = currentPokeSuffix()
+      draftNotify.value = notificationEnabled()
+    }
+  },
+)
+watch(visible, (value) => emit('update:modelValue', value))
+
+/** 63 切换皮肤（即时生效） */
+function pickSkin(id: string) {
+  draftSkin.value = id
+  saveSkin(id)
+}
+
+/** 64 切换聊天背景（即时生效） */
+function pickBackground(id: string) {
+  draftBg.value = id
+  saveBackground(id)
+}
+
+/** 67 拍一拍后缀（即时生效） */
+function pickPokeSuffix(value: string) {
+  savePokeSuffix(value)
+}
+
+function pickFont(id: string) {
+  saveFont(id)
+}
+
+async function onNotifyChange(value: boolean | string | number) {
+  const granted = await setNotificationEnabled(Boolean(value))
+  if (value && !granted) {
+    notifyHint.value = '浏览器拒绝了通知权限，可在地址栏权限设置中恢复'
+  } else {
+    notifyHint.value = ''
+  }
+}
+
+async function onSave() {
+  try {
+    saveSendKey(draftSendKey.value)
+    await im.saveProfile({
+      nickname: draftNickname.value.trim(),
+      signature: draftSignature.value.trim(),
+      avatar: draftAvatar.value,
+      presenceStatus: draftStatus.value,
+    })
+    ElMessage.success('资料已更新')
+    visible.value = false
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '保存失败')
+  }
+}
+</script>
+
+<style scoped>
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.avatar-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+.avatar-sub {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+  margin-top: 2px;
+}
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+.color-option {
+  aspect-ratio: 1;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease;
+}
+.color-option:hover {
+  transform: scale(1.08);
+}
+.color-option.picked {
+  border-color: var(--xx-text, #1f2329);
+  box-shadow: inset 0 0 0 2px var(--im-panel, #fff);
+}
+.presence-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.presence-label {
+  font-size: 14px;
+  color: var(--xx-text-2, #51565f);
+}
+.divider {
+  margin: 2px 0;
+}
+.setting-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.setting-title {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.accent-grid {
+  display: flex;
+  gap: 10px;
+}
+.accent-option {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.accent-option.picked {
+  border-color: var(--xx-text, #1f2329);
+  box-shadow: inset 0 0 0 2px var(--im-panel, #fff);
+}
+
+/* ---- 63 皮肤色卡 ---- */
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.skin-option {
+  position: relative;
+  height: 44px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 4px 6px;
+  overflow: hidden;
+}
+.skin-option.picked {
+  border-color: var(--xx-text, #1f2329);
+}
+.skin-label {
+  font-size: 11px;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.skin-option .el-icon {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+}
+
+/* ---- 64 聊天背景缩略 ---- */
+.bg-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.bg-option {
+  height: 40px;
+  border: 2px solid var(--im-border, #e6e8eb);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 3px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.bg-option.picked {
+  border-color: var(--xx-accent, #3370ff);
+}
+.bg-label {
+  font-size: 10px;
+  color: var(--im-text-2, #51565f);
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 4px;
+  padding: 0 3px;
+}
+.bg-preview-default {
+  background: #f7f8fa;
+}
+.bg-preview-night {
+  background: linear-gradient(160deg, #1b2440, #3d3a63);
+}
+.bg-preview-sakura {
+  background: linear-gradient(160deg, #fff5f9, #ffd9e8);
+}
+.bg-preview-mint {
+  background: linear-gradient(160deg, #f2fbf7, #d8f2ff);
+}
+.bg-preview-paper {
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 7px),
+    #fdfcf7;
+}
+.notify-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.notify-hint {
+  font-size: 13px;
+  color: var(--xx-text-2, #51565f);
+}
+.notify-hint-text {
+  font-size: 12px;
+  color: var(--el-color-warning, #e6a23c);
+  margin: 0;
+}
+.session-info {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+</style>

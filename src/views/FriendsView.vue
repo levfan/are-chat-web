@@ -1,0 +1,642 @@
+<template>
+  <div class="friends-page">
+    <el-card shadow="never" class="panel">
+      <template #header>
+        <div class="head">
+          <span class="head-title">
+            好友
+            <el-badge v-if="im.incoming.length" :value="im.incoming.length" class="head-badge" />
+          </span>
+          <el-button type="primary" size="small" data-testid="add-friend-open" @click="dialogVisible = true">
+            <el-icon class="btn-ico"><Plus /></el-icon>添加好友
+          </el-button>
+        </div>
+      </template>
+
+      <!-- 收到的申请 -->
+      <section v-if="im.incoming.length" class="section">
+        <h4 class="section-title">收到的申请</h4>
+        <div v-for="req in im.incoming" :key="req.id" class="request-item" data-testid="incoming-request">
+          <ImAvatar :name="req.fromUser" :size="36" />
+          <div class="request-main">
+            <span class="request-name">{{ req.fromUser }}</span>
+            <span v-if="req.message" class="request-note" data-testid="request-note">“{{ req.message }}”</span>
+            <span class="request-time">{{ formatChatTime(req.created) }}</span>
+          </div>
+          <el-button
+            type="success"
+            size="small"
+            :loading="processingId === req.id"
+            :disabled="!!processingId && processingId !== req.id"
+            data-testid="accept-btn"
+            @click="onAccept(req.id)"
+          >
+            同意
+          </el-button>
+          <el-button
+            size="small"
+            :disabled="!!processingId"
+            data-testid="reject-btn"
+            @click="onReject(req.id)"
+          >
+            拒绝
+          </el-button>
+        </div>
+      </section>
+
+      <!-- 发出的申请 -->
+      <section v-if="im.outgoing.some((r) => r.status === 'PENDING')" class="section">
+        <h4 class="section-title">等待对方同意</h4>
+        <div v-for="req in pendingOutgoing" :key="req.id" class="request-item pending">
+          <ImAvatar :name="req.toUser" :size="36" />
+          <div class="request-main">
+            <span class="request-name">{{ req.toUser }}</span>
+            <span class="request-time">{{ formatChatTime(req.created) }}</span>
+          </div>
+          <el-tag type="info" effect="plain" size="small">待处理</el-tag>
+        </div>
+      </section>
+
+      <!-- 好友列表 -->
+      <section class="section">
+        <h4 class="section-title">我的好友（{{ im.friends.length }}）</h4>
+        <div v-if="im.friends.length === 0" class="empty" data-testid="friend-empty">
+          <p>还没有好友，点击右上角「添加好友」发起申请</p>
+        </div>
+        <div v-for="friend in im.friends" :key="friend.id" class="friend-item" data-testid="friend-item">
+          <ImAvatar :name="friend.username" :online="friend.online" :size="42" :status="friend.status" halo />
+          <div class="friend-main">
+            <div class="friend-name">
+              {{ friend.remark || friend.username }}
+              <span v-if="friend.remark" class="friend-origin">{{ friend.username }}</span>
+              <el-tag v-if="friend.tag" size="small" effect="plain" data-testid="friend-tag">{{ friend.tag }}</el-tag>
+              <el-tag v-if="friend.pinned" size="small" type="warning" effect="plain">置顶</el-tag>
+              <el-tag v-if="friend.muted" size="small" type="info" effect="plain">免打扰</el-tag>
+              <el-tag v-if="presenceBadge(friend)" size="small" type="info" effect="dark" data-testid="presence-badge">
+                {{ presenceBadge(friend) }}
+              </el-tag>
+            </div>
+            <div class="friend-status">
+              {{ friend.online ? presenceBadge(friend) || '在线' : formatLastSeen(friend.lastSeenAt, false) }}
+              <span v-if="friend.lastMessage" class="last-preview">
+                · {{ previewText(friend) }}
+              </span>
+            </div>
+          </div>
+          <div class="friend-actions">
+            <el-button
+              type="primary"
+              size="small"
+              :data-testid="`friend-chat-${friend.username}`"
+              @click="goChat(friend.username)"
+            >
+              发消息
+            </el-button>
+            <el-dropdown trigger="click" @command="(cmd: string) => onCommand(cmd, friend)">
+              <el-button size="small" class="more-btn">
+                <el-icon><MoreFilled /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="profile">
+                    <el-icon><User /></el-icon>资料卡
+                  </el-dropdown-item>
+                  <el-dropdown-item command="remark">
+                    <el-icon><EditPen /></el-icon>设置备注
+                  </el-dropdown-item>
+                  <el-dropdown-item command="tag">
+                    <el-icon><Collection /></el-icon>{{ friend.tag ? '修改分组' : '设置分组' }}
+                  </el-dropdown-item>
+                  <el-dropdown-item command="mute">
+                    <el-icon><MuteNotification v-if="!friend.muted" /><Bell v-else /></el-icon>
+                    {{ friend.muted ? '关闭免打扰' : '免打扰' }}
+                  </el-dropdown-item>
+                  <el-dropdown-item command="pin">{{ friend.pinned ? '取消置顶' : '置顶会话' }}</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided>
+                    <el-icon><Delete /></el-icon>删除好友
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+        </div>
+      </section>
+    </el-card>
+
+    <!-- 添加好友对话框 -->
+    <el-dialog v-model="dialogVisible" title="添加好友" width="400px">
+      <!-- 输入即联想：候选来自 /api/friends/suggest，带好友关系标注 -->
+      <el-autocomplete
+        v-model="applyName"
+        class="apply-input"
+        :fetch-suggestions="fetchSuggestions"
+        :trigger-on-focus="true"
+        :debounce="200"
+        clearable
+        placeholder="输入用户名，如 alice"
+        data-testid="add-friend-input"
+        @select="onPickSuggestion"
+        @keyup.enter="onApply"
+      >
+        <template #default="{ item }">
+          <div class="suggest-row" :data-testid="`suggest-${item.username}`">
+            <ImAvatar :name="item.username" :size="26" />
+            <span class="suggest-name">{{ item.username }}</span>
+            <span v-if="item.phone" class="suggest-phone">{{ item.phone }}</span>
+            <span class="suggest-tag" :class="item.relation">{{ relationLabel(item.relation) }}</span>
+          </div>
+        </template>
+      </el-autocomplete>
+      <!-- 候选账号一键填充（输入为空时的快捷入口） -->
+      <div v-if="!applyName && suggestAccounts.length > 0" class="account-row" data-testid="account-suggestions">
+        <span class="account-label">可添加：</span>
+        <button
+          v-for="name in suggestAccounts"
+          :key="name"
+          type="button"
+          class="account-chip"
+          :data-testid="`account-chip-${name}`"
+          @click="applyName = name"
+        >
+          {{ name }}
+        </button>
+      </div>
+      <el-input
+        v-model="applyNote"
+        type="textarea"
+        :rows="2"
+        maxlength="100"
+        placeholder="附言（选填，最多 100 字）"
+        class="apply-note"
+        data-testid="add-friend-note"
+      />
+      <p class="apply-tip">对方同意后即可开始聊天</p>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" data-testid="add-friend-btn" @click="onApply">发送申请</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 资料卡 -->
+    <el-dialog v-model="profileVisible" title="资料卡" width="360px">
+      <div v-loading="profileLoading" class="profile-card">
+        <template v-if="viewingProfile">
+          <ImAvatar :name="viewingProfile.username" :color="viewingProfile.avatar" :size="72" />
+          <div class="card-name">{{ viewingProfile.nickname }}</div>
+          <div class="card-username">@{{ viewingProfile.username }}</div>
+          <div class="card-signature">{{ viewingProfile.signature || '暂无签名' }}</div>
+        </template>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Bell, Collection, Delete, EditPen, MoreFilled, MuteNotification, Plus, User } from '@element-plus/icons-vue'
+import { useAuthStore } from '@/stores/auth'
+import { useImStore } from '@/stores/im'
+import { friendApi, profileApi } from '@/api/im'
+import { formatChatTime, formatLastSeen } from '@/utils/imFormat'
+import ImAvatar from '@/components/im/ImAvatar.vue'
+import type { FriendRelation, FriendSuggestion, FriendVO, UserProfileVO } from '@/types'
+
+const auth = useAuthStore()
+const im = useImStore()
+const router = useRouter()
+
+const dialogVisible = ref(false)
+const applyName = ref('')
+const applyNote = ref('')
+/** 正在处理的申请 id：请求期间禁用按钮，避免连点导致 409 */
+const processingId = ref('')
+const profileVisible = ref(false)
+const profileLoading = ref(false)
+const viewingProfile = ref<UserProfileVO | null>(null)
+
+const pendingOutgoing = computed(() => im.outgoing.filter((r) => r.status === 'PENDING'))
+
+/** 兜底账号（后端不可用时提示用）；正常情况下来自 /api/friends/suggest 的真实注册用户 */
+const FALLBACK_ACCOUNTS = ['alice', 'bob', 'carol']
+const suggestAccounts = computed(() => {
+  const fromServer = lastSuggestions.value
+    .filter((s) => s.relation === 'available')
+    .map((s) => s.username)
+  const names = fromServer.length > 0 ? fromServer : FALLBACK_ACCOUNTS
+  return names
+    .filter(
+      (name) =>
+        name !== auth.username &&
+        !im.friends.some((f) => f.username === name) &&
+        !pendingOutgoing.value.some((r) => r.toUser === name),
+    )
+    .slice(0, 3)
+})
+
+// ---------- 输入联想：候选用户名 + 与我的关系 ----------
+
+interface SuggestionItem {
+  value: string
+  username: string
+  phone: string
+  relation: FriendRelation
+}
+
+/** 最近一次候选结果：用于提交前的快速判断（已是好友/已申请就不用白跑一趟请求） */
+const lastSuggestions = ref<FriendSuggestion[]>([])
+
+const RELATION_TEXT: Record<FriendRelation, string> = {
+  available: '可添加',
+  friend: '已是好友',
+  'pending-out': '已申请',
+  'pending-in': '待你处理',
+}
+
+function relationLabel(relation: FriendRelation): string {
+  return RELATION_TEXT[relation] ?? ''
+}
+
+/** el-autocomplete 的候选抓取：优先走后端，后端不可用时退回本地体验账号表 */
+async function fetchSuggestions(query: string, cb: (items: SuggestionItem[]) => void) {
+  const keyword = query.trim()
+  const toItems = (list: FriendSuggestion[]): SuggestionItem[] =>
+    list
+      .filter((s) => s.username !== auth.username)
+      .map((s) => ({ value: s.username, username: s.username, phone: s.phone ?? '', relation: s.relation }))
+  try {
+    const list = await friendApi.suggest(keyword)
+    lastSuggestions.value = list
+    cb(toItems(list))
+  } catch {
+    const fallback: FriendSuggestion[] = FALLBACK_ACCOUNTS.filter(
+      (name) => name.includes(keyword.toLowerCase()) && name !== auth.username,
+    ).map((name) => ({ username: name, phone: '', relation: 'available' as FriendRelation }))
+    lastSuggestions.value = fallback
+    cb(toItems(fallback))
+  }
+}
+
+function onPickSuggestion(item: Record<string, any>) {
+  applyName.value = String(item.username ?? item.value ?? '')
+}
+
+/** 43 在线好友的 presence 状态徽标（忙碌/离开） */
+function presenceBadge(friend: FriendVO): string {
+  if (!friend.online) {
+    return ''
+  }
+  if (friend.status === 'busy') {
+    return '忙碌'
+  }
+  if (friend.status === 'away') {
+    return '离开'
+  }
+  return ''
+}
+
+function previewText(friend: FriendVO) {
+  const last = friend.lastMessage
+  if (!last) {
+    return ''
+  }
+  if (last.msgType === 'poke') {
+    return '[拍一拍]'
+  }
+  if (last.msgType === 'image') {
+    return '[图片]'
+  }
+  return last.content
+}
+
+function goChat(username: string) {
+  void router.push({ path: '/chat', query: { peer: username } })
+}
+
+async function onApply() {
+  const name = applyName.value.trim()
+  if (!name) {
+    ElMessage.warning('请输入对方用户名')
+    return
+  }
+  // 已经能确定关系时直接提示，不再白发一次请求
+  const known = lastSuggestions.value.find((s) => s.username === name.toLowerCase())
+  if (known && known.relation !== 'available') {
+    ElMessage.warning(`「${known.username}」${relationLabel(known.relation)}，换个账号试试`)
+    return
+  }
+  try {
+    // 62 好友申请可附言
+    await im.applyFriend(name, applyNote.value.trim() || undefined)
+    ElMessage.success(`已向 ${name} 发送好友申请`)
+    applyName.value = ''
+    applyNote.value = ''
+    dialogVisible.value = false
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '申请失败')
+  }
+}
+
+async function onAccept(id: string) {
+  if (processingId.value) {
+    return
+  }
+  processingId.value = id
+  try {
+    await im.acceptRequest(id)
+    ElMessage.success('已成为好友')
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '操作失败')
+  } finally {
+    processingId.value = ''
+  }
+}
+
+async function onReject(id: string) {
+  if (processingId.value) {
+    return
+  }
+  processingId.value = id
+  try {
+    await im.rejectRequest(id)
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '操作失败')
+  } finally {
+    processingId.value = ''
+  }
+}
+
+async function onCommand(command: string, friend: FriendVO) {
+  if (command === 'profile') {
+    profileVisible.value = true
+    profileLoading.value = true
+    viewingProfile.value = null
+    try {
+      viewingProfile.value = await profileApi.of(friend.username)
+    } catch (e) {
+      ElMessage.error(e instanceof Error ? e.message : '资料卡加载失败')
+      profileVisible.value = false
+    } finally {
+      profileLoading.value = false
+    }
+    return
+  }
+  if (command === 'remark') {
+    try {
+      const { value } = await ElMessageBox.prompt('设置备注名', '备注', {
+        inputValue: friend.remark,
+        inputPattern: /^.{0,32}$/,
+        inputErrorMessage: '最长 32 个字',
+      })
+      await im.updateFriend(friend.id, { remark: value?.trim() ?? '' })
+    } catch {
+      // 用户取消
+    }
+    return
+  }
+  if (command === 'tag') {
+    // 44 分组标签：0-16 字，留空清除
+    try {
+      const { value } = await ElMessageBox.prompt('设置分组标签（留空清除）', '分组', {
+        inputValue: friend.tag,
+        inputPattern: /^.{0,16}$/,
+        inputErrorMessage: '分组最长 16 个字',
+      })
+      await im.updateFriend(friend.id, { tag: value?.trim() ?? '' })
+      ElMessage.success(value?.trim() ? `已加入「${value.trim()}」分组` : '已清除分组')
+    } catch {
+      // 用户取消
+    }
+    return
+  }
+  if (command === 'mute') {
+    try {
+      await im.updateFriend(friend.id, { muted: !friend.muted })
+      ElMessage.success(friend.muted ? '已关闭免打扰' : '已开启免打扰')
+    } catch (e) {
+      ElMessage.error(e instanceof Error ? e.message : '操作失败')
+    }
+    return
+  }
+  if (command === 'pin') {
+    await im.updateFriend(friend.id, { pinned: !friend.pinned })
+    return
+  }
+  if (command === 'delete') {
+    try {
+      await ElMessageBox.confirm(`删除好友 ${friend.username}？聊天记录仍在，但会话将消失。`, '删除好友', {
+        type: 'warning',
+      })
+      await im.removeFriend(friend.id)
+      ElMessage.success('已删除')
+    } catch {
+      // 用户取消
+    }
+  }
+}
+
+onMounted(() => {
+  void im.init(auth.username)
+})
+</script>
+
+<style scoped>
+.friends-page {
+  padding: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.head-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.btn-ico {
+  margin-right: 4px;
+}
+.section {
+  margin-bottom: 18px;
+}
+.section-title {
+  font-size: 13px;
+  color: var(--im-muted, #8f959e);
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+.request-item,
+.friend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  transition: background 0.12s ease;
+}
+.request-item:hover,
+.friend-item:hover {
+  background: var(--im-hover, #f2f3f5);
+}
+.request-main,
+.friend-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.request-name,
+.friend-name {
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.friend-origin {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+  font-weight: 400;
+}
+.request-time,
+.friend-status {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.last-preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+  display: inline-block;
+  vertical-align: bottom;
+}
+.friend-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.more-btn {
+  padding: 5px 8px;
+}
+.empty {
+  text-align: center;
+  color: var(--im-muted, #8f959e);
+  font-size: 13px;
+  padding: 26px 0;
+}
+.apply-tip {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+  margin: 8px 0 0;
+}
+.apply-note {
+  margin-top: 10px;
+}
+/* 体验账号一键填充 */
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+/* 联想候选行 */
+.suggest-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+.suggest-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--im-text, #1f2329);
+}
+.suggest-phone {
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
+  font-variant-numeric: tabular-nums;
+}
+.suggest-tag {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.suggest-tag.available {
+  color: #2a9d59;
+  background: rgba(63, 191, 98, 0.12);
+}
+.suggest-tag.friend {
+  color: var(--im-muted, #8f959e);
+  background: var(--im-hover, #f2f3f5);
+}
+.suggest-tag.pending-out,
+.suggest-tag.pending-in {
+  color: #c07c1d;
+  background: rgba(230, 162, 60, 0.14);
+}
+.apply-input {
+  width: 100%;
+}
+.account-label {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.account-chip {
+  border: 1px solid var(--im-border, #e6e8eb);
+  background: var(--im-panel, #fff);
+  color: var(--im-text-2, #51565f);
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+.account-chip:hover {
+  border-color: var(--xx-accent, #3370ff);
+  color: var(--xx-accent, #3370ff);
+}
+.account-chip.picked {
+  border-color: var(--xx-accent, #3370ff);
+  background: var(--xx-accent-soft, rgba(51, 112, 255, 0.1));
+  color: var(--xx-accent, #3370ff);
+}
+.request-note {
+  font-size: 12px;
+  color: var(--im-text-2, #51565f);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+}
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0 4px;
+  min-height: 170px;
+}
+.card-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+.card-username {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.card-signature {
+  font-size: 13px;
+  color: var(--im-text-2, #51565f);
+  text-align: center;
+}
+</style>
