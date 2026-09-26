@@ -53,10 +53,11 @@ export const adminApi = {
     http.get<AdminUserVO[]>(`/api/admin/users${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   setUserStatus: (username: string, active: boolean) =>
     http.postJson<void>(`/api/admin/users/${encodeURIComponent(username)}/status`, { active }),
-  resetPassword: (username: string) =>
+  /** 重置密码：password 选填，填了则重置为指定密码，留空则由后端生成随机临时密码 */
+  resetPassword: (username: string, password?: string) =>
     http.postJson<{ username: string; password: string }>(
       `/api/admin/users/${encodeURIComponent(username)}/reset-password`,
-      {},
+      { password: password ?? '' },
     ),
   audit: (limit = 100) => http.get<AdminAuditVO[]>(`/api/admin/audit?limit=${limit}`),
   announcements: () => http.get<AdminAnnouncementVO[]>(`/api/admin/announcements`),

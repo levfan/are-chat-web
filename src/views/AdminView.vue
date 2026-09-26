@@ -355,21 +355,45 @@ async function onToggleUser(row: AdminUserVO, active: boolean) {
 }
 
 async function onResetPassword(row: AdminUserVO) {
+  let newPassword = ''
   try {
-    await ElMessageBox.confirm(`确认重置 ${row.username} 的密码？将生成随机临时密码。`, '重置密码', {
-      confirmButtonText: '重置',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
+    const result = await ElMessageBox.prompt(
+      `为 ${row.username} 设置新密码：6~64 位、无空格、需同时包含字母和数字。留空则生成随机临时密码。`,
+      `重置密码 · ${row.username}`,
+      {
+        confirmButtonText: '重置',
+        cancelButtonText: '取消',
+        inputPlaceholder: '输入指定密码，留空则生成随机临时密码',
+        inputType: 'text',
+        inputValidator: (value: string) => {
+          const input = value ?? ''
+          if (!input) {
+            return true // 留空 = 随机密码，交由后端生成
+          }
+          if (input.length < 6 || input.length > 64) {
+            return '密码长度需为 6~64 位'
+          }
+          if (/\s/.test(input)) {
+            return '密码不能包含空格'
+          }
+          return /[a-zA-Z]/.test(input) && /\d/.test(input) ? true : '密码需同时包含字母和数字'
+        },
+        type: 'warning',
+      },
+    )
+    newPassword = result.value ?? ''
   } catch {
     return
   }
+  const specified = newPassword.length > 0
   try {
-    const result = await adminApi.resetPassword(row.username)
+    const result = await adminApi.resetPassword(row.username, specified ? newPassword : undefined)
     await ElMessageBox.alert(
-      `新密码：${result.password}（请复制并线下告知 ${row.username}，该密码仅此一次展示）`,
+      specified
+        ? `已将 ${row.username} 的密码重置为：${result.password}（请线下告知对方使用新密码登录）`
+        : `新密码：${result.password}（请复制并线下告知 ${row.username}，该密码仅此一次展示）`,
       '密码已重置',
-      { confirmButtonText: '已复制' },
+      { confirmButtonText: '知道了' },
     )
     await loadUsers()
   } catch (e) {
