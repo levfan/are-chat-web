@@ -88,6 +88,7 @@
     <div class="question-box" data-testid="couple-question">
       <div class="question-head">
         <h4 class="section-title">💬 今日一问</h4>
+        <span v-if="question?.topic" class="question-topic" data-testid="couple-question-topic">{{ question.topic }}</span>
         <span v-if="question" class="question-day">{{ question.day }}</span>
       </div>
       <p class="question-text" data-testid="couple-question-text">{{ question?.question ?? '加载中…' }}</p>
@@ -350,12 +351,22 @@ onMounted(() => {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 .section-title {
   font-size: 13px;
   font-weight: 600;
   margin: 0;
   color: var(--im-text, #1f2329);
+}
+.question-topic {
+  font-size: 11px;
+  color: #e46a8a;
+  background: rgba(228, 106, 138, 0.1);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-weight: 600;
 }
 .question-day {
   font-size: 11px;

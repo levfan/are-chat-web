@@ -172,7 +172,7 @@ beforeEach(() => {
   mockedPromises.mockResolvedValue([])
   vi.mocked(coupleApi.items).mockResolvedValue([])
   vi.mocked(coupleApi.anniversaries).mockResolvedValue([])
-  vi.mocked(coupleApi.question).mockResolvedValue({ day: '2026-02-06', question: '如果用一种颜色形容我们的关系，你觉得是什么色？', myAnswer: null, partnerAnswer: null })
+  vi.mocked(coupleApi.question).mockResolvedValue({ day: '2026-02-06', topic: '爱情观与我们', question: '如果用一种颜色形容我们的关系，你觉得是什么色？', myAnswer: null, partnerAnswer: null })
 })
 
 describe('CoupleView 情侣空间', () => {

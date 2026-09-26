@@ -370,6 +370,8 @@ export interface CouplePromiseVO {
 
 export interface CoupleQuestionVO {
   day: string
+  /** 今日主题（题库按主题分组轮换：重新认识彼此 / 爱情观与我们 / 深夜电台…） */
+  topic: string
   question: string
   myAnswer: string | null
   partnerAnswer: string | null
