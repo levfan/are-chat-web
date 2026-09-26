@@ -24,6 +24,12 @@
         </div>
         <el-table :data="applications" size="small" data-testid="admin-app-table">
           <el-table-column prop="username" label="用户名" min-width="110" />
+          <el-table-column label="昵称" min-width="100">
+            <template #default="{ row }">
+              <span v-if="row.nickname">{{ row.nickname }}</span>
+              <span v-else class="muted">—</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="phone" label="手机号" min-width="120" />
           <el-table-column label="申请时间" min-width="150">
             <template #default="{ row }">{{ formatTime(row.created) }}</template>
@@ -419,6 +425,11 @@ watch(tab, (value) => {
   max-width: 1080px;
   margin: 0 auto;
   padding: 20px 24px;
+}
+@media (max-width: 768px) {
+  .admin-page {
+    padding: 14px 12px 20px;
+  }
 }
 .admin-head {
   display: flex;

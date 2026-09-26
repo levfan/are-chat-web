@@ -95,10 +95,14 @@ describe('LoginView', () => {
     await registerRadio?.setValue()
     await wrapper.find('[data-testid="register-phone"]').setValue('13911112222')
     await wrapper.find('[data-testid="register-username"]').setValue('lisi')
+    await wrapper.find('[data-testid="register-nickname"]').setValue('李四')
     await wrapper.find('[data-testid="register-password"]').setValue('lisi12345')
     await wrapper.find('[data-testid="register-btn"]').trigger('click')
     await flushPromises()
-    expect(mockedRegister).toHaveBeenCalled()
+    // 昵称随注册申请一起提交（选填字段，填了就原样上送）
+    expect(mockedRegister).toHaveBeenCalledWith(
+      expect.objectContaining({ username: 'lisi', nickname: '李四', password: 'lisi12345' }),
+    )
     // 不再自动登录：停在审批面板
     expect(wrapper.find('[data-testid="register-pending"]').text()).toContain('申请已提交')
     // 查询进度

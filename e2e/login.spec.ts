@@ -78,6 +78,7 @@ test('77 注册提交后进入等待审批面板并可查询进度', async ({ pa
   await page.getByText('注册', { exact: true }).click()
   await page.getByTestId('register-phone').fill('13911112222')
   await page.getByTestId('register-username').fill('lisi')
+  await page.getByTestId('register-nickname').fill('李四')
   await page.getByTestId('register-password').fill('lisi12345')
   await page.getByTestId('send-code-btn').click()
   await expect(page.getByTestId('dev-code')).toContainText('123456')

@@ -40,6 +40,8 @@ export interface ApplicationStatusVO {
 export interface AdminApplicationVO {
   id: string
   username: string
+  /** 注册时填写的昵称（选填，不填则审批后与用户名一致） */
+  nickname?: string | null
   phone: string
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
   rejectReason?: string | null

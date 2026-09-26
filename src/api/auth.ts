@@ -13,6 +13,8 @@ import type {
 export interface RegisterPayload {
   phone: string
   username: string
+  /** 注册昵称（选填，不填审批通过后与用户名一致） */
+  nickname?: string
   password: string
   code: string
 }

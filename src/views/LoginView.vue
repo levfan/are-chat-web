@@ -62,6 +62,14 @@
           data-testid="register-username"
         />
         <el-input
+          v-model="regNickname"
+          class="input"
+          placeholder="昵称（选填，1~32 个字，不填默认用用户名）"
+          size="large"
+          maxlength="32"
+          data-testid="register-nickname"
+        />
+        <el-input
           v-model="regPassword"
           class="input"
           type="password"
@@ -154,6 +162,7 @@ const password = ref('')
 
 const regPhone = ref('')
 const regUsername = ref('')
+const regNickname = ref('')
 const regPassword = ref('')
 const regCode = ref('')
 
@@ -254,6 +263,7 @@ async function onRegister() {
     const result = await authApi.register({
       phone: regPhone.value.trim(),
       username: regUsername.value.trim(),
+      nickname: regNickname.value.trim(),
       password: regPassword.value,
       code: regCode.value.trim(),
     })
@@ -308,7 +318,8 @@ function backToLogin() {
   background: var(--xx-bg, #f3f4f7);
 }
 .login-card {
-  width: 400px;
+  /* 手机浏览器（~375px 视口）不横向溢出 */
+  width: min(400px, calc(100vw - 24px));
   background: var(--im-panel, #fff);
   border: 1px solid var(--im-border, #e6e8eb);
   border-radius: 12px;
