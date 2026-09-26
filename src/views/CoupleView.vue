@@ -46,6 +46,24 @@
         </div>
       </el-card>
 
+      <!-- 逾期可爱提醒：全局常驻（不分页签），一键跳到约定页 -->
+      <el-alert
+        v-if="couple.overdueCount > 0"
+        type="warning"
+        :closable="false"
+        class="overdue-alert"
+        data-testid="couple-overdue-alert"
+      >
+        <template #title>
+          <span class="overdue-line">
+            😳 还有 {{ couple.overdueCount }} 件事你没做到哦~
+            <el-button link type="primary" size="small" data-testid="couple-overdue-goto" @click="activeTab = 'promises'">
+              去看看 →
+            </el-button>
+          </span>
+        </template>
+      </el-alert>
+
       <!-- 三大功能 -->
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
@@ -166,6 +184,12 @@ onMounted(() => {
 }
 .panel {
   border-radius: 12px;
+}
+.overdue-alert {
+  border-radius: 10px;
+}
+.overdue-line {
+  font-weight: 600;
 }
 .panel + .panel,
 .space-page {

@@ -245,8 +245,9 @@
       >
         取消置顶
       </button>
+      <!-- 情侣空间：把这句话记入约定（仅已建立空间时显示） -->
       <button
-        v-if="message.status === 'SENT' && message.msgType === 'text'"
+        v-if="canPromise"
         class="hover-btn"
         type="button"
         title="记入情侣约定"
@@ -279,6 +280,7 @@ import type { FriendCardPayload, FilePayload, ImMessage, ImReaction, LocationPay
 import { formatChatTime, parseLinks } from '@/utils/imFormat'
 import { floatHearts } from '@/utils/effects'
 import { useImStore } from '@/stores/im'
+import { useCoupleStore } from '@/stores/couple'
 import ImAvatar from './ImAvatar.vue'
 import ImageLightbox from './ImageLightbox.vue'
 
@@ -322,7 +324,13 @@ const emit = defineEmits<{
 
 /** 发送者展示名：备注优先（im.displayNameOf 响应式解析，备注修改后历史消息即时换名） */
 const im = useImStore()
+const couple = useCoupleStore()
 const senderName = computed(() => im.displayNameOf(props.message.fromUser))
+
+/** 情侣约定入口：仅文本消息 + 已建立情侣空间时展示，避免无关打扰 */
+const canPromise = computed(
+  () => couple.established && props.message.status === 'SENT' && props.message.msgType === 'text',
+)
 
 const centered = computed(() => {
   if (props.message.status === 'RECALLED') {

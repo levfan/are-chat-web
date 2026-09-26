@@ -1,11 +1,43 @@
 <template>
   <div class="couple-setup" data-testid="couple-setup">
+    <!-- 收到的邀请（可能同时被多人邀请）：放在最前，优先处理 -->
+    <el-card v-if="couple.incomingInvites.length" shadow="never" class="panel invite-card">
+      <template #header>
+        <span class="head-title">💌 你收到了 {{ couple.incomingInvites.length }} 份情侣邀请</span>
+      </template>
+      <div
+        v-for="invite in couple.incomingInvites"
+        :key="invite.id"
+        class="invite-row"
+        data-testid="couple-incoming"
+      >
+        <ImAvatar :name="invite.fromUser" :size="46" />
+        <div class="invite-main">
+          <span class="invite-name" data-testid="couple-incoming-from">{{ invite.fromUser }}</span>
+          <span v-if="invite.message" class="invite-note">“{{ invite.message }}”</span>
+          <span class="invite-time">{{ formatChatTime(invite.created) }}</span>
+        </div>
+        <div class="invite-actions">
+          <el-button
+            type="success"
+            :loading="processingId === invite.id"
+            :disabled="!!processingId && processingId !== invite.id"
+            data-testid="couple-accept"
+            @click="onAccept(invite)"
+          >
+            同意，开启 💕
+          </el-button>
+          <el-button :disabled="!!processingId" data-testid="couple-reject" @click="onReject(invite)">婉拒</el-button>
+        </div>
+      </div>
+    </el-card>
+
     <!-- 引导：三步建立情侣空间 -->
     <el-card shadow="never" class="panel">
       <template #header>
         <span class="head-title">💕 情侣空间</span>
       </template>
-      <el-steps :active="0" align-center class="steps">
+      <el-steps :active="couple.outgoingInvites.length ? 2 : 0" align-center class="steps">
         <el-step title="选择一个好友" description="从通讯录挑一位 TA" />
         <el-step title="发起建立邀请" description="附上一句真心话" />
         <el-step title="对方同意开启" description="共同的小家就建好啦" />
@@ -31,44 +63,29 @@
       </div>
     </el-card>
 
-    <!-- 收到的邀请：对方发起，等待我同意 -->
-    <el-card v-if="couple.incomingInvite" shadow="never" class="panel invite-card">
-      <template #header>
-        <span class="head-title">💌 你收到了一份情侣邀请</span>
-      </template>
-      <div class="invite-row" data-testid="couple-incoming">
-        <ImAvatar :name="couple.incomingInvite.fromUser" :size="46" />
-        <div class="invite-main">
-          <span class="invite-name" data-testid="couple-incoming-from">{{ couple.incomingInvite.fromUser }}</span>
-          <span v-if="couple.incomingInvite.message" class="invite-note">“{{ couple.incomingInvite.message }}”</span>
-          <span class="invite-time">{{ formatChatTime(couple.incomingInvite.created) }}</span>
-        </div>
-        <div class="invite-actions">
-          <el-button
-            type="success"
-            :loading="processingId === couple.incomingInvite.id"
-            data-testid="couple-accept"
-            @click="onAccept"
-          >
-            同意，开启 💕
-          </el-button>
-          <el-button :disabled="!!processingId" data-testid="couple-reject" @click="onReject">婉拒</el-button>
-        </div>
-      </div>
-    </el-card>
-
     <!-- 发出的邀请：等待对方处理 -->
-    <el-card v-if="couple.outgoingInvite" shadow="never" class="panel">
+    <el-card v-if="couple.outgoingInvites.length" shadow="never" class="panel">
       <template #header>
-        <span class="head-title">⏳ 等待对方同意</span>
+        <span class="head-title">⏳ 等待对方同意（{{ couple.outgoingInvites.length }}）</span>
       </template>
-      <div class="invite-row pending" data-testid="couple-outgoing">
-        <ImAvatar :name="couple.outgoingInvite.toUser" :size="46" />
+      <div
+        v-for="invite in couple.outgoingInvites"
+        :key="invite.id"
+        class="invite-row pending"
+        data-testid="couple-outgoing"
+      >
+        <ImAvatar :name="invite.toUser" :size="46" />
         <div class="invite-main">
-          <span class="invite-name">{{ couple.outgoingInvite.toUser }}</span>
-          <span class="invite-time">发出于 {{ formatChatTime(couple.outgoingInvite.created) }}</span>
+          <span class="invite-name">{{ invite.toUser }}</span>
+          <span class="invite-time">发出于 {{ formatChatTime(invite.created) }}</span>
         </div>
-        <el-button link type="danger" :loading="processingId === couple.outgoingInvite.id" data-testid="couple-cancel" @click="onCancel">
+        <el-button
+          link
+          type="danger"
+          :loading="processingId === invite.id"
+          data-testid="couple-cancel"
+          @click="onCancel(invite)"
+        >
           撤回邀请
         </el-button>
       </div>
@@ -125,7 +142,7 @@ import { useImStore } from '@/stores/im'
 import { useCoupleStore } from '@/stores/couple'
 import { formatChatTime } from '@/utils/imFormat'
 import ImAvatar from '@/components/im/ImAvatar.vue'
-import type { FriendVO } from '@/types'
+import type { CoupleInviteVO, FriendVO } from '@/types'
 
 const im = useImStore()
 const couple = useCoupleStore()
@@ -162,9 +179,8 @@ async function onInvite() {
   }
 }
 
-async function onAccept() {
-  const invite = couple.incomingInvite
-  if (!invite || processingId.value) {
+async function onAccept(invite: CoupleInviteVO) {
+  if (processingId.value) {
     return
   }
   processingId.value = invite.id
@@ -178,9 +194,8 @@ async function onAccept() {
   }
 }
 
-async function onReject() {
-  const invite = couple.incomingInvite
-  if (!invite || processingId.value) {
+async function onReject(invite: CoupleInviteVO) {
+  if (processingId.value) {
     return
   }
   processingId.value = invite.id
@@ -193,9 +208,8 @@ async function onReject() {
   }
 }
 
-async function onCancel() {
-  const invite = couple.outgoingInvite
-  if (!invite || processingId.value) {
+async function onCancel(invite: CoupleInviteVO) {
+  if (processingId.value) {
     return
   }
   processingId.value = invite.id

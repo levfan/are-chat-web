@@ -22,13 +22,14 @@
             />
           </router-link>
         </el-tooltip>
-        <!-- 情侣空间：未建立时指引建立；收到的邀请显示红点 -->
-        <el-tooltip content="情侣空间" placement="right">
+        <!-- 情侣空间：未建立时指引建立；收到的邀请显示数量红点 -->
+        <el-tooltip :content="coupleTip" placement="right">
           <router-link to="/couple" class="nav-item" :class="{ active: route.path === '/couple' }" data-testid="nav-couple">
             <span class="nav-emoji">💕</span>
             <el-badge
-              v-if="!!couple.incomingInvite"
-              value="💕"
+              v-if="couple.incomingInvites.length > 0"
+              :value="couple.incomingInvites.length"
+              :max="9"
               class="nav-badge"
               data-testid="nav-couple-badge"
             />
@@ -204,6 +205,12 @@ const statusIcon = computed(
 
 // 57 在线人数：后端按角色下发（管理员=全站在线，普通用户=好友在线），这里只做提示文案
 const onlineCountTip = computed(() => (auth.isAdmin ? '全站在线人数' : '好友在线人数'))
+/** 情侣空间入口提示：有待处理邀请时给出数量 */
+const coupleTip = computed(() =>
+  couple.incomingInvites.length > 0
+    ? `情侣空间（${couple.incomingInvites.length} 条待处理邀请）`
+    : '情侣空间',
+)
 
 async function onPresenceCommand(value: string) {
   if (value === myStatus.value) {

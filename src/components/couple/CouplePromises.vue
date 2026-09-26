@@ -1,20 +1,5 @@
 <template>
   <div class="promises" data-testid="couple-promises">
-    <!-- 逾期可爱提醒条 -->
-    <el-alert
-      v-if="myOverdue.length > 0"
-      type="warning"
-      :closable="false"
-      class="overdue-banner"
-      data-testid="couple-overdue-banner"
-    >
-      <template #title>
-        <span class="overdue-text">
-          😳 还有 {{ myOverdue.length }} 件事你没做到哦~{{ myOverdue.length === 1 ? '' : '，加油兑现呀！' }}
-        </span>
-      </template>
-    </el-alert>
-
     <div class="toolbar">
       <span class="section-hint">把口头承诺变成可追踪的甜蜜记录</span>
       <el-button type="primary" size="small" data-testid="couple-promise-add" @click="openCreate()">
@@ -161,7 +146,6 @@ const form = ref<{ side: 'me' | 'partner'; content: string; dueDate: string | nu
 const partner = computed(() => couple.space?.partner.username ?? '')
 const myPromises = computed(() => couple.promises.filter((p) => p.promiser === auth.username))
 const partnerPromises = computed(() => couple.promises.filter((p) => p.promiser === partner.value))
-const myOverdue = computed(() => myPromises.value.filter((p) => p.overdue))
 
 function isDone(promise: CouplePromiseVO) {
   return promise.status === 'DONE'
@@ -249,9 +233,6 @@ onMounted(() => {
   flex-direction: column;
   gap: 14px;
 }
-.overdue-banner .overdue-text {
-  font-weight: 600;
-}
 .toolbar {
   display: flex;
   align-items: center;
@@ -286,6 +267,7 @@ onMounted(() => {
 .promise-card {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   gap: 10px;
   border: 1px solid var(--im-border, #e6e8eb);
   border-radius: 10px;
@@ -309,7 +291,7 @@ onMounted(() => {
 }
 .promise-main {
   flex: 1;
-  min-width: 0;
+  min-width: 180px;
   display: flex;
   flex-direction: column;
   gap: 2px;

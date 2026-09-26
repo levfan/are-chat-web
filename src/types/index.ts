@@ -345,8 +345,10 @@ export interface CoupleCheckinStateVO {
 
 export interface CoupleOverview {
   space: CoupleSpaceVO | null
-  incoming: CoupleInviteVO | null
-  outgoing: CoupleInviteVO | null
+  /** 收到的全部待处理邀请（可能同时被多人邀请，新→旧） */
+  incoming: CoupleInviteVO[]
+  /** 发出的全部待处理邀请（新→旧） */
+  outgoing: CoupleInviteVO[]
   checkins: CoupleCheckinStateVO | null
   /** 我还没兑现的逾期约定数（「还有 N 件事你没做到哦~」提醒条） */
   overdueCount: number

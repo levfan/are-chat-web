@@ -43,8 +43,13 @@ export const useCoupleStore = defineStore('couple', () => {
 
   const space = computed(() => overview.value?.space ?? null)
   const established = computed(() => !!space.value)
-  const incomingInvite = computed(() => overview.value?.incoming ?? null)
-  const outgoingInvite = computed(() => overview.value?.outgoing ?? null)
+  /** 收到的全部待处理邀请（新→旧） */
+  const incomingInvites = computed(() => overview.value?.incoming ?? [])
+  /** 发出的全部待处理邀请（新→旧） */
+  const outgoingInvites = computed(() => overview.value?.outgoing ?? [])
+  /** 兼容别名：最新一条 */
+  const incomingInvite = computed(() => incomingInvites.value[0] ?? null)
+  const outgoingInvite = computed(() => outgoingInvites.value[0] ?? null)
   const checkins = computed(() => overview.value?.checkins ?? null)
   const overdueCount = computed(() => overview.value?.overdueCount ?? 0)
 
@@ -292,6 +297,8 @@ export const useCoupleStore = defineStore('couple', () => {
     promiseDraft,
     space,
     established,
+    incomingInvites,
+    outgoingInvites,
     incomingInvite,
     outgoingInvite,
     checkins,

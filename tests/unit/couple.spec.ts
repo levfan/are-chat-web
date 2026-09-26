@@ -133,8 +133,8 @@ function promise(partial: Partial<CouplePromiseVO>): CouplePromiseVO {
 function overview(partial: Partial<CoupleOverview>): CoupleOverview {
   return {
     space: null,
-    incoming: null,
-    outgoing: null,
+    incoming: [],
+    outgoing: [],
     checkins: null,
     overdueCount: 0,
     ...partial,
@@ -181,7 +181,7 @@ describe('CoupleView 情侣空间', () => {
       .mockResolvedValueOnce(overview({}))
       .mockResolvedValueOnce(
         overview({
-          outgoing: { id: 'i9', fromUser: 'alice', toUser: 'bob', message: '', status: 'PENDING', created: Date.now() },
+          outgoing: [{ id: 'i9', fromUser: 'alice', toUser: 'bob', message: '', status: 'PENDING', created: Date.now() }],
         }),
       )
     const im = useImStore()
@@ -239,21 +239,22 @@ describe('CoupleView 情侣空间', () => {
     expect(text).toContain('明天给你带奶茶')
   })
 
-  it('我的逾期约定显示可爱提醒条，可一键兑现打卡', async () => {
-    mockedOverview.mockResolvedValue(establishedOverview)
+  it('我的逾期约定在空间主页显示可爱提醒条并可跳转约定页，可一键兑现打卡', async () => {
+    mockedOverview.mockResolvedValue({ ...establishedOverview, overdueCount: 1 })
     mockedPromises.mockResolvedValue([
       promise({ id: 'p2', promiser: 'alice', creditor: 'bob', content: '明天给你带奶茶', overdue: true, dueAt: Date.now() - 1000 }),
     ])
     mockedDone.mockResolvedValue(promise({ id: 'p2', status: 'DONE', doneAt: Date.now() }))
-    const couple = useCoupleStore()
-    couple.overview = establishedOverview
     const wrapper = mountView()
     await flushPromises()
 
-    const banner = wrapper.find('[data-testid="couple-overdue-banner"]')
-    expect(banner.exists()).toBe(true)
-    expect(banner.text()).toContain('还有 1 件事你没做到哦')
+    const alert = wrapper.find('[data-testid="couple-overdue-alert"]')
+    expect(alert.exists()).toBe(true)
+    expect(alert.text()).toContain('还有 1 件事你没做到哦')
 
+    await wrapper.find('[data-testid="couple-overdue-goto"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-promise-done"]').exists()).toBe(true)
     await wrapper.find('[data-testid="couple-promise-done"]').trigger('click')
     await flushPromises()
     expect(mockedDone).toHaveBeenCalledWith('p2')
@@ -273,12 +274,34 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.find('[data-testid="couple-promise-undone"]').exists()).toBe(false)
   })
 
+  it('同时收到多人邀请时全部展示并可分别处理，总览返回邀请列表', async () => {
+    mockedOverview.mockResolvedValue(
+      overview({
+        incoming: [
+          { id: 'i1', fromUser: 'bob', toUser: 'alice', message: '在一起吧', status: 'PENDING', created: Date.now() },
+          { id: 'i2', fromUser: 'carl', toUser: 'alice', message: '', status: 'PENDING', created: Date.now() - 1000 },
+        ],
+      }),
+    )
+    const wrapper = mountView()
+    await flushPromises()
+
+    const rows = wrapper.findAll('[data-testid="couple-incoming"]')
+    expect(rows.length).toBe(2)
+    expect(wrapper.text()).toContain('bob')
+    expect(wrapper.text()).toContain('carl')
+
+    const couple = useCoupleStore()
+    expect(couple.incomingInvites.length).toBe(2)
+    expect(couple.incomingInvite?.id).toBe('i1')
+  })
+
   it('WS 推送 couple 事件触发提醒并刷新总览（邀请红点即时更新）', async () => {
     mockedOverview
       .mockResolvedValueOnce(overview({}))
       .mockResolvedValueOnce(
         overview({
-          incoming: { id: 'i1', fromUser: 'bob', toUser: 'alice', message: '在一起吧', status: 'PENDING', created: Date.now() },
+          incoming: [{ id: 'i1', fromUser: 'bob', toUser: 'alice', message: '在一起吧', status: 'PENDING', created: Date.now() }],
         }),
       )
     const couple = useCoupleStore()

@@ -35,11 +35,11 @@
       <div class="block-head">
         <h4 class="section-title">📅 共同日历</h4>
         <div class="month-nav">
-          <el-button size="small" circle :data-testid="`couple-calendar-${calendarLabel}`" @click="shiftMonth(-1)">
+          <el-button size="small" circle data-testid="couple-calendar-prev" @click="shiftMonth(-1)">
             <el-icon><ArrowLeft /></el-icon>
           </el-button>
           <span class="month-label" data-testid="couple-calendar-month">{{ calendarLabel }}</span>
-          <el-button size="small" circle @click="shiftMonth(1)">
+          <el-button size="small" circle data-testid="couple-calendar-next" @click="shiftMonth(1)">
             <el-icon><ArrowRight /></el-icon>
           </el-button>
         </div>
@@ -73,7 +73,7 @@
         </div>
         <div v-if="couple.anniversaries.length === 0" class="empty-line">添加属于你们的纪念日吧 💕</div>
         <div v-for="row in couple.anniversaries" :key="row.id" class="item-row" :data-testid="`couple-anniv-${row.id}`">
-          <span class="item-title">{{ row.yearly ? '🔁' : '1️⃣' }} {{ row.title }}</span>
+          <span class="item-title">{{ row.yearly ? '🔁' : '📍' }} {{ row.title }}</span>
           <span class="item-due">{{ row.date }}</span>
           <el-button link size="small" type="danger" @click="onDeleteAnniv(row)">删除</el-button>
         </div>
