@@ -29,6 +29,49 @@
             <el-badge v-if="im.adminPending > 0" :value="im.adminPending" :max="99" class="nav-badge" data-testid="admin-pending-badge" />
           </router-link>
         </el-tooltip>
+        <!-- 88 公告中心：铃铛 + 未读红点（原顶部横幅已移除，不再挤压内容区） -->
+        <el-popover
+          placement="right-start"
+          :width="336"
+          trigger="click"
+          @show="announcePanelOpen = true"
+          @hide="announcePanelOpen = false"
+        >
+          <template #reference>
+            <button
+              type="button"
+              class="nav-item nav-item-btn"
+              :class="{ active: announcePanelOpen }"
+              data-testid="announcement-bell"
+              title="公告"
+            >
+              <el-icon :size="19"><Bell /></el-icon>
+              <span v-if="announcementUnread" class="bell-dot" data-testid="announcement-dot" />
+            </button>
+          </template>
+          <div class="announce-panel" data-testid="announcement-panel">
+            <div class="announce-panel-title">公告</div>
+            <template v-if="announcement">
+              <div class="announce-body" data-testid="announcement-content">{{ announcement.content }}</div>
+              <div class="announce-meta">
+                由 {{ announcement.createdBy || '管理员' }} 发布 · {{ formatTime(announcement.created) }}
+              </div>
+              <div class="announce-actions">
+                <el-button
+                  v-if="announcementUnread"
+                  type="primary"
+                  size="small"
+                  data-testid="announcement-close"
+                  @click="markAnnouncementRead"
+                >
+                  我知道了
+                </el-button>
+                <span v-else class="announce-done"><el-icon :size="13"><CircleCheck /></el-icon> 已读</span>
+              </div>
+            </template>
+            <div v-else class="announce-empty">暂无公告</div>
+          </div>
+        </el-popover>
       </nav>
       <div class="rail-bottom">
         <!-- 46 连接状态点 -->
@@ -78,13 +121,7 @@
         </el-tooltip>
       </div>
     </aside>
-    <el-main class="content" :style="{ '--arechat-banner': announcement ? '36px' : '0px' }">
-      <!-- 88 全站公告横幅 -->
-      <div v-if="announcement" class="announce-banner" data-testid="announcement-banner">
-        <el-icon :size="14" class="announce-ico"><BellFilled /></el-icon>
-        <span class="announce-text" :title="announcement.content">{{ announcement.content }}</span>
-        <el-button link size="small" data-testid="announcement-close" @click="dismissAnnouncement">我知道了</el-button>
-      </div>
+    <el-main class="content">
       <router-view />
     </el-main>
   </el-container>
@@ -98,7 +135,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   AlarmClock,
-  BellFilled,
+  Bell,
   ChatDotRound,
   CircleCheck,
   Clock,
@@ -110,18 +147,19 @@ import {
   SwitchButton,
   UserFilled,
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElNotification } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useImStore } from '@/stores/im'
 import { announcementApi, presenceApi } from '@/api/system'
 import { cycleTheme, getThemeMode, type ThemeMode } from '@/utils/theme'
 import { accentColor, currentAccent } from '@/utils/settings'
 import { updateFaviconBadge } from '@/utils/favicon'
+import { formatTime } from '@/utils/format'
 import { CURRENT_USER_LOCAL_KEY } from '@/constants'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import ProfileDialog from '@/components/im/ProfileDialog.vue'
 import NewMessageToast from '@/components/im/NewMessageToast.vue'
-import type { ToastItem } from '@/types'
+import type { AnnouncementVO, ToastItem } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -221,10 +259,11 @@ function onStorageChange(event: StorageEvent) {
   }
 }
 
-// ---------- 88 全站公告横幅 ----------
+// ---------- 88 全站公告：铃铛 + 公告中心弹层 ----------
 
-const announcement = ref<{ id: string; content: string } | null>(null)
-const dismissedIds = new Set<string>()
+const announcement = ref<AnnouncementVO | null>(null)
+const announcePanelOpen = ref(false)
+const announcementUnread = computed(() => !!announcement.value && !announcement.value.read)
 
 async function loadAnnouncement() {
   if (!auth.isLoggedIn) {
@@ -232,41 +271,61 @@ async function loadAnnouncement() {
   }
   try {
     const current = await announcementApi.current()
-    if (current && !dismissedIds.has(current.id)) {
-      const read = sessionStorage.getItem('arechat.announcement.read') ?? ''
-      if (read !== current.id) {
-        announcement.value = { id: current.id, content: current.content }
-      }
+    // 未读公告 → 铃铛亮红点；已读则只在弹层里可回看
+    if (current) {
+      announcement.value = current
     }
   } catch {
     // 静默
   }
 }
 
-async function dismissAnnouncement() {
-  if (announcement.value) {
-    dismissedIds.add(announcement.value.id)
-    try {
-      await announcementApi.markRead(announcement.value.id)
-      // 记住已读：本标签页会话内不再弹
-      sessionStorage.setItem('arechat.announcement.read', announcement.value.id)
-    } catch {
-      // 静默
-    }
+/** 「我知道了」：服务端标记已读，红点随之消失 */
+async function markAnnouncementRead() {
+  if (!announcement.value) {
+    return
   }
-  announcement.value = null
+  try {
+    await announcementApi.markRead(announcement.value.id)
+    announcement.value = { ...announcement.value, read: true }
+  } catch {
+    // 静默：下次拉取仍会显示未读
+  }
 }
 
-/** WS 推送的新公告实时弹出 */
+/** WS 推送的新公告：亮红点 + 右上角浮卡即时提醒一次 */
 function onAnnouncementEvent(event: Event) {
   const detail = (event as CustomEvent<{ id: string; content: string }>).detail
   if (!detail) {
     return
   }
-  dismissedIds.add(detail.id)
-  announcement.value = { id: detail.id, content: detail.content }
-  void announcementApi.markRead(detail.id).catch(() => {})
+  announcement.value = { id: detail.id, content: detail.content, createdBy: '', created: Date.now(), read: false }
+  ElNotification({
+    title: '📢 全站公告',
+    message: detail.content,
+    duration: 10_000,
+    position: 'top-right',
+  })
+  // 补拉一次，取发布人/时间等元信息
+  void announcementApi
+    .current()
+    .then((current) => {
+      if (current && current.id === detail.id) {
+        announcement.value = current
+      }
+    })
+    .catch(() => {})
 }
+
+// WS 重连成功后补拉公告：断线期间发布的公告不至于漏看
+watch(
+  () => im.status,
+  (status) => {
+    if (status === 'open' && auth.isLoggedIn) {
+      void loadAnnouncement()
+    }
+  },
+)
 
 // ---------- 92 空闲自动离开 ----------
 
@@ -549,28 +608,59 @@ async function onLogout() {
   display: flex;
   flex-direction: column;
 }
-/* 88 公告横幅 */
-.announce-banner {
+/* 88 公告铃铛未读点 */
+.bell-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f56c6c;
+  box-shadow: 0 0 0 2px var(--im-rail, #1d222b);
+}
+/* 88 公告中心弹层（popover 内容由 body 挂载，但插槽内容带本组件作用域） */
+.announce-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.announce-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--im-text, #1f2329);
+}
+.announce-body {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--im-text, #1f2329);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--im-bg, #f7f8fa);
+  border: 1px solid var(--im-border, #e6e8eb);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.announce-meta {
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
+}
+.announce-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 18px;
-  background: var(--xx-accent, #3370ff);
-  color: #fff;
-  font-size: 13px;
-  flex-shrink: 0;
 }
-.announce-ico {
-  flex-shrink: 0;
+.announce-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
 }
-.announce-text {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.announce-banner .el-button {
-  color: rgba(255, 255, 255, 0.92);
+.announce-empty {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+  text-align: center;
+  padding: 8px 0;
 }
 </style>

@@ -8,6 +8,7 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 // 不补这两行的话弹窗与顶部提示会以裸 DOM 渲染（无卡片/无居中，样式错乱）。
 import 'element-plus/es/components/message/style/css'
 import 'element-plus/es/components/message-box/style/css'
+import 'element-plus/es/components/notification/style/css'
 import './style.css'
 import { initTheme } from './utils/theme'
 import { applyAppearance } from './utils/settings'

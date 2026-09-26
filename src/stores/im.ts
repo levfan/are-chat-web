@@ -682,7 +682,7 @@ export const useImStore = defineStore('im', () => {
         return
       }
       case 'announcement': {
-        // 88 全站公告：广播给页面（MainLayout 弹横幅）
+        // 88 全站公告：广播给页面（MainLayout 铃铛亮红点 + 右上角浮卡提醒）
         window.dispatchEvent(
           new CustomEvent('arechat:announcement', {
             detail: { id: msg.announcementId, content: msg.content },
