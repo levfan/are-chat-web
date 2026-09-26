@@ -9,9 +9,10 @@
             <el-badge v-if="im.totalUnread > 0" :value="im.totalUnread" :max="99" class="nav-badge" />
           </router-link>
         </el-tooltip>
-        <el-tooltip content="好友" placement="right">
-          <router-link to="/friends" class="nav-item" :class="{ active: route.path === '/friends' }">
-            <el-icon :size="19"><User /></el-icon>
+        <!-- 97 通讯录：联系人目录 + 添加好友/申请处理（原「好友」菜单已合并到这里） -->
+        <el-tooltip content="通讯录" placement="right">
+          <router-link to="/contacts" class="nav-item" :class="{ active: route.path === '/contacts' }" data-testid="nav-contacts">
+            <el-icon :size="19"><Notebook /></el-icon>
             <el-badge
               v-if="im.incoming.length > 0"
               :value="im.incoming.length"
@@ -21,10 +22,12 @@
             />
           </router-link>
         </el-tooltip>
-        <el-tooltip content="我的统计" placement="right">
-          <button type="button" class="rail-btn nav-item-btn" data-testid="stats-open" @click="statsVisible = true">
-            <el-icon :size="19"><TrendCharts /></el-icon>
-          </button>
+        <!-- 78/79 管理后台入口（仅管理员可见） -->
+        <el-tooltip v-if="auth.isAdmin" :content="im.adminPending > 0 ? `管理后台（${im.adminPending} 条待审批）` : '管理后台'" placement="right">
+          <router-link to="/admin" class="nav-item" :class="{ active: route.path === '/admin' }" data-testid="nav-admin">
+            <el-icon :size="19"><Setting /></el-icon>
+            <el-badge v-if="im.adminPending > 0" :value="im.adminPending" :max="99" class="nav-badge" data-testid="admin-pending-badge" />
+          </router-link>
         </el-tooltip>
       </nav>
       <div class="rail-bottom">
@@ -75,12 +78,17 @@
         </el-tooltip>
       </div>
     </aside>
-    <el-main class="content">
+    <el-main class="content" :style="{ '--arechat-banner': announcement ? '36px' : '0px' }">
+      <!-- 88 全站公告横幅 -->
+      <div v-if="announcement" class="announce-banner" data-testid="announcement-banner">
+        <el-icon :size="14" class="announce-ico"><BellFilled /></el-icon>
+        <span class="announce-text" :title="announcement.content">{{ announcement.content }}</span>
+        <el-button link size="small" data-testid="announcement-close" @click="dismissAnnouncement">我知道了</el-button>
+      </div>
       <router-view />
     </el-main>
   </el-container>
   <ProfileDialog v-model="profileVisible" />
-  <StatsDialog v-model="statsVisible" />
   <!-- 70 新消息浮动卡片 -->
   <NewMessageToast :items="toasts" @open="onToastOpen" @close="dismissToast" />
 </template>
@@ -90,27 +98,28 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   AlarmClock,
+  BellFilled,
   ChatDotRound,
   CircleCheck,
   Clock,
   Monitor,
   Moon,
+  Notebook,
+  Setting,
   Sunny,
   SwitchButton,
-  TrendCharts,
-  User,
   UserFilled,
 } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useImStore } from '@/stores/im'
-import { presenceApi } from '@/api/system'
+import { announcementApi, presenceApi } from '@/api/system'
 import { cycleTheme, getThemeMode, type ThemeMode } from '@/utils/theme'
 import { accentColor, currentAccent } from '@/utils/settings'
 import { updateFaviconBadge } from '@/utils/favicon'
 import { CURRENT_USER_LOCAL_KEY } from '@/constants'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import ProfileDialog from '@/components/im/ProfileDialog.vue'
-import StatsDialog from '@/components/im/StatsDialog.vue'
 import NewMessageToast from '@/components/im/NewMessageToast.vue'
 import type { ToastItem } from '@/types'
 
@@ -120,7 +129,6 @@ const auth = useAuthStore()
 const im = useImStore()
 
 const profileVisible = ref(false)
-const statsVisible = ref(false)
 const themeMode = ref<ThemeMode>(getThemeMode())
 const onlineCount = ref(0)
 let onlineTimer: number | null = null
@@ -210,6 +218,77 @@ function onStorageChange(event: StorageEvent) {
   }
 }
 
+// ---------- 88 全站公告横幅 ----------
+
+const announcement = ref<{ id: string; content: string } | null>(null)
+const dismissedIds = new Set<string>()
+
+async function loadAnnouncement() {
+  if (!auth.isLoggedIn) {
+    return
+  }
+  try {
+    const current = await announcementApi.current()
+    if (current && !dismissedIds.has(current.id)) {
+      const read = sessionStorage.getItem('arechat.announcement.read') ?? ''
+      if (read !== current.id) {
+        announcement.value = { id: current.id, content: current.content }
+      }
+    }
+  } catch {
+    // 静默
+  }
+}
+
+async function dismissAnnouncement() {
+  if (announcement.value) {
+    dismissedIds.add(announcement.value.id)
+    try {
+      await announcementApi.markRead(announcement.value.id)
+      // 记住已读：本标签页会话内不再弹
+      sessionStorage.setItem('arechat.announcement.read', announcement.value.id)
+    } catch {
+      // 静默
+    }
+  }
+  announcement.value = null
+}
+
+/** WS 推送的新公告实时弹出 */
+function onAnnouncementEvent(event: Event) {
+  const detail = (event as CustomEvent<{ id: string; content: string }>).detail
+  if (!detail) {
+    return
+  }
+  dismissedIds.add(detail.id)
+  announcement.value = { id: detail.id, content: detail.content }
+  void announcementApi.markRead(detail.id).catch(() => {})
+}
+
+// ---------- 92 空闲自动离开 ----------
+
+const IDLE_AWAY_MS = 5 * 60 * 1000
+let idleTimer: number | null = null
+
+function markActive() {
+  if (!auth.isLoggedIn) {
+    return
+  }
+  if (idleTimer !== null) {
+    clearTimeout(idleTimer)
+  }
+  // 从「离开（自动）」恢复为在线：仅当当前是 away 才自动改回
+  if ((im.myProfile?.presenceStatus ?? 'online') === 'away') {
+    void im.saveProfile({ presenceStatus: 'online' }).catch(() => {})
+  }
+  idleTimer = window.setTimeout(() => {
+    // 长时间无操作 → 自动离开
+    if (auth.isLoggedIn && (im.myProfile?.presenceStatus ?? 'online') === 'online') {
+      void im.saveProfile({ presenceStatus: 'away' }).catch(() => {})
+    }
+  }, IDLE_AWAY_MS)
+}
+
 // 45 点击桌面通知跳转会话
 function onOpenPeer(event: Event) {
   const peer = (event as CustomEvent<string>).detail
@@ -265,15 +344,32 @@ onMounted(() => {
     void im.init(auth.username)
     void refreshOnlineCount()
     onlineTimer = window.setInterval(() => refreshOnlineCount(), 60_000)
+    // 78 管理员待办数量（非管理员静默 403）
+    if (auth.isAdmin) {
+      void im.refreshAdminPending()
+    }
+    // 88 拉取当前公告
+    void loadAnnouncement()
+    // 92 空闲检测启动
+    markActive()
   }
   window.addEventListener('storage', onStorageChange)
   window.addEventListener('arechat:open-peer', onOpenPeer as EventListener)
   window.addEventListener('arechat:toast', onToastEvent as EventListener)
+  // 88 WS 公告推送
+  window.addEventListener('arechat:announcement', onAnnouncementEvent as EventListener)
+  // 92 用户活动事件
+  for (const evt of ['mousemove', 'keydown', 'click', 'touchstart']) {
+    window.addEventListener(evt, onUserActivity, { passive: true })
+  }
 })
 
 onUnmounted(() => {
   if (onlineTimer !== null) {
     clearInterval(onlineTimer)
+  }
+  if (idleTimer !== null) {
+    clearTimeout(idleTimer)
   }
   for (const timer of toastTimers.values()) {
     clearTimeout(timer)
@@ -282,7 +378,22 @@ onUnmounted(() => {
   window.removeEventListener('storage', onStorageChange)
   window.removeEventListener('arechat:open-peer', onOpenPeer as EventListener)
   window.removeEventListener('arechat:toast', onToastEvent as EventListener)
+  window.removeEventListener('arechat:announcement', onAnnouncementEvent as EventListener)
+  for (const evt of ['mousemove', 'keydown', 'click', 'touchstart']) {
+    window.removeEventListener(evt, onUserActivity)
+  }
 })
+
+/** 92 活动节流：1 分钟内重复活动不重置定时器 */
+let lastActivity = 0
+function onUserActivity() {
+  const now = Date.now()
+  if (now - lastActivity < 60_000) {
+    return
+  }
+  lastActivity = now
+  markActive()
+}
 
 async function onLogout() {
   im.reset()
@@ -430,5 +541,31 @@ async function onLogout() {
   padding: 0;
   background: var(--im-bg, #f7f8fa);
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+/* 88 公告横幅 */
+.announce-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 18px;
+  background: var(--xx-accent, #3370ff);
+  color: #fff;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.announce-ico {
+  flex-shrink: 0;
+}
+.announce-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.announce-banner .el-button {
+  color: rgba(255, 255, 255, 0.92);
 }
 </style>

@@ -22,10 +22,21 @@ const router = createRouter({
           meta: { title: '消息', requiresAuth: true },
         },
         {
+          // 好友菜单已下线：旧链接 /friends 统一落到通讯录（添加好友/申请处理都在通讯录）
           path: 'friends',
-          name: 'friends',
-          component: () => import('@/views/FriendsView.vue'),
-          meta: { title: '好友', requiresAuth: true },
+          redirect: '/contacts',
+        },
+        {
+          path: 'contacts',
+          name: 'contacts',
+          component: () => import('@/views/ContactsView.vue'),
+          meta: { title: '通讯录', requiresAuth: true },
+        },
+        {
+          path: 'admin',
+          name: 'admin',
+          component: () => import('@/views/AdminView.vue'),
+          meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true },
         },
       ],
     },
@@ -33,13 +44,22 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
   if (to.meta.requiresAuth && !auth.isLoggedIn) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
   if (to.name === 'login' && auth.isLoggedIn) {
     return { name: 'chat' }
+  }
+  // 79 管理后台仅 ADMIN 可入；刷新后角色需要从服务端重新确认
+  if (to.meta.requiresAdmin) {
+    if (!auth.isAdmin) {
+      await auth.verify()
+    }
+    if (!auth.isAdmin) {
+      return { name: 'chat' }
+    }
   }
   return true
 })
