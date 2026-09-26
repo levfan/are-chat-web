@@ -103,6 +103,61 @@
           <el-switch v-model="draftNotify" data-testid="notify-switch" @change="onNotifyChange" />
         </div>
         <p v-if="notifyHint" class="notify-hint-text" data-testid="notify-hint">{{ notifyHint }}</p>
+
+        <!-- 91 免打扰时段 -->
+        <div class="setting-title">免打扰时段（91）</div>
+        <div class="quiet-row">
+          <el-switch v-model="draftQuiet.enabled" data-testid="quiet-switch" @change="saveQuiet" />
+          <template v-if="draftQuiet.enabled">
+            <el-select v-model="draftQuiet.start" size="small" style="width: 84px" data-testid="quiet-start" @change="saveQuiet">
+              <el-option v-for="h in 24" :key="h - 1" :value="h - 1" :label="`${h - 1} 点`" />
+            </el-select>
+            <span class="quiet-sep">至</span>
+            <el-select v-model="draftQuiet.end" size="small" style="width: 84px" data-testid="quiet-end" @change="saveQuiet">
+              <el-option v-for="h in 24" :key="h - 1" :value="h - 1" :label="`${h - 1} 点`" />
+            </el-select>
+          </template>
+        </div>
+        <p class="quiet-hint">该时段内静音提示音并跳过桌面通知（支持跨零点，如 22 → 8）</p>
+
+        <el-divider class="divider" />
+
+        <!-- 80 修改密码 -->
+        <div class="setting-title">修改密码（80）</div>
+        <el-input
+          v-model="pwdOld"
+          type="password"
+          size="small"
+          show-password
+          placeholder="当前密码"
+          data-testid="pwd-old"
+        />
+        <el-input
+          v-model="pwdNew"
+          type="password"
+          size="small"
+          show-password
+          placeholder="新密码（6~64 位，含字母和数字）"
+          data-testid="pwd-new"
+        />
+        <el-input
+          v-model="pwdConfirm"
+          type="password"
+          size="small"
+          show-password
+          placeholder="确认新密码"
+          data-testid="pwd-confirm"
+        />
+        <el-button size="small" type="primary" plain :loading="changingPwd" data-testid="pwd-submit" @click="onChangePassword">
+          确认修改
+        </el-button>
+
+        <!-- 89 注销账号 -->
+        <el-divider class="divider" />
+        <div class="setting-title danger-title">危险操作</div>
+        <el-button size="small" type="danger" plain data-testid="deactivate-open" @click="deactivateVisible = true">
+          注销账号…
+        </el-button>
       </div>
 
       <!-- 53 登录会话信息 -->
@@ -114,15 +169,40 @@
       <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" data-testid="profile-save" @click="onSave">保存</el-button>
     </template>
+
+    <!-- 89 注销账号确认弹窗 -->
+    <el-dialog v-model="deactivateVisible" title="注销账号" width="380px" append-to-body>
+      <el-alert
+        type="warning"
+        :closable="false"
+        show-icon
+        title="注销后账号立即无法登录，好友关系将被删除，且不可恢复。"
+      />
+      <el-input v-model="deactivatePassword" type="password" show-password placeholder="输入当前密码确认" data-testid="deactivate-pwd" />
+      <el-input
+        v-model="deactivateConfirm"
+        :placeholder="`输入用户名确认：${auth.username}`"
+        data-testid="deactivate-name"
+        style="margin-top: 10px"
+      />
+      <template #footer>
+        <el-button @click="deactivateVisible = false">取消</el-button>
+        <el-button type="danger" :loading="deactivating" data-testid="deactivate-confirm" @click="onDeactivate">
+          确认注销
+        </el-button>
+      </template>
+    </el-dialog>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Check } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useImStore } from '@/stores/im'
+import { authApi } from '@/api/auth'
 import { AVATAR_COLORS, isAvatarColorKey } from '@/utils/imFormat'
 import { formatChatTime } from '@/utils/imFormat'
 import {
@@ -132,13 +212,16 @@ import {
   currentBackground,
   currentPokeSuffix,
   currentFont,
+  currentQuietHours,
   currentSendKey,
   currentSkin,
   saveBackground,
   saveFont,
   savePokeSuffix,
+  saveQuietHours,
   saveSendKey,
   saveSkin,
+  type QuietHours,
   type SendKeyMode,
 } from '@/utils/settings'
 import { notificationEnabled, setNotificationEnabled } from '@/utils/notify'
@@ -149,6 +232,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const auth = useAuthStore()
 const im = useImStore()
+const router = useRouter()
 
 const visible = ref(props.modelValue)
 const draftAvatar = ref('c0')
@@ -164,6 +248,20 @@ const draftSendKey = ref<SendKeyMode>(currentSendKey())
 const draftPokeSuffix = ref(currentPokeSuffix())
 const draftNotify = ref(notificationEnabled())
 const notifyHint = ref('')
+// 91 免打扰时段
+const draftQuiet = reactive<QuietHours>(currentQuietHours())
+
+// 80 修改密码
+const pwdOld = ref('')
+const pwdNew = ref('')
+const pwdConfirm = ref('')
+const changingPwd = ref(false)
+
+// 89 注销账号
+const deactivateVisible = ref(false)
+const deactivatePassword = ref('')
+const deactivateConfirm = ref('')
+const deactivating = ref(false)
 
 watch(
   () => props.modelValue,
@@ -181,6 +279,7 @@ watch(
       draftSendKey.value = currentSendKey()
       draftPokeSuffix.value = currentPokeSuffix()
       draftNotify.value = notificationEnabled()
+      Object.assign(draftQuiet, currentQuietHours())
     }
   },
 )
@@ -213,6 +312,70 @@ async function onNotifyChange(value: boolean | string | number) {
     notifyHint.value = '浏览器拒绝了通知权限，可在地址栏权限设置中恢复'
   } else {
     notifyHint.value = ''
+  }
+}
+
+/** 91 保存免打扰时段（即时生效） */
+function saveQuiet() {
+  saveQuietHours({ ...draftQuiet })
+  ElMessage.success(draftQuiet.enabled ? '免打扰时段已保存' : '已关闭免打扰时段')
+}
+
+/** 80 修改密码 */
+async function onChangePassword() {
+  if (!pwdOld.value || !pwdNew.value) {
+    ElMessage.warning('请填写当前密码与新密码')
+    return
+  }
+  if (pwdNew.value !== pwdConfirm.value) {
+    ElMessage.warning('两次输入的新密码不一致')
+    return
+  }
+  changingPwd.value = true
+  try {
+    await authApi.changePassword(pwdOld.value, pwdNew.value)
+    ElMessage.success('密码已修改，下次登录请使用新密码')
+    pwdOld.value = ''
+    pwdNew.value = ''
+    pwdConfirm.value = ''
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '修改失败')
+  } finally {
+    changingPwd.value = false
+  }
+}
+
+/** 89 注销账号：二次校验后调用后端，成功即退出登录 */
+async function onDeactivate() {
+  if (!deactivatePassword.value) {
+    ElMessage.warning('请输入当前密码')
+    return
+  }
+  if (deactivateConfirm.value !== auth.username) {
+    ElMessage.warning(`请输入你的用户名「${auth.username}」确认`)
+    return
+  }
+  try {
+    await ElMessageBox.confirm('这是最后一步：账号将立即被注销且不可恢复。', '最终确认', {
+      confirmButtonText: '我知道后果，注销',
+      cancelButtonText: '再想想',
+      type: 'error',
+    })
+  } catch {
+    return
+  }
+  deactivating.value = true
+  try {
+    await authApi.deactivate(deactivatePassword.value)
+    deactivateVisible.value = false
+    visible.value = false
+    ElMessage.success('账号已注销，再见👋')
+    await auth.logout()
+    await router.push('/login')
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '注销失败')
+  } finally {
+    deactivating.value = false
   }
 }
 
@@ -403,6 +566,24 @@ async function onSave() {
   font-size: 12px;
   color: var(--el-color-warning, #e6a23c);
   margin: 0;
+}
+/* ---- 91 免打扰时段 ---- */
+.quiet-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.quiet-sep {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.quiet-hint {
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
+  margin: 0;
+}
+.danger-title {
+  color: var(--el-color-danger, #f56c6c);
 }
 .session-info {
   font-size: 12px;
