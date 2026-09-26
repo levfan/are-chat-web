@@ -22,6 +22,18 @@
             />
           </router-link>
         </el-tooltip>
+        <!-- 情侣空间：未建立时指引建立；收到的邀请显示红点 -->
+        <el-tooltip content="情侣空间" placement="right">
+          <router-link to="/couple" class="nav-item" :class="{ active: route.path === '/couple' }" data-testid="nav-couple">
+            <span class="nav-emoji">💕</span>
+            <el-badge
+              v-if="!!couple.incomingInvite"
+              value="💕"
+              class="nav-badge"
+              data-testid="nav-couple-badge"
+            />
+          </router-link>
+        </el-tooltip>
         <!-- 78/79 管理后台入口（仅管理员可见） -->
         <el-tooltip v-if="auth.isAdmin" :content="im.adminPending > 0 ? `管理后台（${im.adminPending} 条待审批）` : '管理后台'" placement="right">
           <router-link to="/admin" class="nav-item" :class="{ active: route.path === '/admin' }" data-testid="nav-admin">
@@ -150,6 +162,7 @@ import {
 import { ElMessage, ElNotification } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useImStore } from '@/stores/im'
+import { useCoupleStore } from '@/stores/couple'
 import { announcementApi, presenceApi } from '@/api/system'
 import { cycleTheme, getThemeMode, type ThemeMode } from '@/utils/theme'
 import { accentColor, currentAccent } from '@/utils/settings'
@@ -165,6 +178,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const im = useImStore()
+const couple = useCoupleStore()
 
 const profileVisible = ref(false)
 const themeMode = ref<ThemeMode>(getThemeMode())
@@ -233,6 +247,9 @@ watch(
   (name) => {
     if (name) {
       void im.init(name)
+      void couple.init()
+    } else {
+      couple.reset()
     }
   },
 )
@@ -404,6 +421,8 @@ onMounted(() => {
   void auth.verify()
   if (auth.isLoggedIn) {
     void im.init(auth.username)
+    // 情侣空间：拉取总览（邀请红点）并绑定 WS 事件
+    void couple.init()
     void refreshOnlineCount()
     onlineTimer = window.setInterval(() => refreshOnlineCount(), 60_000)
     // 78 管理员待办数量（非管理员静默 403）
@@ -459,6 +478,7 @@ function onUserActivity() {
 
 async function onLogout() {
   im.reset()
+  couple.reset()
   await auth.logout()
   router.push('/login')
 }
@@ -530,6 +550,12 @@ async function onLogout() {
   position: absolute;
   top: 1px;
   right: 1px;
+}
+/* 情侣空间入口：无内置心形图标，用 emoji */
+.nav-emoji {
+  font-size: 18px;
+  line-height: 1;
+  user-select: none;
 }
 .rail-bottom {
   display: flex;

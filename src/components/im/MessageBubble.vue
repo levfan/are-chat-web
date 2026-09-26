@@ -246,6 +246,16 @@
         取消置顶
       </button>
       <button
+        v-if="message.status === 'SENT' && message.msgType === 'text'"
+        class="hover-btn"
+        type="button"
+        title="记入情侣约定"
+        data-testid="promise-btn"
+        @click="emit('promise', message)"
+      >
+        约定
+      </button>
+      <button
         v-if="canRecall"
         class="hover-btn danger"
         type="button"
@@ -306,6 +316,8 @@ const emit = defineEmits<{
   unpin: []
   /** 48 点击引用块：定位原消息 */
   jump: [msgId: string]
+  /** 情侣空间：把这句话记入约定（谁说的就是谁的承诺） */
+  promise: [message: ImMessage]
 }>()
 
 /** 发送者展示名：备注优先（im.displayNameOf 响应式解析，备注修改后历史消息即时换名） */

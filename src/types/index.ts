@@ -290,3 +290,110 @@ export type ImPushMessage =
   | { type: 'announcement'; announcementId: string; content: string }
   /** 78 管理员待办（新注册申请） */
   | { type: 'admin-pending'; pendingCount: number }
+  /** 情侣空间事件（username 为动作发起方，接收方视角即「TA」） */
+  | CouplePushMessage
+
+export interface CouplePushMessage {
+  type: 'couple'
+  event: string
+  username: string
+  detail: string
+}
+
+// ============ 情侣空间 ============
+
+/** 情侣邀请状态 */
+export type CoupleInviteStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELED'
+
+export interface CoupleInviteVO {
+  id: string
+  fromUser: string
+  toUser: string
+  message: string
+  status: CoupleInviteStatus
+  created: number
+}
+
+export interface CouplePartnerVO {
+  username: string
+  nickname: string
+  avatar: string
+  online: boolean
+}
+
+export interface CoupleSpaceVO {
+  id: string
+  partner: CouplePartnerVO
+  created: number
+  /** 在一起纪念日（yyyy-MM-dd，空则按 created 计算） */
+  anniversary: string | null
+  /** 在一起天数（建立当天 = 第 1 天） */
+  days: number
+}
+
+export interface CoupleCheckinHalf {
+  morning: boolean
+  night: boolean
+}
+
+export interface CoupleCheckinStateVO {
+  me: CoupleCheckinHalf
+  partner: CoupleCheckinHalf
+  /** 连续互道晚安天数 */
+  streak: number
+}
+
+export interface CoupleOverview {
+  space: CoupleSpaceVO | null
+  incoming: CoupleInviteVO | null
+  outgoing: CoupleInviteVO | null
+  checkins: CoupleCheckinStateVO | null
+  /** 我还没兑现的逾期约定数（「还有 N 件事你没做到哦~」提醒条） */
+  overdueCount: number
+}
+
+export interface CouplePromiseVO {
+  id: string
+  /** 承诺人（答应做事的一方） */
+  promiser: string
+  /** 受益人（被承诺的一方） */
+  creditor: string
+  content: string
+  dueAt: number | null
+  status: 'PENDING' | 'DONE'
+  doneAt: number | null
+  overdue: boolean
+  created: number
+}
+
+export interface CoupleQuestionVO {
+  day: string
+  question: string
+  myAnswer: string | null
+  partnerAnswer: string | null
+}
+
+export type CoupleCheckinKind = 'MORNING' | 'NIGHT'
+export type CoupleItemKind = 'MOVIE' | 'FOOD' | 'TRIP' | 'TODO'
+
+export interface CoupleItemVO {
+  id: string
+  kind: CoupleItemKind
+  title: string
+  note: string
+  dueDate: string | null
+  done: boolean
+  doneBy: string | null
+  doneAt: number | null
+  createdBy: string
+  created: number
+}
+
+export interface CoupleAnniversaryVO {
+  id: string
+  title: string
+  date: string
+  yearly: boolean
+  createdBy: string
+  created: number
+}

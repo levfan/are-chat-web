@@ -33,6 +33,13 @@ const router = createRouter({
           meta: { title: '通讯录', requiresAuth: true },
         },
         {
+          // 情侣空间：未建立时指引建立；建立后展示约定/小仪式/共享空间
+          path: 'couple',
+          name: 'couple',
+          component: () => import('@/views/CoupleView.vue'),
+          meta: { title: '情侣空间', requiresAuth: true },
+        },
+        {
           path: 'admin',
           name: 'admin',
           component: () => import('@/views/AdminView.vue'),

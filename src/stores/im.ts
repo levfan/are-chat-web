@@ -695,6 +695,15 @@ export const useImStore = defineStore('im', () => {
         adminPending.value = msg.pendingCount
         return
       }
+      case 'couple': {
+        // 情侣空间事件：转发为页面事件，由 couple store 统一消费（提醒 + 刷新）
+        window.dispatchEvent(
+          new CustomEvent('arechat:couple', {
+            detail: { event: msg.event, username: msg.username, detail: msg.detail },
+          }),
+        )
+        return
+      }
       default:
         return
     }
