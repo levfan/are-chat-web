@@ -1592,10 +1592,9 @@ onUnmounted(() => {
 <style scoped>
 .im-page {
   display: flex;
-  /* 88 公告横幅出现时为它让出高度（MainLayout 注入 --arechat-banner） */
-  height: calc(100vh - var(--arechat-banner, 0px));
+  height: 100vh;
   /* 手机浏览器动态视口（dvh），地址栏收起时不留空隙 */
-  height: calc(100dvh - var(--arechat-banner, 0px));
+  height: 100dvh;
   background: var(--im-bg, #f7f8fa);
 }
 /* ---- 左：会话列表 ---- */
