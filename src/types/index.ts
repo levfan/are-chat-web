@@ -15,6 +15,74 @@ export interface LoginResult {
   loginAt?: number | null
   /** 53 服务器当前时间 */
   serverTime?: number | null
+  /** 77 角色：USER / ADMIN（管理员可进入管理后台） */
+  role?: 'USER' | 'ADMIN'
+}
+
+/** 77 注册申请提交结果：不再直接登录，等待管理员审批 */
+export interface RegisterResult {
+  applicationId: string
+  username: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  hint: string
+}
+
+/** 77 注册审批进度 */
+export interface ApplicationStatusVO {
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  rejectReason?: string | null
+  created?: number | null
+  reviewedAt?: number | null
+}
+
+// ============ 79 管理后台 ============
+
+export interface AdminApplicationVO {
+  id: string
+  username: string
+  phone: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  rejectReason?: string | null
+  created: number
+  reviewedAt?: number | null
+  reviewedBy?: string | null
+}
+
+export interface AdminUserVO {
+  username: string
+  phone: string
+  nickname?: string | null
+  status: 'ACTIVE' | 'DISABLED' | 'CLOSED'
+  role: 'USER' | 'ADMIN'
+  created?: number | null
+  lastLoginAt?: number | null
+}
+
+export interface AdminAuditVO {
+  id: string
+  actor: string
+  action: string
+  target: string
+  detail: string
+  created: number
+}
+
+/** 88 全站公告 */
+export interface AnnouncementVO {
+  id: string
+  content: string
+  createdBy: string
+  created: number
+  read: boolean
+}
+
+/** 88 管理端公告列表项（含 enabled 开关） */
+export interface AdminAnnouncementVO {
+  id: string
+  content: string
+  createdBy: string
+  enabled: boolean
+  created: number
 }
 
 /** 注册短信验证码（演示环境直接回显 devCode） */
@@ -82,7 +150,7 @@ export interface FriendSuggestion {
   relation: FriendRelation
 }
 
-export type ImMsgType = 'text' | 'image' | 'poke' | 'system' | 'card' | 'location'
+export type ImMsgType = 'text' | 'image' | 'poke' | 'system' | 'card' | 'location' | 'file'
 /** SENDING/FAILED 仅存在于本地：发送中 / 发送失败待重试 */
 export type ImMsgStatus = 'SENT' | 'RECALLED' | 'FAILED' | 'SENDING'
 
@@ -98,6 +166,38 @@ export interface FriendCardPayload {
 export interface LocationPayload {
   name: string
   address: string
+}
+
+/** 82 文件消息的 content（JSON 字符串） */
+export interface FilePayload {
+  name: string
+  size: number
+  url: string
+}
+
+/** 81 全局消息搜索命中 */
+export interface GlobalSearchHit {
+  id: string
+  peer: string
+  content: string
+  fromUser: string
+  created: number
+}
+
+/** 84 会话内置顶消息 */
+export interface PinVO {
+  msgId: string
+  createdBy: string
+}
+
+/** 95 会话附件条目 */
+export interface AttachmentVO {
+  id: string
+  name: string
+  size: number
+  url: string
+  fromUser: string
+  created: number
 }
 
 /** 70 新消息浮动卡片条目 */
@@ -143,16 +243,6 @@ export interface ImStarVO {
   created: number
 }
 
-/** 55 会话统计 */
-export interface StatsVO {
-  friends: number
-  sent: number
-  received: number
-  stars: number
-  mostActivePeer: string | null
-  mostActiveCount: number
-}
-
 /** 57 全站在线信息 */
 export interface OnlineVO {
   onlineCount: number
@@ -188,3 +278,9 @@ export type ImPushMessage =
   | { type: 'friend-request'; username: string; requestId: string }
   | { type: 'friend-accepted'; username: string; requestId: string }
   | { type: 'friend-deleted'; username: string; requestId: string }
+  /** 84 会话置顶变化（msgId 为空表示取消置顶） */
+  | { type: 'pin'; peerA: string; peerB: string; msgId: string | null; pinned: boolean }
+  /** 88 全站公告 */
+  | { type: 'announcement'; announcementId: string; content: string }
+  /** 78 管理员待办（新注册申请） */
+  | { type: 'admin-pending'; pendingCount: number }
