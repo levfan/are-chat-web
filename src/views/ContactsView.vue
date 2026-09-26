@@ -495,6 +495,17 @@ onMounted(() => {
   max-width: 860px;
   margin: 0 auto;
 }
+@media (max-width: 768px) {
+  .contacts-page {
+    padding: 12px 12px 20px;
+  }
+  .head {
+    flex-wrap: wrap;
+  }
+  .search {
+    width: 100%;
+  }
+}
 .panel {
   border-radius: 12px;
 }

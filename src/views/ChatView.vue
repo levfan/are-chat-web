@@ -1,5 +1,5 @@
 <template>
-  <div class="im-page">
+  <div class="im-page" :class="{ 'peer-open': Boolean(im.activePeer) }">
     <!-- 左：会话列表 -->
     <aside class="conv-panel">
       <div class="conv-head">
@@ -109,6 +109,10 @@
     <section class="chat-panel">
       <template v-if="im.activePeer">
         <header class="chat-head">
+          <!-- 手机端返回会话列表（桌面端由 CSS 隐藏） -->
+          <button type="button" class="back-btn" data-testid="chat-back-btn" @click="closeMobileChat">
+            <el-icon :size="18"><ArrowLeft /></el-icon>
+          </button>
           <ImAvatar
             :name="im.activePeer"
             :label="displayPeerName"
@@ -559,6 +563,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import {
+  ArrowLeft,
   Bell,
   Bottom,
   Brush,
@@ -779,6 +784,11 @@ async function openConversation(peer: string) {
   atBottom.value = true
   newBelow.value = 0
   scrollToBottom()
+}
+
+/** 手机端：从聊天窗返回会话列表（桌面端按钮不可见） */
+function closeMobileChat() {
+  im.activePeer = ''
 }
 
 async function onLoadMore() {
@@ -1581,6 +1591,8 @@ onUnmounted(() => {
   display: flex;
   /* 88 公告横幅出现时为它让出高度（MainLayout 注入 --arechat-banner） */
   height: calc(100vh - var(--arechat-banner, 0px));
+  /* 手机浏览器动态视口（dvh），地址栏收起时不留空隙 */
+  height: calc(100dvh - var(--arechat-banner, 0px));
   background: var(--im-bg, #f7f8fa);
 }
 /* ---- 左：会话列表 ---- */
@@ -1701,6 +1713,9 @@ onUnmounted(() => {
 .chat-name {
   font-size: 15px;
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .chat-status {
   font-size: 12px;
@@ -2099,5 +2114,73 @@ onUnmounted(() => {
 .place-addr {
   font-size: 12px;
   color: var(--im-muted, #8f959e);
+}
+
+/* ============ 手机端适配（≤768px：单面板布局） ============ */
+/* 返回按钮：桌面隐藏，触屏窄屏显示 */
+.back-btn {
+  display: none;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--im-text-2, #51565f);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.back-btn:hover {
+  background: var(--im-hover, #f2f3f5);
+  color: var(--xx-accent, #3370ff);
+}
+@media (max-width: 768px) {
+  /* 未选会话：只显示会话列表；选中后：只显示聊天窗 */
+  .conv-panel {
+    width: 100%;
+    border-right: none;
+  }
+  .im-page.peer-open .conv-panel {
+    display: none;
+  }
+  .im-page:not(.peer-open) .chat-panel {
+    display: none;
+  }
+  .back-btn {
+    display: flex;
+  }
+  .conv-head {
+    padding: 12px 14px 8px;
+  }
+  .chat-head {
+    padding: 8px 10px;
+    gap: 7px;
+  }
+  .head-btn {
+    width: 27px;
+    height: 27px;
+  }
+  .dm-area {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .composer {
+    padding: 6px 10px 10px;
+  }
+  .toolbar {
+    margin-bottom: 2px;
+  }
+  /* 键盘操作提示在手机上无意义，隐藏后工具行更紧凑 */
+  .tip {
+    display: none;
+  }
+  /* 聊天记录搜索浮层改为通栏 */
+  .search-layer {
+    top: 54px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+  }
 }
 </style>

@@ -310,3 +310,23 @@ html.dark .chat-bg-paper {
   z-index: 4000;
 }
 
+/* ============ 手机端适配 ============ */
+/* 小屏弹窗不超出视口（Element Plus 弹窗宽度走 --el-dialog-width 变量） */
+@media (max-width: 640px) {
+  .el-dialog {
+    --el-dialog-width: calc(100vw - 24px) !important;
+    width: var(--el-dialog-width) !important;
+  }
+  .el-message-box {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px);
+  }
+}
+/* 触屏设备：输入框 16px，避免 iOS 聚焦时页面自动放大 */
+@media (hover: none) and (pointer: coarse) {
+  .el-input__inner,
+  .el-textarea__inner {
+    font-size: 16px;
+  }
+}
+

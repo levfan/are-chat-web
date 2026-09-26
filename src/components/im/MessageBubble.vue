@@ -10,7 +10,7 @@
   <div
     v-else
     class="row"
-    :class="{ self, highlight, 'bubble-in': message.status !== 'RECALLED' }"
+    :class="{ self, highlight, 'bubble-in': message.status !== 'RECALLED', 'actions-open': actionsOpen }"
     :data-message-id="message.id"
     data-testid="dm-row"
   >
@@ -24,7 +24,7 @@
           <StarFilled />
         </el-icon>
       </div>
-      <div class="bubble" data-testid="dm-bubble" @dblclick="onBubbleDblClick">
+      <div class="bubble" data-testid="dm-bubble" @dblclick="onBubbleDblClick" @click="onBubbleTap">
         <!-- 引用块（48 点击定位原消息） -->
         <div
           v-if="message.replyToId"
@@ -424,6 +424,18 @@ function onBubbleDblClick(event: MouseEvent) {
   }
   floatHearts(event.currentTarget as Element, '👍')
   emit('react', '👍', props.message)
+}
+
+/**
+ * 手机/触屏适配：没有 hover，操作按钮（回应/引用/撤回…）改为点击气泡展开/收起。
+ * 桌面端仍走 hover 展示，这里不做任何事（jsdom/无 matchMedia 环境同样安全跳过）。
+ */
+const actionsOpen = ref(false)
+function onBubbleTap() {
+  const coarse = window.matchMedia?.('(hover: none)')?.matches
+  if (coarse) {
+    actionsOpen.value = !actionsOpen.value
+  }
 }
 
 /** 聚合同名表情：emoji + 数量 + 是否包含我（tooltip 里的名字也按备注解析） */
@@ -876,5 +888,44 @@ const quoteText = computed(() => {
   color: var(--im-muted, #8f959e);
   font-size: 12px;
   margin-top: 3px;
+}
+
+/* ============ 手机/触屏适配 ============ */
+@media (hover: none) {
+  /* 气泡行允许换行：操作按钮展开时换到气泡下一行，不再挤压气泡宽度 */
+  .row {
+    flex-wrap: wrap;
+    max-width: 88%;
+  }
+  /* 没有 hover：操作按钮改为「点击气泡展开」 */
+  .hover-actions {
+    display: none;
+  }
+  .row.actions-open .hover-actions {
+    order: 6;
+    flex-basis: 100%;
+    display: flex;
+    justify-content: flex-start;
+    opacity: 1;
+    margin-top: 2px;
+  }
+  .row.self.actions-open .hover-actions {
+    justify-content: flex-end;
+  }
+  /* hover 快捷表情条在触屏上无法触发，隐藏避免占位 */
+  .quick-reacts {
+    display: none;
+  }
+}
+
+/* 窄屏下的图片/引用尺寸，避免撑破气泡 */
+@media (max-width: 480px) {
+  .image {
+    width: 150px;
+    max-height: 200px;
+  }
+  .quote {
+    max-width: 200px;
+  }
 }
 </style>
