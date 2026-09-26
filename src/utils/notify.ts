@@ -1,5 +1,7 @@
 /** 45 桌面通知：页面不可见时收到新消息弹系统通知，点击通知聚焦窗口。 */
 
+import { isQuietNow } from './settings'
+
 const NOTIFY_KEY = 'arechat.notify'
 
 export function notificationsSupported(): boolean {
@@ -45,9 +47,13 @@ export interface NotifyPayload {
   peer?: string
 }
 
-/** 弹出桌面通知；未授权/页面可见时静默跳过。点击时派发 arechat:open-peer 事件 */
+/** 弹出桌面通知；未授权/页面可见/免打扰时段时静默跳过。点击时派发 arechat:open-peer 事件 */
 export function showNotification(payload: NotifyPayload): void {
   if (!document.hidden || !notificationEnabled() || Notification.permission !== 'granted') {
+    return
+  }
+  // 91 免打扰时段：系统通知静音
+  if (isQuietNow()) {
     return
   }
   try {

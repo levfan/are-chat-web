@@ -93,6 +93,63 @@ export function currentPokeSuffix(): string {
   return safeGet(POKE_KEY) ?? ''
 }
 
+// ============ 91 免打扰时段（安静时段） ============
+
+const QUIET_KEY = 'arechat.quiethours'
+
+export interface QuietHours {
+  enabled: boolean
+  /** 起止小时（0-23），支持跨零点，如 22 → 8 表示晚 10 点到早 8 点 */
+  start: number
+  end: number
+}
+
+const DEFAULT_QUIET: QuietHours = { enabled: false, start: 22, end: 8 }
+
+export function currentQuietHours(): QuietHours {
+  try {
+    const raw = safeGet(QUIET_KEY)
+    if (!raw) {
+      return { ...DEFAULT_QUIET }
+    }
+    const parsed = JSON.parse(raw) as Partial<QuietHours>
+    return {
+      enabled: Boolean(parsed.enabled),
+      start: clampHour(parsed.start, DEFAULT_QUIET.start),
+      end: clampHour(parsed.end, DEFAULT_QUIET.end),
+    }
+  } catch {
+    return { ...DEFAULT_QUIET }
+  }
+}
+
+function clampHour(value: unknown, fallback: number): number {
+  const n = Number(value)
+  if (!Number.isFinite(n)) {
+    return fallback
+  }
+  return Math.min(23, Math.max(0, Math.round(n)))
+}
+
+export function saveQuietHours(quiet: QuietHours) {
+  safeSet(QUIET_KEY, JSON.stringify({
+    enabled: Boolean(quiet.enabled),
+    start: clampHour(quiet.start, DEFAULT_QUIET.start),
+    end: clampHour(quiet.end, DEFAULT_QUIET.end),
+  }))
+  window.dispatchEvent(new CustomEvent('arechat:quiet-hours'))
+}
+
+/** 当前是否处于免打扰时段（跨零点区间：start > end 时表示经过午夜） */
+export function isQuietNow(now = new Date()): boolean {
+  const quiet = currentQuietHours()
+  if (!quiet.enabled || quiet.start === quiet.end) {
+    return false
+  }
+  const hour = now.getHours()
+  return quiet.start < quiet.end ? hour >= quiet.start && hour < quiet.end : hour >= quiet.start || hour < quiet.end
+}
+
 export function skinColor(id: string): string {
   return SKINS.find((s) => s.id === id)?.color ?? SKINS[0].color
 }
