@@ -78,6 +78,22 @@ describe('LoginView', () => {
     expect(wrapper.find('[data-testid="login-error"]').text()).toContain('账号或密码不正确')
   })
 
+  it('77 注册昵称必填：为空时提示且不发请求', async () => {
+    const mockedRegister = vi.mocked(authApi.register)
+    const wrapper = mountView()
+    const inputs = wrapper.findAll('input')
+    const registerRadio = inputs.find((i) => (i.element as HTMLInputElement).value === 'register')
+    await registerRadio?.setValue()
+    await wrapper.find('[data-testid="register-phone"]').setValue('13911112222')
+    await wrapper.find('[data-testid="register-username"]').setValue('lisi')
+    await wrapper.find('[data-testid="register-nickname"]').setValue('   ')
+    await wrapper.find('[data-testid="register-password"]').setValue('lisi12345')
+    await wrapper.find('[data-testid="register-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="login-error"]').text()).toContain('请输入昵称')
+    expect(mockedRegister).not.toHaveBeenCalled()
+  })
+
   it('77 注册提交后进入等待审批面板，查询进度显示待审批', async () => {
     const mockedRegister = vi.mocked(authApi.register)
     const mockedStatus = vi.mocked(authApi.registerStatus)
@@ -99,7 +115,7 @@ describe('LoginView', () => {
     await wrapper.find('[data-testid="register-password"]').setValue('lisi12345')
     await wrapper.find('[data-testid="register-btn"]').trigger('click')
     await flushPromises()
-    // 昵称随注册申请一起提交（选填字段，填了就原样上送）
+    // 昵称随注册申请一起提交（必填字段，原样上送）
     expect(mockedRegister).toHaveBeenCalledWith(
       expect.objectContaining({ username: 'lisi', nickname: '李四', password: 'lisi12345' }),
     )
@@ -128,6 +144,7 @@ describe('LoginView', () => {
     await registerRadio?.setValue()
     await wrapper.find('[data-testid="register-phone"]').setValue('13911113333')
     await wrapper.find('[data-testid="register-username"]').setValue('wangwu')
+    await wrapper.find('[data-testid="register-nickname"]').setValue('王五')
     await wrapper.find('[data-testid="register-password"]').setValue('wangwu123')
     await wrapper.find('[data-testid="register-btn"]').trigger('click')
     await flushPromises()

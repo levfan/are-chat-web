@@ -64,7 +64,7 @@
         <el-input
           v-model="regNickname"
           class="input"
-          placeholder="昵称（选填，1~32 个字，不填默认用用户名）"
+          placeholder="昵称（必填，1~32 个字）"
           size="large"
           maxlength="32"
           data-testid="register-nickname"
@@ -257,6 +257,11 @@ function startCountdown(seconds: number) {
 }
 
 async function onRegister() {
+  // 昵称必填（与后端 RegistrationService 校验一致）
+  if (!regNickname.value.trim()) {
+    error.value = '请输入昵称（1~32 个字）'
+    return
+  }
   loading.value = true
   error.value = ''
   try {
