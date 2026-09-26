@@ -35,8 +35,8 @@
         <el-tooltip :content="statusText" placement="right">
           <span class="ws-dot" :class="im.status" data-testid="ws-status" />
         </el-tooltip>
-        <!-- 57 全站在线人数 -->
-        <el-tooltip content="当前在线人数" placement="right">
+        <!-- 57 在线人数：管理员看全站，普通用户看好友在线 -->
+        <el-tooltip :content="onlineCountTip" placement="right">
           <span class="online-count" data-testid="online-count">
             <el-icon :size="12"><UserFilled /></el-icon>{{ onlineCount }}
           </span>
@@ -149,6 +149,9 @@ const myStatusLabel = computed(
 const statusIcon = computed(
   () => PRESENCE_OPTIONS.find((o) => o.value === myStatus.value)?.icon ?? CircleCheck,
 )
+
+// 57 在线人数：后端按角色下发（管理员=全站在线，普通用户=好友在线），这里只做提示文案
+const onlineCountTip = computed(() => (auth.isAdmin ? '全站在线人数' : '好友在线人数'))
 
 async function onPresenceCommand(value: string) {
   if (value === myStatus.value) {
@@ -405,6 +408,8 @@ async function onLogout() {
 <style scoped>
 .shell {
   height: 100vh;
+  /* 手机浏览器地址栏收缩时跟随动态视口，避免底部被裁切 */
+  height: 100dvh;
 }
 .rail {
   width: 60px;
