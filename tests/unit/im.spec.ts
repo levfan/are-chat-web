@@ -501,4 +501,23 @@ describe('im store', () => {
     await im.updateFriend('friend-1', { remark: '' })
     expect(im.displayNameOf(PEER)).toBe(PEER)
   })
+
+  it('displayNameOf 展示名优先级：备注 > 昵称 > 用户名', async () => {
+    const im = await initStore()
+    // 有昵称无备注：显示昵称
+    vi.mocked(friendApi.update).mockResolvedValue(undefined)
+    mockedFriendsList.mockResolvedValue([makeFriend({ nickname: '波波' })])
+    await im.updateFriend('friend-1', { remark: '' })
+    expect(im.displayNameOf(PEER)).toBe('波波')
+
+    // 备注与昵称同时存在：备注优先
+    mockedFriendsList.mockResolvedValue([makeFriend({ nickname: '波波', remark: '老板' })])
+    await im.updateFriend('friend-1', { remark: '老板' })
+    expect(im.displayNameOf(PEER)).toBe('老板')
+
+    // 昵称为空：回退用户名
+    mockedFriendsList.mockResolvedValue([makeFriend({ nickname: null, remark: '' })])
+    await im.updateFriend('friend-1', { remark: '' })
+    expect(im.displayNameOf(PEER)).toBe(PEER)
+  })
 })

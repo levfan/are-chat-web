@@ -699,18 +699,21 @@ const filteredFriends = computed(() => {
   if (!kw) {
     return list
   }
-  return list.filter((f) => f.username.includes(kw) || f.remark.includes(kw))
+  return list.filter(
+    (f) => f.username.includes(kw) || f.remark.includes(kw) || (f.nickname ?? '').includes(kw),
+  )
 })
 
-function displayName(friend: { username: string; remark: string }) {
-  return friend.remark || friend.username
+/** 展示名：备注 > 昵称 > 用户名 */
+function displayName(friend: { username: string; nickname?: string | null; remark: string }) {
+  return friend.remark || friend.nickname || friend.username
 }
 
 const displayPeerName = computed(() => {
   if (!im.activeFriend) {
     return im.activePeer
   }
-  return im.activeFriend.remark || im.activeFriend.username
+  return im.activeFriend.remark || im.activeFriend.nickname || im.activeFriend.username
 })
 
 const peerStatusText = computed(() => {

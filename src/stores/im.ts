@@ -130,18 +130,18 @@ export const useImStore = defineStore('im', () => {
   )
 
   /**
-   * 用户名 → 展示名（好友备注优先，无备注回退用户名）。
+   * 用户名 → 展示名（好友备注优先，其次对方昵称，最后回退用户名）。
    * 全站所有出现好友名称的地方（会话列表、聊天气泡、历史消息、搜索结果、
-   * 输入中提示、通知等）都必须经过这里解析：备注是实时读 friends 的响应式
-   * 取值，修改备注（updateFriend → loadFriends）后所有界面连同已加载的
-   * 历史消息会立即以新名称重新渲染，无需手动刷新。
+   * 输入中提示、通知等）都必须经过这里解析：备注/昵称是实时读 friends 的
+   * 响应式取值，修改备注（updateFriend → loadFriends）或对方改昵称
+   * （loadFriends 拉平）后所有界面连同已加载的历史消息会立即以新名称渲染。
    */
   function displayNameOf(username: string): string {
     if (!username) {
       return ''
     }
     const friend = friends.value.find((f) => f.username === username)
-    return friend?.remark || username
+    return friend?.remark || friend?.nickname || username
   }
 
   // ---------- 数据加载 ----------

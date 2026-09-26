@@ -23,6 +23,8 @@ export interface LoginResult {
 export interface RegisterResult {
   applicationId: string
   username: string
+  /** 注册时提交的昵称 */
+  nickname?: string | null
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
   hint: string
 }
@@ -114,6 +116,8 @@ export type PresenceStatus = 'online' | 'busy' | 'away'
 export interface FriendVO {
   id: string
   username: string
+  /** 对方昵称（来自 user_profile），展示优先级：备注 > 昵称 > 用户名 */
+  nickname?: string | null
   remark: string
   tag: string
   pinned: boolean

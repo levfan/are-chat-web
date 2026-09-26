@@ -373,8 +373,9 @@ async function onReject(id: string) {
 
 // ---------- 联系人列表 ----------
 
+/** 展示名：备注 > 昵称 > 用户名 */
 function displayName(friend: FriendVO) {
-  return friend.remark || friend.username
+  return friend.remark || friend.nickname || friend.username
 }
 
 function presenceLabel(friend: FriendVO) {
