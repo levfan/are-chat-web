@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test('未登录访问受保护页面跳转到登录页', async ({ page }) => {
-  await page.goto('/friends')
+  await page.goto('/contacts')
   await expect(page).toHaveURL(/\/login/)
 })
 
@@ -20,7 +20,7 @@ test('密码错误时展示服务端提示', async ({ page }) => {
   await expect(page.getByTestId('login-error')).toContainText('账号或密码不正确')
 })
 
-test('演示账号 alice 可以顺利进入', async ({ page }) => {
+test('登录成功进入消息页（77 注册改审批制后登录仍是唯一入口）', async ({ page }) => {
   await page.route('**/api/auth/login', (route) =>
     route.fulfill({
       status: 200,
@@ -28,18 +28,19 @@ test('演示账号 alice 可以顺利进入', async ({ page }) => {
       body: JSON.stringify({
         code: 0,
         message: 'ok',
-        data: { username: 'alice', nickname: 'alice', phone: '138****0001', greeting: 'success:欢迎进入 are-chat！' },
+        data: { username: 'alice', nickname: 'alice', phone: '138****0001', role: 'USER', greeting: 'success:欢迎进入 are-chat！' },
       }),
     }),
   )
   await page.goto('/login')
-  await page.getByTestId('demo-alice').click()
+  await page.getByTestId('login-input').fill('alice')
+  await page.getByTestId('login-password').fill('arechat123')
   await page.getByTestId('login-btn').click()
   await expect(page).toHaveURL(/\/chat/)
   await expect(page.getByTestId('current-user')).toHaveText('alice')
 })
 
-test('手机号注册后可自动登录', async ({ page }) => {
+test('77 注册提交后进入等待审批面板并可查询进度', async ({ page }) => {
   await page.route('**/api/auth/sms-code', (route) =>
     route.fulfill({
       status: 200,
@@ -58,7 +59,18 @@ test('手机号注册后可自动登录', async ({ page }) => {
       body: JSON.stringify({
         code: 0,
         message: 'ok',
-        data: { username: 'lisi', nickname: 'lisi', phone: '139****2222', greeting: 'success:欢迎进入 are-chat！' },
+        data: { applicationId: 'app-1', username: 'lisi', status: 'PENDING', hint: '注册申请已提交' },
+      }),
+    }),
+  )
+  await page.route('**/api/auth/register-status?account=lisi', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json;charset=UTF-8',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: { status: 'PENDING', rejectReason: null },
       }),
     }),
   )
@@ -70,6 +82,10 @@ test('手机号注册后可自动登录', async ({ page }) => {
   await page.getByTestId('send-code-btn').click()
   await expect(page.getByTestId('dev-code')).toContainText('123456')
   await page.getByTestId('register-btn').click()
-  await expect(page).toHaveURL(/\/chat/)
-  await expect(page.getByTestId('current-user')).toHaveText('lisi')
+  // 不再自动登录：停留在「等待审批」面板
+  await expect(page.getByTestId('register-pending')).toContainText('申请已提交')
+  await page.getByTestId('check-status-btn').click()
+  await expect(page.getByTestId('register-status')).toContainText('管理员还没处理')
+  // 登录页不含演示账号入口
+  await expect(page.getByTestId('server-status')).toBeVisible()
 })

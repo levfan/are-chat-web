@@ -7,13 +7,21 @@ export const useAuthStore = defineStore('auth', () => {
   const username = ref(sessionStorage.getItem(CURRENT_USER_KEY) ?? '')
   /** 53 本次登录时间（毫秒时间戳，来自 /api/auth/me） */
   const loginAt = ref<number | null>(null)
+  /** 77 角色：USER / ADMIN（管理员显示管理后台入口） */
+  const role = ref<'USER' | 'ADMIN'>('USER')
   const isLoggedIn = computed(() => username.value.length > 0)
+  const isAdmin = computed(() => isLoggedIn.value && role.value === 'ADMIN')
+
+  function applyLogin(result: { username: string; role?: 'USER' | 'ADMIN' }) {
+    username.value = result.username
+    role.value = result.role ?? 'USER'
+    sessionStorage.setItem(CURRENT_USER_KEY, result.username)
+  }
 
   /** 登录：手机号或用户名 + 密码 */
   async function login(account: string, password: string) {
     const result = await authApi.login(account, password)
-    username.value = result.username
-    sessionStorage.setItem(CURRENT_USER_KEY, result.username)
+    applyLogin(result)
     // 58 写 localStorage 让其它标签页感知登录变化
     try {
       localStorage.setItem(CURRENT_USER_LOCAL_KEY, result.username)
@@ -23,18 +31,9 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  /** 手机号注册：注册成功即登录（后端会建账号 + 资料行） */
-  async function register(payload: RegisterPayload) {
-    const result = await authApi.register(payload)
-    username.value = result.username
-    loginAt.value = result.loginAt ?? Date.now()
-    sessionStorage.setItem(CURRENT_USER_KEY, result.username)
-    try {
-      localStorage.setItem(CURRENT_USER_LOCAL_KEY, result.username)
-    } catch {
-      // 忽略
-    }
-    return result
+  /** 77 注册（审批流）不再产生登录态；保留函数避免旧调用破坏，直接抛出明确错误 */
+  async function register(_payload: RegisterPayload): Promise<never> {
+    throw new Error('注册已改为审批制，请使用提交申请接口（authApi.register）')
   }
 
   /** 53 会话信息校验：向服务端确认登录态并取本次登录时间。
@@ -50,6 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
         username.value = me.username
         sessionStorage.setItem(CURRENT_USER_KEY, me.username)
       }
+      role.value = me.role ?? 'USER'
       loginAt.value = me.loginAt ?? null
       return true
     } catch {
@@ -65,6 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     username.value = ''
     loginAt.value = null
+    role.value = 'USER'
     sessionStorage.removeItem(CURRENT_USER_KEY)
     try {
       // 58 其它标签页通过 storage 事件感知退出
@@ -79,8 +80,9 @@ export const useAuthStore = defineStore('auth', () => {
   function clearLocal() {
     username.value = ''
     loginAt.value = null
+    role.value = 'USER'
     sessionStorage.removeItem(CURRENT_USER_KEY)
   }
 
-  return { username, loginAt, isLoggedIn, login, register, logout, verify, clearLocal }
+  return { username, loginAt, role, isLoggedIn, isAdmin, login, register, logout, verify, clearLocal }
 })

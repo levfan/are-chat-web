@@ -9,6 +9,7 @@ vi.mock('@/api/auth', () => ({
     login: vi.fn(),
     register: vi.fn(),
     smsCode: vi.fn(),
+    registerStatus: vi.fn(),
     logout: vi.fn(),
     me: vi.fn(),
   },
@@ -75,5 +76,59 @@ describe('LoginView', () => {
     await wrapper.find('[data-testid="login-btn"]').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="login-error"]').text()).toContain('账号或密码不正确')
+  })
+
+  it('77 注册提交后进入等待审批面板，查询进度显示待审批', async () => {
+    const mockedRegister = vi.mocked(authApi.register)
+    const mockedStatus = vi.mocked(authApi.registerStatus)
+    mockedRegister.mockResolvedValue({
+      applicationId: 'app-1',
+      username: 'lisi',
+      status: 'PENDING',
+      hint: '注册申请已提交，等待管理员审批',
+    })
+    mockedStatus.mockResolvedValue({ status: 'PENDING', rejectReason: null })
+    const wrapper = mountView()
+    // 切到注册 tab（radio-button 的 input）
+    const inputs = wrapper.findAll('input')
+    const registerRadio = inputs.find((i) => (i.element as HTMLInputElement).value === 'register')
+    await registerRadio?.setValue()
+    await wrapper.find('[data-testid="register-phone"]').setValue('13911112222')
+    await wrapper.find('[data-testid="register-username"]').setValue('lisi')
+    await wrapper.find('[data-testid="register-password"]').setValue('lisi12345')
+    await wrapper.find('[data-testid="register-btn"]').trigger('click')
+    await flushPromises()
+    expect(mockedRegister).toHaveBeenCalled()
+    // 不再自动登录：停在审批面板
+    expect(wrapper.find('[data-testid="register-pending"]').text()).toContain('申请已提交')
+    // 查询进度
+    await wrapper.find('[data-testid="check-status-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="register-status"]').text()).toContain('管理员还没处理')
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('77 审批被拒绝时进度展示拒绝原因', async () => {
+    const mockedRegister = vi.mocked(authApi.register)
+    const mockedStatus = vi.mocked(authApi.registerStatus)
+    mockedRegister.mockResolvedValue({
+      applicationId: 'app-2',
+      username: 'wangwu',
+      status: 'PENDING',
+      hint: '注册申请已提交，等待管理员审批',
+    })
+    mockedStatus.mockResolvedValue({ status: 'REJECTED', rejectReason: '信息不完整' })
+    const wrapper = mountView()
+    const inputs = wrapper.findAll('input')
+    const registerRadio = inputs.find((i) => (i.element as HTMLInputElement).value === 'register')
+    await registerRadio?.setValue()
+    await wrapper.find('[data-testid="register-phone"]').setValue('13911113333')
+    await wrapper.find('[data-testid="register-username"]').setValue('wangwu')
+    await wrapper.find('[data-testid="register-password"]').setValue('wangwu123')
+    await wrapper.find('[data-testid="register-btn"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="check-status-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="register-status"]').text()).toContain('信息不完整')
   })
 })

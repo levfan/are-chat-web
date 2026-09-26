@@ -5,7 +5,7 @@
         <div class="brand-mark">A</div>
         <div class="brand-name">are-chat</div>
       </div>
-      <p class="brand-sub">{{ mode === 'login' ? '登录后与好友保持联系' : '手机号注册，成为合法用户' }}</p>
+      <p class="brand-sub">{{ mode === 'login' ? '登录后与好友保持联系' : '提交注册申请，管理员审批通过后即可登录' }}</p>
 
       <el-radio-group v-model="mode" class="mode-tabs" data-testid="auth-mode">
         <el-radio-button value="login">登录</el-radio-button>
@@ -44,8 +44,8 @@
         </el-button>
       </template>
 
-      <!-- ============ 注册 ============ -->
-      <template v-else>
+      <!-- ============ 注册（77 审批制） ============ -->
+      <template v-else-if="!submitted">
         <el-input
           v-model="regPhone"
           class="input"
@@ -98,8 +98,23 @@
           data-testid="register-btn"
           @click="onRegister"
         >
-          注册并登录
+          提交注册申请
         </el-button>
+      </template>
+
+      <!-- 77 申请已提交：等待管理员审批 + 进度查询 -->
+      <template v-else>
+        <el-result
+          icon="success"
+          title="申请已提交"
+          :sub-title="`用户名 ${submittedName} 正在等待管理员审批，通过后即可用手机号/用户名 + 密码登录`"
+          data-testid="register-pending"
+        />
+        <el-button class="btn" size="large" :loading="checkingStatus" data-testid="check-status-btn" @click="onCheckStatus">
+          查询审批进度
+        </el-button>
+        <p v-if="statusText" class="status-line" data-testid="register-status">{{ statusText }}</p>
+        <el-button link type="primary" @click="backToLogin">返回登录</el-button>
       </template>
 
       <el-alert
@@ -110,23 +125,6 @@
         :closable="false"
         data-testid="login-error"
       />
-
-      <div class="hints">
-        <span class="hint-label">演示账号</span>
-        <el-tag
-          v-for="demo in DEMO_ACCOUNTS"
-          :key="demo.username"
-          size="small"
-          effect="plain"
-          round
-          class="hint-tag"
-          :data-testid="`demo-${demo.username}`"
-          @click="useDemo(demo.username)"
-        >
-          {{ demo.username }}
-        </el-tag>
-        <span class="hint-pwd">密码统一 {{ DEMO_PASSWORD }}</span>
-      </div>
 
       <!-- 59 服务状态点 -->
       <div class="server-status" data-testid="server-status">
@@ -166,20 +164,11 @@ const devCodeHint = ref('')
 const countdown = ref(0)
 let countdownTimer: number | null = null
 
-/** 演示账号：由后端播种（DemoUserSeeder），密码统一 */
-const DEMO_PASSWORD = 'arechat123'
-const DEMO_ACCOUNTS = [
-  { username: 'alice', phone: '13800000001' },
-  { username: 'bob', phone: '13800000002' },
-  { username: 'carol', phone: '13800000003' },
-]
-
-function useDemo(username: string) {
-  mode.value = 'login'
-  account.value = username
-  password.value = DEMO_PASSWORD
-  error.value = ''
-}
+// 77 审批流状态
+const submitted = ref(false)
+const submittedName = ref('')
+const checkingStatus = ref(false)
+const statusText = ref('')
 
 // 59 登录页展示服务端健康状态
 const healthStatus = ref<'ok' | 'bad' | 'checking'>('checking')
@@ -262,19 +251,51 @@ async function onRegister() {
   loading.value = true
   error.value = ''
   try {
-    await auth.register({
+    const result = await authApi.register({
       phone: regPhone.value.trim(),
       username: regUsername.value.trim(),
       password: regPassword.value,
       code: regCode.value.trim(),
     })
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/chat'
-    router.push(redirect)
+    // 77 提交成功进入「等待审批」面板
+    submitted.value = true
+    submittedName.value = result.username
+    statusText.value = ''
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '注册失败'
+    error.value = e instanceof Error ? e.message : '注册申请提交失败'
   } finally {
     loading.value = false
   }
+}
+
+/** 77 查询审批进度 */
+async function onCheckStatus() {
+  if (!submittedName.value) {
+    return
+  }
+  checkingStatus.value = true
+  try {
+    const status = await authApi.registerStatus(submittedName.value)
+    if (status.status === 'PENDING') {
+      statusText.value = '管理员还没处理，再等等吧～'
+    } else if (status.status === 'APPROVED') {
+      statusText.value = '审批已通过！返回用账号密码登录即可'
+    } else {
+      statusText.value = `申请被拒绝：${status.rejectReason || '未填写原因'}，可联系管理员后重新申请`
+    }
+  } catch (e) {
+    statusText.value = e instanceof Error ? e.message : '查询失败'
+  } finally {
+    checkingStatus.value = false
+  }
+}
+
+function backToLogin() {
+  submitted.value = false
+  mode.value = 'login'
+  regCode.value = ''
+  regPassword.value = ''
+  statusText.value = ''
 }
 </script>
 
@@ -352,21 +373,10 @@ async function onRegister() {
   margin-top: 14px;
   text-align: left;
 }
-.hints {
-  margin-top: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.hint-label,
-.hint-pwd {
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-}
-.hint-tag {
-  cursor: pointer;
+.status-line {
+  margin: 6px 0 12px;
+  font-size: 13px;
+  color: var(--im-text-2, #51565f);
 }
 .server-status {
   margin-top: 16px;
