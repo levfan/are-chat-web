@@ -1,16 +1,21 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { friendApi, messageApi, profileApi } from '@/api/im'
+import { adminApi } from '@/api/auth'
 import { filesApi } from '@/api/files'
 import { playMessageTone } from '@/utils/sound'
 import { showNotification } from '@/utils/notify'
+import { compressImageIfNeeded } from '@/utils/image'
+import { isQuietNow } from '@/utils/settings'
 import type {
+  FilePayload,
   FriendCardPayload,
   FriendRequestVO,
   FriendVO,
   ImMessage,
   ImPushMessage,
   LocationPayload,
+  PinVO,
   UserProfileVO,
 } from '@/types'
 
@@ -18,6 +23,14 @@ import type {
 export function messagePreviewText(msgType: string, content: string): string {
   if (msgType === 'image') {
     return '[图片]'
+  }
+  if (msgType === 'file') {
+    try {
+      const file = JSON.parse(content) as FilePayload
+      return `[文件] ${file.name}`
+    } catch {
+      return '[文件]'
+    }
   }
   if (msgType === 'poke') {
     return content && content !== '[拍一拍]' ? `拍了拍你${content}` : '拍了拍你'
@@ -115,6 +128,21 @@ export const useImStore = defineStore('im', () => {
   const totalUnread = computed(() =>
     friends.value.filter((f) => !f.muted).reduce((sum, f) => sum + f.unread, 0),
   )
+
+  /**
+   * 用户名 → 展示名（好友备注优先，无备注回退用户名）。
+   * 全站所有出现好友名称的地方（会话列表、聊天气泡、历史消息、搜索结果、
+   * 输入中提示、通知等）都必须经过这里解析：备注是实时读 friends 的响应式
+   * 取值，修改备注（updateFriend → loadFriends）后所有界面连同已加载的
+   * 历史消息会立即以新名称重新渲染，无需手动刷新。
+   */
+  function displayNameOf(username: string): string {
+    if (!username) {
+      return ''
+    }
+    const friend = friends.value.find((f) => f.username === username)
+    return friend?.remark || username
+  }
 
   // ---------- 数据加载 ----------
 
@@ -227,6 +255,8 @@ export const useImStore = defineStore('im', () => {
     if (!messages.value[peer]) {
       messages.value[peer] = await messageApi.history(peer)
     }
+    // 84 会话内置顶消息
+    pinned.value = await messageApi.currentPin(peer).catch(() => null)
     // 记住上次会话（41）
     const friend = friends.value.find((f) => f.username === peer)
     if (friend) {
@@ -291,10 +321,23 @@ export const useImStore = defineStore('im', () => {
     return sendOutgoing(peer, content, 'text', opts.replyToId ?? null)
   }
 
-  /** 图片消息：先走通用上传（SHA-256 去重），再把站内地址作为消息内容 */
+  /** 图片消息：90 超过 1.5MB 的图片先压缩再上传（SHA-256 去重），站内地址作为消息内容 */
   async function sendImage(peer: string, file: File) {
-    const uploaded = await filesApi.upload(file)
+    const { blob, name } = await compressImageIfNeeded(file)
+    const toUpload = blob === file ? file : new File([blob], name, { type: 'image/jpeg' })
+    const uploaded = await filesApi.upload(toUpload)
     return sendOutgoing(peer, uploaded.downloadUrl, 'image', null)
+  }
+
+  /** 82 文件消息：任意类型文件（后端黑名单拦截可执行文件），content 为 JSON 卡片 */
+  async function sendFile(peer: string, file: File) {
+    const uploaded = await filesApi.upload(file)
+    const payload: FilePayload = {
+      name: uploaded.originalName,
+      size: uploaded.size,
+      url: uploaded.downloadUrl,
+    }
+    return sendOutgoing(peer, JSON.stringify(payload), 'file', null)
   }
 
   /** 67 拍一拍：可带自定义后缀（如「的小脑袋」），留空用默认文案 */
@@ -344,9 +387,41 @@ export const useImStore = defineStore('im', () => {
     searchResults.value = []
   }
 
+  // ---------- 84 会话内置顶 ----------
+
+  const pinned = ref<PinVO | null>(null)
+
+  async function pinMessage(peer: string, msgId: string) {
+    pinned.value = await messageApi.pin(peer, msgId)
+  }
+
+  async function unpinConversation(peer: string) {
+    await messageApi.unpin(peer)
+    pinned.value = null
+  }
+
+  // ---------- 85 清空聊天记录 / 95 附件 ----------
+
+  /** 清空当前会话全部消息（后端删除双方记录），返回删除条数 */
+  async function clearConversation(peer: string) {
+    const result = await messageApi.clear(peer)
+    delete messages.value[peer]
+    pinned.value = null
+    await loadFriends()
+    return result.deleted
+  }
+
   async function recallMessage(msgId: string) {
     await messageApi.recall(msgId)
     markRecalled(msgId)
+    // 84 撤回的消息若是置顶消息则取消置顶
+    if (pinned.value?.msgId === msgId) {
+      const peer = activePeer.value
+      if (peer) {
+        messageApi.unpin(peer).catch(() => {})
+      }
+      pinned.value = null
+    }
   }
 
   function markRecalled(msgId: string) {
@@ -482,8 +557,8 @@ export const useImStore = defineStore('im', () => {
               messageApi.markRead(peer).catch(() => {})
             } else {
               friend.unread++
-              // 提示音：非当前会话、且未免打扰
-              if (!friend.muted) {
+              // 提示音：非当前会话、未免打扰、且不在免打扰时段（91）
+              if (!friend.muted && !isQuietNow()) {
                 playMessageTone()
               }
               const preview = messagePreviewText(msg.msgType, msg.content)
@@ -492,7 +567,7 @@ export const useImStore = defineStore('im', () => {
                 new CustomEvent('arechat:toast', {
                   detail: {
                     peer,
-                    name: friend.remark || msg.from,
+                    name: displayNameOf(msg.from),
                     body: preview,
                     avatar: friend.username,
                     at: msg.created,
@@ -501,7 +576,7 @@ export const useImStore = defineStore('im', () => {
               )
               // 45 桌面通知：页面不可见时弹出，点击聚焦并跳转会话
               showNotification({
-                title: friend.remark || msg.from,
+                title: displayNameOf(msg.from),
                 body: preview,
                 peer,
               })
@@ -596,6 +671,28 @@ export const useImStore = defineStore('im', () => {
           activePeer.value = ''
         }
         void loadFriends()
+        return
+      }
+      case 'pin': {
+        // 84 会话置顶变化（会话双方的另一端推过来）
+        const peer = msg.peerA === selfName.value ? msg.peerB : msg.peerA
+        if (peer === activePeer.value) {
+          pinned.value = msg.pinned && msg.msgId ? { msgId: msg.msgId, createdBy: '' } : null
+        }
+        return
+      }
+      case 'announcement': {
+        // 88 全站公告：广播给页面（MainLayout 弹横幅）
+        window.dispatchEvent(
+          new CustomEvent('arechat:announcement', {
+            detail: { id: msg.announcementId, content: msg.content },
+          }),
+        )
+        return
+      }
+      case 'admin-pending': {
+        // 78 管理员待办：新注册申请提醒
+        adminPending.value = msg.pendingCount
         return
       }
       default:
@@ -718,6 +815,21 @@ export const useImStore = defineStore('im', () => {
     typingFrom.value = ''
     searchResults.value = []
     myProfile.value = null
+    pinned.value = null
+    adminPending.value = 0
+  }
+
+  // ---------- 78/79 管理员待办 ----------
+
+  const adminPending = ref(0)
+
+  /** 登录后由管理员页面/布局调用：拉取待审批数量（WS 推送做实时增量） */
+  async function refreshAdminPending() {
+    try {
+      adminPending.value = (await adminApi.pendingCount()).applications
+    } catch {
+      // 非管理员访问会 403：静默
+    }
   }
 
   return {
@@ -735,6 +847,9 @@ export const useImStore = defineStore('im', () => {
     activeFriend,
     activeMessages,
     totalUnread,
+    displayNameOf,
+    pinned,
+    adminPending,
     init,
     loadFriends,
     loadRequests,
@@ -750,6 +865,7 @@ export const useImStore = defineStore('im', () => {
     loadMoreHistory,
     sendText,
     sendImage,
+    sendFile,
     sendPoke,
     sendCard,
     sendLocation,
@@ -764,6 +880,10 @@ export const useImStore = defineStore('im', () => {
     toggleStar,
     editMessage,
     forwardMessage,
+    pinMessage,
+    unpinConversation,
+    clearConversation,
+    refreshAdminPending,
     disconnect,
     reset,
   }

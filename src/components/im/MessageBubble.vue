@@ -14,10 +14,10 @@
     :data-message-id="message.id"
     data-testid="dm-row"
   >
-    <ImAvatar :name="message.fromUser" :size="34" />
+    <ImAvatar :name="message.fromUser" :label="senderName" :size="34" />
     <div class="bubble-wrap">
       <div v-if="!self" class="meta">
-        <span class="meta-name">{{ message.fromUser }}</span>
+        <span class="meta-name">{{ senderName }}</span>
         <span>{{ formatChatTime(message.created) }}</span>
         <span v-if="message.edited" class="meta-mark">已编辑</span>
         <el-icon v-if="message.starred" class="star-mark" :size="12" data-testid="starred-mark">
@@ -58,6 +58,23 @@
             data-testid="image-download"
           >
             <el-icon :size="13"><Download /></el-icon>
+          </a>
+        </div>
+        <!-- 82 文件消息卡片：图标 + 文件名 + 大小 + 下载 -->
+        <div v-else-if="message.msgType === 'file'" class="file-msg" data-testid="dm-file">
+          <el-icon :size="26" class="file-icon"><Document /></el-icon>
+          <div class="file-body">
+            <div class="file-name" :title="filePayload.name">{{ filePayload.name }}</div>
+            <div class="file-size">{{ formatSize(filePayload.size) }}</div>
+          </div>
+          <a
+            class="file-dl"
+            :href="filePayload.url"
+            :download="filePayload.name"
+            title="下载文件"
+            data-testid="file-download"
+          >
+            <el-icon :size="15"><Download /></el-icon>
           </a>
         </div>
         <!-- 72 好友名片卡片 -->
@@ -207,6 +224,27 @@
       >
         {{ message.starred ? '已收藏' : '收藏' }}
       </button>
+      <!-- 84 会话内置顶/取消置顶（由父组件维护置顶状态） -->
+      <button
+        v-if="message.status === 'SENT' && pinnedMsgId !== message.id"
+        class="hover-btn"
+        type="button"
+        title="置顶这条消息"
+        data-testid="pin-btn"
+        @click="emit('pin', message)"
+      >
+        置顶
+      </button>
+      <button
+        v-if="pinnedMsgId === message.id"
+        class="hover-btn"
+        type="button"
+        title="取消置顶"
+        data-testid="unpin-btn"
+        @click="emit('unpin')"
+      >
+        取消置顶
+      </button>
       <button
         v-if="canRecall"
         class="hover-btn danger"
@@ -226,10 +264,11 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Download, Loading, StarFilled, WarningFilled } from '@element-plus/icons-vue'
-import type { FriendCardPayload, ImMessage, ImReaction, LocationPayload } from '@/types'
+import { Document, Download, Loading, StarFilled, WarningFilled } from '@element-plus/icons-vue'
+import type { FriendCardPayload, FilePayload, ImMessage, ImReaction, LocationPayload } from '@/types'
 import { formatChatTime, parseLinks } from '@/utils/imFormat'
 import { floatHearts } from '@/utils/effects'
+import { useImStore } from '@/stores/im'
 import ImAvatar from './ImAvatar.vue'
 import ImageLightbox from './ImageLightbox.vue'
 
@@ -247,8 +286,10 @@ const props = withDefaults(
     /** 搜索跳转命中高亮 */
     highlight?: boolean
     now?: number
+    /** 84 当前会话置顶消息 id（悬空时父组件自行兜底） */
+    pinnedMsgId?: string | null
   }>(),
-  { selfName: '', replyTarget: null, highlight: false, now: () => Date.now() },
+  { selfName: '', replyTarget: null, highlight: false, now: () => Date.now(), pinnedMsgId: null },
 )
 
 const emit = defineEmits<{
@@ -260,9 +301,16 @@ const emit = defineEmits<{
   forward: [message: ImMessage]
   edit: [message: ImMessage]
   star: [message: ImMessage]
+  /** 84 置顶 / 取消置顶 */
+  pin: [message: ImMessage]
+  unpin: []
   /** 48 点击引用块：定位原消息 */
   jump: [msgId: string]
 }>()
+
+/** 发送者展示名：备注优先（im.displayNameOf 响应式解析，备注修改后历史消息即时换名） */
+const im = useImStore()
+const senderName = computed(() => im.displayNameOf(props.message.fromUser))
 
 const centered = computed(() => {
   if (props.message.status === 'RECALLED') {
@@ -298,12 +346,35 @@ const place = computed<Partial<LocationPayload>>(() => {
   }
 })
 
+/** 82 文件卡片内容（容错解析） */
+const filePayload = computed<Partial<FilePayload>>(() => {
+  try {
+    return JSON.parse(props.message.content) as FilePayload
+  } catch {
+    return {}
+  }
+})
+
+/** 82 文件大小人性化展示 */
+function formatSize(size?: number): string {
+  if (!size || size <= 0) {
+    return ''
+  }
+  if (size < 1024) {
+    return `${size} B`
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`
+  }
+  return `${(size / 1024 / 1024).toFixed(2)} MB`
+}
+
 const centerText = computed(() => {
   if (props.message.status === 'RECALLED') {
-    return props.self ? '你撤回了一条消息' : `${props.message.fromUser} 撤回了一条消息`
+    return props.self ? '你撤回了一条消息' : `${senderName.value} 撤回了一条消息`
   }
   if (props.message.msgType === 'poke') {
-    return props.self ? `你拍了拍对方${pokeSuffix.value}` : `${props.message.fromUser} 拍了拍你${pokeSuffix.value}`
+    return props.self ? `你拍了拍对方${pokeSuffix.value}` : `${senderName.value} 拍了拍你${pokeSuffix.value}`
   }
   return props.message.content
 })
@@ -313,22 +384,30 @@ const canRecall = computed(
   () =>
     props.self &&
     props.message.status === 'SENT' &&
-    (props.message.msgType === 'text' || props.message.msgType === 'image') &&
+    (props.message.msgType === 'text' || props.message.msgType === 'image' || props.message.msgType === 'file') &&
     inWindow.value,
 )
 const canEdit = computed(
   () => props.self && props.message.status === 'SENT' && props.message.msgType === 'text' && inWindow.value,
 )
 const canReply = computed(
-  () => props.message.status === 'SENT' && (props.message.msgType === 'text' || props.message.msgType === 'image'),
+  () =>
+    props.message.status === 'SENT' &&
+    (props.message.msgType === 'text' || props.message.msgType === 'image' || props.message.msgType === 'file'),
 )
 const canForward = computed(
-  () => props.message.status === 'SENT' && (props.message.msgType === 'text' || props.message.msgType === 'image'),
+  () =>
+    props.message.status === 'SENT' &&
+    (props.message.msgType === 'text' || props.message.msgType === 'image' || props.message.msgType === 'file'),
 )
 const canStar = computed(
-  () => props.message.status === 'SENT' && (props.message.msgType === 'text' || props.message.msgType === 'image'),
+  () =>
+    props.message.status === 'SENT' &&
+    (props.message.msgType === 'text' || props.message.msgType === 'image' || props.message.msgType === 'file'),
 )
-const canReceipt = computed(() => props.message.msgType === 'text' || props.message.msgType === 'image')
+const canReceipt = computed(
+  () => props.message.msgType === 'text' || props.message.msgType === 'image' || props.message.msgType === 'file',
+)
 
 /** 47 链接识别：仅对未撤回的文本消息做 URL 切分 */
 const linkSegments = computed(() => {
@@ -347,7 +426,7 @@ function onBubbleDblClick(event: MouseEvent) {
   emit('react', '👍', props.message)
 }
 
-/** 聚合同名表情：emoji + 数量 + 是否包含我 */
+/** 聚合同名表情：emoji + 数量 + 是否包含我（tooltip 里的名字也按备注解析） */
 const reactions = computed(() => {
   const list: ImReaction[] = props.message.reactions ?? []
   const grouped: { emoji: string; count: number; mine: boolean; names: string }[] = []
@@ -355,10 +434,10 @@ const reactions = computed(() => {
     const existing = grouped.find((g) => g.emoji === r.emoji)
     if (existing) {
       existing.count += 1
-      existing.names += `、${r.username}`
+      existing.names += `、${im.displayNameOf(r.username)}`
       existing.mine = existing.mine || r.username === props.selfName
     } else {
-      grouped.push({ emoji: r.emoji, count: 1, mine: r.username === props.selfName, names: r.username })
+      grouped.push({ emoji: r.emoji, count: 1, mine: r.username === props.selfName, names: im.displayNameOf(r.username) })
     }
   }
   return grouped
@@ -377,7 +456,7 @@ const quoteText = computed(() => {
         : target.msgType === 'poke'
           ? '[拍一拍]'
           : target.content
-  const author = target.fromUser === props.selfName ? '我' : target.fromUser
+  const author = target.fromUser === props.selfName ? '我' : im.displayNameOf(target.fromUser)
   return `${author}：${brief}`
 })
 </script>
@@ -712,6 +791,52 @@ const quoteText = computed(() => {
   right: 8px;
   font-size: 11px;
   color: var(--im-faint, #b9bec7);
+}
+
+/* ============ 82 文件消息卡片 ============ */
+.file-msg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 210px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--im-panel, #fff);
+  border: 1px solid var(--im-border, #e6e8eb);
+}
+.file-icon {
+  color: var(--im-accent, #3370ff);
+  flex-shrink: 0;
+}
+.file-body {
+  min-width: 0;
+  flex: 1;
+}
+.file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--im-text, #1f2329);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-size {
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
+  margin-top: 2px;
+}
+.file-dl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--im-accent, #3370ff);
+  flex-shrink: 0;
+}
+.file-dl:hover {
+  background: var(--im-hover, #f2f3f5);
 }
 
 /* ============ 73 位置卡片 ============ */

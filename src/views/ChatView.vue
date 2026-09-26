@@ -67,7 +67,14 @@
           data-testid="conv-item"
           @click="openConversation(friend.username)"
         >
-          <ImAvatar :name="friend.username" :online="friend.online" :size="40" :status="friend.status" halo />
+          <ImAvatar
+            :name="friend.username"
+            :label="displayName(friend)"
+            :online="friend.online"
+            :size="40"
+            :status="friend.status"
+            halo
+          />
           <div class="conv-main">
             <div class="conv-row">
               <span class="conv-name">{{ displayName(friend) }}</span>
@@ -93,7 +100,7 @@
         </div>
         <div v-if="filteredFriends.length === 0" class="conv-empty">
           <p>还没有好友</p>
-          <el-button type="primary" size="small" @click="router.push('/friends')">去添加好友</el-button>
+          <el-button type="primary" size="small" @click="router.push('/contacts')">去通讯录添加</el-button>
         </div>
       </div>
     </aside>
@@ -102,7 +109,14 @@
     <section class="chat-panel">
       <template v-if="im.activePeer">
         <header class="chat-head">
-          <ImAvatar :name="im.activePeer" :online="im.activeFriend?.online" :size="36" :status="im.activeFriend?.status" halo />
+          <ImAvatar
+            :name="im.activePeer"
+            :label="displayPeerName"
+            :online="im.activeFriend?.online"
+            :size="36"
+            :status="im.activeFriend?.status"
+            halo
+          />
           <div class="chat-title">
             <span class="chat-name" data-testid="chat-title">{{ displayPeerName }}</span>
             <span class="chat-status" data-testid="peer-status">{{ peerStatusText }}</span>
@@ -110,6 +124,10 @@
 
           <button type="button" class="head-btn" title="发送图片" data-testid="image-btn" @click="pickImage">
             <el-icon :size="17"><Picture /></el-icon>
+          </button>
+          <!-- 82 发送文件（任意类型，后端黑名单拦截可执行文件） -->
+          <button type="button" class="head-btn" title="发送文件" data-testid="file-btn" @click="pickFile">
+            <el-icon :size="17"><Paperclip /></el-icon>
           </button>
           <button type="button" class="head-btn" title="拍一拍" data-testid="poke-btn" @click="onPoke">
             <el-icon :size="17"><Pointer /></el-icon>
@@ -143,6 +161,14 @@
                 <el-dropdown-item command="export-json">
                   <el-icon><Document /></el-icon>导出 JSON（56）
                 </el-dropdown-item>
+                <!-- 95 会话附件面板 -->
+                <el-dropdown-item command="attachments">
+                  <el-icon><FolderOpened /></el-icon>附件面板
+                </el-dropdown-item>
+                <!-- 85 清空聊天记录 -->
+                <el-dropdown-item command="clear-history">
+                  <el-icon><Brush /></el-icon>清空聊天记录
+                </el-dropdown-item>
                 <el-dropdown-item command="share-card" divided>
                   <el-icon><Postcard /></el-icon>分享好友名片（72）
                 </el-dropdown-item>
@@ -166,9 +192,35 @@
             data-testid="image-input"
             @change="onImageChosen"
           />
+          <input ref="fileInput" type="file" hidden data-testid="file-input" @change="onFileChosen" />
         </header>
 
-        <div ref="scrollBox" class="dm-area" :class="`chat-bg-${chatBg}`" data-testid="dm-area" @scroll="onScroll">
+        <!-- 84 会话内置顶消息横幅 -->
+        <div v-if="im.pinned" class="pin-banner" data-testid="pin-banner">
+          <el-icon :size="13"><TopRight /></el-icon>
+          <span class="pin-text">置顶消息：{{ pinBrief }}</span>
+          <el-button link size="small" type="primary" data-testid="pin-jump-btn" @click="jumpTo(im.pinned.msgId)">
+            查看
+          </el-button>
+          <el-button link size="small" data-testid="pin-remove-btn" @click="onUnpinMessage">取消置顶</el-button>
+        </div>
+
+        <div
+          ref="scrollBox"
+          class="dm-area"
+          :class="`chat-bg-${chatBg}`"
+          data-testid="dm-area"
+          @scroll="onScroll"
+          @dragenter.prevent="onDragEnter"
+          @dragover.prevent
+          @dragleave.prevent="onDragLeave"
+          @drop.prevent="onDrop"
+        >
+          <!-- 83 拖拽文件发送遮罩 -->
+          <div v-if="dragOver" class="drop-overlay" data-testid="drop-overlay">
+            <el-icon :size="34"><UploadFilled /></el-icon>
+            <p>松开发送文件（图片走图片消息）</p>
+          </div>
           <el-button
             v-if="canLoadMore"
             link
@@ -189,6 +241,7 @@
               :self-name="auth.username"
               :reply-target="replyTargetOf(row.message)"
               :highlight="highlightId === row.message.id"
+              :pinned-msg-id="im.pinned?.msgId ?? null"
               @recall="onRecall"
               @reply="setReply"
               @retry="onRetry"
@@ -197,6 +250,8 @@
               @edit="startEdit"
               @star="onStar"
               @jump="jumpTo"
+              @pin="onPinMessage"
+              @unpin="onUnpinMessage"
             />
           </template>
         </div>
@@ -248,7 +303,7 @@
               @click="jumpToMessage(hit)"
             >
               <div class="hit-line">
-                <span class="hit-from">{{ hit.fromUser === auth.username ? '我' : hit.fromUser }}</span>
+                <span class="hit-from">{{ hit.fromUser === auth.username ? '我' : im.displayNameOf(hit.fromUser) }}</span>
                 <span class="hit-time">{{ formatChatTime(hit.created) }}</span>
               </div>
               <span class="hit-content">
@@ -263,7 +318,7 @@
 
         <footer class="composer">
           <div v-if="replyTo" class="context-bar" data-testid="reply-bar">
-            <span class="context-text">回复 {{ replyTo.fromUser === auth.username ? '我' : replyTo.fromUser }}：{{ replyBrief }}</span>
+            <span class="context-text">回复 {{ replyTo.fromUser === auth.username ? '我' : im.displayNameOf(replyTo.fromUser) }}：{{ replyBrief }}</span>
             <el-button link size="small" data-testid="reply-cancel-btn" @click="replyTo = null">
               <el-icon :size="13"><Close /></el-icon>
             </el-button>
@@ -275,7 +330,7 @@
             </el-button>
           </div>
           <div v-if="im.typingFrom" class="typing-hint" data-testid="typing-hint">
-            {{ im.typingFrom }} 正在输入…
+            {{ im.displayNameOf(im.typingFrom) }} 正在输入…
           </div>
           <div class="toolbar">
             <el-popover placement="top-start" :width="300" trigger="click">
@@ -310,7 +365,7 @@
                 </button>
               </div>
             </el-popover>
-            <span class="tip">Enter 发送，Shift+Enter 换行，可直接粘贴图片</span>
+            <span class="tip">Enter 发送，Shift+Enter 换行，可粘贴/拖拽文件（Ctrl+K 全局搜索）</span>
           </div>
           <el-input
             v-model="draft"
@@ -347,7 +402,7 @@
       <div v-else class="chat-empty">
         <el-icon :size="46" class="empty-ico"><ChatDotRound /></el-icon>
         <p>选择一位好友开始聊天</p>
-        <p class="empty-sub">还没有好友？去 <router-link to="/friends">好友页</router-link> 添加</p>
+        <p class="empty-sub">还没有好友？去 <router-link to="/contacts">通讯录</router-link> 添加</p>
       </div>
     </section>
 
@@ -375,7 +430,7 @@
             class="forward-item"
             :class="{ picked: forwardChoice === friend.username }"
           >
-            <ImAvatar :name="friend.username" :size="30" />
+            <ImAvatar :name="friend.username" :label="displayName(friend)" :size="30" />
             <span class="forward-name">{{ displayName(friend) }}</span>
             <el-radio v-model="forwardChoice" :value="friend.username" data-testid="forward-option">&nbsp;</el-radio>
           </label>
@@ -400,7 +455,7 @@
         <p v-if="!starsLoading && starList.length === 0" class="stars-empty">还没有收藏任何消息</p>
         <div v-for="star in starList" :key="star.msgId" class="star-item" data-testid="star-item">
           <div class="star-line">
-            <span class="star-peer">{{ star.peer }}</span>
+            <span class="star-peer">{{ im.displayNameOf(star.peer) }}</span>
             <span class="star-time">{{ formatChatTime(star.created) }}</span>
           </div>
           <span class="star-content">
@@ -452,6 +507,49 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 95 附件面板：当前会话图片 / 文件一览 -->
+    <el-dialog v-model="attachmentsVisible" title="附件面板" width="560px" @open="loadAttachments">
+      <el-radio-group v-model="attachmentTab" size="small" data-testid="attachment-tab" @change="loadAttachments">
+        <el-radio-button value="image">图片</el-radio-button>
+        <el-radio-button value="file">文件</el-radio-button>
+      </el-radio-group>
+      <div v-loading="attachmentsLoading" class="attachment-grid">
+        <template v-if="attachmentTab === 'image'">
+          <img
+            v-for="att in attachmentList"
+            :key="att.id"
+            class="attachment-thumb"
+            :src="att.url"
+            :title="new Date(att.created).toLocaleString()"
+            data-testid="attachment-image"
+            @click="openImage(att.url)"
+          />
+          <p v-if="!attachmentsLoading && attachmentList.length === 0" class="attachment-empty">还没有图片附件</p>
+        </template>
+        <template v-else>
+          <button
+            v-for="att in attachmentList"
+            :key="att.id"
+            type="button"
+            class="attachment-file"
+            data-testid="attachment-file"
+            @click="openImage(att.url)"
+          >
+            <el-icon :size="18"><Document /></el-icon>
+            <span class="af-name">{{ att.name }}</span>
+            <span class="af-time">{{ new Date(att.created).toLocaleDateString() }}</span>
+          </button>
+          <p v-if="!attachmentsLoading && attachmentList.length === 0" class="attachment-empty">还没有文件附件</p>
+        </template>
+      </div>
+    </el-dialog>
+
+    <!-- 81 全局消息搜索（Ctrl+K）：跨会话搜文本 -->
+    <GlobalSearchPanel v-model="globalSearchVisible" :self-name="auth.username" @open="onGlobalSearchOpen" />
+
+    <!-- 95 附件图片预览灯箱 -->
+    <ImageLightbox v-model="lightboxOpen" :src="lightboxUrl" />
   </div>
 </template>
 
@@ -463,6 +561,7 @@ import { storeToRefs } from 'pinia'
 import {
   Bell,
   Bottom,
+  Brush,
   ChatDotRound,
   CircleClose,
   Close,
@@ -471,14 +570,18 @@ import {
   Document,
   Download,
   EditPen,
+  FolderOpened,
   LocationInformation,
   Memo,
   MuteNotification,
+  Paperclip,
   Picture,
   Pointer,
   Postcard,
   Search,
   Setting,
+  TopRight,
+  UploadFilled,
   User,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
@@ -488,9 +591,12 @@ import { currentBackground, currentPokeSuffix, currentSendKey } from '@/utils/se
 import { detectEffect, floatHearts, playEffect } from '@/utils/effects'
 import { formatChatTime, formatDayLabel, formatLastSeen, highlightSegments } from '@/utils/imFormat'
 import type { HighlightSegment } from '@/utils/imFormat'
+import type { AttachmentVO } from '@/types'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import EmojiPicker from '@/components/im/EmojiPicker.vue'
 import MessageBubble from '@/components/im/MessageBubble.vue'
+import GlobalSearchPanel from '@/components/im/GlobalSearchPanel.vue'
+import ImageLightbox from '@/components/im/ImageLightbox.vue'
 import type { ImMessage, ImStarVO, LocationPayload, UserProfileVO } from '@/types'
 
 const auth = useAuthStore()
@@ -506,6 +612,19 @@ const scrollBox = ref<HTMLElement | null>(null)
 const replyTo = ref<ImMessage | null>(null)
 const editing = ref<ImMessage | null>(null)
 const imageInput = ref<HTMLInputElement | null>(null)
+// 82 文件发送
+const fileInput = ref<HTMLInputElement | null>(null)
+// 83 拖拽发送
+const dragOver = ref(false)
+// 95 附件面板
+const attachmentsVisible = ref(false)
+const attachmentsLoading = ref(false)
+const attachmentTab = ref<'image' | 'file'>('image')
+const attachmentList = ref<AttachmentVO[]>([])
+const lightboxOpen = ref(false)
+const lightboxUrl = ref('')
+// 81 全局搜索
+const globalSearchVisible = ref(false)
 
 // 50 只看未读 + 44 分组筛选
 const onlyUnread = ref(false)
@@ -616,7 +735,8 @@ function previewText(friend: (typeof im.friends)[number]) {
   // 72/73 名片与位置卡片、图片、拍一拍统一走预览文案
   const text = messagePreviewText(last.msgType, last.content)
   if (last.msgType === 'poke') {
-    return last.fromMe ? `你${text}` : `${friend.username} ${text}`
+    // 拍一拍预览带对方展示名（备注优先）
+    return last.fromMe ? `你${text}` : `${displayName(friend)} ${text}`
   }
   return last.fromMe && last.msgType === 'image' ? `[图片] ${text}` : text
 }
@@ -853,12 +973,16 @@ async function onImageChosen() {
   }
 }
 
-/** 粘贴图片直接发送（剪贴板里的 image 文件） */
+/** 粘贴图片直接发送（剪贴板里的 image 文件）；83 粘贴普通文件走文件消息 */
 function onPaste(event: ClipboardEvent) {
-  const file = Array.from(event.clipboardData?.files ?? []).find((f) => f.type.startsWith('image/'))
+  const file = Array.from(event.clipboardData?.files ?? [])[0]
   if (file && im.activePeer) {
     event.preventDefault()
-    void submitImage(file)
+    if (file.type.startsWith('image/')) {
+      void submitImage(file)
+    } else {
+      void submitFile(file)
+    }
   }
 }
 
@@ -871,6 +995,96 @@ async function submitImage(file: File) {
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '图片发送失败')
   }
+}
+
+// ---------- 82 文件消息 ----------
+
+function pickFile() {
+  fileInput.value?.click()
+}
+
+async function onFileChosen() {
+  const file = fileInput.value?.files?.[0]
+  if (file && im.activePeer) {
+    await submitFile(file)
+  }
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+async function submitFile(file: File) {
+  if (!im.activePeer) {
+    return
+  }
+  if (file.size > 50 * 1024 * 1024) {
+    ElMessage.warning('文件不能超过 50MB')
+    return
+  }
+  try {
+    await im.sendFile(im.activePeer, file)
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '文件发送失败')
+  }
+}
+
+// ---------- 83 拖拽文件发送 ----------
+
+let dragDepth = 0
+
+function onDragEnter() {
+  dragDepth += 1
+  dragOver.value = true
+}
+
+function onDragLeave() {
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) {
+    dragOver.value = false
+  }
+}
+
+async function onDrop(event: DragEvent) {
+  dragDepth = 0
+  dragOver.value = false
+  const files = Array.from(event.dataTransfer?.files ?? [])
+  if (files.length === 0 || !im.activePeer) {
+    return
+  }
+  for (const file of files.slice(0, 5)) {
+    if (file.type.startsWith('image/')) {
+      await submitImage(file)
+    } else {
+      await submitFile(file)
+    }
+  }
+}
+
+// ---------- 95 附件面板 ----------
+
+async function loadAttachments() {
+  if (!im.activePeer) {
+    return
+  }
+  attachmentsLoading.value = true
+  try {
+    attachmentList.value = await messageApi.attachments(im.activePeer, attachmentTab.value)
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '附件加载失败')
+  } finally {
+    attachmentsLoading.value = false
+  }
+}
+
+function openImage(url: string) {
+  lightboxUrl.value = url
+  lightboxOpen.value = true
+}
+
+// ---------- 81 全局搜索（Ctrl+K） ----------
+
+function onGlobalSearchOpen(peer: string) {
+  void openConversation(peer)
 }
 
 async function onRetry(localId: string) {
@@ -893,11 +1107,69 @@ async function onPoke() {
   }
 }
 
+/** 96 撤回后回填输入框：文本消息撤回时把原文放回输入框，方便改了重发 */
 async function onRecall(msgId: string) {
+  const target = im.activeMessages.find((m) => m.id === msgId)
   try {
     await im.recallMessage(msgId)
+    if (target && target.msgType === 'text' && target.content) {
+      draft.value = draft.value ? `${draft.value}\n${target.content}` : target.content
+      ElMessage.success('已撤回，原文已填回输入框，改一改再发吧')
+    }
   } catch (e) {
     ElMessage.warning(e instanceof Error ? e.message : '撤回失败')
+  }
+}
+
+// ---------- 84 会话内置顶 ----------
+
+const pinBrief = computed(() => {
+  const msg = im.activeMessages.find((m) => m.id === im.pinned?.msgId)
+  if (msg) {
+    return messagePreviewText(msg.msgType, msg.content)
+  }
+  return '该消息不在当前记录中'
+})
+
+async function onPinMessage(message: ImMessage) {
+  try {
+    await im.pinMessage(im.activePeer, message.id)
+    ElMessage.success('已置顶该消息')
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '置顶失败')
+  }
+}
+
+async function onUnpinMessage() {
+  try {
+    await im.unpinConversation(im.activePeer)
+    ElMessage.success('已取消置顶')
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '操作失败')
+  }
+}
+
+// ---------- 85 清空聊天记录 ----------
+
+async function clearHistory() {
+  const friend = im.activeFriend
+  if (!friend || !im.activePeer) {
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      '将清空你们双方的聊天记录（含置顶），且不可恢复。确定继续？',
+      '清空聊天记录',
+      { confirmButtonText: '清空', cancelButtonText: '取消', type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  try {
+    const deleted = await im.clearConversation(friend.username)
+    ElMessage.success(`已清空 ${deleted} 条消息`)
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '清空失败')
   }
 }
 
@@ -946,7 +1218,8 @@ async function confirmForward() {
   try {
     await im.forwardMessage(forwardChoice.value, message)
     forwardVisible.value = false
-    ElMessage.success(`已转发给 ${forwardChoice.value}`)
+    const target = im.friends.find((f) => f.username === forwardChoice.value)
+    ElMessage.success(`已转发给 ${target ? displayName(target) : forwardChoice.value}`)
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '转发失败')
   }
@@ -976,15 +1249,16 @@ async function openStars() {
   }
 }
 
-/** 37 导出聊天记录为 .txt */
+/** 37 导出聊天记录为 .txt（标题与发送者均按备注解析） */
 function exportHistory() {
   const peer = im.activePeer
   if (!peer) {
     return
   }
-  const lines: string[] = [`与 ${peer} 的聊天记录（导出于 ${new Date().toLocaleString()}）`, '']
+  const peerName = displayPeerName.value
+  const lines: string[] = [`与 ${peerName} 的聊天记录（导出于 ${new Date().toLocaleString()}）`, '']
   for (const m of im.activeMessages) {
-    const author = m.fromUser === auth.username ? '我' : m.fromUser
+    const author = m.fromUser === auth.username ? '我' : im.displayNameOf(m.fromUser)
     const time = new Date(m.created).toLocaleString()
     const body =
       m.status === 'RECALLED'
@@ -1000,7 +1274,7 @@ function exportHistory() {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `与${peer}的聊天记录.txt`
+  link.download = `与${peerName}的聊天记录.txt`
   link.click()
   URL.revokeObjectURL(url)
 }
@@ -1040,7 +1314,7 @@ async function toggleBlock(blocked: boolean) {
   }
   try {
     if (blocked) {
-      await ElMessageBox.confirm(`拉黑 ${friend.username} 后，双方都无法发送消息`, '拉黑好友', { type: 'warning' })
+      await ElMessageBox.confirm(`拉黑 ${displayName(friend)} 后，双方都无法发送消息`, '拉黑好友', { type: 'warning' })
     }
     await im.updateFriend(friend.id, { blocked })
     ElMessage.success(blocked ? '已拉黑' : '已解除拉黑')
@@ -1084,6 +1358,26 @@ async function onMenuCommand(command: string) {
   }
   if (command === 'export-json') {
     await exportHistoryJson()
+    return
+  }
+  // 95 附件面板
+  if (command === 'attachments') {
+    attachmentsVisible.value = true
+    return
+  }
+  // 24 收藏夹（此前菜单缺分支，点击无响应）
+  if (command === 'stars') {
+    await openStars()
+    return
+  }
+  // 27 拉黑/解除拉黑（此前菜单缺分支，点击无响应）
+  if (command === 'block') {
+    await toggleBlock(!friend.blocked)
+    return
+  }
+  // 85 清空聊天记录
+  if (command === 'clear-history') {
+    await clearHistory()
     return
   }
   // 72 分享好友名片
@@ -1136,7 +1430,7 @@ async function onMenuCommand(command: string) {
   }
   if (command === 'delete') {
     try {
-      await ElMessageBox.confirm(`删除好友 ${friend.username}？`, '删除好友', { type: 'warning' })
+      await ElMessageBox.confirm(`删除好友 ${displayName(friend)}？`, '删除好友', { type: 'warning' })
       await im.removeFriend(friend.id)
       ElMessage.success('已删除')
     } catch {
@@ -1235,6 +1529,12 @@ function onGlobalKeydown(event: KeyboardEvent) {
     }
     return
   }
+  if ((event.ctrlKey || event.metaKey) && (event.key === 'k' || event.key === 'K')) {
+    // 81 全局消息搜索：跨会话 Ctrl+K
+    event.preventDefault()
+    globalSearchVisible.value = true
+    return
+  }
   if ((event.ctrlKey || event.metaKey) && (event.key === 'f' || event.key === 'F')) {
     // 仅在聊天窗激活时接管 Ctrl+F
     if (im.activePeer) {
@@ -1279,7 +1579,8 @@ onUnmounted(() => {
 <style scoped>
 .im-page {
   display: flex;
-  height: 100vh;
+  /* 88 公告横幅出现时为它让出高度（MainLayout 注入 --arechat-banner） */
+  height: calc(100vh - var(--arechat-banner, 0px));
   background: var(--im-bg, #f7f8fa);
 }
 /* ---- 左：会话列表 ---- */
@@ -1444,6 +1745,98 @@ onUnmounted(() => {
 .load-more {
   align-self: center;
   color: var(--im-muted, #8f959e);
+}
+/* ---- 84 置顶横幅 ---- */
+.pin-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--im-panel, #fff);
+  border-bottom: 1px solid var(--im-border, #e6e8eb);
+  font-size: 12px;
+  color: var(--im-text-2, #51565f);
+}
+.pin-banner .el-icon {
+  color: var(--xx-accent, #3370ff);
+  flex-shrink: 0;
+}
+.pin-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* ---- 83 拖拽遮罩 ---- */
+.drop-overlay {
+  position: absolute;
+  inset: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px dashed var(--xx-accent, #3370ff);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--xx-accent, #3370ff) 8%, transparent);
+  color: var(--xx-accent, #3370ff);
+  font-size: 14px;
+  z-index: 15;
+  pointer-events: none;
+}
+/* ---- 95 附件面板 ---- */
+.attachment-grid {
+  margin-top: 12px;
+  min-height: 160px;
+  max-height: 420px;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+.attachment-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--im-border, #e6e8eb);
+  cursor: zoom-in;
+}
+.attachment-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--im-border, #e6e8eb);
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+.attachment-file:hover {
+  background: var(--im-hover, #f2f3f5);
+}
+.af-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.af-time {
+  font-size: 10px;
+  color: var(--im-muted, #8f959e);
+  flex-shrink: 0;
+}
+.attachment-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--im-muted, #8f959e);
+  font-size: 13px;
+  padding: 30px 0;
 }
 /* ---- 搜索浮层 ---- */
 .search-layer {

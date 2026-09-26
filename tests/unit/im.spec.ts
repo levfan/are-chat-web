@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useImStore } from '@/stores/im'
 import { friendApi, messageApi, profileApi } from '@/api/im'
+import { adminApi } from '@/api/auth'
 import { filesApi } from '@/api/files'
 import type { FriendVO, ImMessage } from '@/types'
 
@@ -26,6 +27,13 @@ vi.mock('@/api/im', () => ({
     toggleReaction: vi.fn(),
     toggleStar: vi.fn(),
     exportConversation: vi.fn(),
+    // 81/84/85/95 新接口
+    searchGlobal: vi.fn(),
+    pin: vi.fn(),
+    unpin: vi.fn(),
+    currentPin: vi.fn(),
+    clear: vi.fn(),
+    attachments: vi.fn(),
   },
   profileApi: {
     me: vi.fn(),
@@ -35,9 +43,6 @@ vi.mock('@/api/im', () => ({
   starsApi: {
     list: vi.fn(),
   },
-  statsApi: {
-    me: vi.fn(),
-  },
 }))
 
 vi.mock('@/api/files', () => ({
@@ -45,6 +50,32 @@ vi.mock('@/api/files', () => ({
     upload: vi.fn(),
     list: vi.fn(),
     remove: vi.fn(),
+  },
+}))
+
+vi.mock('@/api/auth', () => ({
+  authApi: {
+    login: vi.fn(),
+    register: vi.fn(),
+    smsCode: vi.fn(),
+    registerStatus: vi.fn(),
+    logout: vi.fn(),
+    me: vi.fn(),
+    changePassword: vi.fn(),
+    deactivate: vi.fn(),
+  },
+  adminApi: {
+    applications: vi.fn(),
+    approve: vi.fn(),
+    reject: vi.fn(),
+    pendingCount: vi.fn(),
+    users: vi.fn(),
+    setUserStatus: vi.fn(),
+    resetPassword: vi.fn(),
+    audit: vi.fn(),
+    announcements: vi.fn(),
+    publishAnnouncement: vi.fn(),
+    closeAnnouncement: vi.fn(),
   },
 }))
 
@@ -132,6 +163,7 @@ async function initStore(selfName = SELF) {
     presenceStatus: 'online',
   })
   mockedMarkRead.mockResolvedValue(undefined)
+  vi.mocked(messageApi.currentPin).mockResolvedValue(null)
 
   await im.init(selfName)
   FakeWebSocket.instances.at(-1)!.onopen?.()
@@ -374,5 +406,99 @@ describe('im store', () => {
     vi.mocked(friendApi.apply).mockRejectedValue(new Error('你们已经是好友了'))
 
     await expect(im.applyFriend(PEER)).rejects.toThrow('已经是好友')
+  })
+
+  it('82 sendFile 上传后以 JSON 卡片内容发送 file 消息', async () => {
+    const im = await initStore()
+    mockedHistory.mockResolvedValue([])
+    await im.openConversation(PEER)
+    mockedUpload.mockResolvedValue({
+      id: 'file-9',
+      originalName: '报告.pdf',
+      contentType: 'application/pdf',
+      size: 2048,
+      sha256: 'kkk',
+      deduplicated: false,
+      downloadUrl: '/api/files/file-9/download',
+      uploadedAt: Date.now(),
+    })
+    const saved = textMessage('file-1', SELF, PEER, 'ignored')
+    saved.msgType = 'file'
+    saved.content = JSON.stringify({ name: '报告.pdf', size: 2048, url: '/api/files/file-9/download' })
+    mockedSend.mockResolvedValue(saved)
+
+    const file = new File(['pdf-bytes'], '报告.pdf', { type: 'application/pdf' })
+    await im.sendFile(PEER, file)
+
+    expect(mockedUpload).toHaveBeenCalledWith(file)
+    expect(mockedSend).toHaveBeenCalledWith(
+      PEER,
+      JSON.stringify({ name: '报告.pdf', size: 2048, url: '/api/files/file-9/download' }),
+      'file',
+      null,
+    )
+    expect(im.activeMessages.at(-1)?.msgType).toBe('file')
+  })
+
+  it('84 置顶：接口写入 pinned，WS pin 推送同步当前会话', async () => {
+    const im = await initStore()
+    mockedHistory.mockResolvedValue([])
+    await im.openConversation(PEER)
+    vi.mocked(messageApi.pin).mockResolvedValue({ msgId: 'm-pin', createdBy: SELF })
+
+    await im.pinMessage(PEER, 'm-pin')
+    expect(im.pinned?.msgId).toBe('m-pin')
+
+    const socket = FakeWebSocket.instances.at(-1)!
+    // 对方把同一会话的置顶取消
+    socket.receive({ type: 'pin', peerA: SELF, peerB: PEER, pinned: false, msgId: null })
+    expect(im.pinned).toBeNull()
+
+    // 对方置顶了另一条
+    socket.receive({ type: 'pin', peerA: SELF, peerB: PEER, pinned: true, msgId: 'm-pin-2' })
+    expect(im.pinned?.msgId).toBe('m-pin-2')
+  })
+
+  it('78 管理员待办：WS 推送与轮询刷新 pendingCount', async () => {
+    const im = await initStore()
+    const socket = FakeWebSocket.instances.at(-1)!
+
+    socket.receive({ type: 'admin-pending', pendingCount: 3 })
+    expect(im.adminPending).toBe(3)
+
+    vi.mocked(adminApi.pendingCount).mockResolvedValue({ applications: 1 })
+    await im.refreshAdminPending()
+    expect(im.adminPending).toBe(1)
+  })
+
+  it('85 清空会话：接口返回删除数并清空本地消息', async () => {
+    const im = await initStore()
+    mockedHistory.mockResolvedValue([textMessage('c1', PEER, SELF, '将被清空')])
+    await im.openConversation(PEER)
+    vi.mocked(messageApi.clear).mockResolvedValue({ deleted: 2 })
+
+    const deleted = await im.clearConversation(PEER)
+
+    expect(deleted).toBe(2)
+    expect(vi.mocked(messageApi.clear)).toHaveBeenCalledWith(PEER)
+    expect(im.activeMessages).toHaveLength(0)
+  })
+
+  it('displayNameOf 备注优先；修改备注后立即以新名称解析（历史消息同源生效）', async () => {
+    const im = await initStore()
+    // 无备注：回退用户名
+    expect(im.displayNameOf(PEER)).toBe(PEER)
+    expect(im.displayNameOf('')).toBe('')
+
+    // 修改备注：loadFriends 拉回带新备注的好友列表
+    vi.mocked(friendApi.update).mockResolvedValue(undefined)
+    mockedFriendsList.mockResolvedValue([makeFriend({ remark: '老板' })])
+    await im.updateFriend('friend-1', { remark: '老板' })
+    expect(im.displayNameOf(PEER)).toBe('老板')
+
+    // 清空备注：回退用户名
+    mockedFriendsList.mockResolvedValue([makeFriend({ remark: '' })])
+    await im.updateFriend('friend-1', { remark: '' })
+    expect(im.displayNameOf(PEER)).toBe(PEER)
   })
 })
