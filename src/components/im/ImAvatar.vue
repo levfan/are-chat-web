@@ -22,6 +22,8 @@ import { avatarColorByKey } from '@/utils/imFormat'
 const props = withDefaults(
   defineProps<{
     name: string
+    /** 首字母覆盖：显示名（备注）与用户名不同时传入，颜色仍按 name 取值保持稳定 */
+    label?: string
     /** 头像底色档位（c0..c7），缺省按用户名取色 */
     color?: string
     online?: boolean
@@ -32,6 +34,7 @@ const props = withDefaults(
     halo?: boolean
   }>(),
   {
+    label: '',
     color: '',
     online: undefined,
     size: 40,
@@ -41,7 +44,7 @@ const props = withDefaults(
 )
 
 const bg = computed(() => avatarColorByKey(props.color, props.name))
-const initial = computed(() => props.name.trim().charAt(0).toUpperCase() || '?')
+const initial = computed(() => (props.label || props.name).trim().charAt(0).toUpperCase() || '?')
 
 const statusValue = computed(() => props.status || (props.online ? 'online' : 'offline'))
 const haloOn = computed(() => props.halo && props.online === true)

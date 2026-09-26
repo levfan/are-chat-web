@@ -1,4 +1,4 @@
-﻿import { expect, test, type Route, type WebSocketRoute } from '@playwright/test'
+import { expect, test, type Route, type WebSocketRoute } from '@playwright/test'
 
 // IM 好友私聊端到端：全部 mock 后端 API 与 WebSocket，单页验证交互流
 const SELF = 'alice'
@@ -63,6 +63,8 @@ test.describe('IM 会话', () => {
     await expect(page.getByTestId('chat-title')).toHaveText('老友')
     await expect(page.getByTestId('dm-area')).toContainText('在吗')
     await expect(page.getByTestId('dm-area')).toContainText('在的')
+    // 备注优先：历史消息气泡的发送者名显示备注而非用户名
+    await expect(page.getByTestId('dm-row').first()).toContainText('老友')
     await expect(page.getByTestId('unread-badge')).toHaveCount(0)
   })
 
@@ -154,8 +156,8 @@ test.describe('IM 会话', () => {
   })
 })
 
-test.describe('IM 好友', () => {
-  test('好友页同意申请并展示好友', async ({ page }) => {
+test.describe('IM 通讯录（原好友功能已合并）', () => {
+  test('通讯录同意申请并展示联系人', async ({ page }) => {
     const acceptPosts: string[] = []
     await page.routeWebSocket(/\/ws\/chat/, (ws) => {
       ws.onMessage((data) => {
@@ -182,9 +184,9 @@ test.describe('IM 好友', () => {
       route.fulfill({ status: 200, contentType: 'application/json;charset=UTF-8', body: JSON.stringify({ code: 0, message: 'ok', data: profile }) }),
     )
 
-    await page.goto('/friends')
+    await page.goto('/contacts')
     await expect(page.getByTestId('incoming-request')).toContainText(PEER)
-    await expect(page.getByTestId('friend-item')).toContainText('老友')
+    await expect(page.getByTestId('contact-item')).toContainText('老友')
 
     await page.getByTestId('accept-btn').click()
     expect(acceptPosts).toHaveLength(1)
@@ -225,7 +227,7 @@ test.describe('IM 好友', () => {
       route.fulfill({ status: 200, contentType: 'application/json;charset=UTF-8', body: JSON.stringify({ code: 0, message: 'ok', data: profile }) }),
     )
 
-    await page.goto('/friends')
+    await page.goto('/contacts')
     await page.getByTestId('add-friend-open').click()
     await page.getByTestId('add-friend-input').fill(PEER)
     await page.getByTestId('add-friend-btn').click()
@@ -379,5 +381,67 @@ test.describe('IM 新功能（第二轮 10 项）', () => {
     expect(sendPosts).toHaveLength(1)
     expect(sendPosts[0].replyToId).toBe('h1')
     await expect(page.getByTestId('quote-block').last()).toBeVisible()
+  })
+})
+
+test.describe('IM 备注同步（需求：改备注后全站旧名称全部换新）', () => {
+  test('改备注后会话标题与已加载的历史消息立即换成新名字', async ({ page }) => {
+    // 服务端好友列表带可变备注：PUT 改备注后再次拉取即返回新名字
+    let remark = ''
+    const putBodies: Array<{ remark?: string }> = []
+
+    await page.routeWebSocket(/\/ws\/chat/, (ws) => {
+      ws.onMessage((data) => {
+        const msg = JSON.parse(String(data))
+        if (msg.type === 'heart') {
+          ws.send(JSON.stringify({ type: 'heart-ack', ts: Date.now() }))
+        }
+      })
+    })
+    await page.route('**/api/friends/requests/*', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json;charset=UTF-8', body: JSON.stringify({ code: 0, message: 'ok', data: [] }) }),
+    )
+    await page.route('**/api/friends/*', async (route) => {
+      if (route.request().method() === 'PUT') {
+        putBodies.push(route.request().postDataJSON() as { remark?: string })
+        remark = (route.request().postDataJSON() as { remark?: string }).remark ?? ''
+        await route.fulfill({ status: 200, contentType: 'application/json;charset=UTF-8', body: JSON.stringify({ code: 0, message: 'ok', data: null }) })
+        return
+      }
+      await route.fallback()
+    })
+    await page.route('**/api/friends', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json;charset=UTF-8',
+        body: JSON.stringify({ code: 0, message: 'ok', data: [{ ...friend, remark }] }),
+      }),
+    )
+    await page.route('**/api/profile', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json;charset=UTF-8', body: JSON.stringify({ code: 0, message: 'ok', data: profile }) }),
+    )
+    await page.route('**/api/messages/*?*', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json;charset=UTF-8', body: JSON.stringify({ code: 0, message: 'ok', data: history }) }),
+    )
+
+    await page.goto('/chat')
+    await page.getByTestId('conv-item').click()
+    // 无备注：标题与历史消息都显示用户名
+    await expect(page.getByTestId('chat-title')).toHaveText(PEER)
+    await expect(page.getByTestId('dm-row').first()).toContainText(PEER)
+
+    // 会话菜单 → 设置备注 → 输入新名字
+    await page.getByTestId('chat-menu-btn').click()
+    await page.getByRole('menuitem', { name: '设置备注' }).click()
+    const promptInput = page.locator('.el-message-box__input input')
+    await promptInput.fill('老板')
+    await page.getByRole('button', { name: '确定' }).click()
+
+    // 免刷新：标题、已加载的历史消息、会话列表同步换成备注名
+    await expect(page.getByTestId('chat-title')).toHaveText('老板')
+    await expect(page.getByTestId('dm-row').first()).toContainText('老板')
+    await expect(page.getByTestId('conv-item')).toContainText('老板')
+    expect(putBodies).toHaveLength(1)
+    expect(putBodies[0].remark).toBe('老板')
   })
 })

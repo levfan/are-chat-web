@@ -1,15 +1,25 @@
 <template>
-  <div class="friends-page">
+  <div class="contacts-page">
     <el-card shadow="never" class="panel">
       <template #header>
         <div class="head">
           <span class="head-title">
-            好友
+            通讯录（{{ im.friends.length }}）
             <el-badge v-if="im.incoming.length" :value="im.incoming.length" class="head-badge" />
           </span>
-          <el-button type="primary" size="small" data-testid="add-friend-open" @click="dialogVisible = true">
-            <el-icon class="btn-ico"><Plus /></el-icon>添加好友
-          </el-button>
+          <div class="head-actions">
+            <el-input
+              v-model="keyword"
+              class="search"
+              placeholder="搜索联系人"
+              clearable
+              data-testid="contacts-search"
+              :prefix-icon="Search"
+            />
+            <el-button type="primary" size="small" data-testid="add-friend-open" @click="dialogVisible = true">
+              <el-icon class="btn-ico"><Plus /></el-icon>添加好友
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -45,7 +55,7 @@
       </section>
 
       <!-- 发出的申请 -->
-      <section v-if="im.outgoing.some((r) => r.status === 'PENDING')" class="section">
+      <section v-if="pendingOutgoing.length" class="section">
         <h4 class="section-title">等待对方同意</h4>
         <div v-for="req in pendingOutgoing" :key="req.id" class="request-item pending">
           <ImAvatar :name="req.toUser" :size="36" />
@@ -57,43 +67,53 @@
         </div>
       </section>
 
-      <!-- 好友列表 -->
-      <section class="section">
-        <h4 class="section-title">我的好友（{{ im.friends.length }}）</h4>
-        <div v-if="im.friends.length === 0" class="empty" data-testid="friend-empty">
-          <p>还没有好友，点击右上角「添加好友」发起申请</p>
-        </div>
-        <div v-for="friend in im.friends" :key="friend.id" class="friend-item" data-testid="friend-item">
-          <ImAvatar :name="friend.username" :online="friend.online" :size="42" :status="friend.status" halo />
-          <div class="friend-main">
-            <div class="friend-name">
-              {{ friend.remark || friend.username }}
-              <span v-if="friend.remark" class="friend-origin">{{ friend.username }}</span>
+      <div v-if="im.friends.length === 0" class="empty" data-testid="contacts-empty">
+        <el-empty description="暂无联系人，点击右上角「添加好友」发起申请" />
+      </div>
+
+      <template v-for="group in groups" :key="group.letter">
+        <div class="letter" data-testid="contacts-letter">{{ group.letter }}</div>
+        <div
+          v-for="friend in group.items"
+          :key="friend.id"
+          class="contact-item"
+          data-testid="contact-item"
+        >
+          <ImAvatar
+            :name="friend.username"
+            :label="displayName(friend)"
+            :online="friend.online"
+            :size="42"
+            :status="friend.status"
+            halo
+          />
+          <div class="contact-main">
+            <div class="contact-name">
+              {{ displayName(friend) }}
+              <span v-if="friend.remark" class="contact-origin">{{ friend.username }}</span>
               <el-tag v-if="friend.tag" size="small" effect="plain" data-testid="friend-tag">{{ friend.tag }}</el-tag>
               <el-tag v-if="friend.pinned" size="small" type="warning" effect="plain">置顶</el-tag>
               <el-tag v-if="friend.muted" size="small" type="info" effect="plain">免打扰</el-tag>
-              <el-tag v-if="presenceBadge(friend)" size="small" type="info" effect="dark" data-testid="presence-badge">
-                {{ presenceBadge(friend) }}
-              </el-tag>
             </div>
-            <div class="friend-status">
-              {{ friend.online ? presenceBadge(friend) || '在线' : formatLastSeen(friend.lastSeenAt, false) }}
-              <span v-if="friend.lastMessage" class="last-preview">
-                · {{ previewText(friend) }}
-              </span>
+            <div v-if="friend.online" class="contact-status online" data-testid="contact-online">
+              {{ presenceLabel(friend) }}
+            </div>
+            <div v-else class="contact-status">
+              {{ formatLastSeen(friend.lastSeenAt, false) }}
             </div>
           </div>
-          <div class="friend-actions">
+          <div class="contact-actions">
             <el-button
               type="primary"
               size="small"
-              :data-testid="`friend-chat-${friend.username}`"
+              plain
+              :data-testid="`contact-chat-${friend.username}`"
               @click="goChat(friend.username)"
             >
               发消息
             </el-button>
             <el-dropdown trigger="click" @command="(cmd: string) => onCommand(cmd, friend)">
-              <el-button size="small" class="more-btn">
+              <el-button size="small" class="more-btn" :data-testid="`contact-more-${friend.username}`">
                 <el-icon><MoreFilled /></el-icon>
               </el-button>
               <template #dropdown>
@@ -101,7 +121,7 @@
                   <el-dropdown-item command="profile">
                     <el-icon><User /></el-icon>资料卡
                   </el-dropdown-item>
-                  <el-dropdown-item command="remark">
+                  <el-dropdown-item command="remark" data-testid="contact-remark-item">
                     <el-icon><EditPen /></el-icon>设置备注
                   </el-dropdown-item>
                   <el-dropdown-item command="tag">
@@ -112,7 +132,7 @@
                     {{ friend.muted ? '关闭免打扰' : '免打扰' }}
                   </el-dropdown-item>
                   <el-dropdown-item command="pin">{{ friend.pinned ? '取消置顶' : '置顶会话' }}</el-dropdown-item>
-                  <el-dropdown-item command="delete" divided>
+                  <el-dropdown-item command="delete" divided data-testid="contact-delete-item">
                     <el-icon><Delete /></el-icon>删除好友
                   </el-dropdown-item>
                 </el-dropdown-menu>
@@ -120,7 +140,7 @@
             </el-dropdown>
           </div>
         </div>
-      </section>
+      </template>
     </el-card>
 
     <!-- 添加好友对话框 -->
@@ -179,7 +199,7 @@
 
     <!-- 资料卡 -->
     <el-dialog v-model="profileVisible" title="资料卡" width="360px">
-      <div v-loading="profileLoading" class="profile-card">
+      <div v-loading="profileLoading" class="profile-card" data-testid="profile-card">
         <template v-if="viewingProfile">
           <ImAvatar :name="viewingProfile.username" :color="viewingProfile.avatar" :size="72" />
           <div class="card-name">{{ viewingProfile.nickname }}</div>
@@ -195,7 +215,17 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Bell, Collection, Delete, EditPen, MoreFilled, MuteNotification, Plus, User } from '@element-plus/icons-vue'
+import {
+  Bell,
+  Collection,
+  Delete,
+  EditPen,
+  MoreFilled,
+  MuteNotification,
+  Plus,
+  Search,
+  User,
+} from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useImStore } from '@/stores/im'
 import { friendApi, profileApi } from '@/api/im'
@@ -206,6 +236,10 @@ import type { FriendRelation, FriendSuggestion, FriendVO, UserProfileVO } from '
 const auth = useAuthStore()
 const im = useImStore()
 const router = useRouter()
+
+const keyword = ref('')
+
+// ---------- 添加好友 ----------
 
 const dialogVisible = ref(false)
 const applyName = ref('')
@@ -260,18 +294,18 @@ function relationLabel(relation: FriendRelation): string {
 
 /** el-autocomplete 的候选抓取：优先走后端，后端不可用时退回本地体验账号表 */
 async function fetchSuggestions(query: string, cb: (items: SuggestionItem[]) => void) {
-  const keyword = query.trim()
+  const kw = query.trim()
   const toItems = (list: FriendSuggestion[]): SuggestionItem[] =>
     list
       .filter((s) => s.username !== auth.username)
       .map((s) => ({ value: s.username, username: s.username, phone: s.phone ?? '', relation: s.relation }))
   try {
-    const list = await friendApi.suggest(keyword)
+    const list = await friendApi.suggest(kw)
     lastSuggestions.value = list
     cb(toItems(list))
   } catch {
     const fallback: FriendSuggestion[] = FALLBACK_ACCOUNTS.filter(
-      (name) => name.includes(keyword.toLowerCase()) && name !== auth.username,
+      (name) => name.includes(kw.toLowerCase()) && name !== auth.username,
     ).map((name) => ({ username: name, phone: '', relation: 'available' as FriendRelation }))
     lastSuggestions.value = fallback
     cb(toItems(fallback))
@@ -280,38 +314,6 @@ async function fetchSuggestions(query: string, cb: (items: SuggestionItem[]) => 
 
 function onPickSuggestion(item: Record<string, any>) {
   applyName.value = String(item.username ?? item.value ?? '')
-}
-
-/** 43 在线好友的 presence 状态徽标（忙碌/离开） */
-function presenceBadge(friend: FriendVO): string {
-  if (!friend.online) {
-    return ''
-  }
-  if (friend.status === 'busy') {
-    return '忙碌'
-  }
-  if (friend.status === 'away') {
-    return '离开'
-  }
-  return ''
-}
-
-function previewText(friend: FriendVO) {
-  const last = friend.lastMessage
-  if (!last) {
-    return ''
-  }
-  if (last.msgType === 'poke') {
-    return '[拍一拍]'
-  }
-  if (last.msgType === 'image') {
-    return '[图片]'
-  }
-  return last.content
-}
-
-function goChat(username: string) {
-  void router.push({ path: '/chat', query: { peer: username } })
 }
 
 async function onApply() {
@@ -337,6 +339,8 @@ async function onApply() {
     ElMessage.error(e instanceof Error ? e.message : '申请失败')
   }
 }
+
+// ---------- 申请处理 ----------
 
 async function onAccept(id: string) {
   if (processingId.value) {
@@ -367,6 +371,49 @@ async function onReject(id: string) {
   }
 }
 
+// ---------- 联系人列表 ----------
+
+function displayName(friend: FriendVO) {
+  return friend.remark || friend.username
+}
+
+function presenceLabel(friend: FriendVO) {
+  if (friend.status === 'busy') return '忙碌'
+  if (friend.status === 'away') return '离开'
+  return '在线'
+}
+
+/** 97 A–Z 分组 + # 兜底（恒在最后），组内按中文拼音排序 */
+const groups = computed(() => {
+  const q = keyword.value.trim().toLowerCase()
+  const matched = im.friends.filter(
+    (f) => !q || displayName(f).toLowerCase().includes(q) || f.username.toLowerCase().includes(q),
+  )
+  const collator = new Intl.Collator('zh-Hans-CN-u-co-pinyin', { numeric: true })
+  const sorted = [...matched].sort((a, b) => collator.compare(displayName(a), displayName(b)))
+  const map = new Map<string, FriendVO[]>()
+  for (const friend of sorted) {
+    const first = displayName(friend).charAt(0).toUpperCase()
+    const letter = /[A-Z]/.test(first) ? first : '#'
+    const bucket = map.get(letter)
+    if (bucket) bucket.push(friend)
+    else map.set(letter, [friend])
+  }
+  const keys = [...map.keys()].sort((a, b) => {
+    // # 组固定排在字母组之后
+    if (a === '#') return 1
+    if (b === '#') return -1
+    return a.localeCompare(b)
+  })
+  return keys.map((letter) => ({ letter, items: map.get(letter)! }))
+})
+
+function goChat(username: string) {
+  void router.push({ path: '/chat', query: { peer: username } })
+}
+
+// ---------- 联系人管理操作（原「好友」页迁移） ----------
+
 async function onCommand(command: string, friend: FriendVO) {
   if (command === 'profile') {
     profileVisible.value = true
@@ -390,6 +437,7 @@ async function onCommand(command: string, friend: FriendVO) {
         inputErrorMessage: '最长 32 个字',
       })
       await im.updateFriend(friend.id, { remark: value?.trim() ?? '' })
+      ElMessage.success('备注已保存，全站名称已同步更新')
     } catch {
       // 用户取消
     }
@@ -425,7 +473,7 @@ async function onCommand(command: string, friend: FriendVO) {
   }
   if (command === 'delete') {
     try {
-      await ElMessageBox.confirm(`删除好友 ${friend.username}？聊天记录仍在，但会话将消失。`, '删除好友', {
+      await ElMessageBox.confirm(`删除好友 ${displayName(friend)}？聊天记录仍在，但会话将消失。`, '删除好友', {
         type: 'warning',
       })
       await im.removeFriend(friend.id)
@@ -442,22 +490,34 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.friends-page {
-  padding: 16px;
-  max-width: 760px;
+.contacts-page {
+  padding: 16px 20px 24px;
+  max-width: 860px;
   margin: 0 auto;
+}
+.panel {
+  border-radius: 12px;
 }
 .head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 .head-title {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
   font-weight: 600;
+  font-size: 15px;
+}
+.head-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.search {
+  width: 200px;
 }
 .btn-ico {
   margin-right: 4px;
@@ -471,8 +531,7 @@ onMounted(() => {
   margin: 0 0 8px;
   font-weight: 500;
 }
-.request-item,
-.friend-item {
+.request-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -480,57 +539,92 @@ onMounted(() => {
   border-radius: 10px;
   transition: background 0.12s ease;
 }
-.request-item:hover,
-.friend-item:hover {
+.request-item:hover {
   background: var(--im-hover, #f2f3f5);
 }
-.request-main,
-.friend-main {
+.request-main {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.request-name,
-.friend-name {
+.request-name {
   font-size: 14px;
   font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
-.friend-origin {
+.request-note {
   font-size: 12px;
-  color: var(--im-muted, #8f959e);
-  font-weight: 400;
-}
-.request-time,
-.friend-status {
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-}
-.last-preview {
+  color: var(--im-text-2, #51565f);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 260px;
-  display: inline-block;
-  vertical-align: bottom;
+  max-width: 280px;
 }
-.friend-actions {
+.request-time {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.empty {
+  padding: 24px 0;
+}
+.letter {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--el-text-color-secondary);
+  padding: 10px 4px 4px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px dashed var(--el-border-color-lighter);
+  transition: background 0.12s ease;
+}
+.contact-item:hover {
+  background: var(--im-hover, #f7f8fa);
+}
+.contact-item:last-child {
+  border-bottom: none;
+}
+.contact-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.contact-name {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contact-origin {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--el-text-color-secondary);
+}
+.contact-status {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.contact-status.online {
+  color: var(--el-color-success);
+}
+.contact-actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .more-btn {
   padding: 5px 8px;
-}
-.empty {
-  text-align: center;
-  color: var(--im-muted, #8f959e);
-  font-size: 13px;
-  padding: 26px 0;
 }
 .apply-tip {
   font-size: 12px;
@@ -604,19 +698,6 @@ onMounted(() => {
 .account-chip:hover {
   border-color: var(--xx-accent, #3370ff);
   color: var(--xx-accent, #3370ff);
-}
-.account-chip.picked {
-  border-color: var(--xx-accent, #3370ff);
-  background: var(--xx-accent-soft, rgba(51, 112, 255, 0.1));
-  color: var(--xx-accent, #3370ff);
-}
-.request-note {
-  font-size: 12px;
-  color: var(--im-text-2, #51565f);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 280px;
 }
 .profile-card {
   display: flex;
