@@ -112,10 +112,10 @@
         <span v-else class="text">{{ message.content }}</span>
       </div>
 
-      <!-- 表情回应 chips -->
+      <!-- 表情回应 chips：超过 4 种折叠为 +N，点击展开/收起，避免撑长消息 -->
       <div v-if="reactions.length > 0" class="reactions" data-testid="reaction-list">
         <button
-          v-for="chip in reactions"
+          v-for="chip in visibleReactions"
           :key="chip.emoji"
           class="reaction-chip"
           :class="{ mine: chip.mine }"
@@ -125,6 +125,16 @@
         >
           <span class="chip-emoji">{{ chip.emoji }}</span>
           <span v-if="chip.count > 1" class="chip-count">{{ chip.count }}</span>
+        </button>
+        <button
+          v-if="foldedReactions.length > 0"
+          class="reaction-chip reaction-fold"
+          :class="{ mine: foldedMine }"
+          :title="foldedSummary"
+          data-testid="reaction-fold"
+          @click="reactionsExpanded = !reactionsExpanded"
+        >
+          <span class="chip-emoji">{{ reactionsExpanded ? '收起' : `+${foldedCount}` }}</span>
         </button>
       </div>
 
@@ -475,6 +485,20 @@ const reactions = computed(() => {
   return grouped
 })
 
+/** 回应折叠：最多直接展示 4 种表情，其余折叠为 +N（点击展开/收起），避免撑长消息 */
+const REACTION_VISIBLE_LIMIT = 4
+const reactionsExpanded = ref(false)
+const visibleReactions = computed(() =>
+  reactionsExpanded.value ? reactions.value : reactions.value.slice(0, REACTION_VISIBLE_LIMIT),
+)
+const foldedReactions = computed(() => reactions.value.slice(REACTION_VISIBLE_LIMIT))
+const foldedCount = computed(() => foldedReactions.value.reduce((sum, chip) => sum + chip.count, 0))
+/** 折叠部分包含我的回应时高亮 +N，提示自己也在里面 */
+const foldedMine = computed(() => foldedReactions.value.some((chip) => chip.mine))
+const foldedSummary = computed(() =>
+  foldedReactions.value.map((chip) => `${chip.emoji}×${chip.count}（${chip.names}）`).join('、'),
+)
+
 const quoteText = computed(() => {
   const target = props.replyTarget
   if (!target) {
@@ -655,6 +679,10 @@ const quoteText = computed(() => {
 }
 .chip-count {
   font-size: 11px;
+}
+.reaction-fold {
+  color: var(--im-muted, #8f959e);
+  font-weight: 600;
 }
 .sending {
   display: flex;
