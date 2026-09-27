@@ -31,14 +31,6 @@
         maxlength="100"
         data-testid="signature-input"
       />
-      <div class="presence-row">
-        <span class="presence-label">在线状态</span>
-        <el-radio-group v-model="draftStatus" data-testid="presence-select">
-          <el-radio-button value="online">在线</el-radio-button>
-          <el-radio-button value="busy">忙碌</el-radio-button>
-          <el-radio-button value="away">离开</el-radio-button>
-        </el-radio-group>
-      </div>
 
       <el-divider class="divider" />
 
@@ -279,8 +271,6 @@ const visible = ref(props.modelValue)
 const draftAvatar = ref('c0')
 const draftNickname = ref('')
 const draftSignature = ref('')
-const draftStatus = ref<'online' | 'busy' | 'away'>('online')
-
 // 外观/行为设置草稿（即时生效，不占用保存按钮）
 const draftSkin = ref(currentSkin())
 const draftBg = ref(currentBackground())
@@ -331,7 +321,6 @@ watch(
       draftAvatar.value = isAvatarColorKey(im.myProfile.avatar) ? (im.myProfile.avatar as string) : 'c0'
       draftNickname.value = im.myProfile.nickname
       draftSignature.value = im.myProfile.signature
-      draftStatus.value = im.myProfile.presenceStatus ?? 'online'
       draftSkin.value = currentSkin()
       draftBg.value = currentBackground()
       draftFont.value = currentFont()
@@ -451,7 +440,6 @@ async function onSave() {
       nickname: draftNickname.value.trim(),
       signature: draftSignature.value.trim(),
       avatar: draftAvatar.value,
-      presenceStatus: draftStatus.value,
     })
     ElMessage.success('资料已更新')
     visible.value = false
@@ -502,15 +490,6 @@ async function onSave() {
 .color-option.picked {
   border-color: var(--xx-text, #1f2329);
   box-shadow: inset 0 0 0 2px var(--im-panel, #fff);
-}
-.presence-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.presence-label {
-  font-size: 14px;
-  color: var(--xx-text-2, #51565f);
 }
 .divider {
   margin: 2px 0;
