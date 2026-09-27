@@ -8,10 +8,12 @@ import type {
   CoupleIntimacyVO,
   CoupleItemKind,
   CoupleItemVO,
+  CoupleLetterVO,
   CoupleMoodDayVO,
   CoupleMoodKind,
   CoupleOverview,
   CouplePromiseVO,
+  CoupleQuestionHistoryVO,
   CoupleQuestionVO,
   CoupleTimelineDay,
 } from '@/types'
@@ -43,6 +45,8 @@ export const useCoupleStore = defineStore('couple', () => {
   const moods = ref<CoupleMoodDayVO[]>([])
   const timeline = ref<CoupleTimelineDay[]>([])
   const intimacy = ref<CoupleIntimacyVO | null>(null)
+  const letters = ref<CoupleLetterVO[]>([])
+  const questionHistory = ref<CoupleQuestionHistoryVO[]>([])
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -52,6 +56,7 @@ export const useCoupleStore = defineStore('couple', () => {
     moods: false,
     timeline: false,
     intimacy: false,
+    letters: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -67,6 +72,8 @@ export const useCoupleStore = defineStore('couple', () => {
   const outgoingInvite = computed(() => outgoingInvites.value[0] ?? null)
   const checkins = computed(() => overview.value?.checkins ?? null)
   const overdueCount = computed(() => overview.value?.overdueCount ?? 0)
+  /** 我可以拆但还没拆的悄悄话数（信箱 tab 红点） */
+  const letterUnread = computed(() => overview.value?.letterUnread ?? 0)
 
   let loading = false
 
@@ -99,6 +106,8 @@ export const useCoupleStore = defineStore('couple', () => {
     moods.value = []
     timeline.value = []
     intimacy.value = null
+    letters.value = []
+    questionHistory.value = []
     loadedLists.value = {
       promises: false,
       question: false,
@@ -107,6 +116,7 @@ export const useCoupleStore = defineStore('couple', () => {
       moods: false,
       timeline: false,
       intimacy: false,
+      letters: false,
     }
     promiseDraft.value = null
   }
@@ -267,6 +277,35 @@ export const useCoupleStore = defineStore('couple', () => {
     loadedLists.value.intimacy = true
   }
 
+  // ---------- 悄悄话信箱 / 一问历史 ----------
+
+  async function loadLetters() {
+    letters.value = (await coupleApi.letters()) ?? []
+    loadedLists.value.letters = true
+  }
+
+  /** 写一封悄悄话（deliverAt 毫秒时间戳，空 = 立即可拆），保存后刷新列表与总览红点 */
+  async function createLetter(content: string, deliverAt?: number | null) {
+    const vo = await coupleApi.createLetter(content, deliverAt)
+    await Promise.all([loadLetters(), loadOverview()])
+    return vo
+  }
+
+  async function openLetter(id: string) {
+    const vo = await coupleApi.openLetter(id)
+    await Promise.all([loadLetters(), loadOverview()])
+    return vo
+  }
+
+  async function deleteLetter(id: string) {
+    await coupleApi.deleteLetter(id)
+    await loadLetters()
+  }
+
+  async function loadQuestionHistory() {
+    questionHistory.value = (await coupleApi.questionHistory()) ?? []
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -345,6 +384,22 @@ export const useCoupleStore = defineStore('couple', () => {
           void loadIntimacy()
         }
         break
+      case 'letter-created':
+        notify('💌 悄悄话', msg.detail)
+        void loadOverview()
+        if (loadedLists.value.letters) {
+          void loadLetters()
+        }
+        break
+      case 'letter-opened':
+        notify('💌 悄悄话', msg.detail)
+        if (loadedLists.value.letters) {
+          void loadLetters()
+        }
+        break
+      case 'anniversary-reminder':
+        notify('📅 纪念日提醒', msg.detail)
+        break
       default:
         break
     }
@@ -359,6 +414,8 @@ export const useCoupleStore = defineStore('couple', () => {
     moods,
     timeline,
     intimacy,
+    letters,
+    questionHistory,
     promiseDraft,
     space,
     established,
@@ -368,6 +425,7 @@ export const useCoupleStore = defineStore('couple', () => {
     outgoingInvite,
     checkins,
     overdueCount,
+    letterUnread,
     init,
     reset,
     loadOverview,
@@ -397,5 +455,10 @@ export const useCoupleStore = defineStore('couple', () => {
     saveMood,
     loadTimeline,
     loadIntimacy,
+    loadLetters,
+    createLetter,
+    openLetter,
+    deleteLetter,
+    loadQuestionHistory,
   }
 })

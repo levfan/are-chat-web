@@ -43,6 +43,11 @@ vi.mock('@/api/couple', () => ({
       nextLevelAt: 50,
       breakdown: { morningDays: 0, nightDays: 0, questionDays: 0, promiseDone: 0, itemDone: 0, moodDays: 0 },
     }),
+    letters: vi.fn().mockResolvedValue([]),
+    createLetter: vi.fn(),
+    openLetter: vi.fn(),
+    deleteLetter: vi.fn(),
+    questionHistory: vi.fn().mockResolvedValue([]),
   },
 }))
 
@@ -148,6 +153,7 @@ function overview(partial: Partial<CoupleOverview>): CoupleOverview {
     outgoing: [],
     checkins: null,
     overdueCount: 0,
+    letterUnread: 0,
     ...partial,
   }
 }

@@ -116,7 +116,40 @@
           {{ question?.myAnswer ? '更新' : '回答' }}
         </el-button>
       </div>
+      <div class="history-row">
+        <el-button link type="primary" size="small" data-testid="couple-question-history" @click="openHistory">
+          📜 翻看历史回顾（最近 30 天）
+        </el-button>
+      </div>
     </div>
+
+    <!-- 一问历史回顾弹窗 -->
+    <el-dialog v-model="historyVisible" title="📜 一问历史回顾" width="560px" draggable data-testid="couple-history-dialog">
+      <el-empty
+        v-if="!couple.questionHistory.length"
+        description="最近 30 天还没有拼成过问答，每天双方都回答后就会存档在这里"
+        :image-size="70"
+      />
+      <div v-else class="history-list">
+        <div v-for="item in couple.questionHistory" :key="item.day" class="history-item">
+          <div class="history-head">
+            <span class="history-day">{{ item.day }}</span>
+            <span class="history-topic">{{ item.topic }}</span>
+          </div>
+          <p class="history-question">{{ item.question }}</p>
+          <div class="history-answers">
+            <div class="history-answer" :class="{ filled: !!item.myAnswer }">
+              <span class="history-owner">我</span>
+              <span>{{ item.myAnswer }}</span>
+            </div>
+            <div class="history-answer" :class="{ filled: !!item.partnerAnswer }">
+              <span class="history-owner">TA</span>
+              <span>{{ item.partnerAnswer }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -130,6 +163,7 @@ const couple = useCoupleStore()
 
 const answerText = ref('')
 const answering = ref(false)
+const historyVisible = ref(false)
 
 const state = computed(() => couple.checkins)
 const question = computed(() => couple.question)
@@ -200,6 +234,16 @@ async function onAnswer() {
 onMounted(() => {
   void couple.loadQuestion()
 })
+
+/** 打开一问历史回顾：每次打开都拉最新存档 */
+async function openHistory() {
+  historyVisible.value = true
+  try {
+    await couple.loadQuestionHistory()
+  } catch {
+    // 弹窗里已有空态兜底
+  }
+}
 </script>
 
 <style scoped>
@@ -414,5 +458,72 @@ onMounted(() => {
 .answer-input-row {
   display: flex;
   gap: 8px;
+}
+.history-row {
+  display: flex;
+  justify-content: flex-end;
+}
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.history-item {
+  border: 1px solid var(--el-border-color-lighter, #ebeef5);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.history-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.history-day {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--el-color-primary, #409eff);
+}
+.history-topic {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 8px;
+  background: var(--el-color-primary-light-9, #ecf5ff);
+  color: var(--im-muted, #8f959e);
+}
+.history-question {
+  margin: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.history-answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .history-answers {
+    grid-template-columns: 1fr;
+  }
+}
+.history-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--el-fill-color-lighter, #fafafa);
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: break-all;
+}
+.history-answer.filled {
+  background: rgba(245, 108, 108, 0.08);
+}
+.history-owner {
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
 }
 </style>

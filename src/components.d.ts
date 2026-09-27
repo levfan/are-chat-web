@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    CoupleLetter: typeof import('./components/couple/CoupleLetter.vue')['default']
     CoupleMood: typeof import('./components/couple/CoupleMood.vue')['default']
     CouplePromises: typeof import('./components/couple/CouplePromises.vue')['default']
     CoupleRituals: typeof import('./components/couple/CoupleRituals.vue')['default']

@@ -6,11 +6,13 @@ import type {
   CoupleIntimacyVO,
   CoupleInviteVO,
   CoupleItemVO,
+  CoupleLetterVO,
   CoupleMoodDayVO,
   CoupleMoodKind,
   CoupleMoodVO,
   CoupleOverview,
   CouplePromiseVO,
+  CoupleQuestionHistoryVO,
   CoupleQuestionVO,
   CoupleSpaceVO,
   CoupleTimelineDay,
@@ -71,4 +73,18 @@ export const coupleApi = {
 
   // ---------- 心动值 & 恋爱等级 ----------
   intimacy: () => http.get<CoupleIntimacyVO>('/api/couple/intimacy'),
+
+  // ---------- 悄悄话信箱 ----------
+  /** 写一封悄悄话：deliverAt 空 = 立即可拆，非空 = 慢递（未来 7 天内，毫秒时间戳） */
+  createLetter: (content: string, deliverAt?: number | null) =>
+    http.postJson<CoupleLetterVO>('/api/couple/letters', { content, deliverAt: deliverAt ?? null }),
+  /** 信箱列表（发件+收件，新→旧；未到期慢递对收件人隐藏内容） */
+  letters: () => http.get<CoupleLetterVO[]>('/api/couple/letters'),
+  openLetter: (id: string) => http.postJson<CoupleLetterVO>(`/api/couple/letters/${id}/open`, {}),
+  deleteLetter: (id: string) => http.delete<void>(`/api/couple/letters/${id}`),
+
+  // ---------- 今日一问历史 ----------
+  /** 双方都回答过的一问存档（最近 N 天，1-90 默认 30，新→旧） */
+  questionHistory: (days = 30) =>
+    http.get<CoupleQuestionHistoryVO[]>(`/api/couple/questions/history?days=${days}`),
 }

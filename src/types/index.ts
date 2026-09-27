@@ -352,6 +352,8 @@ export interface CoupleOverview {
   checkins: CoupleCheckinStateVO | null
   /** 我还没兑现的逾期约定数（「还有 N 件事你没做到哦~」提醒条） */
   overdueCount: number
+  /** 我可以拆但还没拆的悄悄话数（信箱 tab 红点） */
+  letterUnread: number
 }
 
 export interface CouplePromiseVO {
@@ -456,4 +458,36 @@ export interface CoupleIntimacyVO {
   /** 下一等级所需分数，满级为 null */
   nextLevelAt: number | null
   breakdown: CoupleIntimacyBreakdown
+}
+
+// ============ 情侣空间：悄悄话信箱 / 一问历史 ============
+
+/** 信件状态 */
+export type CoupleLetterStatus = 'SEALED' | 'OPENED'
+
+export interface CoupleLetterVO {
+  id: string
+  /** 发件人用户名；收件人就是空间里的另一个人 */
+  sender: string
+  /**
+   * 信件内容。未到点的慢递对收件人隐藏（null，前端显示 🔒）；
+   * 发件人始终能看到自己写的内容
+   */
+  content: string | null
+  /** 可拆封时间（毫秒，null = 立即可拆） */
+  deliverAt: number | null
+  status: CoupleLetterStatus
+  openedAt: number | null
+  /** true = 未到点的慢递（收件人还不能拆） */
+  locked: boolean
+  created: number
+}
+
+/** 今日一问历史（按天拼好的双方回答） */
+export interface CoupleQuestionHistoryVO {
+  day: string
+  topic: string
+  question: string
+  myAnswer: string | null
+  partnerAnswer: string | null
 }

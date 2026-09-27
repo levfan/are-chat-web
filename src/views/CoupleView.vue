@@ -77,6 +77,9 @@
           <el-tab-pane label="🌅 小仪式" name="rituals" lazy>
             <CoupleRituals />
           </el-tab-pane>
+          <el-tab-pane :label="letterTabLabel" name="letters" lazy>
+            <CoupleLetter />
+          </el-tab-pane>
           <el-tab-pane label="💗 心情" name="mood" lazy>
             <CoupleMood />
           </el-tab-pane>
@@ -113,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { EditPen } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -123,6 +126,7 @@ import ImAvatar from '@/components/im/ImAvatar.vue'
 import CoupleSetup from '@/components/couple/CoupleSetup.vue'
 import CouplePromises from '@/components/couple/CouplePromises.vue'
 import CoupleRituals from '@/components/couple/CoupleRituals.vue'
+import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'
 import CoupleTimeline from '@/components/couple/CoupleTimeline.vue'
@@ -135,6 +139,11 @@ const activeTab = ref('promises')
 const annivEditVisible = ref(false)
 const annivEditDate = ref<string | null>(null)
 const savingAnniv = ref(false)
+
+/** 悄悄话 tab 标题：有可拆未拆的信时带数量红点 */
+const letterTabLabel = computed(() =>
+  couple.letterUnread > 0 ? `💌 悄悄话 ${couple.letterUnread}` : '💌 悄悄话',
+)
 
 function openAnnivEdit() {
   annivEditDate.value = couple.space?.anniversary ?? null
@@ -175,7 +184,7 @@ async function onDissolve() {
 onMounted(() => {
   // 聊天「记入约定」跳转：?tab=promises 直接定位到约定页
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
-  if (['promises', 'rituals', 'mood', 'shared', 'timeline'].includes(tab)) {
+  if (['promises', 'rituals', 'letters', 'mood', 'shared', 'timeline'].includes(tab)) {
     activeTab.value = tab
   }
   // MainLayout 已在登录后 init 过：这里兜底刷新总览（邀请状态可能变化）
