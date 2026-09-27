@@ -11,8 +11,11 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    CoupleCityCard: typeof import('./components/couple/CoupleCityCard.vue')['default']
+    CoupleFund: typeof import('./components/couple/CoupleFund.vue')['default']
     CoupleLetter: typeof import('./components/couple/CoupleLetter.vue')['default']
     CoupleMood: typeof import('./components/couple/CoupleMood.vue')['default']
+    CouplePact: typeof import('./components/couple/CouplePact.vue')['default']
     CouplePromises: typeof import('./components/couple/CouplePromises.vue')['default']
     CoupleRituals: typeof import('./components/couple/CoupleRituals.vue')['default']
     CoupleSetup: typeof import('./components/couple/CoupleSetup.vue')['default']
@@ -36,9 +39,11 @@ declare module 'vue' {
     ElIcon: typeof import('element-plus/es')['ElIcon']
     ElImage: typeof import('element-plus/es')['ElImage']
     ElInput: typeof import('element-plus/es')['ElInput']
+    ElInputNumber: typeof import('element-plus/es')['ElInputNumber']
     ElMain: typeof import('element-plus/es')['ElMain']
     ElOption: typeof import('element-plus/es')['ElOption']
     ElPopover: typeof import('element-plus/es')['ElPopover']
+    ElProgress: typeof import('element-plus/es')['ElProgress']
     ElRadio: typeof import('element-plus/es')['ElRadio']
     ElRadioButton: typeof import('element-plus/es')['ElRadioButton']
     ElRadioGroup: typeof import('element-plus/es')['ElRadioGroup']

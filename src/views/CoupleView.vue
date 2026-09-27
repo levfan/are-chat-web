@@ -5,8 +5,9 @@
 
     <!-- 已建立：空间主页 -->
     <div v-else class="space-page" data-testid="couple-space">
-      <!-- 头部：双方头像 + 在一起天数 + 关系操作 -->
-      <el-card shadow="never" class="panel header-card">
+      <!-- 头部：双方头像 + 在一起天数 + 关系操作（互道早安达成 → 当日专属背景自动点亮） -->
+      <el-card shadow="never" class="panel header-card" :class="{ themed: morningUnlocked }"
+               :style="morningUnlocked ? { background: themeGradient } : undefined">
         <div class="header-row">
           <div class="pair">
             <ImAvatar :name="auth.username" :size="52" halo online />
@@ -50,6 +51,12 @@
         </div>
       </el-card>
 
+      <!-- 主题解锁徽标条：早安点亮背景 / 晚安解锁贴纸 -->
+      <div v-if="morningUnlocked || nightUnlocked" class="theme-banner" data-testid="couple-theme-banner">
+        <span v-if="morningUnlocked">🌅 今日专属背景已点亮（{{ themeLabel }}）</span>
+        <span v-if="nightUnlocked">🌙 今日专属贴纸 {{ themeStickers[0] }} {{ themeStickers[1] }} 已解锁</span>
+      </div>
+
       <!-- 逾期可爱提醒：全局常驻（不分页签），一键跳到约定页 -->
       <el-alert
         v-if="couple.overdueCount > 0"
@@ -72,7 +79,10 @@
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
           <el-tab-pane label="🤝 约定" name="promises">
-            <CouplePromises />
+            <div class="tab-stack">
+              <CouplePromises />
+              <CouplePact />
+            </div>
           </el-tab-pane>
           <el-tab-pane label="🌅 小仪式" name="rituals" lazy>
             <CoupleRituals />
@@ -84,7 +94,11 @@
             <CoupleMood />
           </el-tab-pane>
           <el-tab-pane label="🗓️ 共享空间" name="shared" lazy>
-            <CoupleShared />
+            <div class="tab-stack">
+              <CoupleCityCard />
+              <CoupleShared />
+              <CoupleFund />
+            </div>
           </el-tab-pane>
           <el-tab-pane label="📖 时光轴" name="timeline" lazy>
             <CoupleTimeline />
@@ -122,6 +136,7 @@ import { EditPen } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
+import { todayBackground as getTodayBackground, todayStickers as getTodayStickers, todayThemeLabel } from '@/utils/coupleTheme'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import CoupleSetup from '@/components/couple/CoupleSetup.vue'
 import CouplePromises from '@/components/couple/CouplePromises.vue'
@@ -129,6 +144,9 @@ import CoupleRituals from '@/components/couple/CoupleRituals.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'
+import CouplePact from '@/components/couple/CouplePact.vue'
+import CoupleCityCard from '@/components/couple/CoupleCityCard.vue'
+import CoupleFund from '@/components/couple/CoupleFund.vue'
 import CoupleTimeline from '@/components/couple/CoupleTimeline.vue'
 
 const auth = useAuthStore()
@@ -144,6 +162,13 @@ const savingAnniv = ref(false)
 const letterTabLabel = computed(() =>
   couple.letterUnread > 0 ? `💌 悄悄话 ${couple.letterUnread}` : '💌 悄悄话',
 )
+
+/** 今日专属主题：双方互道早安/晚安达成后自动点亮（色板按天轮换，同一天双方同一款） */
+const morningUnlocked = computed(() => !!couple.checkins?.me.morning && !!couple.checkins?.partner.morning)
+const nightUnlocked = computed(() => !!couple.checkins?.me.night && !!couple.checkins?.partner.night)
+const themeGradient = getTodayBackground()
+const themeLabel = todayThemeLabel()
+const themeStickers = getTodayStickers()
 
 function openAnnivEdit() {
   annivEditDate.value = couple.space?.anniversary ?? null
@@ -207,6 +232,27 @@ onMounted(() => {
 }
 .panel {
   border-radius: 12px;
+}
+/* 早安达成：当日专属渐变作为头部背景（pastel 色系，内容保持可读） */
+.header-card.themed {
+  border: none;
+}
+.theme-banner {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ad4e00;
+  background: linear-gradient(90deg, rgba(255, 236, 210, 0.9), rgba(255, 214, 227, 0.9));
+}
+/* 一个 tab 里并列多个功能块 */
+.tab-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 .overdue-alert {
   border-radius: 10px;

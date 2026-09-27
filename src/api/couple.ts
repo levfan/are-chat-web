@@ -3,6 +3,8 @@ import type {
   CoupleAnniversaryVO,
   CoupleCheckinStateVO,
   CoupleCheckinKind,
+  CoupleCityCardVO,
+  CoupleFundVO,
   CoupleIntimacyVO,
   CoupleInviteVO,
   CoupleItemVO,
@@ -11,6 +13,7 @@ import type {
   CoupleMoodKind,
   CoupleMoodVO,
   CoupleOverview,
+  CouplePactVO,
   CouplePromiseVO,
   CoupleQuestionHistoryVO,
   CoupleQuestionVO,
@@ -87,4 +90,25 @@ export const coupleApi = {
   /** 双方都回答过的一问存档（最近 N 天，1-90 默认 30，新→旧） */
   questionHistory: (days = 30) =>
     http.get<CoupleQuestionHistoryVO[]>(`/api/couple/questions/history?days=${days}`),
+
+  // ---------- 恋爱条约 ----------
+  createPact: (content: string) => http.postJson<CouplePactVO>('/api/couple/pacts', { content }),
+  pacts: () => http.get<CouplePactVO[]>('/api/couple/pacts'),
+  acceptPact: (id: string) => http.postJson<CouplePactVO>(`/api/couple/pacts/${id}/accept`, {}),
+  deletePact: (id: string) => http.delete<void>(`/api/couple/pacts/${id}`),
+
+  // ---------- 异地恋助手 ----------
+  /** 设置/清空我的城市（清空传 null） */
+  setCity: (city: string | null) => http.putJson<CoupleCityCardVO>('/api/couple/cities', { city }),
+  cityCard: () => http.get<CoupleCityCardVO>('/api/couple/cities'),
+
+  // ---------- 心愿基金 ----------
+  /** 建一个共同存钱目标（targetAmount 单位：分） */
+  createFund: (title: string, targetAmount: number) =>
+    http.postJson<CoupleFundVO>('/api/couple/funds', { title, targetAmount }),
+  funds: () => http.get<CoupleFundVO[]>('/api/couple/funds'),
+  /** 存一笔钱（amount 单位：分） */
+  depositFund: (id: string, amount: number, note?: string) =>
+    http.postJson<CoupleFundVO>(`/api/couple/funds/${id}/deposits`, { amount, note: note ?? null }),
+  deleteFund: (id: string) => http.delete<void>(`/api/couple/funds/${id}`),
 }

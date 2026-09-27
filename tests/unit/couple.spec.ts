@@ -48,6 +48,16 @@ vi.mock('@/api/couple', () => ({
     openLetter: vi.fn(),
     deleteLetter: vi.fn(),
     questionHistory: vi.fn().mockResolvedValue([]),
+    pacts: vi.fn().mockResolvedValue([]),
+    createPact: vi.fn(),
+    acceptPact: vi.fn(),
+    deletePact: vi.fn(),
+    cityCard: vi.fn().mockResolvedValue({ myCity: null, partnerCity: null, hoursDiff: null, distanceKm: null }),
+    setCity: vi.fn(),
+    funds: vi.fn().mockResolvedValue([]),
+    createFund: vi.fn(),
+    depositFund: vi.fn(),
+    deleteFund: vi.fn(),
   },
 }))
 

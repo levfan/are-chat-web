@@ -491,3 +491,52 @@ export interface CoupleQuestionHistoryVO {
   myAnswer: string | null
   partnerAnswer: string | null
 }
+
+// ============ 情侣空间：恋爱条约 / 异地恋助手 / 心愿基金 ============
+
+export interface CouplePactVO {
+  id: string
+  content: string
+  proposedBy: string
+  /** 盖章人用户名（空 = 待对方盖章） */
+  acceptedBy: string | null
+  acceptedAt: number | null
+  /** true = 还没生效（对方提出的等我盖章） */
+  pending: boolean
+  /** true = 我提出的 */
+  mine: boolean
+  created: number
+}
+
+/** 异地恋卡片：任一方城市缺失或不在城市库时 hoursDiff/distanceKm 为 null */
+export interface CoupleCityCardVO {
+  myCity: string | null
+  partnerCity: string | null
+  hoursDiff: number | null
+  distanceKm: number | null
+}
+
+export interface CoupleFundDepositVO {
+  id: string
+  username: string
+  /** 金额（分） */
+  amount: number
+  note: string
+  created: number
+}
+
+export interface CoupleFundVO {
+  id: string
+  title: string
+  /** 目标金额（分） */
+  targetAmount: number
+  /** 已存金额（分） */
+  savedAmount: number
+  status: 'ACTIVE' | 'REACHED'
+  reached: boolean
+  /** 0-100（封顶） */
+  progress: number
+  createdBy: string
+  deposits: CoupleFundDepositVO[]
+  created: number
+}

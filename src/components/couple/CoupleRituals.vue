@@ -157,6 +157,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useCoupleStore } from '@/stores/couple'
+import { todayBackground as themeBackground, todayStickers as themeStickers, todayThemeLabel } from '@/utils/coupleTheme'
 import type { CoupleCheckinKind } from '@/types'
 
 const couple = useCoupleStore()
@@ -170,33 +171,10 @@ const question = computed(() => couple.question)
 const morningUnlocked = computed(() => !!state.value?.me.morning && !!state.value?.partner.morning)
 const nightUnlocked = computed(() => !!state.value?.me.night && !!state.value?.partner.night)
 
-/** 当日专属背景：按一年中的第 N 天从色板轮换（同一天双方看到同一款） */
-const BACKGROUNDS = [
-  'linear-gradient(135deg, #ffb6c1 0%, #ff8fab 100%)',
-  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-  'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)',
-  'linear-gradient(135deg, #fdcbf1 0%, #e6dee9 100%)',
-  'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
-  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-  'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
-]
-const STICKERS = [
-  ['🥰', '😘'], ['🐼', '🐰'], ['🌈', '⭐'], ['🍓', '🍰'], ['🐱', '🐶'], ['🌸', '🦋'], ['☕', '🍩'],
-]
-
-function dayOfYear(): number {
-  const now = new Date()
-  const start = new Date(now.getFullYear(), 0, 0)
-  return Math.floor((now.getTime() - start.getTime()) / 86_400_000)
-}
-
-const todayIndex = computed(() => dayOfYear() % BACKGROUNDS.length)
-const todayBackground = computed(() => ({ background: BACKGROUNDS[todayIndex.value] }))
-const todayLabel = computed(() => {
-  const now = new Date()
-  return `${now.getMonth() + 1}月${now.getDate()}日 · 专属背景`
-})
-const todayStickers = computed(() => STICKERS[dayOfYear() % STICKERS.length])
+/** 当日专属主题（公共工具色板：同一天双方同一款） */
+const todayBackground = computed(() => ({ background: themeBackground() }))
+const todayStickers = computed(() => themeStickers())
+const todayLabel = computed(() => `${todayThemeLabel()} · 专属背景`)
 
 async function onCheckin(kind: CoupleCheckinKind) {
   try {

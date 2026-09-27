@@ -5,6 +5,8 @@ import { coupleApi } from '@/api/couple'
 import type {
   CoupleAnniversaryVO,
   CoupleCheckinKind,
+  CoupleCityCardVO,
+  CoupleFundVO,
   CoupleIntimacyVO,
   CoupleItemKind,
   CoupleItemVO,
@@ -12,6 +14,7 @@ import type {
   CoupleMoodDayVO,
   CoupleMoodKind,
   CoupleOverview,
+  CouplePactVO,
   CouplePromiseVO,
   CoupleQuestionHistoryVO,
   CoupleQuestionVO,
@@ -47,6 +50,9 @@ export const useCoupleStore = defineStore('couple', () => {
   const intimacy = ref<CoupleIntimacyVO | null>(null)
   const letters = ref<CoupleLetterVO[]>([])
   const questionHistory = ref<CoupleQuestionHistoryVO[]>([])
+  const pacts = ref<CouplePactVO[]>([])
+  const funds = ref<CoupleFundVO[]>([])
+  const cityCard = ref<CoupleCityCardVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -57,6 +63,9 @@ export const useCoupleStore = defineStore('couple', () => {
     timeline: false,
     intimacy: false,
     letters: false,
+    pacts: false,
+    funds: false,
+    cityCard: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -108,6 +117,9 @@ export const useCoupleStore = defineStore('couple', () => {
     intimacy.value = null
     letters.value = []
     questionHistory.value = []
+    pacts.value = []
+    funds.value = []
+    cityCard.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -117,6 +129,9 @@ export const useCoupleStore = defineStore('couple', () => {
       timeline: false,
       intimacy: false,
       letters: false,
+      pacts: false,
+      funds: false,
+      cityCard: false,
     }
     promiseDraft.value = null
   }
@@ -306,6 +321,63 @@ export const useCoupleStore = defineStore('couple', () => {
     questionHistory.value = (await coupleApi.questionHistory()) ?? []
   }
 
+  // ---------- 恋爱条约 / 异地恋助手 / 心愿基金 ----------
+
+  async function loadPacts() {
+    pacts.value = (await coupleApi.pacts()) ?? []
+    loadedLists.value.pacts = true
+  }
+
+  async function createPact(content: string) {
+    const vo = await coupleApi.createPact(content)
+    await loadPacts()
+    return vo
+  }
+
+  async function acceptPact(id: string) {
+    const vo = await coupleApi.acceptPact(id)
+    await loadPacts()
+    return vo
+  }
+
+  async function deletePact(id: string) {
+    await coupleApi.deletePact(id)
+    await loadPacts()
+  }
+
+  async function loadCityCard() {
+    cityCard.value = await coupleApi.cityCard()
+    loadedLists.value.cityCard = true
+  }
+
+  async function setCity(city: string | null) {
+    const vo = await coupleApi.setCity(city)
+    cityCard.value = vo
+    return vo
+  }
+
+  async function loadFunds() {
+    funds.value = (await coupleApi.funds()) ?? []
+    loadedLists.value.funds = true
+  }
+
+  async function createFund(title: string, targetAmount: number) {
+    const vo = await coupleApi.createFund(title, targetAmount)
+    await loadFunds()
+    return vo
+  }
+
+  async function depositFund(id: string, amount: number, note?: string) {
+    const vo = await coupleApi.depositFund(id, amount, note)
+    await loadFunds()
+    return vo
+  }
+
+  async function deleteFund(id: string) {
+    await coupleApi.deleteFund(id)
+    await loadFunds()
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -400,6 +472,34 @@ export const useCoupleStore = defineStore('couple', () => {
       case 'anniversary-reminder':
         notify('📅 纪念日提醒', msg.detail)
         break
+      case 'pact-created':
+      case 'pact-accepted':
+      case 'pact-deleted':
+        notify('🤝 恋爱条约', msg.detail)
+        if (loadedLists.value.pacts) {
+          void loadPacts()
+        }
+        break
+      case 'fund-created':
+      case 'fund-deposit':
+      case 'fund-deleted':
+        notify('💰 心愿基金', msg.detail)
+        if (loadedLists.value.funds) {
+          void loadFunds()
+        }
+        break
+      case 'fund-reached':
+        notify('🎉 心愿达成', msg.detail)
+        if (loadedLists.value.funds) {
+          void loadFunds()
+        }
+        break
+      case 'city-changed':
+        notify('📍 异地恋助手', msg.detail)
+        if (loadedLists.value.cityCard) {
+          void loadCityCard()
+        }
+        break
       default:
         break
     }
@@ -416,6 +516,9 @@ export const useCoupleStore = defineStore('couple', () => {
     intimacy,
     letters,
     questionHistory,
+    pacts,
+    funds,
+    cityCard,
     promiseDraft,
     space,
     established,
@@ -460,5 +563,15 @@ export const useCoupleStore = defineStore('couple', () => {
     openLetter,
     deleteLetter,
     loadQuestionHistory,
+    loadPacts,
+    createPact,
+    acceptPact,
+    deletePact,
+    loadCityCard,
+    setCity,
+    loadFunds,
+    createFund,
+    depositFund,
+    deleteFund,
   }
 })
