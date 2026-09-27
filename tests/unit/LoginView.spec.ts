@@ -69,6 +69,37 @@ describe('LoginView', () => {
     expect(push).toHaveBeenCalledWith('/chat')
   })
 
+  it('登录成功到跳转之间展示「登录成功」提示，并透出服务端问候语', async () => {
+    mockedLogin.mockResolvedValue({ username: 'alice', greeting: 'success:欢迎进入小帆船！' })
+    const wrapper = mountView()
+    // 跳转未完成（push 挂起）时应处于过渡态
+    let releasePush: (() => void) | undefined
+    push.mockImplementationOnce(() => new Promise<void>((resolve) => { releasePush = () => resolve() }))
+    await fillLogin(wrapper, 'alice', 'arechat123')
+    await wrapper.find('[data-testid="login-btn"]').trigger('click')
+    await flushPromises()
+    const mask = wrapper.find('[data-testid="login-success"]')
+    expect(mask.exists()).toBe(true)
+    expect(mask.text()).toContain('登录成功')
+    expect(mask.text()).toContain('正在进入小帆船')
+    // greeting 的 "success:" 前缀被剥掉后再提示，避免把状态标记当文案展示
+    expect(document.body.textContent).toContain('欢迎进入小帆船')
+    expect(document.body.textContent).not.toContain('success:欢迎进入小帆船')
+    releasePush?.()
+    await flushPromises()
+  })
+
+  it('跳转失败时收起过渡遮罩并提示原因', async () => {
+    mockedLogin.mockResolvedValue({ username: 'alice', greeting: 'success:欢迎进入小帆船！' })
+    const wrapper = mountView()
+    push.mockRejectedValueOnce(new Error('跳转失败'))
+    await fillLogin(wrapper, 'alice', 'arechat123')
+    await wrapper.find('[data-testid="login-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="login-success"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="login-error"]').text()).toContain('跳转失败')
+  })
+
   it('登录失败展示后端提示', async () => {
     mockedLogin.mockRejectedValue(new Error('账号或密码不正确'))
     const wrapper = mountView()

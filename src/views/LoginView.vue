@@ -147,12 +147,25 @@
       <!-- 100 系统版本与构建时间：不参与交互，一眼确认部署版本 -->
       <p class="app-version" data-testid="app-version">小帆船 v{{ appVersion }} · 构建于 {{ buildTime }}</p>
     </div>
+
+    <!-- 登录成功 → 进入系统之间的过渡遮罩：路由懒加载 + 首屏数据拉取有 1~2 秒，这期间给明确反馈 -->
+    <transition name="entering-fade">
+      <div v-if="entering" class="entering-mask" role="status" aria-live="polite" data-testid="login-success">
+        <div class="entering-box">
+          <span class="entering-icon" aria-hidden="true">✓</span>
+          <p class="entering-title">登录成功</p>
+          <p class="entering-sub">正在进入小帆船…</p>
+          <span class="entering-bar" aria-hidden="true" />
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/api/auth'
 import { systemApi } from '@/api/system'
@@ -195,6 +208,9 @@ const devCodeHint = ref('')
 const countdown = ref(0)
 let countdownTimer: number | null = null
 
+/** 登录成功后的过渡态：为 true 时展示「登录成功，正在进入…」遮罩，直到路由跳转完成 */
+const entering = ref(false)
+
 // 77 审批流状态
 const submitted = ref(false)
 const submittedName = ref('')
@@ -222,6 +238,12 @@ onUnmounted(() => {
   }
 })
 
+/** 后端 greeting 形如 "success:欢迎进入小帆船！"：去掉状态前缀后作为成功提示，取不到就退回兜底文案 */
+function greetingText(greeting: string | undefined): string {
+  const text = (greeting ?? '').replace(/^[a-zA-Z]+:/, '').trim()
+  return text || '登录成功，正在进入…'
+}
+
 async function onLogin() {
   if (!account.value.trim()) {
     error.value = '请输入手机号或用户名'
@@ -233,12 +255,25 @@ async function onLogin() {
   }
   loading.value = true
   error.value = ''
+  let greeting = ''
   try {
-    await auth.login(account.value.trim(), password.value)
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/chat'
-    router.push(redirect)
+    const result = await auth.login(account.value.trim(), password.value)
+    greeting = result.greeting
   } catch (e) {
     error.value = e instanceof Error ? e.message : '登录失败'
+    loading.value = false
+    return
+  }
+  // 登录已成功：路由懒加载 + 聊天首屏数据拉取还要一会儿，先给出「登录成功」反馈再跳转
+  entering.value = true
+  ElMessage.success(greetingText(greeting))
+  try {
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/chat'
+    await router.push(redirect)
+  } catch (e) {
+    // 跳转失败（异常路由等）：收起遮罩并把原因显示在登录页，让用户能重试
+    entering.value = false
+    error.value = e instanceof Error ? e.message : '进入系统失败，请重试'
   } finally {
     loading.value = false
   }
@@ -487,5 +522,102 @@ html.dark .login-page {
   color: var(--im-muted, #8f959e);
   text-align: center;
   user-select: text;
+}
+/* 登录成功 → 进入系统之间的过渡遮罩（盖住登录卡片，避免「点了没反应」的错觉） */
+.entering-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 半透明 + 轻微模糊：既能看清「登录成功」，又能感觉到页面正在切换 */
+  background: rgba(255, 250, 252, 0.82);
+  backdrop-filter: blur(2px);
+}
+html.dark .entering-mask {
+  background: rgba(24, 16, 22, 0.82);
+}
+.entering-box {
+  text-align: center;
+}
+.entering-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9ec4, #e9487f);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(233, 72, 127, 0.32);
+  animation: login-entering-pop 0.36s ease-out;
+}
+.entering-title {
+  margin: 14px 0 4px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--im-text, #3a2e34);
+}
+.entering-sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--im-muted, #8f959e);
+}
+.entering-bar {
+  display: block;
+  width: 120px;
+  height: 3px;
+  margin: 16px auto 0;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(233, 72, 127, 0.16);
+}
+.entering-bar::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #ff9ec4, #e9487f);
+  animation: login-entering-bar 1s ease-in-out infinite;
+}
+.entering-fade-enter-active {
+  transition: opacity 0.18s ease-out;
+}
+.entering-fade-enter-from {
+  opacity: 0;
+}
+@keyframes login-entering-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes login-entering-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entering-icon {
+    animation: none;
+  }
+  .entering-bar::after {
+    animation: none;
+    width: 100%;
+  }
+  .entering-fade-enter-active {
+    transition: none;
+  }
 }
 </style>
