@@ -739,13 +739,12 @@ export const useImStore = defineStore('im', () => {
     if (manualClose || !selfName.value || reconnectTimer !== null) {
       return
     }
-    if (reconnectAttempts >= RECONNECT_DELAYS.length) {
-      status.value = 'closed'
-      return
-    }
-    status.value = 'connecting'
-    const delay = RECONNECT_DELAYS[reconnectAttempts]
+    // 前几次按退避表快速重试；用尽后进入 60s 慢速重试——保证休眠唤醒、后端重启
+    // 等长时间断线后能自动恢复在线，而不是永久放弃（那样自己会一直不被统计在线）
+    const delay =
+      reconnectAttempts < RECONNECT_DELAYS.length ? RECONNECT_DELAYS[reconnectAttempts] : 60_000
     reconnectAttempts += 1
+    status.value = 'connecting'
     reconnectTimer = window.setTimeout(() => {
       reconnectTimer = null
       if (!manualClose && selfName.value) {

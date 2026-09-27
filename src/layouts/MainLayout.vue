@@ -295,6 +295,17 @@ async function refreshOnlineCount() {
   }
 }
 
+// WS 建立连接的瞬间补一次统计：修复刷新页面后第一轮轮询跑在 WS 握手完成之前，
+// 导致在线人数暂时不含自己的竞态（下一轮轮询要等 60s）
+watch(
+  () => im.status,
+  (now, prev) => {
+    if (now === 'open' && prev !== 'open') {
+      void refreshOnlineCount()
+    }
+  },
+)
+
 // 58 多标签页登录态同步：其他标签页退出登录时本页自动跳回登录页
 function onStorageChange(event: StorageEvent) {
   if (event.key === CURRENT_USER_LOCAL_KEY && !event.newValue && auth.isLoggedIn) {
