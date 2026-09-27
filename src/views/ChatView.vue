@@ -416,7 +416,8 @@
       <div v-loading="profileLoading" class="profile-card" data-testid="profile-card">
         <template v-if="peerProfile">
           <ImAvatar :name="peerProfile.username" :color="peerProfile.avatar" :size="72" />
-          <div class="card-name">{{ peerProfile.nickname }}</div>
+          <div class="card-name">{{ cardDisplayName }}</div>
+          <div v-if="cardRemark" class="card-nickname">昵称：{{ peerProfile.nickname }}</div>
           <div class="card-username">@{{ peerProfile.username }}</div>
           <div class="card-signature">{{ peerProfile.signature || '暂无签名' }}</div>
           <div class="card-meta">{{ peerStatusText }}</div>
@@ -718,6 +719,10 @@ const displayPeerName = computed(() => {
   }
   return im.activeFriend.remark || im.activeFriend.nickname || im.activeFriend.username
 })
+
+/** 资料卡主名：我的备注 > 对方昵称；设了备注时另起一行展示原始昵称 */
+const cardRemark = computed(() => im.activeFriend?.remark?.trim() || '')
+const cardDisplayName = computed(() => cardRemark.value || peerProfile.value?.nickname || '')
 
 const peerStatusText = computed(() => {
   const friend = im.activeFriend
@@ -2080,6 +2085,11 @@ onUnmounted(() => {
 .card-name {
   font-size: 18px;
   font-weight: 600;
+}
+.card-nickname {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+  margin-top: -4px;
 }
 .card-username {
   font-size: 12px;

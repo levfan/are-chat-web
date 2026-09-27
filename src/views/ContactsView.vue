@@ -202,7 +202,8 @@
       <div v-loading="profileLoading" class="profile-card" data-testid="profile-card">
         <template v-if="viewingProfile">
           <ImAvatar :name="viewingProfile.username" :color="viewingProfile.avatar" :size="72" />
-          <div class="card-name">{{ viewingProfile.nickname }}</div>
+          <div class="card-name">{{ viewingRemark || viewingProfile.nickname }}</div>
+          <div v-if="viewingRemark" class="card-nickname">昵称：{{ viewingProfile.nickname }}</div>
           <div class="card-username">@{{ viewingProfile.username }}</div>
           <div class="card-signature">{{ viewingProfile.signature || '暂无签名' }}</div>
         </template>
@@ -247,6 +248,8 @@ const applyNote = ref('')
 /** 正在处理的申请 id：请求期间禁用按钮，避免连点导致 409 */
 const processingId = ref('')
 const profileVisible = ref(false)
+/** 资料卡：当前查看对象的备注（来自好友表，用于主名展示） */
+const viewingRemark = ref('')
 const profileLoading = ref(false)
 const viewingProfile = ref<UserProfileVO | null>(null)
 
@@ -420,6 +423,8 @@ async function onCommand(command: string, friend: FriendVO) {
     profileVisible.value = true
     profileLoading.value = true
     viewingProfile.value = null
+    // 资料卡主名显示我给 TA 的备注（无备注回落对方昵称）
+    viewingRemark.value = friend.remark?.trim() ?? ''
     try {
       viewingProfile.value = await profileApi.of(friend.username)
     } catch (e) {
@@ -722,6 +727,11 @@ onMounted(() => {
 .card-name {
   font-size: 18px;
   font-weight: 600;
+}
+.card-nickname {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+  margin-top: -4px;
 }
 .card-username {
   font-size: 12px;
