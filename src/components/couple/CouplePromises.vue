@@ -74,7 +74,7 @@
     </section>
 
     <!-- 新建约定弹窗 -->
-    <el-dialog v-model="dialogVisible" title="记一个约定" width="420px" data-testid="couple-promise-dialog">
+    <el-dialog v-model="dialogVisible" title="记一个约定" width="420px" draggable data-testid="couple-promise-dialog">
       <el-radio-group v-model="form.side" class="side-group" data-testid="couple-promise-side">
         <el-radio-button value="me">我答应 TA</el-radio-button>
         <el-radio-button value="partner">TA 答应我</el-radio-button>

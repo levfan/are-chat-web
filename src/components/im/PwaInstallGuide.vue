@@ -1,6 +1,6 @@
 <template>
   <!-- 98 iOS 添加到桌面引导：苹果不允许网页一键唤起安装，只能教用户手动操作 -->
-  <el-dialog v-model="visible" title="添加到桌面（iPhone / iPad）" width="360px" append-to-body>
+  <el-dialog v-model="visible" title="添加到桌面（iPhone / iPad）" width="360px" draggable append-to-body>
     <div class="ios-guide">
       <div class="guide-step">
         <span class="step-no">1</span>

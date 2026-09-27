@@ -3,6 +3,7 @@
     v-model="visible"
     title="全局搜索消息"
     width="560px"
+    draggable
     class="global-search-dialog"
     @opened="onOpened"
   >

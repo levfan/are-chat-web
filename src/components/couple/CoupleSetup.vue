@@ -92,7 +92,7 @@
     </el-card>
 
     <!-- 发起邀请对话框：从好友列表选择 -->
-    <el-dialog v-model="dialogVisible" title="邀请好友建立情侣空间" width="400px" data-testid="couple-invite-dialog">
+    <el-dialog v-model="dialogVisible" title="邀请好友建立情侣空间" width="400px" draggable data-testid="couple-invite-dialog">
       <el-select
         v-model="targetName"
         class="invite-select"

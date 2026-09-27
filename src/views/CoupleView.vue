@@ -80,7 +80,7 @@
       </el-card>
 
       <!-- 修改纪念日弹窗 -->
-      <el-dialog v-model="annivEditVisible" title="在一起的纪念日" width="360px" data-testid="couple-anniv-edit-dialog">
+      <el-dialog v-model="annivEditVisible" title="在一起的纪念日" width="360px" draggable data-testid="couple-anniv-edit-dialog">
         <el-date-picker
           v-model="annivEditDate"
           type="date"

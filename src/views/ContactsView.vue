@@ -144,7 +144,7 @@
     </el-card>
 
     <!-- 添加好友对话框 -->
-    <el-dialog v-model="dialogVisible" title="添加好友" width="400px">
+    <el-dialog v-model="dialogVisible" title="添加好友" width="400px" draggable>
       <!-- 输入即联想：候选来自 /api/friends/suggest，带好友关系标注 -->
       <el-autocomplete
         v-model="applyName"
@@ -198,7 +198,7 @@
     </el-dialog>
 
     <!-- 资料卡 -->
-    <el-dialog v-model="profileVisible" title="资料卡" width="360px">
+    <el-dialog v-model="profileVisible" title="资料卡" width="360px" draggable>
       <div v-loading="profileLoading" class="profile-card" data-testid="profile-card">
         <template v-if="viewingProfile">
           <ImAvatar :name="viewingProfile.username" :color="viewingProfile.avatar" :size="72" />

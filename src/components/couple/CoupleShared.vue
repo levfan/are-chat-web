@@ -81,7 +81,7 @@
     </div>
 
     <!-- 添加清单事项弹窗 -->
-    <el-dialog v-model="itemDialogVisible" title="添加共同清单" width="420px" data-testid="couple-item-dialog">
+    <el-dialog v-model="itemDialogVisible" title="添加共同清单" width="420px" draggable data-testid="couple-item-dialog">
       <el-select v-model="itemForm.kind" class="kind-select" data-testid="couple-item-kind">
         <el-option
           v-for="(meta, kind) in KIND_LABELS"
@@ -123,7 +123,7 @@
     </el-dialog>
 
     <!-- 新增纪念日弹窗 -->
-    <el-dialog v-model="annivDialogVisible" title="新增纪念日" width="420px" data-testid="couple-anniv-dialog">
+    <el-dialog v-model="annivDialogVisible" title="新增纪念日" width="420px" draggable data-testid="couple-anniv-dialog">
       <el-input v-model="annivForm.title" maxlength="60" placeholder="名称，如：在一起纪念日 / TA 的生日" data-testid="couple-anniv-title" />
       <div class="due-row stack-input">
         <span class="due-label">日期：</span>

@@ -412,7 +412,7 @@
     </section>
 
     <!-- 资料卡 -->
-    <el-dialog v-model="profileVisible" title="资料卡" width="360px">
+    <el-dialog v-model="profileVisible" title="资料卡" width="360px" draggable>
       <div v-loading="profileLoading" class="profile-card" data-testid="profile-card">
         <template v-if="peerProfile">
           <ImAvatar :name="peerProfile.username" :color="peerProfile.avatar" :size="72" />
@@ -425,7 +425,7 @@
     </el-dialog>
 
     <!-- 转发消息 -->
-    <el-dialog v-model="forwardVisible" title="转发消息" width="360px">
+    <el-dialog v-model="forwardVisible" title="转发消息" width="360px" draggable>
       <div class="forward-body">
         <p class="forward-brief">{{ forwardBrief }}</p>
         <div class="forward-list">
@@ -455,7 +455,7 @@
     </el-dialog>
 
     <!-- 收藏夹 -->
-    <el-dialog v-model="starsVisible" title="收藏夹" width="420px">
+    <el-dialog v-model="starsVisible" title="收藏夹" width="420px" draggable>
       <div v-loading="starsLoading" class="stars-body" data-testid="stars-list">
         <p v-if="!starsLoading && starList.length === 0" class="stars-empty">还没有收藏任何消息</p>
         <div v-for="star in starList" :key="star.msgId" class="star-item" data-testid="star-item">
@@ -471,7 +471,7 @@
     </el-dialog>
 
     <!-- 72 分享好友名片 -->
-    <el-dialog v-model="cardVisible" title="分享好友名片" width="360px">
+    <el-dialog v-model="cardVisible" title="分享好友名片" width="360px" draggable>
       <el-select v-model="cardTarget" placeholder="选择好友" style="width: 100%" data-testid="card-target">
         <el-option
           v-for="f in forwardCandidates"
@@ -490,7 +490,7 @@
     </el-dialog>
 
     <!-- 73 分享位置 -->
-    <el-dialog v-model="locationVisible" title="分享位置" width="380px">
+    <el-dialog v-model="locationVisible" title="分享位置" width="380px" draggable>
       <div class="place-grid">
         <button
           v-for="p in PLACES"
@@ -514,7 +514,7 @@
     </el-dialog>
 
     <!-- 95 附件面板：当前会话图片 / 文件一览 -->
-    <el-dialog v-model="attachmentsVisible" title="附件面板" width="560px" @open="loadAttachments">
+    <el-dialog v-model="attachmentsVisible" title="附件面板" width="560px" draggable @open="loadAttachments">
       <el-radio-group v-model="attachmentTab" size="small" data-testid="attachment-tab" @change="loadAttachments">
         <el-radio-button value="image">图片</el-radio-button>
         <el-radio-button value="file">文件</el-radio-button>

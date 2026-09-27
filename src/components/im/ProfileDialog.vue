@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="个人中心" width="420px">
+  <el-dialog v-model="visible" title="个人中心" width="420px" draggable>
     <div class="profile-form">
       <div class="avatar-row">
         <ImAvatar :name="auth.username" :color="draftAvatar" :size="64" />
@@ -201,7 +201,7 @@
     <PwaInstallGuide v-model="iosGuideVisible" />
 
     <!-- 89 注销账号确认弹窗 -->
-    <el-dialog v-model="deactivateVisible" title="注销账号" width="380px" append-to-body>
+    <el-dialog v-model="deactivateVisible" title="注销账号" width="380px" draggable append-to-body>
       <el-alert
         type="warning"
         :closable="false"
