@@ -24,7 +24,11 @@ initPwa()
 // 98 离线壳：仅生产环境注册 Service Worker（开发模式热更新不受干扰）
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
+    // 注册失败必须可见：自签证书未被设备信任、sw.js 被 try_files 回落成 HTML 等情况
+    // 都会让注册静默失效，只留下「PWA 装不上」这种没有线索的现象
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+      console.warn('[PWA] Service Worker 注册失败', error)
+    })
   })
 }
 
