@@ -44,7 +44,7 @@
 
       <!-- 39/40/63/64/67 外观与彩蛋设置（即时生效，不占用保存按钮） -->
       <div class="setting-block">
-        <div class="setting-title">皮肤主题（63）</div>
+        <div class="setting-title">皮肤主题</div>
         <div class="skin-grid">
           <button
             v-for="skin in SKINS"
@@ -62,7 +62,7 @@
           </button>
         </div>
 
-        <div class="setting-title">聊天背景（64）</div>
+        <div class="setting-title">聊天背景</div>
         <div class="bg-grid">
           <button
             v-for="bg in CHAT_BACKGROUNDS"
@@ -82,7 +82,7 @@
           <el-radio-button v-for="font in FONTS" :key="font.id" :value="font.id">{{ font.label }}</el-radio-button>
         </el-radio-group>
 
-        <div class="setting-title">拍一拍后缀（67）</div>
+        <div class="setting-title">拍一拍后缀</div>
         <el-input
           v-model="draftPokeSuffix"
           size="small"
@@ -92,7 +92,7 @@
           @change="pickPokeSuffix"
         />
 
-        <div class="setting-title">发送快捷键（52）</div>
+        <div class="setting-title">发送快捷键</div>
         <el-radio-group v-model="draftSendKey" size="small" data-testid="sendkey-select">
           <el-radio-button value="enter">Enter 发送</el-radio-button>
           <el-radio-button value="ctrl-enter">Ctrl+Enter 发送</el-radio-button>
@@ -106,7 +106,7 @@
           <el-radio-button value="dark">深色</el-radio-button>
         </el-radio-group>
 
-        <div class="setting-title">桌面通知（45）</div>
+        <div class="setting-title">桌面通知</div>
         <div class="notify-row">
           <span class="notify-hint">页面不可见时弹系统通知</span>
           <el-switch v-model="draftNotify" data-testid="notify-switch" @change="onNotifyChange" />
@@ -114,7 +114,7 @@
         <p v-if="notifyHint" class="notify-hint-text" data-testid="notify-hint">{{ notifyHint }}</p>
 
         <!-- 91 免打扰时段 -->
-        <div class="setting-title">免打扰时段（91）</div>
+        <div class="setting-title">免打扰时段</div>
         <div class="quiet-row">
           <el-switch v-model="draftQuiet.enabled" data-testid="quiet-switch" @change="saveQuiet" />
           <template v-if="draftQuiet.enabled">
@@ -132,7 +132,7 @@
         <el-divider class="divider" />
 
         <!-- 80 修改密码 -->
-        <div class="setting-title">修改密码（80）</div>
+        <div class="setting-title">修改密码</div>
         <el-input
           v-model="pwdOld"
           type="password"

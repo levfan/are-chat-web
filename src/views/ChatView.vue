@@ -163,7 +163,7 @@
                   <el-icon><Download /></el-icon>导出聊天记录
                 </el-dropdown-item>
                 <el-dropdown-item command="export-json">
-                  <el-icon><Document /></el-icon>导出 JSON（56）
+                  <el-icon><Document /></el-icon>导出 JSON
                 </el-dropdown-item>
                 <!-- 95 会话附件面板 -->
                 <el-dropdown-item command="attachments">
@@ -174,10 +174,10 @@
                   <el-icon><Brush /></el-icon>清空聊天记录
                 </el-dropdown-item>
                 <el-dropdown-item command="share-card" divided>
-                  <el-icon><Postcard /></el-icon>分享好友名片（72）
+                  <el-icon><Postcard /></el-icon>分享好友名片
                 </el-dropdown-item>
                 <el-dropdown-item command="share-location">
-                  <el-icon><LocationInformation /></el-icon>分享位置（73）
+                  <el-icon><LocationInformation /></el-icon>分享位置
                 </el-dropdown-item>
                 <el-dropdown-item command="block" divided>
                   <el-icon><CircleClose /></el-icon>{{ im.activeFriend?.blocked ? '解除拉黑' : '拉黑好友' }}
