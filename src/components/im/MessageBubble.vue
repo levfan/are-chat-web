@@ -176,24 +176,28 @@
       >{{ emoji }}</button>
     </div>
 
+    <!-- 回应表情面板：内联展开 6×6 宫格（不用传送浮层，绝不漂移出消息框/屏幕） -->
+    <div v-if="pickerOpen" class="react-grid" data-testid="react-grid">
+      <button
+        v-for="emoji in REACTION_ALL"
+        :key="emoji"
+        class="react-option"
+        type="button"
+        :title="`回应 ${emoji}`"
+        data-testid="reaction-option"
+        @click="pickEmoji(emoji)"
+      >{{ emoji }}</button>
+    </div>
+
     <div class="hover-actions">
-      <el-popover placement="top" :width="220" trigger="click" popper-class="react-popper">
-        <template #reference>
-          <button class="hover-btn" type="button" title="回应" data-testid="react-btn">回应</button>
-        </template>
-        <div class="react-grid">
-          <button
-            v-for="emoji in REACTION_ALL"
-            :key="emoji"
-            class="react-option"
-            type="button"
-            data-testid="reaction-option"
-            @click="emit('react', emoji, message)"
-          >
-            {{ emoji }}
-          </button>
-        </div>
-      </el-popover>
+      <button
+        class="hover-btn"
+        :class="{ active: pickerOpen }"
+        type="button"
+        title="回应"
+        data-testid="react-btn"
+        @click="pickerOpen = !pickerOpen"
+      >回应</button>
       <button
         v-if="canReply"
         class="hover-btn"
@@ -508,6 +512,13 @@ const foldedSummary = computed(() =>
   foldedReactions.value.map((chip) => `${chip.emoji}×${chip.count}（${chip.names}）`).join('、'),
 )
 
+/** 回应面板展开状态（内联宫格，随消息行渲染，无浮层定位问题） */
+const pickerOpen = ref(false)
+function pickEmoji(emoji: string) {
+  emit('react', emoji, props.message)
+  pickerOpen.value = false
+}
+
 const quoteText = computed(() => {
   const target = props.replyTarget
   if (!target) {
@@ -759,22 +770,35 @@ const quoteText = computed(() => {
 .hover-btn.danger:hover {
   color: var(--el-color-danger, #f56c6c);
 }
+/* 回应面板：内联 6×6 宫格卡片，宽度固定，随消息行渲染 */
 .react-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(6, 34px);
+  gap: 2px;
+  margin-top: 4px;
+  padding: 8px;
+  width: fit-content;
+  align-self: flex-start;
+  background: var(--im-panel, #fff);
+  border: 1px solid var(--im-border, #e6e8eb);
+  border-radius: 12px;
+  box-shadow: var(--im-shadow, 0 8px 30px rgba(0, 0, 0, 0.08));
+}
+.row.self .react-grid {
+  align-self: flex-end;
 }
 .react-option {
   border: none;
   background: transparent;
-  font-size: 18px;
+  font-size: 19px;
   line-height: 1;
   padding: 4px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
 }
 .react-option:hover {
   background: var(--im-hover, #f2f3f5);
+  transform: scale(1.15);
 }
 
 /* ============ 68 气泡入场动画 ============ */
