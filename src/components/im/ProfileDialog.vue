@@ -195,6 +195,10 @@
       <div v-if="auth.loginAt" class="session-info" data-testid="session-info">
         本次登录：{{ formatChatTime(auth.loginAt) }}
       </div>
+      <!-- 100 系统版本与构建时间 -->
+      <div class="session-info" data-testid="app-version">
+        are-chat v{{ appVersion }} · 构建于 {{ buildTime }}
+      </div>
     </div>
     <template #footer>
       <el-button @click="visible = false">取消</el-button>
@@ -287,6 +291,10 @@ const draftNotify = ref(notificationEnabled())
 const notifyHint = ref('')
 // 99 界面主题（跟随系统/浅色/深色）
 const draftTheme = ref<ThemeMode>(getThemeMode())
+
+// 100 版本信息（vite.config.ts define 注入，随构建自动更新）
+const appVersion = __APP_VERSION__
+const buildTime = __BUILD_TIME__
 
 // 98 添加到桌面
 const isIos = isIOS()

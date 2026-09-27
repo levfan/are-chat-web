@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
+import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
@@ -9,7 +10,19 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 const apiTarget = process.env.VITE_API_TARGET ?? 'http://localhost:8080'
 const wsTarget = process.env.VITE_WS_TARGET ?? apiTarget.replace(/^http/, 'ws')
 
+// 100 版本信息：版本号取自 package.json，构建时间取构建时刻（登录页与个人中心展示，无需手工维护时间）
+const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf-8')) as {
+  version?: string
+}
+const now = new Date()
+const pad = (n: number) => String(n).padStart(2, '0')
+const buildTimeText = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version ?? 'dev'),
+    __BUILD_TIME__: JSON.stringify(buildTimeText),
+  },
   plugins: [
     vue(),
     AutoImport({

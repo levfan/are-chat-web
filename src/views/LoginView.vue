@@ -139,6 +139,9 @@
         <span class="status-dot" :class="healthStatus" />
         <span v-if="healthText" class="status-text">{{ healthText }}</span>
       </div>
+
+      <!-- 100 系统版本与构建时间：不参与交互，一眼确认部署版本 -->
+      <p class="app-version" data-testid="app-version">are-chat v{{ appVersion }} · 构建于 {{ buildTime }}</p>
     </div>
   </div>
 </template>
@@ -151,6 +154,10 @@ import { authApi } from '@/api/auth'
 import { systemApi } from '@/api/system'
 
 const route = useRoute()
+
+// 100 版本信息（vite.config.ts define 注入，随构建自动更新）
+const appVersion = __APP_VERSION__
+const buildTime = __BUILD_TIME__
 const router = useRouter()
 const auth = useAuthStore()
 
@@ -419,5 +426,13 @@ function backToLogin() {
 .status-text {
   font-size: 12px;
   color: var(--im-muted, #8f959e);
+}
+/* 100 版本信息 */
+.app-version {
+  margin: 14px 0 0;
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
+  text-align: center;
+  user-select: text;
 }
 </style>
