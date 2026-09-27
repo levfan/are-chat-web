@@ -6,10 +6,10 @@
       <el-tab-pane label="资料" name="profile">
         <div class="profile-form">
           <div class="avatar-row">
-            <ImAvatar :name="auth.username" :color="draftAvatar" :size="64" />
+            <ImAvatar :name="auth.username" :label="avatarLabel" :color="draftAvatar" :size="64" />
             <div class="avatar-hint">
               <div class="avatar-label">头像颜色</div>
-              <div class="avatar-sub">取用户名首字作为头像</div>
+              <div class="avatar-sub">取昵称/用户名首字作为头像</div>
             </div>
           </div>
           <div class="color-grid">
@@ -26,7 +26,16 @@
               <el-icon v-if="draftAvatar === `c${index}`" color="#fff"><Check /></el-icon>
             </button>
           </div>
-          <el-input v-model="draftNickname" placeholder="昵称" maxlength="32" data-testid="nickname-input" />
+          <div class="setting-title">登录用户名（不可修改）</div>
+          <el-input :model-value="auth.username" disabled data-testid="profile-username" />
+          <div class="setting-title">昵称</div>
+          <el-input
+            v-model="draftNickname"
+            placeholder="对好友展示的名字，登录用户名不变"
+            maxlength="32"
+            data-testid="nickname-input"
+          />
+          <div class="setting-title">个性签名</div>
           <el-input
             v-model="draftSignature"
             type="textarea"
@@ -247,7 +256,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Check } from '@element-plus/icons-vue'
@@ -314,6 +323,9 @@ const buildTime = __BUILD_TIME__
 const isIos = isIOS()
 const pwaSecure = isSecure()
 const pwaGuideVisible = ref(false)
+
+/** 头像预览字：跟随昵称（与好友看到的展示名一致），未设置时回落用户名 */
+const avatarLabel = computed(() => draftNickname.value.trim() || auth.username)
 
 /** 一键安装（安卓/桌面 Chromium）；iOS 走引导层 */
 async function onInstallClick() {
