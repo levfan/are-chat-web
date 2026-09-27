@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { APP_NAME } from '@/constants'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -72,7 +73,8 @@ router.beforeEach(async (to) => {
 })
 
 router.afterEach((to) => {
-  document.title = `${to.meta.title ?? 'are-chat'} · are-chat`
+  // 页签标题：路由名 · 朝暮（未登录/无路由名时只显示站名）
+  document.title = to.meta.title ? `${to.meta.title} · ${APP_NAME}` : APP_NAME
 })
 
 export default router

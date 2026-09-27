@@ -181,7 +181,7 @@ import { announcementApi, presenceApi } from '@/api/system'
 import { accentColor, currentAccent } from '@/utils/settings'
 import { updateFaviconBadge } from '@/utils/favicon'
 import { formatTime } from '@/utils/format'
-import { CURRENT_USER_LOCAL_KEY } from '@/constants'
+import { APP_NAME, CURRENT_USER_LOCAL_KEY } from '@/constants'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import ProfileDialog from '@/components/im/ProfileDialog.vue'
 import NewMessageToast from '@/components/im/NewMessageToast.vue'
@@ -262,7 +262,8 @@ const statusText = computed(
 watch(
   () => im.totalUnread,
   (count) => {
-    document.title = count > 0 ? `(${count}) are-chat` : 'are-chat'
+    // 页签标题：未读优先（(3) 朝暮），无未读时只显示站名
+    document.title = count > 0 ? `(${count}) ${APP_NAME}` : APP_NAME
     // 42 favicon 未读角标（启用既有工具）
     updateFaviconBadge(count, accentColor(currentAccent()))
   },

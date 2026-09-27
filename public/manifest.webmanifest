@@ -1,7 +1,7 @@
 {
-  "name": "are-chat · 即时通讯",
-  "short_name": "are-chat",
-  "description": "前后端分离的即时通讯系统：私信、情侣空间、每日小仪式",
+  "name": "朝暮",
+  "short_name": "朝暮",
+  "description": "情侣专属聊天空间：私信、情侣空间、每天互道早安晚安",
   "id": "/",
   "start_url": "/",
   "scope": "/",
