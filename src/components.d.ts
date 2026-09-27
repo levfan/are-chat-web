@@ -57,6 +57,7 @@ declare module 'vue' {
     MessageBubble: typeof import('./components/im/MessageBubble.vue')['default']
     NewMessageToast: typeof import('./components/im/NewMessageToast.vue')['default']
     ProfileDialog: typeof import('./components/im/ProfileDialog.vue')['default']
+    PwaInstallGuide: typeof import('./components/im/PwaInstallGuide.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
