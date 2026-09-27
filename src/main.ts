@@ -12,10 +12,19 @@ import 'element-plus/es/components/notification/style/css'
 import './style.css'
 import { initTheme } from './utils/theme'
 import { applyAppearance } from './utils/settings'
+import { initPwa } from './utils/pwa'
 
 initTheme()
 // 39/40 强调色与字号持久化外观
 applyAppearance()
+// 98 PWA 安装事件捕获（应用内「添加到桌面」按钮依赖它）
+initPwa()
+// 98 离线壳：仅生产环境注册 Service Worker（开发模式热更新不受干扰）
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}
 
 const app = createApp(App)
 app.use(createPinia())

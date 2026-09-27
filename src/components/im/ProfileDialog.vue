@@ -167,6 +167,28 @@
         <el-button size="small" type="danger" plain data-testid="deactivate-open" @click="deactivateVisible = true">
           注销账号…
         </el-button>
+
+        <!-- 98 添加到桌面：常驻入口 -->
+        <el-divider class="divider" />
+        <div class="setting-title">添加到桌面</div>
+        <div class="pwa-row">
+          <template v-if="pwaStandalone">
+            <span class="pwa-hint" data-testid="pwa-installed">✅ 已安装为桌面应用</span>
+          </template>
+          <template v-else-if="pwaInstallable">
+            <span class="pwa-hint">安装后像原生 App 一样全屏打开</span>
+            <el-button size="small" type="primary" plain data-testid="pwa-install" @click="onInstallClick">
+              📲 立即安装
+            </el-button>
+          </template>
+          <template v-else-if="isIos">
+            <span class="pwa-hint">iPhone / iPad 需手动添加</span>
+            <el-button size="small" data-testid="pwa-guide" @click="iosGuideVisible = true">📲 添加到桌面</el-button>
+          </template>
+          <template v-else>
+            <span class="pwa-hint" data-testid="pwa-unsupported">当前浏览器不支持一键安装</span>
+          </template>
+        </div>
       </div>
 
       <!-- 53 登录会话信息 -->
@@ -178,6 +200,9 @@
       <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" data-testid="profile-save" @click="onSave">保存</el-button>
     </template>
+
+    <!-- 98 iOS 添加到桌面引导（与移动端横幅共用组件） -->
+    <PwaInstallGuide v-model="iosGuideVisible" />
 
     <!-- 89 注销账号确认弹窗 -->
     <el-dialog v-model="deactivateVisible" title="注销账号" width="380px" append-to-body>
@@ -235,7 +260,9 @@ import {
 } from '@/utils/settings'
 import { notificationEnabled, setNotificationEnabled } from '@/utils/notify'
 import { getThemeMode, setThemeMode, type ThemeMode } from '@/utils/theme'
+import { isIOS, pwaInstallable, pwaStandalone, promptInstall } from '@/utils/pwa'
 import ImAvatar from './ImAvatar.vue'
+import PwaInstallGuide from './PwaInstallGuide.vue'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
@@ -260,6 +287,18 @@ const draftNotify = ref(notificationEnabled())
 const notifyHint = ref('')
 // 99 界面主题（跟随系统/浅色/深色）
 const draftTheme = ref<ThemeMode>(getThemeMode())
+
+// 98 添加到桌面
+const isIos = isIOS()
+const iosGuideVisible = ref(false)
+
+/** 一键安装（安卓/桌面 Chromium）；iOS 走引导层 */
+async function onInstallClick() {
+  const outcome = await promptInstall()
+  if (outcome === 'accepted') {
+    ElMessage.success('已添加到桌面 💕')
+  }
+}
 // 91 免打扰时段
 const draftQuiet = reactive<QuietHours>(currentQuietHours())
 
@@ -602,6 +641,17 @@ async function onSave() {
 }
 .danger-title {
   color: var(--el-color-danger, #f56c6c);
+}
+/* ---- 98 添加到桌面 ---- */
+.pwa-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pwa-hint {
+  font-size: 12px;
+  color: var(--xx-text-2, #51565f);
 }
 .session-info {
   font-size: 12px;

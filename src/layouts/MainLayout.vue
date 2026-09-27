@@ -139,6 +139,22 @@
   <ProfileDialog v-model="profileVisible" />
   <!-- 70 新消息浮动卡片 -->
   <NewMessageToast :items="toasts" @open="onToastOpen" @close="dismissToast" />
+  <!-- 98 移动端「添加到桌面」横幅：可安装时出现，点 × 后不再打扰 -->
+  <transition name="pwa-slide">
+    <div v-if="showPwaBanner" class="pwa-banner" data-testid="pwa-banner">
+      <span class="pwa-banner-icon">💕</span>
+      <div class="pwa-banner-text">
+        <b>安装到桌面</b>
+        <span>道早安更快一步</span>
+      </div>
+      <el-button size="small" type="primary" data-testid="pwa-banner-install" @click="onBannerInstall">
+        {{ isIosDevice ? '查看方法' : '安装' }}
+      </el-button>
+      <button type="button" class="pwa-banner-close" data-testid="pwa-banner-close" @click="dismissPwaBanner">×</button>
+    </div>
+  </transition>
+  <!-- 98 iOS 引导层（横幅与个人中心共用） -->
+  <PwaInstallGuide v-model="iosGuideVisible" />
 </template>
 
 <script setup lang="ts">
@@ -169,6 +185,8 @@ import { CURRENT_USER_LOCAL_KEY } from '@/constants'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import ProfileDialog from '@/components/im/ProfileDialog.vue'
 import NewMessageToast from '@/components/im/NewMessageToast.vue'
+import PwaInstallGuide from '@/components/im/PwaInstallGuide.vue'
+import { isIOS, pwaInstallable, pwaStandalone, promptInstall } from '@/utils/pwa'
 import type { AnnouncementVO, ToastItem } from '@/types'
 
 const route = useRoute()
@@ -446,6 +464,7 @@ onMounted(() => {
   window.addEventListener('storage', onStorageChange)
   window.addEventListener('arechat:open-peer', onOpenPeer as EventListener)
   window.addEventListener('arechat:toast', onToastEvent as EventListener)
+  window.addEventListener('resize', onViewportChange)
   // 88 WS 公告推送
   window.addEventListener('arechat:announcement', onAnnouncementEvent as EventListener)
   // 92 用户活动事件
@@ -468,6 +487,7 @@ onUnmounted(() => {
   window.removeEventListener('storage', onStorageChange)
   window.removeEventListener('arechat:open-peer', onOpenPeer as EventListener)
   window.removeEventListener('arechat:toast', onToastEvent as EventListener)
+  window.removeEventListener('resize', onViewportChange)
   window.removeEventListener('arechat:announcement', onAnnouncementEvent as EventListener)
   for (const evt of ['mousemove', 'keydown', 'click', 'touchstart']) {
     window.removeEventListener(evt, onUserActivity)
@@ -500,6 +520,44 @@ async function confirmLogout() {
   couple.reset()
   await auth.logout()
   router.push('/login')
+}
+
+// ---------- 98 移动端「添加到桌面」横幅 ----------
+
+const PWA_DISMISS_KEY = 'arechat.pwa-banner-dismissed'
+const isIosDevice = isIOS()
+const iosGuideVisible = ref(false)
+const pwaDismissed = ref(sessionStorage.getItem(PWA_DISMISS_KEY) === '1')
+const isMobileViewport = ref(window.innerWidth <= 768)
+
+function onViewportChange() {
+  isMobileViewport.value = window.innerWidth <= 768
+}
+
+/** 仅移动端且未安装时展示；用户点过 × 本次会话内不再打扰 */
+const showPwaBanner = computed(
+  () =>
+    auth.isLoggedIn &&
+    isMobileViewport.value &&
+    !pwaStandalone.value &&
+    !pwaDismissed.value &&
+    (pwaInstallable.value || isIosDevice),
+)
+
+async function onBannerInstall() {
+  if (isIosDevice) {
+    iosGuideVisible.value = true
+    return
+  }
+  const outcome = await promptInstall()
+  if (outcome === 'accepted') {
+    ElMessage.success('已添加到桌面 💕')
+  }
+}
+
+function dismissPwaBanner() {
+  pwaDismissed.value = true
+  sessionStorage.setItem(PWA_DISMISS_KEY, '1')
 }
 </script>
 
@@ -721,5 +779,55 @@ async function confirmLogout() {
   color: var(--im-muted, #8f959e);
   text-align: center;
   padding: 8px 0;
+}
+/* ---- 98 移动端「添加到桌面」横幅 ---- */
+.pwa-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--im-panel, #fff);
+  border: 1px solid var(--im-border, #e6e8eb);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+.pwa-banner-icon {
+  font-size: 24px;
+}
+.pwa-banner-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.pwa-banner-text b {
+  font-size: 13px;
+  color: var(--im-text, #1f2329);
+}
+.pwa-banner-text span {
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
+}
+.pwa-banner-close {
+  border: none;
+  background: transparent;
+  color: var(--im-muted, #8f959e);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.pwa-slide-enter-active,
+.pwa-slide-leave-active {
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.pwa-slide-enter-from,
+.pwa-slide-leave-to {
+  transform: translateY(80px);
+  opacity: 0;
 }
 </style>
