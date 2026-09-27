@@ -167,7 +167,7 @@
       data-testid="quick-reacts"
     >
       <button
-        v-for="emoji in REACTION_EMOJIS"
+        v-for="emoji in REACTION_QUICK"
         :key="`quick-${emoji}`"
         class="quick-emoji"
         type="button"
@@ -177,13 +177,13 @@
     </div>
 
     <div class="hover-actions">
-      <el-popover placement="top" :width="196" trigger="click" popper-class="react-popper">
+      <el-popover placement="top" :width="220" trigger="click" popper-class="react-popper">
         <template #reference>
           <button class="hover-btn" type="button" title="回应" data-testid="react-btn">回应</button>
         </template>
         <div class="react-grid">
           <button
-            v-for="emoji in REACTION_EMOJIS"
+            v-for="emoji in REACTION_ALL"
             :key="emoji"
             class="react-option"
             type="button"
@@ -294,8 +294,17 @@ import { useCoupleStore } from '@/stores/couple'
 import ImAvatar from './ImAvatar.vue'
 import ImageLightbox from './ImageLightbox.vue'
 
-/** 回应支持的表情（与后端 REACTION_EMOJIS 对齐） */
-const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥']
+/** 回应支持的表情全集（与后端 REACTION_EMOJIS 白名单对齐，6×6 网格） */
+const REACTION_ALL = [
+  '❤️', '🥰', '😍', '😘', '🤗', '💕',
+  '😂', '🤣', '😆', '😉', '😊', '😌',
+  '😮', '😳', '😱', '🥺', '😢', '😭',
+  '😤', '😡', '🙁', '😴', '🤔', '😏',
+  '😎', '🥳', '👍', '👎', '🙌', '👏',
+  '✌️', '🙈', '🔥', '🎉', '🌹', '⛵',
+]
+/** hover 快捷条：全集里最常用的 8 个 */
+const REACTION_QUICK = ['👍', '❤️', '😂', '😮', '😢', '🥰', '🎉', '🔥']
 
 const props = withDefaults(
   defineProps<{
