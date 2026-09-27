@@ -18,16 +18,16 @@ export function formatChatTime(created: number | null | undefined): string {
   return sameYear ? `${md} ${hm}` : `${date.getFullYear()}-${md} ${hm}`
 }
 
-/** 头像底色（8 个克制的低饱和色，按用户名稳定取色；资料页可选 c0..c7） */
+/** 头像配色（8 个情侣风渐变，135° 柔光过渡；按用户名稳定取色，资料页可选 c0..c7） */
 export const AVATAR_COLORS = [
-  '#4e7fee',
-  '#12a19a',
-  '#c08329',
-  '#c25650',
-  '#7a63d2',
-  '#2f88c5',
-  '#5f9e3c',
-  '#b45fb8',
+  'linear-gradient(135deg, #fda7c4, #ec5f92)', // 樱花粉（默认，跟随主题强调色）
+  'linear-gradient(135deg, #ffb199, #ff7e8a)', // 蜜桃
+  'linear-gradient(135deg, #f9718f, #e0336d)', // 玫瑰
+  'linear-gradient(135deg, #c58ff2, #9b6bd8)', // 薰衣草
+  'linear-gradient(135deg, #ffc2d1, #ff8fab)', // 珊瑚粉
+  'linear-gradient(135deg, #9ad7f0, #5eb6e4)', // 天空
+  'linear-gradient(135deg, #a9e8c9, #67c998)', // 薄荷
+  'linear-gradient(135deg, #ffd8a8, #ffab6b)', // 暖阳
 ]
 
 /** 按用户名稳定取一个头像底色 */
