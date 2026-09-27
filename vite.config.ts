@@ -41,6 +41,8 @@ export default defineConfig({
     },
   },
   server: {
+    // host=true 监听 0.0.0.0：局域网用户可通过 http://<本机IP>:5173 访问（默认仅 localhost）
+    host: true,
     port: 5173,
     // 编辑器/工具写文件时会生成 *.tmpdir 临时目录，watcher 监听到它会 EBUSY 崩溃
     watch: {
@@ -50,6 +52,11 @@ export default defineConfig({
       '/api': { target: apiTarget, changeOrigin: true },
       '/ws': { target: wsTarget, ws: true },
     },
+  },
+  // 生产构建本地预览（vite preview）同样开放局域网访问
+  preview: {
+    host: true,
+    port: 4173,
   },
   test: {
     environment: 'jsdom',
