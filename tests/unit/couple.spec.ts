@@ -32,6 +32,17 @@ vi.mock('@/api/couple', () => ({
     anniversaries: vi.fn(),
     createAnniversary: vi.fn(),
     deleteAnniversary: vi.fn(),
+    saveMood: vi.fn(),
+    moods: vi.fn().mockResolvedValue([]),
+    timeline: vi.fn().mockResolvedValue([]),
+    intimacy: vi.fn().mockResolvedValue({
+      score: 0,
+      level: 1,
+      title: '怦然心动',
+      icon: '✨',
+      nextLevelAt: 50,
+      breakdown: { morningDays: 0, nightDays: 0, questionDays: 0, promiseDone: 0, itemDone: 0, moodDays: 0 },
+    }),
   },
 }))
 

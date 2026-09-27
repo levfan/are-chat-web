@@ -5,11 +5,15 @@ import { coupleApi } from '@/api/couple'
 import type {
   CoupleAnniversaryVO,
   CoupleCheckinKind,
+  CoupleIntimacyVO,
   CoupleItemKind,
   CoupleItemVO,
+  CoupleMoodDayVO,
+  CoupleMoodKind,
   CoupleOverview,
   CouplePromiseVO,
   CoupleQuestionVO,
+  CoupleTimelineDay,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -36,8 +40,19 @@ export const useCoupleStore = defineStore('couple', () => {
   const question = ref<CoupleQuestionVO | null>(null)
   const items = ref<CoupleItemVO[]>([])
   const anniversaries = ref<CoupleAnniversaryVO[]>([])
+  const moods = ref<CoupleMoodDayVO[]>([])
+  const timeline = ref<CoupleTimelineDay[]>([])
+  const intimacy = ref<CoupleIntimacyVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
-  const loadedLists = ref({ promises: false, question: false, items: false, anniversaries: false })
+  const loadedLists = ref({
+    promises: false,
+    question: false,
+    items: false,
+    anniversaries: false,
+    moods: false,
+    timeline: false,
+    intimacy: false,
+  })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
 
@@ -81,7 +96,18 @@ export const useCoupleStore = defineStore('couple', () => {
     question.value = null
     items.value = []
     anniversaries.value = []
-    loadedLists.value = { promises: false, question: false, items: false, anniversaries: false }
+    moods.value = []
+    timeline.value = []
+    intimacy.value = null
+    loadedLists.value = {
+      promises: false,
+      question: false,
+      items: false,
+      anniversaries: false,
+      moods: false,
+      timeline: false,
+      intimacy: false,
+    }
     promiseDraft.value = null
   }
 
@@ -214,6 +240,33 @@ export const useCoupleStore = defineStore('couple', () => {
     await loadAnniversaries()
   }
 
+  // ---------- 心情日记 / 时光轴 / 心动值 ----------
+
+  async function loadMoods() {
+    moods.value = (await coupleApi.moods()) ?? []
+    loadedLists.value.moods = true
+  }
+
+  /** 记录/修改今天的心情，保存后刷新列表与心动值 */
+  async function saveMood(mood: CoupleMoodKind, note?: string) {
+    const vo = await coupleApi.saveMood(mood, note)
+    await loadMoods()
+    if (loadedLists.value.intimacy) {
+      void loadIntimacy()
+    }
+    return vo
+  }
+
+  async function loadTimeline() {
+    timeline.value = (await coupleApi.timeline()) ?? []
+    loadedLists.value.timeline = true
+  }
+
+  async function loadIntimacy() {
+    intimacy.value = await coupleApi.intimacy()
+    loadedLists.value.intimacy = true
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -283,6 +336,15 @@ export const useCoupleStore = defineStore('couple', () => {
         }
         void loadOverview()
         break
+      case 'mood-changed':
+        notify('💗 心情日记', msg.detail)
+        if (loadedLists.value.moods) {
+          void loadMoods()
+        }
+        if (loadedLists.value.intimacy) {
+          void loadIntimacy()
+        }
+        break
       default:
         break
     }
@@ -294,6 +356,9 @@ export const useCoupleStore = defineStore('couple', () => {
     question,
     items,
     anniversaries,
+    moods,
+    timeline,
+    intimacy,
     promiseDraft,
     space,
     established,
@@ -328,5 +393,9 @@ export const useCoupleStore = defineStore('couple', () => {
     loadAnniversaries,
     createAnniversary,
     deleteAnniversary,
+    loadMoods,
+    saveMood,
+    loadTimeline,
+    loadIntimacy,
   }
 })

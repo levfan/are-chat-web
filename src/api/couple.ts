@@ -3,12 +3,17 @@ import type {
   CoupleAnniversaryVO,
   CoupleCheckinStateVO,
   CoupleCheckinKind,
+  CoupleIntimacyVO,
   CoupleInviteVO,
   CoupleItemVO,
+  CoupleMoodDayVO,
+  CoupleMoodKind,
+  CoupleMoodVO,
   CoupleOverview,
   CouplePromiseVO,
   CoupleQuestionVO,
   CoupleSpaceVO,
+  CoupleTimelineDay,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -52,4 +57,18 @@ export const coupleApi = {
   createAnniversary: (body: { title: string; date: string; yearly: boolean }) =>
     http.postJson<CoupleAnniversaryVO>('/api/couple/anniversaries', body),
   deleteAnniversary: (id: string) => http.delete<void>(`/api/couple/anniversaries/${id}`),
+
+  // ---------- 心情日记 ----------
+  /** 记录/修改今天的心情（每人每天一条，重复提交视为修改） */
+  saveMood: (mood: CoupleMoodKind, note?: string) =>
+    http.postJson<CoupleMoodVO>('/api/couple/moods', { mood, note: note ?? null }),
+  /** 双方最近 N 天的心情（1-90，默认 14），按日期新→旧 */
+  moods: (days = 14) => http.get<CoupleMoodDayVO[]>(`/api/couple/moods?days=${days}`),
+
+  // ---------- 恋爱时光轴 ----------
+  /** 最近 N 天（1-90，默认 30）的「我们的故事」 */
+  timeline: (days = 30) => http.get<CoupleTimelineDay[]>(`/api/couple/timeline?days=${days}`),
+
+  // ---------- 心动值 & 恋爱等级 ----------
+  intimacy: () => http.get<CoupleIntimacyVO>('/api/couple/intimacy'),
 }

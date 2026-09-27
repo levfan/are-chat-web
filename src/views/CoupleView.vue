@@ -34,6 +34,10 @@
               <span class="stat-num" data-testid="couple-header-streak">{{ couple.checkins?.streak ?? 0 }}</span>
               <span class="stat-label">连续互道晚安</span>
             </div>
+            <div class="stat">
+              <span class="stat-num" data-testid="couple-intimacy-score">{{ couple.intimacy?.score ?? 0 }}</span>
+              <span class="stat-label">{{ couple.intimacy ? `${couple.intimacy.icon} ${couple.intimacy.title}` : '心动值' }}</span>
+            </div>
           </div>
           <div class="header-actions">
             <el-button size="small" plain data-testid="couple-anniv-edit" @click="openAnnivEdit">
@@ -73,8 +77,14 @@
           <el-tab-pane label="🌅 小仪式" name="rituals" lazy>
             <CoupleRituals />
           </el-tab-pane>
+          <el-tab-pane label="💗 心情" name="mood" lazy>
+            <CoupleMood />
+          </el-tab-pane>
           <el-tab-pane label="🗓️ 共享空间" name="shared" lazy>
             <CoupleShared />
+          </el-tab-pane>
+          <el-tab-pane label="📖 时光轴" name="timeline" lazy>
+            <CoupleTimeline />
           </el-tab-pane>
         </el-tabs>
       </el-card>
@@ -113,7 +123,9 @@ import ImAvatar from '@/components/im/ImAvatar.vue'
 import CoupleSetup from '@/components/couple/CoupleSetup.vue'
 import CouplePromises from '@/components/couple/CouplePromises.vue'
 import CoupleRituals from '@/components/couple/CoupleRituals.vue'
+import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'
+import CoupleTimeline from '@/components/couple/CoupleTimeline.vue'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()
@@ -163,11 +175,13 @@ async function onDissolve() {
 onMounted(() => {
   // 聊天「记入约定」跳转：?tab=promises 直接定位到约定页
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
-  if (['promises', 'rituals', 'shared'].includes(tab)) {
+  if (['promises', 'rituals', 'mood', 'shared', 'timeline'].includes(tab)) {
     activeTab.value = tab
   }
   // MainLayout 已在登录后 init 过：这里兜底刷新总览（邀请状态可能变化）
   void couple.init()
+  // 头部心动值 & 恋爱等级
+  void couple.loadIntimacy()
 })
 </script>
 

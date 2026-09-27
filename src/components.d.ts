@@ -11,10 +11,12 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    CoupleMood: typeof import('./components/couple/CoupleMood.vue')['default']
     CouplePromises: typeof import('./components/couple/CouplePromises.vue')['default']
     CoupleRituals: typeof import('./components/couple/CoupleRituals.vue')['default']
     CoupleSetup: typeof import('./components/couple/CoupleSetup.vue')['default']
     CoupleShared: typeof import('./components/couple/CoupleShared.vue')['default']
+    CoupleTimeline: typeof import('./components/couple/CoupleTimeline.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAutocomplete: typeof import('element-plus/es')['ElAutocomplete']
     ElBadge: typeof import('element-plus/es')['ElBadge']

@@ -401,3 +401,59 @@ export interface CoupleAnniversaryVO {
   createdBy: string
   created: number
 }
+
+// ============ 情侣空间：心情日记 / 时光轴 / 心动值 ============
+
+/** 心情键（后端白名单，共 8 种） */
+export type CoupleMoodKind = 'LOVE' | 'HAPPY' | 'CALM' | 'BUSY' | 'TIRED' | 'SICK' | 'SAD' | 'ANGRY'
+
+export interface CoupleMoodVO {
+  id: string
+  username: string
+  moodDay: string
+  mood: CoupleMoodKind
+  note: string
+  created: number
+  updatedAt: number | null
+}
+
+/** 一天里双方的心情（谁没记录就是 null） */
+export interface CoupleMoodDayVO {
+  day: string
+  mine: CoupleMoodVO | null
+  partner: CoupleMoodVO | null
+}
+
+/** 时光轴事件：type = space/ritual/question/promise/item/anniversary */
+export interface CoupleTimelineEvent {
+  type: 'space' | 'ritual' | 'question' | 'promise' | 'item' | 'anniversary'
+  title: string
+  detail: string
+  byUser: string | null
+  at: number | null
+}
+
+export interface CoupleTimelineDay {
+  day: string
+  events: CoupleTimelineEvent[]
+}
+
+/** 心动值明细 */
+export interface CoupleIntimacyBreakdown {
+  morningDays: number
+  nightDays: number
+  questionDays: number
+  promiseDone: number
+  itemDone: number
+  moodDays: number
+}
+
+export interface CoupleIntimacyVO {
+  score: number
+  level: number
+  title: string
+  icon: string
+  /** 下一等级所需分数，满级为 null */
+  nextLevelAt: number | null
+  breakdown: CoupleIntimacyBreakdown
+}
