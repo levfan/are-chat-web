@@ -97,6 +97,15 @@
           <el-radio-button value="enter">Enter 发送</el-radio-button>
           <el-radio-button value="ctrl-enter">Ctrl+Enter 发送</el-radio-button>
         </el-radio-group>
+
+        <!-- 99 界面主题：原侧边栏左下角按钮移入个人中心 -->
+        <div class="setting-title">界面主题</div>
+        <el-radio-group v-model="draftTheme" size="small" data-testid="theme-select" @change="pickTheme">
+          <el-radio-button value="auto">跟随系统</el-radio-button>
+          <el-radio-button value="light">浅色</el-radio-button>
+          <el-radio-button value="dark">深色</el-radio-button>
+        </el-radio-group>
+
         <div class="setting-title">桌面通知（45）</div>
         <div class="notify-row">
           <span class="notify-hint">页面不可见时弹系统通知</span>
@@ -225,6 +234,7 @@ import {
   type SendKeyMode,
 } from '@/utils/settings'
 import { notificationEnabled, setNotificationEnabled } from '@/utils/notify'
+import { getThemeMode, setThemeMode, type ThemeMode } from '@/utils/theme'
 import ImAvatar from './ImAvatar.vue'
 
 const props = defineProps<{ modelValue: boolean }>()
@@ -248,6 +258,8 @@ const draftSendKey = ref<SendKeyMode>(currentSendKey())
 const draftPokeSuffix = ref(currentPokeSuffix())
 const draftNotify = ref(notificationEnabled())
 const notifyHint = ref('')
+// 99 界面主题（跟随系统/浅色/深色）
+const draftTheme = ref<ThemeMode>(getThemeMode())
 // 91 免打扰时段
 const draftQuiet = reactive<QuietHours>(currentQuietHours())
 
@@ -279,6 +291,7 @@ watch(
       draftSendKey.value = currentSendKey()
       draftPokeSuffix.value = currentPokeSuffix()
       draftNotify.value = notificationEnabled()
+      draftTheme.value = getThemeMode()
       Object.assign(draftQuiet, currentQuietHours())
     }
   },
@@ -304,6 +317,11 @@ function pickPokeSuffix(value: string) {
 
 function pickFont(id: string) {
   saveFont(id)
+}
+
+/** 99 切换界面主题（即时生效并持久化） */
+function pickTheme(mode: string | number | boolean | undefined) {
+  setThemeMode(String(mode) as ThemeMode)
 }
 
 async function onNotifyChange(value: boolean | string | number) {

@@ -1,7 +1,40 @@
 <template>
   <el-container class="shell">
     <aside class="rail">
-      <div class="logo" title="are-chat">A</div>
+      <!-- 99 顶部「我的」：头像 + 状态点 + 用户名，点击弹出聚合菜单（原 logo 位，个人中心/退出登录/状态切换收拢于此） -->
+      <el-dropdown trigger="click" placement="right-start" class="me-dropdown" @command="onMeCommand">
+        <button type="button" class="me-block" data-testid="me-menu" :title="`我的 · ${myStatusLabel}`">
+          <span class="me-avatar-wrap">
+            <ImAvatar :name="auth.username" :color="im.myProfile?.avatar ?? undefined" :size="36" :online="myStatus === 'online'" />
+            <span v-if="myStatus !== 'online'" class="me-status" :class="`st-${myStatus}`" />
+          </span>
+          <span class="me-name" data-testid="current-user">{{ auth.username }}</span>
+        </button>
+        <template #dropdown>
+          <el-dropdown-menu class="me-menu">
+            <!-- 43 状态快切：从左下角按钮收拢进菜单，保留一键切换 -->
+            <el-dropdown-item
+              v-for="opt in PRESENCE_OPTIONS"
+              :key="opt.value"
+              :command="`status:${opt.value}`"
+              :data-testid="`presence-${opt.value}`"
+            >
+              <el-icon :size="14"><component :is="opt.icon" /></el-icon>
+              <span class="me-menu-label">{{ opt.label }}</span>
+              <el-icon v-if="myStatus === opt.value" :size="14" class="me-menu-check"><Check /></el-icon>
+            </el-dropdown-item>
+            <el-dropdown-item divided command="profile" data-testid="me-profile">
+              <el-icon :size="14"><User /></el-icon>
+              <span class="me-menu-label">个人中心</span>
+            </el-dropdown-item>
+            <!-- 4 退出登录：低频危险操作收进菜单 + 二次确认，防误触 -->
+            <el-dropdown-item divided command="logout" class="me-menu-danger" data-testid="me-logout">
+              <el-icon :size="14"><SwitchButton /></el-icon>
+              <span class="me-menu-label">退出登录</span>
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
       <nav class="nav">
         <el-tooltip content="消息" placement="right">
           <router-link to="/chat" class="nav-item" :class="{ active: route.path === '/chat' }">
@@ -97,41 +130,6 @@
             <el-icon :size="12"><UserFilled /></el-icon>{{ onlineCount }}
           </span>
         </el-tooltip>
-        <!-- 43 我的 presence 状态快捷切换 -->
-        <el-dropdown trigger="click" @command="onPresenceCommand">
-          <button type="button" class="rail-btn" data-testid="presence-switch" :title="`我的状态：${myStatusLabel}`">
-            <el-icon :size="17"><component :is="statusIcon" /></el-icon>
-          </button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item
-                v-for="opt in PRESENCE_OPTIONS"
-                :key="opt.value"
-                :command="opt.value"
-                :data-testid="`presence-${opt.value}`"
-              >
-                {{ opt.label }}
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <el-tooltip
-          :content="`主题：${themeMode === 'auto' ? '跟随系统' : themeMode === 'dark' ? '深色' : '浅色'}（点击切换）`"
-          placement="right"
-        >
-          <button type="button" class="rail-btn" data-testid="theme-toggle" @click="onToggleTheme">
-            <el-icon :size="17"><component :is="themeIcon" /></el-icon>
-          </button>
-        </el-tooltip>
-        <button type="button" class="me" data-testid="profile-open" @click="profileVisible = true">
-          <ImAvatar :name="auth.username" :color="im.myProfile?.avatar ?? undefined" :size="34" />
-        </button>
-        <span class="me-name" data-testid="current-user">{{ auth.username }}</span>
-        <el-tooltip content="退出登录" placement="right">
-          <button type="button" class="rail-btn" @click="onLogout">
-            <el-icon :size="17"><SwitchButton /></el-icon>
-          </button>
-        </el-tooltip>
       </div>
     </aside>
     <el-main class="content">
@@ -150,22 +148,20 @@ import {
   AlarmClock,
   Bell,
   ChatDotRound,
+  Check,
   CircleCheck,
   Clock,
-  Monitor,
-  Moon,
   Notebook,
   Setting,
-  Sunny,
   SwitchButton,
+  User,
   UserFilled,
 } from '@element-plus/icons-vue'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useImStore } from '@/stores/im'
 import { useCoupleStore } from '@/stores/couple'
 import { announcementApi, presenceApi } from '@/api/system'
-import { cycleTheme, getThemeMode, type ThemeMode } from '@/utils/theme'
 import { accentColor, currentAccent } from '@/utils/settings'
 import { updateFaviconBadge } from '@/utils/favicon'
 import { formatTime } from '@/utils/format'
@@ -182,13 +178,10 @@ const im = useImStore()
 const couple = useCoupleStore()
 
 const profileVisible = ref(false)
-const themeMode = ref<ThemeMode>(getThemeMode())
 const onlineCount = ref(0)
 let onlineTimer: number | null = null
 
-const themeIcon = computed(() => ({ auto: Monitor, dark: Moon, light: Sunny })[themeMode.value])
-
-// 43 presence 快捷切换
+// 43 presence 快切（收拢进「我的」菜单）
 const PRESENCE_OPTIONS = [
   { value: 'online', label: '在线', icon: CircleCheck },
   { value: 'busy', label: '忙碌', icon: AlarmClock },
@@ -199,9 +192,6 @@ const myStatus = computed(() => im.myProfile?.presenceStatus ?? 'online')
 const myStatusLabel = computed(
   () => PRESENCE_OPTIONS.find((o) => o.value === myStatus.value)?.label ?? '在线',
 )
-const statusIcon = computed(
-  () => PRESENCE_OPTIONS.find((o) => o.value === myStatus.value)?.icon ?? CircleCheck,
-)
 
 // 57 在线人数：后端按角色下发（管理员=全站在线，普通用户=好友在线），这里只做提示文案
 const onlineCountTip = computed(() => (auth.isAdmin ? '全站在线人数' : '好友在线人数'))
@@ -211,6 +201,22 @@ const coupleTip = computed(() =>
     ? `情侣空间（${couple.incomingInvites.length} 条待处理邀请）`
     : '情侣空间',
 )
+
+/** 「我的」菜单统一分发：状态快切 / 个人中心 / 退出登录 */
+function onMeCommand(command: string | number | object) {
+  const cmd = String(command)
+  if (cmd.startsWith('status:')) {
+    void onPresenceCommand(cmd.slice('status:'.length))
+    return
+  }
+  if (cmd === 'profile') {
+    profileVisible.value = true
+    return
+  }
+  if (cmd === 'logout') {
+    void confirmLogout()
+  }
+}
 
 async function onPresenceCommand(value: string) {
   if (value === myStatus.value) {
@@ -233,10 +239,6 @@ const statusText = computed(
       closed: '连接已断开（请刷新重试）',
     })[im.status],
 )
-
-function onToggleTheme() {
-  themeMode.value = cycleTheme()
-}
 
 // 浏览器标签页未读计数：(3) are-chat
 watch(
@@ -483,7 +485,17 @@ function onUserActivity() {
   markActive()
 }
 
-async function onLogout() {
+/** 4 退出登录防误触：先弹确认框（展示账号名），确认后才真正退出 */
+async function confirmLogout() {
+  try {
+    await ElMessageBox.confirm(`确定要退出账号「${auth.username}」吗？`, '退出登录', {
+      confirmButtonText: '退出',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
   im.reset()
   couple.reset()
   await auth.logout()
@@ -507,19 +519,46 @@ async function onLogout() {
   gap: 6px;
   flex-shrink: 0;
 }
-.logo {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: var(--xx-accent, #3370ff);
-  color: #fff;
-  font-size: 17px;
-  font-weight: 700;
+/* 99 顶部「我的」区块：替代原 logo 位，聚合状态/个人中心/退出登录 */
+.me-dropdown {
+  width: 100%;
   display: flex;
-  align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-  user-select: none;
+}
+.me-block {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+.me-block:hover {
+  background: var(--im-rail-hover, rgba(255, 255, 255, 0.08));
+}
+.me-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.me-status {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--im-rail, #1d222b);
+}
+.me-status.st-busy {
+  background: #f56c6c;
+}
+.me-status.st-away {
+  background: #e6a23c;
 }
 .nav {
   display: flex;
@@ -601,30 +640,6 @@ async function onLogout() {
   font-size: 11px;
   user-select: none;
 }
-.rail-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--im-rail-text, #9aa3b2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.rail-btn:hover {
-  background: var(--im-rail-hover, rgba(255, 255, 255, 0.08));
-  color: #fff;
-}
-.me {
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  border-radius: 50%;
-}
 .me-name {
   color: var(--im-rail-text, #9aa3b2);
   font-size: 11px;
@@ -633,6 +648,17 @@ async function onLogout() {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
+}
+/* 「我的」菜单内容排版 */
+.me-menu-label {
+  margin-left: 6px;
+}
+.me-menu-check {
+  margin-left: auto;
+  color: var(--el-color-success, #34c77b);
+}
+.me-menu-danger {
+  color: var(--el-color-danger, #f56c6c) !important;
 }
 .content {
   padding: 0;
