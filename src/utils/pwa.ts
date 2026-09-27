@@ -33,6 +33,11 @@ export function isIOS(): boolean {
   return /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && /Mobile/.test(ua))
 }
 
+/** 当前页面是否为安全上下文（HTTPS / localhost）：HTTP 下浏览器禁用 SW 与一键安装能力 */
+export function isSecure(): boolean {
+  return typeof window !== 'undefined' && window.isSecureContext === true
+}
+
 function refreshStandalone() {
   pwaStandalone.value = isStandalone()
   if (pwaStandalone.value) {
