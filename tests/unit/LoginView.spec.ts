@@ -60,7 +60,7 @@ describe('LoginView', () => {
   })
 
   it('登录成功跳转 home', async () => {
-    mockedLogin.mockResolvedValue({ username: 'alice', greeting: 'success:欢迎进入 are-chat！' })
+    mockedLogin.mockResolvedValue({ username: 'alice', greeting: 'success:欢迎进入小帆船！' })
     const wrapper = mountView()
     await fillLogin(wrapper, 'alice', 'arechat123')
     await wrapper.find('[data-testid="login-btn"]').trigger('click')

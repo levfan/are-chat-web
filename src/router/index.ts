@@ -73,7 +73,7 @@ router.beforeEach(async (to) => {
 })
 
 router.afterEach((to) => {
-  // 页签标题：路由名 · 朝暮（未登录/无路由名时只显示站名）
+  // 页签标题：路由名 · 小帆船（未登录/无路由名时只显示站名）
   document.title = to.meta.title ? `${to.meta.title} · ${APP_NAME}` : APP_NAME
 })
 

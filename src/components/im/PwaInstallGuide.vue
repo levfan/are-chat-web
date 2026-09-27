@@ -20,7 +20,7 @@
         <span class="step-no">3</span>
         <div class="step-text">
           <b>点击「添加」完成</b>
-          <p>桌面出现 are-chat 图标，点开即全屏运行 💕</p>
+          <p>桌面出现小帆船图标，点开即全屏运行 ⛵</p>
         </div>
       </div>
     </div>

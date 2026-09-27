@@ -6,8 +6,8 @@
     </div>
     <div class="login-card">
       <div class="brand">
-        <div class="brand-mark">💕</div>
-        <div class="brand-name">are-chat</div>
+        <div class="brand-mark">⛵</div>
+        <div class="brand-name">小帆船</div>
       </div>
       <p class="brand-sub">{{ mode === 'login' ? '登录后与心爱的人保持联系' : '提交注册申请，管理员审批通过后即可登录' }}</p>
 
@@ -145,7 +145,7 @@
       </div>
 
       <!-- 100 系统版本与构建时间：不参与交互，一眼确认部署版本 -->
-      <p class="app-version" data-testid="app-version">are-chat v{{ appVersion }} · 构建于 {{ buildTime }}</p>
+      <p class="app-version" data-testid="app-version">小帆船 v{{ appVersion }} · 构建于 {{ buildTime }}</p>
     </div>
   </div>
 </template>

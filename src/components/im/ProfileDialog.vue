@@ -205,7 +205,7 @@
       本次登录：{{ formatChatTime(auth.loginAt) }}
     </div>
     <!-- 100 系统版本与构建时间 -->
-    <div class="session-info" data-testid="app-version">朝暮 v{{ appVersion }} · 构建于 {{ buildTime }}</div>
+    <div class="session-info" data-testid="app-version">小帆船 v{{ appVersion }} · 构建于 {{ buildTime }}</div>
     <template #footer>
       <el-button @click="visible = false">{{ activeTab === 'profile' ? '取消' : '关闭' }}</el-button>
       <el-button v-if="activeTab === 'profile'" type="primary" data-testid="profile-save" @click="onSave">

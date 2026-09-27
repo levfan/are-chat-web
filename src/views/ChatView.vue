@@ -1319,7 +1319,7 @@ async function exportHistoryJson() {
   try {
     const all = await messageApi.exportConversation(peer)
     const payload = {
-      system: 'are-chat',
+      system: '小帆船',
       peer,
       exportedAt: new Date().toISOString(),
       count: all.length,

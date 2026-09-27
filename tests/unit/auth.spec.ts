@@ -29,7 +29,7 @@ beforeEach(() => {
 
 describe('auth store', () => {
   it('登录成功写入本地登录态', async () => {
-    mockedLogin.mockResolvedValue({ username: 'alice', role: 'USER', greeting: 'success:欢迎进入are-chat！' })
+    mockedLogin.mockResolvedValue({ username: 'alice', role: 'USER', greeting: 'success:欢迎进入小帆船！' })
     const auth = useAuthStore()
     expect(auth.isLoggedIn).toBe(false)
 
