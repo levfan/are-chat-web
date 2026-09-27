@@ -1,11 +1,15 @@
 <template>
   <div class="login-page">
+    <!-- 情侣风：背景飘浮爱心装饰（纯 CSS，无资源依赖） -->
+    <div class="hearts-field" aria-hidden="true">
+      <span v-for="h in LOGIN_HEARTS" :key="h.id" class="float-heart" :style="h.style">{{ h.char }}</span>
+    </div>
     <div class="login-card">
       <div class="brand">
-        <div class="brand-mark">A</div>
+        <div class="brand-mark">💕</div>
         <div class="brand-name">are-chat</div>
       </div>
-      <p class="brand-sub">{{ mode === 'login' ? '登录后与好友保持联系' : '提交注册申请，管理员审批通过后即可登录' }}</p>
+      <p class="brand-sub">{{ mode === 'login' ? '登录后与心爱的人保持联系' : '提交注册申请，管理员审批通过后即可登录' }}</p>
 
       <el-radio-group v-model="mode" class="mode-tabs" data-testid="auth-mode">
         <el-radio-button value="login">登录</el-radio-button>
@@ -158,6 +162,17 @@ const route = useRoute()
 // 100 版本信息（vite.config.ts define 注入，随构建自动更新）
 const appVersion = __APP_VERSION__
 const buildTime = __BUILD_TIME__
+
+/** 情侣风登录页：飘浮爱心装饰的位置/大小/节奏参数 */
+const LOGIN_HEARTS = [
+  { id: 1, char: '💕', style: { left: '8%', fontSize: '22px', animationDuration: '13s', animationDelay: '0s', opacity: 0.5 } },
+  { id: 2, char: '💗', style: { left: '20%', fontSize: '15px', animationDuration: '17s', animationDelay: '3s', opacity: 0.4 } },
+  { id: 3, char: '💖', style: { left: '36%', fontSize: '18px', animationDuration: '15s', animationDelay: '6s', opacity: 0.45 } },
+  { id: 4, char: '💕', style: { left: '55%', fontSize: '14px', animationDuration: '19s', animationDelay: '1.5s', opacity: 0.4 } },
+  { id: 5, char: '💗', style: { left: '72%', fontSize: '24px', animationDuration: '14s', animationDelay: '4.5s', opacity: 0.5 } },
+  { id: 6, char: '✨', style: { left: '86%', fontSize: '16px', animationDuration: '18s', animationDelay: '8s', opacity: 0.45 } },
+  { id: 7, char: '💕', style: { left: '93%', fontSize: '13px', animationDuration: '16s', animationDelay: '10s', opacity: 0.35 } },
+]
 const router = useRouter()
 const auth = useAuthStore()
 
@@ -327,15 +342,53 @@ function backToLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--xx-bg, #f3f4f7);
+  position: relative;
+  overflow: hidden;
+  /* 情侣风：粉紫暖渐变背景 */
+  background: linear-gradient(160deg, #ffeaf3 0%, #fdf0f6 42%, #f4ecfb 100%);
+}
+html.dark .login-page {
+  background: linear-gradient(160deg, #1c1117 0%, #231522 48%, #1b1424 100%);
+}
+/* 飘浮爱心：从底部缓缓升到顶部，循环 */
+.hearts-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.float-heart {
+  position: absolute;
+  bottom: -40px;
+  animation-name: login-heart-float;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  user-select: none;
+}
+@keyframes login-heart-float {
+  0% {
+    transform: translateY(0) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(-52vh) translateX(18px) rotate(10deg);
+  }
+  100% {
+    transform: translateY(-110vh) translateX(-10px) rotate(-6deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .float-heart {
+    animation: none;
+    opacity: 0.25;
+  }
 }
 .login-card {
   /* 手机浏览器（~375px 视口）不横向溢出 */
   width: min(400px, calc(100vw - 24px));
   background: var(--im-panel, #fff);
-  border: 1px solid var(--im-border, #e6e8eb);
-  border-radius: 12px;
-  box-shadow: var(--im-shadow, 0 8px 30px rgba(0, 0, 0, 0.08));
+  border: 1px solid var(--im-border, #f0e3e9);
+  border-radius: 20px;
+  box-shadow: var(--im-shadow, 0 12px 40px rgba(180, 80, 120, 0.16));
   padding: 32px;
   text-align: center;
 }
@@ -348,15 +401,15 @@ function backToLogin() {
 .brand-mark {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
-  background: var(--xx-accent, #3370ff);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff9ec4, #e9487f);
   color: #fff;
   font-size: 20px;
-  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
+  box-shadow: 0 4px 12px rgba(233, 72, 127, 0.35);
 }
 .brand-name {
   font-size: 21px;
@@ -385,12 +438,12 @@ function backToLogin() {
 .dev-code {
   margin: -2px 0 10px;
   font-size: 12px;
-  color: var(--xx-accent, #3370ff);
+  color: var(--xx-accent, #ec5f92);
   text-align: left;
 }
 .btn {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 .error {
   margin-top: 14px;

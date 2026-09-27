@@ -35,7 +35,7 @@ function drawBadge(count: number, accent: string): string {
   return canvas.toDataURL('image/png')
 }
 
-export function updateFaviconBadge(count: number, accent = '#3370ff') {
+export function updateFaviconBadge(count: number, accent = '#ec5f92') {
   const link = ensureLink()
   if (!link) {
     return

@@ -276,7 +276,7 @@ onMounted(() => {
   transition: border-color 0.15s;
 }
 .promise-card:hover {
-  border-color: var(--xx-accent, #3370ff);
+  border-color: var(--xx-accent, #ec5f92);
 }
 .promise-card.overdue {
   border-color: #f3d19e;

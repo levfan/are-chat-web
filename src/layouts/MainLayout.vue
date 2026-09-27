@@ -647,7 +647,7 @@ function dismissPwaBanner() {
   color: #fff;
 }
 .nav-item.active {
-  background: var(--xx-accent, #3370ff);
+  background: var(--xx-accent, #ec5f92);
   color: #fff;
 }
 .nav-badge {

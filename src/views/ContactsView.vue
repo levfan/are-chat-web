@@ -708,8 +708,8 @@ onMounted(() => {
   transition: all 0.14s ease;
 }
 .account-chip:hover {
-  border-color: var(--xx-accent, #3370ff);
-  color: var(--xx-accent, #3370ff);
+  border-color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #ec5f92);
 }
 .profile-card {
   display: flex;

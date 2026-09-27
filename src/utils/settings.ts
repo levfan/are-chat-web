@@ -9,9 +9,10 @@ export interface SkinOption {
   gradient: string
 }
 
+/** 皮肤 × 6：默认樱花粉（情侣风），晴空蓝保留为可选项。 */
 export const SKINS: SkinOption[] = [
-  { id: 'blue', label: '晴空蓝', color: '#3370ff', gradient: 'linear-gradient(135deg, #5b8cff, #2f66f0)' },
   { id: 'sakura', label: '樱花粉', color: '#ec5f92', gradient: 'linear-gradient(135deg, #ff9ec4, #e9487f)' },
+  { id: 'blue', label: '晴空蓝', color: '#3370ff', gradient: 'linear-gradient(135deg, #5b8cff, #2f66f0)' },
   { id: 'night', label: '暗夜紫', color: '#8b5cf6', gradient: 'linear-gradient(135deg, #a78bfa, #7c3aed)' },
   { id: 'forest', label: '森林绿', color: '#10b981', gradient: 'linear-gradient(135deg, #34d399, #059669)' },
   { id: 'sunset', label: '落日橙', color: '#f97316', gradient: 'linear-gradient(135deg, #fbbf24, #ea580c)' },
@@ -71,7 +72,7 @@ function safeSet(key: string, value: string) {
 
 export function currentSkin(): string {
   const id = safeGet(SKIN_KEY)
-  return SKINS.some((s) => s.id === id) ? (id as string) : 'blue'
+  return SKINS.some((s) => s.id === id) ? (id as string) : 'sakura'
 }
 
 export function currentFont(): string {

@@ -476,7 +476,7 @@ onMounted(() => {
   background: transparent;
 }
 .cal-cell.today {
-  outline: 2px solid var(--xx-accent, #3370ff);
+  outline: 2px solid var(--xx-accent, #ec5f92);
   outline-offset: -2px;
 }
 .cal-day {

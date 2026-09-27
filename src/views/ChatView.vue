@@ -1656,7 +1656,7 @@ onUnmounted(() => {
 }
 .conv-item.active {
   background: var(--im-active, #eef3fe);
-  border-left-color: var(--xx-accent, #3370ff);
+  border-left-color: var(--xx-accent, #ec5f92);
 }
 .conv-main {
   flex: 1;
@@ -1756,7 +1756,7 @@ onUnmounted(() => {
 }
 .head-btn:hover {
   background: var(--im-hover, #f2f3f5);
-  color: var(--xx-accent, #3370ff);
+  color: var(--xx-accent, #ec5f92);
 }
 .dm-area {
   flex: 1;
@@ -1793,7 +1793,7 @@ onUnmounted(() => {
   color: var(--im-text-2, #51565f);
 }
 .pin-banner .el-icon {
-  color: var(--xx-accent, #3370ff);
+  color: var(--xx-accent, #ec5f92);
   flex-shrink: 0;
 }
 .pin-text {
@@ -1812,10 +1812,10 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 2px dashed var(--xx-accent, #3370ff);
+  border: 2px dashed var(--xx-accent, #ec5f92);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--xx-accent, #3370ff) 8%, transparent);
-  color: var(--xx-accent, #3370ff);
+  background: color-mix(in srgb, var(--xx-accent, #ec5f92) 8%, transparent);
+  color: var(--xx-accent, #ec5f92);
   font-size: 14px;
   z-index: 15;
   pointer-events: none;
@@ -1927,7 +1927,7 @@ onUnmounted(() => {
 }
 .hit-from {
   font-size: 12px;
-  color: var(--xx-accent, #3370ff);
+  color: var(--xx-accent, #ec5f92);
   font-weight: 500;
 }
 .hit-content {
@@ -1952,7 +1952,7 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 8px;
   background: var(--im-quote-bg, rgba(51, 112, 255, 0.06));
-  border-left: 3px solid var(--xx-accent, #3370ff);
+  border-left: 3px solid var(--xx-accent, #ec5f92);
   border-radius: 6px;
   padding: 4px 10px;
   margin-bottom: 6px;
@@ -1990,7 +1990,7 @@ onUnmounted(() => {
 }
 .tool-btn:hover {
   background: var(--im-hover, #f2f3f5);
-  color: var(--xx-accent, #3370ff);
+  color: var(--xx-accent, #ec5f92);
 }
 .tip {
   font-size: 11px;
@@ -2031,8 +2031,8 @@ onUnmounted(() => {
   line-height: 16px;
 }
 .filter-chip.active {
-  border-color: var(--xx-accent, #3370ff);
-  color: var(--xx-accent, #3370ff);
+  border-color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #ec5f92);
   background: var(--xx-accent-soft, rgba(51, 112, 255, 0.08));
 }
 .read-all {
@@ -2062,7 +2062,7 @@ onUnmounted(() => {
   font-size: 13px;
 }
 .empty-sub a {
-  color: var(--xx-accent, #3370ff);
+  color: var(--xx-accent, #ec5f92);
   text-decoration: none;
 }
 .empty-sub a:hover {
@@ -2092,7 +2092,7 @@ onUnmounted(() => {
 }
 .card-meta {
   font-size: 12px;
-  color: var(--xx-accent, #3370ff);
+  color: var(--xx-accent, #ec5f92);
 }
 
 /* ---- 72/73 名片与位置分享 ---- */
@@ -2120,10 +2120,10 @@ onUnmounted(() => {
   transition: border-color 0.15s, background 0.15s;
 }
 .place-chip:hover {
-  border-color: var(--xx-accent, #3370ff);
+  border-color: var(--xx-accent, #ec5f92);
 }
 .place-chip.active {
-  border-color: var(--xx-accent, #3370ff);
+  border-color: var(--xx-accent, #ec5f92);
   background: var(--xx-accent-soft, rgba(51, 112, 255, 0.1));
 }
 .place-name {
@@ -2153,7 +2153,7 @@ onUnmounted(() => {
 }
 .back-btn:hover {
   background: var(--im-hover, #f2f3f5);
-  color: var(--xx-accent, #3370ff);
+  color: var(--xx-accent, #ec5f92);
 }
 @media (max-width: 768px) {
   /* 未选会话：只显示会话列表；选中后：只显示聊天窗 */

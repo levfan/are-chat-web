@@ -1,72 +1,76 @@
-/* ============ 设计令牌：中性色 + 单一强调色（浅色） ============ */
+/* ============ 设计令牌：暖中性色 + 情侣粉强调色（浅色，默认樱花粉主题） ============ */
 :root {
-  /* Element Plus 主色对齐（#3370ff 蓝） */
-  --el-color-primary: #3370ff;
-  --el-color-primary-light-3: #6691ff;
-  --el-color-primary-light-5: #99b3ff;
-  --el-color-primary-light-7: #ccd9ff;
-  --el-color-primary-light-8: #e5edff;
-  --el-color-primary-light-9: #f0f5ff;
-  --el-color-primary-dark-2: #295ad9;
+  /* Element Plus 主色对齐（#ec5f92 樱花粉） */
+  --el-color-primary: #ec5f92;
+  --el-color-primary-light-3: #f182a9;
+  --el-color-primary-light-5: #f5aec7;
+  --el-color-primary-light-7: #fad4e1;
+  --el-color-primary-light-8: #fce4ec;
+  --el-color-primary-light-9: #fdf0f5;
+  --el-color-primary-dark-2: #c94e7a;
 
-  --xx-bg: #f3f4f7;
-  --xx-text: #1f2329;
-  --xx-accent: #3370ff;
+  /* Element Plus 圆角加大，整体更柔和 */
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
 
-  /* IM 界面 */
-  --im-bg: #f7f8fa;
+  --xx-bg: #faf5f7;
+  --xx-text: #3a2e34;
+  --xx-accent: #ec5f92;
+
+  /* IM 界面（暖粉灰调） */
+  --im-bg: #faf6f8;
   --im-panel: #ffffff;
-  --im-border: #e6e8eb;
-  --im-hover: #f2f3f5;
-  --im-active: #eef3fe;
-  --im-text: #1f2329;
-  --im-text-2: #51565f;
-  --im-muted: #8f959e;
-  --im-faint: #b9bec7;
-  --im-center-bg: rgba(0, 0, 0, 0.05);
+  --im-border: #f0e3e9;
+  --im-hover: #f7eef2;
+  --im-active: #fdeaf2;
+  --im-text: #3a2e34;
+  --im-text-2: #6d5a63;
+  --im-muted: #a08b95;
+  --im-faint: #c7b3bd;
+  --im-center-bg: rgba(180, 80, 120, 0.04);
   --im-bubble-peer: #ffffff;
-  --im-bubble-peer-border: #e6e8eb;
-  --im-bubble-me: #3370ff;
+  --im-bubble-peer-border: #f0e3e9;
+  --im-bubble-me: #ec5f92;
   --im-bubble-me-text: #ffffff;
-  --im-quote-bg: rgba(51, 112, 255, 0.06);
-  --im-rail: #1d222b;
-  --im-rail-hover: rgba(255, 255, 255, 0.08);
-  --im-rail-text: #9aa3b2;
-  --im-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --im-quote-bg: rgba(236, 95, 146, 0.08);
+  --im-rail: #2a1e28;
+  --im-rail-hover: rgba(255, 214, 230, 0.12);
+  --im-rail-text: #b3a3ad;
+  --im-shadow: 0 8px 30px rgba(180, 80, 120, 0.14);
 }
 
-/* ============ 深色模式 ============ */
+/* ============ 深色模式（暖梅紫调） ============ */
 html.dark {
-  --el-color-primary: #4a80f0;
-  --el-color-primary-light-3: #3a66c8;
-  --el-color-primary-light-5: #2c4f9e;
-  --el-color-primary-light-7: #233f78;
-  --el-color-primary-light-8: #1d345f;
-  --el-color-primary-light-9: #182a48;
-  --el-color-primary-dark-2: #5f92f4;
+  --el-color-primary: #e0679c;
+  --el-color-primary-light-3: #b84e7e;
+  --el-color-primary-light-5: #8f3c62;
+  --el-color-primary-light-7: #662b46;
+  --el-color-primary-light-8: #522338;
+  --el-color-primary-light-9: #3e1a2a;
+  --el-color-primary-dark-2: #ec85b1;
 
-  --xx-bg: #0e1013;
-  --xx-text: #e6e8ec;
-  --xx-accent: #4a80f0;
+  --xx-bg: #14100f;
+  --xx-text: #f0e6ea;
+  --xx-accent: #e0679c;
 
-  --im-bg: #101216;
-  --im-panel: #16181d;
-  --im-border: #262a31;
-  --im-hover: #1e2127;
-  --im-active: #1b2a44;
-  --im-text: #e6e8ec;
-  --im-text-2: #a6acb5;
-  --im-muted: #7d838d;
-  --im-faint: #565b64;
-  --im-center-bg: rgba(255, 255, 255, 0.07);
-  --im-bubble-peer: #1e2127;
-  --im-bubble-peer-border: #262a31;
-  --im-bubble-me: #2c5fc4;
+  --im-bg: #161114;
+  --im-panel: #1d1619;
+  --im-border: #302228;
+  --im-hover: #261c20;
+  --im-active: #3a2431;
+  --im-text: #f0e6ea;
+  --im-text-2: #b8a4ae;
+  --im-muted: #8a7580;
+  --im-faint: #5e4c55;
+  --im-center-bg: rgba(255, 255, 255, 0.06);
+  --im-bubble-peer: #261c20;
+  --im-bubble-peer-border: #302228;
+  --im-bubble-me: #c94f86;
   --im-bubble-me-text: #ffffff;
-  --im-quote-bg: rgba(77, 130, 240, 0.12);
-  --im-rail: #14161a;
-  --im-rail-hover: rgba(255, 255, 255, 0.07);
-  --im-rail-text: #8f96a3;
+  --im-quote-bg: rgba(224, 103, 156, 0.14);
+  --im-rail: #170f14;
+  --im-rail-hover: rgba(255, 214, 230, 0.08);
+  --im-rail-text: #9a8791;
   --im-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
 
   color-scheme: dark;
@@ -126,6 +130,15 @@ html[data-skin] {
   --el-color-primary-light-8: color-mix(in srgb, var(--xx-accent) 20%, #fff);
   --el-color-primary-light-9: color-mix(in srgb, var(--xx-accent) 10%, #fff);
   --el-color-primary-dark-2: color-mix(in srgb, var(--xx-accent) 82%, #000);
+}
+
+/* 晴空蓝：原默认色，改为可选项保留 */
+html[data-skin='blue'] {
+  --xx-accent: #3370ff;
+  --xx-accent-soft: color-mix(in srgb, #3370ff 12%, transparent);
+  --im-bubble-me: #3370ff;
+  --im-bubble-gradient: linear-gradient(135deg, #5b8cff, #2f66f0);
+  --im-quote-bg: color-mix(in srgb, #3370ff 10%, transparent);
 }
 
 html[data-skin='sakura'] {

@@ -62,7 +62,7 @@ watch(visible, (value) => emit('update:modelValue', value))
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--xx-accent, #3370ff);
+  background: var(--xx-accent, #ec5f92);
   color: #fff;
   font-size: 12px;
   font-weight: 700;

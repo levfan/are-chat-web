@@ -592,7 +592,7 @@ async function onSave() {
   justify-content: center;
 }
 .bg-option.picked {
-  border-color: var(--xx-accent, #3370ff);
+  border-color: var(--xx-accent, #ec5f92);
 }
 .bg-label {
   font-size: 10px;
