@@ -3,7 +3,9 @@ import { defineStore } from 'pinia'
 import { ElNotification } from 'element-plus'
 import { coupleApi } from '@/api/couple'
 import type {
+  CoupleActionVO,
   CoupleAnniversaryVO,
+  CoupleBondStatsVO,
   CoupleCheckinKind,
   CoupleCityCardVO,
   CoupleFundVO,
@@ -13,6 +15,8 @@ import type {
   CoupleLetterVO,
   CoupleMoodDayVO,
   CoupleMoodKind,
+  CoupleMoodReactionKind,
+  CoupleMoodReactionVO,
   CoupleOverview,
   CouplePactVO,
   CouplePromiseVO,
@@ -53,6 +57,11 @@ export const useCoupleStore = defineStore('couple', () => {
   const pacts = ref<CouplePactVO[]>([])
   const funds = ref<CoupleFundVO[]>([])
   const cityCard = ref<CoupleCityCardVO | null>(null)
+  /** 贴贴统计与最近动作流 */
+  const bondStats = ref<CoupleBondStatsVO | null>(null)
+  const bondActions = ref<CoupleActionVO[]>([])
+  /** 今天双方给彼此心情的回应 */
+  const moodReaction = ref<CoupleMoodReactionVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -66,6 +75,7 @@ export const useCoupleStore = defineStore('couple', () => {
     pacts: false,
     funds: false,
     cityCard: false,
+    bond: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -120,6 +130,9 @@ export const useCoupleStore = defineStore('couple', () => {
     pacts.value = []
     funds.value = []
     cityCard.value = null
+    bondStats.value = null
+    bondActions.value = []
+    moodReaction.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -132,6 +145,7 @@ export const useCoupleStore = defineStore('couple', () => {
       pacts: false,
       funds: false,
       cityCard: false,
+      bond: false,
     }
     promiseDraft.value = null
   }
@@ -378,6 +392,50 @@ export const useCoupleStore = defineStore('couple', () => {
     await loadFunds()
   }
 
+  // ---------- 贴贴互动 ----------
+
+  async function loadBond() {
+    const [stats, actions, reaction] = await Promise.all([
+      coupleApi.bondStats(),
+      coupleApi.bondActions(),
+      coupleApi.moodReactions(),
+    ])
+    bondStats.value = stats
+    bondActions.value = actions ?? []
+    moodReaction.value = reaction
+    loadedLists.value.bond = true
+  }
+
+  /** 发送贴贴动作，返回最新统计（含今日双方动作数） */
+  async function sendAction(kind: Parameters<typeof coupleApi.sendAction>[0]) {
+    const stats = await coupleApi.sendAction(kind)
+    bondStats.value = stats
+    void coupleApi.bondActions().then((list) => {
+      bondActions.value = list ?? []
+    })
+    return stats
+  }
+
+  /** 回应 TA 今天的心情 */
+  async function reactMood(reaction: CoupleMoodReactionKind, day?: string) {
+    const vo = await coupleApi.reactMood(reaction, day)
+    moodReaction.value = vo
+    return vo
+  }
+
+  async function loadMoodReaction(day?: string) {
+    moodReaction.value = await coupleApi.moodReactions(day)
+  }
+
+  /** 给 TA 设置专属爱称（空串清除），同步总览里的 partner.petName */
+  async function setPetName(name: string | null) {
+    const nick = await coupleApi.setPetName(name)
+    if (overview.value?.space) {
+      overview.value.space.partner.petName = nick
+    }
+    return nick
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -500,6 +558,31 @@ export const useCoupleStore = defineStore('couple', () => {
           void loadCityCard()
         }
         break
+      case 'bond-action':
+        notify('🫶 贴贴', msg.detail)
+        if (loadedLists.value.bond) {
+          void loadBond()
+        }
+        break
+      case 'bond-milestone':
+        notify('🎉 贴贴里程碑', msg.detail)
+        if (loadedLists.value.bond) {
+          void loadBond()
+        }
+        break
+      case 'mood-reacted':
+        notify('💗 心情回应', msg.detail)
+        if (loadedLists.value.moods) {
+          void loadMoods()
+        }
+        if (loadedLists.value.bond) {
+          void loadBond()
+        }
+        break
+      case 'pet-name-changed':
+        notify('🏷️ 专属爱称', msg.detail)
+        void loadOverview()
+        break
       default:
         break
     }
@@ -519,6 +602,9 @@ export const useCoupleStore = defineStore('couple', () => {
     pacts,
     funds,
     cityCard,
+    bondStats,
+    bondActions,
+    moodReaction,
     promiseDraft,
     space,
     established,
@@ -573,5 +659,10 @@ export const useCoupleStore = defineStore('couple', () => {
     createFund,
     depositFund,
     deleteFund,
+    loadBond,
+    sendAction,
+    reactMood,
+    loadMoodReaction,
+    setPetName,
   }
 })

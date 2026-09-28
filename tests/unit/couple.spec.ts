@@ -171,7 +171,7 @@ function overview(partial: Partial<CoupleOverview>): CoupleOverview {
 const establishedOverview = overview({
   space: {
     id: 's1',
-    partner: { username: 'bob', nickname: '波波', avatar: 'c2', online: true },
+    partner: { username: 'bob', nickname: '波波', avatar: 'c2', online: true, petName: null },
     created: Date.now() - 10 * 86_400_000,
     anniversary: null,
     days: 11,

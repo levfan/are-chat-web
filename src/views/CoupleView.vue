@@ -22,8 +22,21 @@
               data-testid="couple-partner-avatar"
             />
             <div class="pair-names">
-              <span class="pair-name" data-testid="couple-partner-name">{{ couple.space!.partner.nickname }}</span>
-              <span class="pair-username">@{{ couple.space!.partner.username }}</span>
+              <span class="pair-name" data-testid="couple-partner-name">
+                {{ couple.space!.partner.petName || couple.space!.partner.nickname }}
+              </span>
+              <span class="pair-username">
+                @{{ couple.space!.partner.username }}
+                <button
+                  type="button"
+                  class="pet-edit"
+                  title="给 TA 起个专属爱称"
+                  data-testid="couple-pet-edit"
+                  @click="openPetEdit"
+                >
+                  🏷️ 爱称
+                </button>
+              </span>
             </div>
           </div>
           <div class="stats">
@@ -78,6 +91,9 @@
       <!-- 三大功能 -->
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
+          <el-tab-pane label="🫶 贴贴" name="bond" lazy>
+            <CoupleBond />
+          </el-tab-pane>
           <el-tab-pane label="🤝 约定" name="promises">
             <div class="tab-stack">
               <CouplePromises />
@@ -125,6 +141,25 @@
           </el-button>
         </template>
       </el-dialog>
+
+      <!-- 专属爱称弹窗 -->
+      <el-dialog v-model="petEditVisible" title="给 TA 起个专属爱称" width="360px" draggable data-testid="couple-pet-dialog">
+        <el-input
+          v-model="petEditName"
+          maxlength="30"
+          show-word-limit
+          :placeholder="`比如：宝宝、猪猪、${couple.space?.partner.nickname || '小可爱'}`"
+          data-testid="couple-pet-name"
+          @keyup.enter="onSavePet"
+        />
+        <p class="anniv-tip">只有你们俩能看到，空间里 TA 的名字会变成它；留空保存 = 清除爱称</p>
+        <template #footer>
+          <el-button @click="petEditVisible = false">取消</el-button>
+          <el-button type="primary" :loading="savingPet" data-testid="couple-pet-save" @click="onSavePet">
+            保存
+          </el-button>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
@@ -139,6 +174,7 @@ import { useCoupleStore } from '@/stores/couple'
 import { todayBackground as getTodayBackground, todayStickers as getTodayStickers, todayThemeLabel } from '@/utils/coupleTheme'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import CoupleSetup from '@/components/couple/CoupleSetup.vue'
+import CoupleBond from '@/components/couple/CoupleBond.vue'
 import CouplePromises from '@/components/couple/CouplePromises.vue'
 import CoupleRituals from '@/components/couple/CoupleRituals.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
@@ -157,6 +193,9 @@ const activeTab = ref('promises')
 const annivEditVisible = ref(false)
 const annivEditDate = ref<string | null>(null)
 const savingAnniv = ref(false)
+const petEditVisible = ref(false)
+const petEditName = ref('')
+const savingPet = ref(false)
 
 /** 悄悄话 tab 标题：有可拆未拆的信时带数量红点 */
 const letterTabLabel = computed(() =>
@@ -173,6 +212,25 @@ const themeStickers = getTodayStickers()
 function openAnnivEdit() {
   annivEditDate.value = couple.space?.anniversary ?? null
   annivEditVisible.value = true
+}
+
+function openPetEdit() {
+  petEditName.value = couple.space?.partner.petName ?? ''
+  petEditVisible.value = true
+}
+
+async function onSavePet() {
+  savingPet.value = true
+  try {
+    const name = petEditName.value.trim()
+    await couple.setPetName(name || null)
+    ElMessage.success(name ? `爱称已更新：「${name}」🏷️` : '爱称已清除')
+    petEditVisible.value = false
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '保存失败')
+  } finally {
+    savingPet.value = false
+  }
 }
 
 async function onSaveAnniv() {
@@ -209,7 +267,7 @@ async function onDissolve() {
 onMounted(() => {
   // 聊天「记入约定」跳转：?tab=promises 直接定位到约定页
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
-  if (['promises', 'rituals', 'letters', 'mood', 'shared', 'timeline'].includes(tab)) {
+  if (['bond', 'promises', 'rituals', 'letters', 'mood', 'shared', 'timeline'].includes(tab)) {
     activeTab.value = tab
   }
   // MainLayout 已在登录后 init 过：这里兜底刷新总览（邀请状态可能变化）
@@ -294,6 +352,18 @@ onMounted(() => {
 .pair-username {
   font-size: 12px;
   color: var(--im-muted, #8f959e);
+}
+.pet-edit {
+  margin-left: 6px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
+  cursor: pointer;
+}
+.pet-edit:hover {
+  color: var(--el-color-primary, #409eff);
 }
 .stats {
   display: flex;

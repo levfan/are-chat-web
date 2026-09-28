@@ -32,6 +32,33 @@
       <p class="mood-tip">每天一条心情，双方互相可见；今天记过的直接改就行～</p>
     </div>
 
+    <!-- 回应 TA 今天的心情 -->
+    <div v-if="partnerToday" class="react-box" data-testid="couple-mood-reaction">
+      <h4 class="section-title">
+        🫶 回应 {{ couple.space?.partner.petName || couple.space?.partner.nickname || 'TA' }} 今天的心情
+      </h4>
+      <div class="react-row">
+        <button
+          v-for="r in REACTIONS"
+          :key="r.key"
+          type="button"
+          class="react-btn"
+          :class="{ active: couple.moodReaction?.myReaction === r.key }"
+          :data-testid="`couple-mood-react-${r.key.toLowerCase()}`"
+          @click="onReact(r.key)"
+        >
+          {{ r.emoji }} {{ r.label }}
+        </button>
+      </div>
+      <p class="mood-tip">
+        TA 给你的回应：<template v-if="couple.moodReaction?.partnerReaction">
+          {{ reactionMeta(couple.moodReaction.partnerReaction).emoji }}
+          {{ reactionMeta(couple.moodReaction.partnerReaction).label }}
+        </template>
+        <template v-else>还没有～</template>
+      </p>
+    </div>
+
     <!-- 最近 14 天双人心情条 -->
     <div class="strip-box" data-testid="couple-mood-strip">
       <h4 class="section-title">📈 最近 14 天</h4>
@@ -96,7 +123,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useCoupleStore } from '@/stores/couple'
-import type { CoupleMoodKind } from '@/types'
+import type { CoupleMoodKind, CoupleMoodReactionKind } from '@/types'
 
 const MOODS: { key: CoupleMoodKind; emoji: string; label: string }[] = [
   { key: 'LOVE', emoji: '😍', label: '恋爱中' },
@@ -118,6 +145,30 @@ const couple = useCoupleStore()
 const selected = ref<CoupleMoodKind>('LOVE')
 const note = ref('')
 const saving = ref(false)
+
+const REACTIONS: { key: CoupleMoodReactionKind; emoji: string; label: string }[] = [
+  { key: 'HUG', emoji: '🤗', label: '抱抱' },
+  { key: 'KISS', emoji: '💋', label: '亲亲' },
+  { key: 'CHEER', emoji: '💪', label: '加油' },
+  { key: 'PAT', emoji: '🫶', label: '摸摸头' },
+]
+const REACTION_MAP = new Map(REACTIONS.map((r) => [r.key, r]))
+
+function reactionMeta(reaction: CoupleMoodReactionKind) {
+  return REACTION_MAP.get(reaction) ?? { emoji: '💕', label: '回应' }
+}
+
+/** TA 今天有没有记心情（记了才能回应） */
+const partnerToday = computed(() => couple.moods.some((d) => d.day === today && d.partner))
+
+async function onReact(reaction: CoupleMoodReactionKind) {
+  try {
+    await couple.reactMood(reaction)
+    ElMessage.success(`已回应：${reactionMeta(reaction).label} ${reactionMeta(reaction).emoji}`)
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '回应失败')
+  }
+}
 
 const today = new Date().toLocaleDateString('sv-SE')
 
@@ -187,11 +238,35 @@ onMounted(() => {
   font-weight: 700;
 }
 .today-box,
+.react-box,
 .strip-box,
 .detail-box {
   border: 1px solid var(--el-border-color-lighter, #ebeef5);
   border-radius: 10px;
   padding: 14px;
+}
+.react-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.react-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--el-border-color-lighter, #ebeef5);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.react-btn:hover {
+  border-color: #f89898;
+  background: #fff0f0;
+}
+.react-btn.active {
+  border-color: #f56c6c;
+  background: #fde2e2;
+  font-weight: 600;
 }
 .mood-grid {
   display: grid;

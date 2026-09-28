@@ -319,6 +319,8 @@ export interface CouplePartnerVO {
   nickname: string
   avatar: string
   online: boolean
+  /** 我给 TA 起的专属爱称（空 = 没起，展示时回退昵称） */
+  petName: string | null
 }
 
 export interface CoupleSpaceVO {
@@ -539,4 +541,51 @@ export interface CoupleFundVO {
   createdBy: string
   deposits: CoupleFundDepositVO[]
   created: number
+}
+
+// ============ 情侣空间：贴贴互动 ============
+
+/** 贴贴动作类型 */
+export type CoupleActionKind =
+  | 'POKE'
+  | 'HUG'
+  | 'KISS'
+  | 'PAT'
+  | 'NUZZLE'
+  | 'TICKLE'
+  | 'MISS'
+
+export interface CoupleActionVO {
+  id: string
+  username: string
+  kind: CoupleActionKind
+  created: number
+}
+
+/** 单类贴贴动作统计 */
+export interface CoupleKindStat {
+  kind: CoupleActionKind
+  emoji: string
+  label: string
+  total: number
+  mine: number
+  partner: number
+  lastAt: number | null
+}
+
+export interface CoupleBondStatsVO {
+  kinds: CoupleKindStat[]
+  todayCount: number
+  todayMine: number
+  todayPartner: number
+}
+
+/** 心情回应类型 */
+export type CoupleMoodReactionKind = 'HUG' | 'KISS' | 'CHEER' | 'PAT'
+
+/** 某天双方给彼此心情的回应（谁还没回应就是 null） */
+export interface CoupleMoodReactionVO {
+  day: string
+  myReaction: CoupleMoodReactionKind | null
+  partnerReaction: CoupleMoodReactionKind | null
 }

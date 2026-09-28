@@ -1,6 +1,9 @@
 import { http } from './http'
 import type {
+  CoupleActionKind,
+  CoupleActionVO,
   CoupleAnniversaryVO,
+  CoupleBondStatsVO,
   CoupleCheckinStateVO,
   CoupleCheckinKind,
   CoupleCityCardVO,
@@ -11,6 +14,8 @@ import type {
   CoupleLetterVO,
   CoupleMoodDayVO,
   CoupleMoodKind,
+  CoupleMoodReactionKind,
+  CoupleMoodReactionVO,
   CoupleMoodVO,
   CoupleOverview,
   CouplePactVO,
@@ -111,4 +116,24 @@ export const coupleApi = {
   depositFund: (id: string, amount: number, note?: string) =>
     http.postJson<CoupleFundVO>(`/api/couple/funds/${id}/deposits`, { amount, note: note ?? null }),
   deleteFund: (id: string) => http.delete<void>(`/api/couple/funds/${id}`),
+
+  // ---------- 贴贴互动 ----------
+  /** 发送一个贴贴动作（戳一戳/抱抱/亲亲/捏捏脸/蹭蹭/挠痒痒/在想你） */
+  sendAction: (kind: CoupleActionKind) =>
+    http.postJson<CoupleBondStatsVO>('/api/couple/bond/actions', { kind }),
+  /** 最近动作流（新→旧，默认 50 条） */
+  bondActions: (limit = 50) => http.get<CoupleActionVO[]>(`/api/couple/bond/actions?limit=${limit}`),
+  /** 贴贴统计 */
+  bondStats: () => http.get<CoupleBondStatsVO>('/api/couple/bond/stats'),
+  /** 回应 TA 某天的心情（默认今天）：抱抱/亲亲/加油/摸摸头 */
+  reactMood: (reaction: CoupleMoodReactionKind, day?: string) =>
+    http.postJson<CoupleMoodReactionVO>('/api/couple/bond/mood-reactions', { day: day ?? null, reaction }),
+  /** 某天（默认今天）双方给彼此心情的回应 */
+  moodReactions: (day?: string) =>
+    http.get<CoupleMoodReactionVO>(
+      day ? `/api/couple/bond/mood-reactions?day=${day}` : '/api/couple/bond/mood-reactions',
+    ),
+  /** 给 TA 设置专属爱称（空串清除） */
+  setPetName: (name: string | null) =>
+    http.putJson<string | null>('/api/couple/bond/pet-name', { name: name ?? null }),
 }
