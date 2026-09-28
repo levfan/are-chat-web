@@ -101,7 +101,10 @@
             </div>
           </el-tab-pane>
           <el-tab-pane label="🌅 小仪式" name="rituals" lazy>
-            <CoupleRituals />
+            <div class="tab-stack">
+              <CoupleRituals />
+              <CoupleDaily />
+            </div>
           </el-tab-pane>
           <el-tab-pane :label="letterTabLabel" name="letters" lazy>
             <CoupleLetter />
@@ -177,6 +180,7 @@ import CoupleSetup from '@/components/couple/CoupleSetup.vue'
 import CoupleBond from '@/components/couple/CoupleBond.vue'
 import CouplePromises from '@/components/couple/CouplePromises.vue'
 import CoupleRituals from '@/components/couple/CoupleRituals.vue'
+import CoupleDaily from '@/components/couple/CoupleDaily.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'

@@ -8,6 +8,7 @@ import type {
   CoupleBondStatsVO,
   CoupleCheckinKind,
   CoupleCityCardVO,
+  CoupleFortuneVO,
   CoupleFundVO,
   CoupleIntimacyVO,
   CoupleItemKind,
@@ -22,6 +23,9 @@ import type {
   CouplePromiseVO,
   CoupleQuestionHistoryVO,
   CoupleQuestionVO,
+  CoupleStoryVO,
+  CoupleTacitStateVO,
+  CoupleTaskVO,
   CoupleTimelineDay,
 } from '@/types'
 
@@ -62,6 +66,13 @@ export const useCoupleStore = defineStore('couple', () => {
   const bondActions = ref<CoupleActionVO[]>([])
   /** 今天双方给彼此心情的回应 */
   const moodReaction = ref<CoupleMoodReactionVO | null>(null)
+  /** 每日仪式升级：任务卡 / 默契 / 运势 / 晚安故事 */
+  const task = ref<CoupleTaskVO | null>(null)
+  const recentTasks = ref<CoupleTaskVO[]>([])
+  const tacit = ref<CoupleTacitStateVO | null>(null)
+  const tacitHistory = ref<import('@/types').CoupleTacitVO[]>([])
+  const fortune = ref<CoupleFortuneVO | null>(null)
+  const goodnightStory = ref<CoupleStoryVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -76,6 +87,7 @@ export const useCoupleStore = defineStore('couple', () => {
     funds: false,
     cityCard: false,
     bond: false,
+    ritual: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -133,6 +145,12 @@ export const useCoupleStore = defineStore('couple', () => {
     bondStats.value = null
     bondActions.value = []
     moodReaction.value = null
+    task.value = null
+    recentTasks.value = []
+    tacit.value = null
+    tacitHistory.value = []
+    fortune.value = null
+    goodnightStory.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -146,6 +164,7 @@ export const useCoupleStore = defineStore('couple', () => {
       funds: false,
       cityCard: false,
       bond: false,
+      ritual: false,
     }
     promiseDraft.value = null
   }
@@ -436,6 +455,56 @@ export const useCoupleStore = defineStore('couple', () => {
     return nick
   }
 
+  // ---------- 每日仪式升级 ----------
+
+  async function loadRitual() {
+    const [t, tacitState, f, story] = await Promise.all([
+      coupleApi.todayTask(),
+      coupleApi.tacitState(),
+      coupleApi.fortune(),
+      coupleApi.goodnightStory(),
+    ])
+    task.value = t
+    tacit.value = tacitState
+    fortune.value = f
+    goodnightStory.value = story
+    loadedLists.value.ritual = true
+  }
+
+  async function loadRecentTasks() {
+    recentTasks.value = (await coupleApi.recentTasks()) ?? []
+  }
+
+  async function doneTask() {
+    const vo = await coupleApi.doneTask()
+    task.value = vo
+    void loadRecentTasks()
+    return vo
+  }
+
+  async function startTacit() {
+    const vo = await coupleApi.startTacit()
+    if (tacit.value) {
+      tacit.value.pending = vo
+      tacit.value.totalCount += 1
+    }
+    return vo
+  }
+
+  async function answerTacit(answer: string) {
+    const vo = await coupleApi.answerTacit(answer)
+    await loadRitual()
+    return vo
+  }
+
+  async function loadTacitHistory() {
+    tacitHistory.value = (await coupleApi.tacitHistory()) ?? []
+  }
+
+  async function drawLoveWord() {
+    return coupleApi.drawLoveWord()
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -583,6 +652,31 @@ export const useCoupleStore = defineStore('couple', () => {
         notify('🏷️ 专属爱称', msg.detail)
         void loadOverview()
         break
+      case 'task-done':
+        notify('✅ 甜蜜任务', msg.detail)
+        if (loadedLists.value.ritual) {
+          void loadRitual()
+          void loadRecentTasks()
+        }
+        break
+      case 'tacit-started':
+        notify('🎯 默契考验', msg.detail)
+        if (loadedLists.value.ritual) {
+          void loadRitual()
+        }
+        break
+      case 'tacit-answered':
+        notify('🎯 默契考验', msg.detail)
+        if (loadedLists.value.ritual) {
+          void loadRitual()
+        }
+        break
+      case 'tacit-settled':
+        notify(msg.detail.includes('心有灵犀') ? '🎉 心有灵犀' : '🎯 默契考验', msg.detail)
+        if (loadedLists.value.ritual) {
+          void loadRitual()
+        }
+        break
       default:
         break
     }
@@ -605,6 +699,12 @@ export const useCoupleStore = defineStore('couple', () => {
     bondStats,
     bondActions,
     moodReaction,
+    task,
+    recentTasks,
+    tacit,
+    tacitHistory,
+    fortune,
+    goodnightStory,
     promiseDraft,
     space,
     established,
@@ -664,5 +764,12 @@ export const useCoupleStore = defineStore('couple', () => {
     reactMood,
     loadMoodReaction,
     setPetName,
+    loadRitual,
+    loadRecentTasks,
+    doneTask,
+    startTacit,
+    answerTacit,
+    loadTacitHistory,
+    drawLoveWord,
   }
 })

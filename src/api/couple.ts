@@ -7,6 +7,7 @@ import type {
   CoupleCheckinStateVO,
   CoupleCheckinKind,
   CoupleCityCardVO,
+  CoupleFortuneVO,
   CoupleFundVO,
   CoupleIntimacyVO,
   CoupleInviteVO,
@@ -23,6 +24,10 @@ import type {
   CoupleQuestionHistoryVO,
   CoupleQuestionVO,
   CoupleSpaceVO,
+  CoupleStoryVO,
+  CoupleTacitStateVO,
+  CoupleTacitVO,
+  CoupleTaskVO,
   CoupleTimelineDay,
 } from '@/types'
 
@@ -136,4 +141,27 @@ export const coupleApi = {
   /** 给 TA 设置专属爱称（空串清除） */
   setPetName: (name: string | null) =>
     http.putJson<string | null>('/api/couple/bond/pet-name', { name: name ?? null }),
+
+  // ---------- 每日仪式升级 ----------
+  /** 今天的甜蜜任务卡（没有就生成；重复拉取同一张） */
+  todayTask: () => http.get<CoupleTaskVO>('/api/couple/ritual/task'),
+  /** 最近 14 天任务卡（双方，新→旧） */
+  recentTasks: () => http.get<CoupleTaskVO[]>('/api/couple/ritual/tasks'),
+  /** 打卡完成今天的任务 */
+  doneTask: () => http.postJson<CoupleTaskVO>('/api/couple/ritual/task/done', {}),
+  /** 默契大考验状态：进行中的一局 + 累计默契数 */
+  tacitState: () => http.get<CoupleTacitStateVO>('/api/couple/ritual/tacit'),
+  /** 发起一局默契考验 */
+  startTacit: () => http.postJson<CoupleTacitVO>('/api/couple/ritual/tacit/start', {}),
+  /** 提交默契答案（第二个人提交后立即结算） */
+  answerTacit: (answer: string) =>
+    http.postJson<CoupleTacitVO>('/api/couple/ritual/tacit/answer', { answer }),
+  /** 默契历史（最近 20 局） */
+  tacitHistory: () => http.get<CoupleTacitVO[]>('/api/couple/ritual/tacit/history'),
+  /** 随机抽一句情话 */
+  drawLoveWord: () => http.get<string>('/api/couple/ritual/love-word'),
+  /** 今日恋爱运势 */
+  fortune: () => http.get<CoupleFortuneVO>('/api/couple/ritual/fortune'),
+  /** 今晚的晚安故事 */
+  goodnightStory: () => http.get<CoupleStoryVO>('/api/couple/ritual/goodnight-story'),
 }

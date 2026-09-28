@@ -84,6 +84,16 @@
       </div>
     </div>
 
+    <!-- 晚安故事：每晚一篇，睡前一分钟 -->
+    <div v-if="couple.goodnightStory" class="story-box" data-testid="couple-goodnight-story">
+      <div class="story-head">
+        <h4 class="section-title">🌙 今晚的睡前故事</h4>
+        <span class="story-title">{{ couple.goodnightStory.title }}</span>
+      </div>
+      <p class="story-content">{{ couple.goodnightStory.content }}</p>
+      <p class="story-tip">同一天你们读到的故事是同一个；晚安打卡后读，更配哦～</p>
+    </div>
+
     <!-- 今日一问 -->
     <div class="question-box" data-testid="couple-question">
       <div class="question-head">
@@ -368,6 +378,37 @@ async function openHistory() {
   flex-direction: column;
   gap: 10px;
   background: var(--im-panel, #fff);
+}
+.story-box {
+  border: 1px solid var(--im-border, #e6e8eb);
+  border-radius: 12px;
+  padding: 14px;
+  background: linear-gradient(180deg, #1f2437, #2b3350);
+  color: #f5f6fa;
+}
+.story-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.story-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffd6a5;
+}
+.story-content {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.9;
+  color: #e8eaf3;
+}
+.story-tip {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: rgba(232, 234, 243, 0.55);
+}
+.story-box .section-title {
+  color: #f5f6fa;
 }
 .question-head {
   display: flex;

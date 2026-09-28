@@ -11,6 +11,7 @@
         show-word-limit
         placeholder="有些话想当面说又不好意思？写下来塞进 TA 的信箱吧…"
         data-testid="couple-letter-content"
+        @input="lastDrawn = false"
       />
       <div class="compose-row">
         <el-radio-group v-model="deliverChoice" size="small" data-testid="couple-letter-deliver">
@@ -22,6 +23,12 @@
         <el-button type="primary" :loading="sending" data-testid="couple-letter-send" @click="onSend">
           塞进 TA 的信箱
         </el-button>
+      </div>
+      <div class="draw-row">
+        <el-button size="small" round :loading="drawing" data-testid="couple-letter-draw" @click="onDraw">
+          🎴 抽一句情话填进来
+        </el-button>
+        <span v-if="lastDrawn" class="draw-hint">已替你填好，不满意可以再抽～</span>
       </div>
       <p class="compose-tip">慢递信到点前 TA 拆不开；TA 拆开后你们都能看到内容。</p>
     </div>
@@ -107,8 +114,24 @@ const couple = useCoupleStore()
 
 const content = ref('')
 const sending = ref(false)
+const drawing = ref(false)
+const lastDrawn = ref(false)
 /** 送达方式：now 立即 / tomorrow 明天零点 / 3d、7d 之后零点 */
 const deliverChoice = ref<'now' | 'tomorrow' | '3d' | '7d'>('now')
+
+/** 抽一句情话填进写信框 */
+async function onDraw() {
+  drawing.value = true
+  try {
+    const word = await couple.drawLoveWord()
+    content.value = word
+    lastDrawn.value = true
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '抽卡失败')
+  } finally {
+    drawing.value = false
+  }
+}
 
 function isMine(letter: CoupleLetterVO) {
   return letter.sender === auth.username
@@ -206,6 +229,16 @@ onMounted(() => {
 }
 .compose-tip {
   margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.draw-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.draw-hint {
   font-size: 12px;
   color: var(--im-muted, #8f959e);
 }

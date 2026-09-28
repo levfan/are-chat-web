@@ -589,3 +589,50 @@ export interface CoupleMoodReactionVO {
   myReaction: CoupleMoodReactionKind | null
   partnerReaction: CoupleMoodReactionKind | null
 }
+
+// ============ 情侣空间：每日仪式升级 ============
+
+export interface CoupleTaskVO {
+  id: string
+  day: string
+  username: string
+  content: string
+  status: 'PENDING' | 'DONE'
+  doneAt: number | null
+  /** true = 我的任务卡（false = TA 的） */
+  mine: boolean
+}
+
+export interface CoupleTacitVO {
+  id: string
+  question: string
+  myAnswer: string | null
+  partnerAnswer: string | null
+  /** WAITING 等对方 / MATCHED 默契一致 / MISS 不一致 */
+  status: 'WAITING' | 'MATCHED' | 'MISS'
+  created: number
+  settledAt: number | null
+}
+
+export interface CoupleTacitStateVO {
+  pending: CoupleTacitVO | null
+  matchedCount: number
+  totalCount: number
+}
+
+/** 今日恋爱运势签 */
+export interface CoupleFortuneVO {
+  day: string
+  good: string
+  bad: string
+  lucky: string
+  line: string
+  /** 综合指数 60-99 */
+  score: number
+}
+
+export interface CoupleStoryVO {
+  day: string
+  title: string
+  content: string
+}
