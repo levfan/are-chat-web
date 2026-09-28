@@ -636,3 +636,67 @@ export interface CoupleStoryVO {
   title: string
   content: string
 }
+
+// ============ 情侣空间：情绪关怀 ============
+
+/** 情绪天气预报：今天双方的心情 + 贴心提示 */
+export interface CoupleWeatherVO {
+  myMood: CoupleMoodKind | null
+  myEmoji: string
+  partnerMood: CoupleMoodKind | null
+  partnerEmoji: string
+  tip: string
+}
+
+/** 情绪急救箱 */
+export interface CoupleFirstAidVO {
+  /** TA 最近连续低落天数 */
+  negativeDays: number
+  suggestion: string
+  /** 连续 ≥2 天 = 需要关注 */
+  urgent: boolean
+}
+
+export interface CoupleReconcileVO {
+  id: string
+  fromUser: string
+  message: string
+  /** 这次别扭开始时间（可空） */
+  startAt: number | null
+  status: 'SENT' | 'ACCEPTED'
+  acceptedAt: number | null
+  /** 和好耗时（小时，可空） */
+  durationHours: number | null
+  /** true = 我递的 */
+  mine: boolean
+  created: number
+}
+
+export interface CouplePraiseVO {
+  id: string
+  fromUser: string
+  content: string
+  status: 'POSTED' | 'RECEIVED'
+  receivedAt: number | null
+  mine: boolean
+  created: number
+}
+
+/** 一侧的生理期记录（没记录就是 null） */
+export interface CoupleCycleSideVO {
+  username: string
+  periodDay: string
+  cycleDays: number
+  periodDays: number
+  note: string
+  /** 下一次生理期开始日期（yyyy-MM-dd） */
+  nextDate: string | null
+  /** 距下次天数 */
+  nextInDays: number | null
+  inPeriod: boolean
+}
+
+export interface CoupleCycleCardVO {
+  mine: CoupleCycleSideVO | null
+  partner: CoupleCycleSideVO | null
+}

@@ -8,6 +8,8 @@ import type {
   CoupleBondStatsVO,
   CoupleCheckinKind,
   CoupleCityCardVO,
+  CoupleCycleCardVO,
+  CoupleFirstAidVO,
   CoupleFortuneVO,
   CoupleFundVO,
   CoupleIntimacyVO,
@@ -20,13 +22,16 @@ import type {
   CoupleMoodReactionVO,
   CoupleOverview,
   CouplePactVO,
+  CouplePraiseVO,
   CouplePromiseVO,
   CoupleQuestionHistoryVO,
   CoupleQuestionVO,
+  CoupleReconcileVO,
   CoupleStoryVO,
   CoupleTacitStateVO,
   CoupleTaskVO,
   CoupleTimelineDay,
+  CoupleWeatherVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -73,6 +78,12 @@ export const useCoupleStore = defineStore('couple', () => {
   const tacitHistory = ref<import('@/types').CoupleTacitVO[]>([])
   const fortune = ref<CoupleFortuneVO | null>(null)
   const goodnightStory = ref<CoupleStoryVO | null>(null)
+  /** 情绪关怀：天气 / 急救箱 / 和好卡 / 夸夸墙 / 生理期 */
+  const weather = ref<CoupleWeatherVO | null>(null)
+  const firstAid = ref<CoupleFirstAidVO | null>(null)
+  const reconciles = ref<CoupleReconcileVO[]>([])
+  const praises = ref<CouplePraiseVO[]>([])
+  const cycleCard = ref<CoupleCycleCardVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -88,6 +99,7 @@ export const useCoupleStore = defineStore('couple', () => {
     cityCard: false,
     bond: false,
     ritual: false,
+    care: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -151,6 +163,11 @@ export const useCoupleStore = defineStore('couple', () => {
     tacitHistory.value = []
     fortune.value = null
     goodnightStory.value = null
+    weather.value = null
+    firstAid.value = null
+    reconciles.value = []
+    praises.value = []
+    cycleCard.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -165,6 +182,7 @@ export const useCoupleStore = defineStore('couple', () => {
       cityCard: false,
       bond: false,
       ritual: false,
+      care: false,
     }
     promiseDraft.value = null
   }
@@ -505,6 +523,54 @@ export const useCoupleStore = defineStore('couple', () => {
     return coupleApi.drawLoveWord()
   }
 
+  // ---------- 情绪关怀 ----------
+
+  async function loadCare() {
+    const [w, aid, rec, prs, cyc] = await Promise.all([
+      coupleApi.weather(),
+      coupleApi.firstAid(),
+      coupleApi.reconciles(),
+      coupleApi.praises(),
+      coupleApi.cycleCard(),
+    ])
+    weather.value = w
+    firstAid.value = aid
+    reconciles.value = rec ?? []
+    praises.value = prs ?? []
+    cycleCard.value = cyc
+    loadedLists.value.care = true
+  }
+
+  async function sendReconcile(message: string, startAt?: number | null) {
+    const vo = await coupleApi.sendReconcile(message, startAt)
+    reconciles.value = (await coupleApi.reconciles()) ?? []
+    return vo
+  }
+
+  async function acceptReconcile(id: string) {
+    const vo = await coupleApi.acceptReconcile(id)
+    reconciles.value = (await coupleApi.reconciles()) ?? []
+    return vo
+  }
+
+  async function postPraise(content: string) {
+    const vo = await coupleApi.postPraise(content)
+    praises.value = (await coupleApi.praises()) ?? []
+    return vo
+  }
+
+  async function receivePraise(id: string) {
+    const vo = await coupleApi.receivePraise(id)
+    praises.value = (await coupleApi.praises()) ?? []
+    return vo
+  }
+
+  async function saveCycle(body: Parameters<typeof coupleApi.saveCycle>[0]) {
+    const vo = await coupleApi.saveCycle(body)
+    cycleCard.value = vo
+    return vo
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -677,6 +743,42 @@ export const useCoupleStore = defineStore('couple', () => {
           void loadRitual()
         }
         break
+      case 'reconcile-sent':
+        notify('🤍 和好卡', msg.detail)
+        if (loadedLists.value.care) {
+          void loadCare()
+        }
+        break
+      case 'reconcile-accepted':
+        notify('🤗 和好啦', msg.detail)
+        if (loadedLists.value.care) {
+          void loadCare()
+        }
+        break
+      case 'praise-posted':
+        notify('🌟 夸夸墙', msg.detail)
+        if (loadedLists.value.care) {
+          void loadCare()
+        }
+        break
+      case 'praise-received':
+        notify('🌟 夸夸墙', msg.detail)
+        if (loadedLists.value.care) {
+          void loadCare()
+        }
+        break
+      case 'cycle-updated':
+        notify('🌸 温柔模式', msg.detail)
+        if (loadedLists.value.care) {
+          void loadCare()
+        }
+        break
+      case 'first-aid':
+        notify('💧 情绪急救箱', msg.detail)
+        if (loadedLists.value.care) {
+          void loadCare()
+        }
+        break
       default:
         break
     }
@@ -705,6 +807,11 @@ export const useCoupleStore = defineStore('couple', () => {
     tacitHistory,
     fortune,
     goodnightStory,
+    weather,
+    firstAid,
+    reconciles,
+    praises,
+    cycleCard,
     promiseDraft,
     space,
     established,
@@ -771,5 +878,11 @@ export const useCoupleStore = defineStore('couple', () => {
     answerTacit,
     loadTacitHistory,
     drawLoveWord,
+    loadCare,
+    sendReconcile,
+    acceptReconcile,
+    postPraise,
+    receivePraise,
+    saveCycle,
   }
 })

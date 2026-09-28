@@ -112,6 +112,9 @@
           <el-tab-pane label="💗 心情" name="mood" lazy>
             <CoupleMood />
           </el-tab-pane>
+          <el-tab-pane label="🌈 关怀" name="care" lazy>
+            <CoupleCare />
+          </el-tab-pane>
           <el-tab-pane label="🗓️ 共享空间" name="shared" lazy>
             <div class="tab-stack">
               <CoupleCityCard />
@@ -181,6 +184,7 @@ import CoupleBond from '@/components/couple/CoupleBond.vue'
 import CouplePromises from '@/components/couple/CouplePromises.vue'
 import CoupleRituals from '@/components/couple/CoupleRituals.vue'
 import CoupleDaily from '@/components/couple/CoupleDaily.vue'
+import CoupleCare from '@/components/couple/CoupleCare.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'
@@ -271,7 +275,7 @@ async function onDissolve() {
 onMounted(() => {
   // 聊天「记入约定」跳转：?tab=promises 直接定位到约定页
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
-  if (['bond', 'promises', 'rituals', 'letters', 'mood', 'shared', 'timeline'].includes(tab)) {
+  if (['bond', 'promises', 'rituals', 'letters', 'mood', 'care', 'shared', 'timeline'].includes(tab)) {
     activeTab.value = tab
   }
   // MainLayout 已在登录后 init 过：这里兜底刷新总览（邀请状态可能变化）

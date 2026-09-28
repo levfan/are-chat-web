@@ -7,6 +7,8 @@ import type {
   CoupleCheckinStateVO,
   CoupleCheckinKind,
   CoupleCityCardVO,
+  CoupleCycleCardVO,
+  CoupleFirstAidVO,
   CoupleFortuneVO,
   CoupleFundVO,
   CoupleIntimacyVO,
@@ -20,15 +22,18 @@ import type {
   CoupleMoodVO,
   CoupleOverview,
   CouplePactVO,
+  CouplePraiseVO,
   CouplePromiseVO,
   CoupleQuestionHistoryVO,
   CoupleQuestionVO,
+  CoupleReconcileVO,
   CoupleSpaceVO,
   CoupleStoryVO,
   CoupleTacitStateVO,
   CoupleTacitVO,
   CoupleTaskVO,
   CoupleTimelineDay,
+  CoupleWeatherVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -164,4 +169,32 @@ export const coupleApi = {
   fortune: () => http.get<CoupleFortuneVO>('/api/couple/ritual/fortune'),
   /** 今晚的晚安故事 */
   goodnightStory: () => http.get<CoupleStoryVO>('/api/couple/ritual/goodnight-story'),
+
+  // ---------- 情绪关怀 ----------
+  /** 今天双方的情绪天气 + 贴心提示 */
+  weather: () => http.get<CoupleWeatherVO>('/api/couple/care/weather'),
+  /** 情绪急救箱：TA 连续低落天数 + 今天怎么哄 TA */
+  firstAid: () => http.get<CoupleFirstAidVO>('/api/couple/care/first-aid'),
+  /** 递一张和好卡（startAt：这次别扭开始时间，可空） */
+  sendReconcile: (message: string, startAt?: number | null) =>
+    http.postJson<CoupleReconcileVO>('/api/couple/care/reconciles', { message, startAt: startAt ?? null }),
+  reconciles: () => http.get<CoupleReconcileVO[]>('/api/couple/care/reconciles'),
+  acceptReconcile: (id: string) =>
+    http.postJson<CoupleReconcileVO>(`/api/couple/care/reconciles/${id}/accept`, {}),
+  /** 贴一张夸夸卡 */
+  postPraise: (content: string) =>
+    http.postJson<CouplePraiseVO>('/api/couple/care/praises', { content }),
+  praises: () => http.get<CouplePraiseVO[]>('/api/couple/care/praises'),
+  receivePraise: (id: string) =>
+    http.postJson<CouplePraiseVO>(`/api/couple/care/praises/${id}/receive`, {}),
+  /** 生理期卡片（双方记录 + 预告） */
+  cycleCard: () => http.get<CoupleCycleCardVO>('/api/couple/care/cycle'),
+  /** 记录/修改我的生理期 */
+  saveCycle: (body: { periodDay: string; cycleDays?: number; periodDays?: number; note?: string }) =>
+    http.putJson<CoupleCycleCardVO>('/api/couple/care/cycle', {
+      periodDay: body.periodDay,
+      cycleDays: body.cycleDays ?? null,
+      periodDays: body.periodDays ?? null,
+      note: body.note ?? null,
+    }),
 }
