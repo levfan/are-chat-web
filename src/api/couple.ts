@@ -3,10 +3,13 @@ import type {
   CoupleActionKind,
   CoupleActionVO,
   CoupleAnniversaryVO,
+  CoupleBadgeWallVO,
   CoupleBondStatsVO,
+  CoupleCapsuleVO,
   CoupleCheckinStateVO,
   CoupleCheckinKind,
   CoupleCityCardVO,
+  CoupleCountdownVO,
   CoupleCycleCardVO,
   CoupleFirstAidVO,
   CoupleFortuneVO,
@@ -20,6 +23,7 @@ import type {
   CoupleMoodReactionKind,
   CoupleMoodReactionVO,
   CoupleMoodVO,
+  CoupleOnThisDayEvent,
   CoupleOverview,
   CouplePactVO,
   CouplePraiseVO,
@@ -197,4 +201,27 @@ export const coupleApi = {
       periodDays: body.periodDays ?? null,
       note: body.note ?? null,
     }),
+
+  // ---------- 纪念与回忆 ----------
+  /** 徽章墙：里程碑徽章 + 行为成就 */
+  badges: () => http.get<CoupleBadgeWallVO>('/api/couple/memory/badges'),
+  /** 那年今天：历史上同月同日发生的事 */
+  onThisDay: () => http.get<CoupleOnThisDayEvent[]>('/api/couple/memory/on-this-day'),
+  /** 封一枚时光胶囊（openDay：30~365 天后，yyyy-MM-dd） */
+  sealCapsule: (content: string, openDay: string) =>
+    http.postJson<CoupleCapsuleVO>('/api/couple/memory/capsules', { content, openDay }),
+  capsules: () => http.get<CoupleCapsuleVO[]>('/api/couple/memory/capsules'),
+  openCapsule: (id: string) =>
+    http.postJson<CoupleCapsuleVO>(`/api/couple/memory/capsules/${id}/open`, {}),
+  /** 新增倒数日 */
+  addCountdown: (title: string, targetDay: string, note?: string) =>
+    http.postJson<CoupleCountdownVO>('/api/couple/memory/countdowns', {
+      title,
+      targetDay,
+      note: note ?? null,
+    }),
+  countdowns: () => http.get<CoupleCountdownVO[]>('/api/couple/memory/countdowns'),
+  doneCountdown: (id: string, done: boolean) =>
+    http.postJson<CoupleCountdownVO>(`/api/couple/memory/countdowns/${id}/done`, { done }),
+  deleteCountdown: (id: string) => http.delete<void>(`/api/couple/memory/countdowns/${id}`),
 }

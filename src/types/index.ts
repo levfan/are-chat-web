@@ -700,3 +700,71 @@ export interface CoupleCycleCardVO {
   mine: CoupleCycleSideVO | null
   partner: CoupleCycleSideVO | null
 }
+
+// ============ 情侣空间：纪念与回忆 ============
+
+/** 里程碑徽章（按在一起天数自动点亮） */
+export interface CoupleBadgeVO {
+  id: string
+  title: string
+  emoji: string
+  targetDays: number
+  achieved: boolean
+  /** 0-100 */
+  progress: number
+}
+
+/** 行为成就 */
+export interface CoupleAchievementVO {
+  id: string
+  title: string
+  desc: string
+  emoji: string
+  achieved: boolean
+  current: number
+  target: number
+}
+
+export interface CoupleBadgeWallVO {
+  milestones: CoupleBadgeVO[]
+  achievements: CoupleAchievementVO[]
+  achievedCount: number
+  total: number
+}
+
+/** 那年今天事件 */
+export interface CoupleOnThisDayEvent {
+  day: string
+  type: 'space' | 'ritual' | 'question' | 'promise' | 'item' | 'anniversary'
+  title: string
+  detail: string
+  at: number | null
+}
+
+export interface CoupleCapsuleVO {
+  id: string
+  sender: string
+  /** 未到期对收件人隐藏（null，前端显示 🔒） */
+  content: string | null
+  openDay: string
+  status: 'SEALED' | 'OPENED'
+  openedAt: number | null
+  locked: boolean
+  /** 距可开启天数 */
+  remainDays: number
+  mine: boolean
+  created: number
+}
+
+export interface CoupleCountdownVO {
+  id: string
+  title: string
+  targetDay: string
+  note: string
+  done: boolean
+  doneAt: number | null
+  /** 距目标日期天数（已过期为负） */
+  daysLeft: number
+  createdBy: string
+  created: number
+}

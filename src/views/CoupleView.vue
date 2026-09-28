@@ -107,7 +107,10 @@
             </div>
           </el-tab-pane>
           <el-tab-pane :label="letterTabLabel" name="letters" lazy>
-            <CoupleLetter />
+            <div class="tab-stack">
+              <CoupleLetter />
+              <CoupleCapsule />
+            </div>
           </el-tab-pane>
           <el-tab-pane label="💗 心情" name="mood" lazy>
             <CoupleMood />
@@ -118,12 +121,19 @@
           <el-tab-pane label="🗓️ 共享空间" name="shared" lazy>
             <div class="tab-stack">
               <CoupleCityCard />
+              <CoupleCountdown />
               <CoupleShared />
               <CoupleFund />
             </div>
           </el-tab-pane>
+          <el-tab-pane label="🏅 徽章" name="badges" lazy>
+            <CoupleBadges />
+          </el-tab-pane>
           <el-tab-pane label="📖 时光轴" name="timeline" lazy>
-            <CoupleTimeline />
+            <div class="tab-stack">
+              <CoupleOnThisDay />
+              <CoupleTimeline />
+            </div>
           </el-tab-pane>
         </el-tabs>
       </el-card>
@@ -185,6 +195,10 @@ import CouplePromises from '@/components/couple/CouplePromises.vue'
 import CoupleRituals from '@/components/couple/CoupleRituals.vue'
 import CoupleDaily from '@/components/couple/CoupleDaily.vue'
 import CoupleCare from '@/components/couple/CoupleCare.vue'
+import CoupleCapsule from '@/components/couple/CoupleCapsule.vue'
+import CoupleCountdown from '@/components/couple/CoupleCountdown.vue'
+import CoupleBadges from '@/components/couple/CoupleBadges.vue'
+import CoupleOnThisDay from '@/components/couple/CoupleOnThisDay.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'
@@ -275,7 +289,7 @@ async function onDissolve() {
 onMounted(() => {
   // 聊天「记入约定」跳转：?tab=promises 直接定位到约定页
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
-  if (['bond', 'promises', 'rituals', 'letters', 'mood', 'care', 'shared', 'timeline'].includes(tab)) {
+  if (['bond', 'promises', 'rituals', 'letters', 'mood', 'care', 'shared', 'badges', 'timeline'].includes(tab)) {
     activeTab.value = tab
   }
   // MainLayout 已在登录后 init 过：这里兜底刷新总览（邀请状态可能变化）

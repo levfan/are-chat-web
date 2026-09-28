@@ -5,9 +5,12 @@ import { coupleApi } from '@/api/couple'
 import type {
   CoupleActionVO,
   CoupleAnniversaryVO,
+  CoupleBadgeWallVO,
   CoupleBondStatsVO,
+  CoupleCapsuleVO,
   CoupleCheckinKind,
   CoupleCityCardVO,
+  CoupleCountdownVO,
   CoupleCycleCardVO,
   CoupleFirstAidVO,
   CoupleFortuneVO,
@@ -20,6 +23,7 @@ import type {
   CoupleMoodKind,
   CoupleMoodReactionKind,
   CoupleMoodReactionVO,
+  CoupleOnThisDayEvent,
   CoupleOverview,
   CouplePactVO,
   CouplePraiseVO,
@@ -84,6 +88,11 @@ export const useCoupleStore = defineStore('couple', () => {
   const reconciles = ref<CoupleReconcileVO[]>([])
   const praises = ref<CouplePraiseVO[]>([])
   const cycleCard = ref<CoupleCycleCardVO | null>(null)
+  /** 纪念与回忆：徽章 / 那年今天 / 胶囊 / 倒数日 */
+  const badges = ref<CoupleBadgeWallVO | null>(null)
+  const onThisDay = ref<CoupleOnThisDayEvent[]>([])
+  const capsules = ref<CoupleCapsuleVO[]>([])
+  const countdowns = ref<CoupleCountdownVO[]>([])
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -100,6 +109,7 @@ export const useCoupleStore = defineStore('couple', () => {
     bond: false,
     ritual: false,
     care: false,
+    memory: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -168,6 +178,10 @@ export const useCoupleStore = defineStore('couple', () => {
     reconciles.value = []
     praises.value = []
     cycleCard.value = null
+    badges.value = null
+    onThisDay.value = []
+    capsules.value = []
+    countdowns.value = []
     loadedLists.value = {
       promises: false,
       question: false,
@@ -183,6 +197,7 @@ export const useCoupleStore = defineStore('couple', () => {
       bond: false,
       ritual: false,
       care: false,
+      memory: false,
     }
     promiseDraft.value = null
   }
@@ -571,6 +586,53 @@ export const useCoupleStore = defineStore('couple', () => {
     return vo
   }
 
+  // ---------- 纪念与回忆 ----------
+
+  async function loadBadges() {
+    badges.value = await coupleApi.badges()
+  }
+
+  async function loadOnThisDay() {
+    onThisDay.value = (await coupleApi.onThisDay()) ?? []
+  }
+
+  async function loadCapsules() {
+    capsules.value = (await coupleApi.capsules()) ?? []
+  }
+
+  async function sealCapsule(content: string, openDay: string) {
+    const vo = await coupleApi.sealCapsule(content, openDay)
+    await loadCapsules()
+    return vo
+  }
+
+  async function openCapsule(id: string) {
+    const vo = await coupleApi.openCapsule(id)
+    await loadCapsules()
+    return vo
+  }
+
+  async function loadCountdowns() {
+    countdowns.value = (await coupleApi.countdowns()) ?? []
+  }
+
+  async function addCountdown(title: string, targetDay: string, note?: string) {
+    const vo = await coupleApi.addCountdown(title, targetDay, note)
+    await loadCountdowns()
+    return vo
+  }
+
+  async function doneCountdown(id: string, done: boolean) {
+    const vo = await coupleApi.doneCountdown(id, done)
+    await loadCountdowns()
+    return vo
+  }
+
+  async function deleteCountdown(id: string) {
+    await coupleApi.deleteCountdown(id)
+    await loadCountdowns()
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -779,6 +841,39 @@ export const useCoupleStore = defineStore('couple', () => {
           void loadCare()
         }
         break
+      case 'capsule-sealed':
+        notify('⏳ 时光胶囊', msg.detail)
+        if (loadedLists.value.memory) {
+          void loadCapsules()
+        }
+        break
+      case 'capsule-opened':
+        notify('⏳ 时光胶囊', msg.detail)
+        if (loadedLists.value.memory) {
+          void loadCapsules()
+        }
+        break
+      case 'countdown-added':
+        notify('⏳ 倒数日', msg.detail)
+        if (loadedLists.value.memory) {
+          void loadCountdowns()
+        }
+        break
+      case 'countdown-done':
+        notify('🎉 期待成真', msg.detail)
+        if (loadedLists.value.memory) {
+          void loadCountdowns()
+        }
+        if (loadedLists.value.timeline) {
+          void loadTimeline()
+        }
+        break
+      case 'countdown-reminder':
+        notify('⏳ 倒数日提醒', msg.detail)
+        if (loadedLists.value.memory) {
+          void loadCountdowns()
+        }
+        break
       default:
         break
     }
@@ -812,6 +907,10 @@ export const useCoupleStore = defineStore('couple', () => {
     reconciles,
     praises,
     cycleCard,
+    badges,
+    onThisDay,
+    capsules,
+    countdowns,
     promiseDraft,
     space,
     established,
@@ -884,5 +983,14 @@ export const useCoupleStore = defineStore('couple', () => {
     postPraise,
     receivePraise,
     saveCycle,
+    loadBadges,
+    loadOnThisDay,
+    loadCapsules,
+    sealCapsule,
+    openCapsule,
+    loadCountdowns,
+    addCountdown,
+    doneCountdown,
+    deleteCountdown,
   }
 })
