@@ -18,6 +18,7 @@ declare module 'vue' {
     CoupleCityCard: typeof import('./components/couple/CoupleCityCard.vue')['default']
     CoupleCountdown: typeof import('./components/couple/CoupleCountdown.vue')['default']
     CoupleDaily: typeof import('./components/couple/CoupleDaily.vue')['default']
+    CoupleFirsts: typeof import('./components/couple/CoupleFirsts.vue')['default']
     CoupleFund: typeof import('./components/couple/CoupleFund.vue')['default']
     CoupleGame: typeof import('./components/couple/CoupleGame.vue')['default']
     CoupleHeartMoments: typeof import('./components/couple/CoupleHeartMoments.vue')['default']
