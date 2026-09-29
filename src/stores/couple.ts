@@ -35,6 +35,7 @@ import type {
   CoupleMoodReactionKind,
   CoupleMoodReactionVO,
   CoupleMonthlyReportVO,
+  CoupleNotifyVO,
   CoupleOnThisDayEvent,
   CoupleOverview,
   CouplePactVO,
@@ -119,6 +120,9 @@ export const useCoupleStore = defineStore('couple', () => {
   const heatmap = ref<CoupleHeatmapVO | null>(null)
   const moodCurve = ref<CoupleMoodCurveVO | null>(null)
   const trafficLight = ref<CoupleTrafficLightVO | null>(null)
+  /** F41 通知中心 */
+  const notifies = ref<CoupleNotifyVO[]>([])
+  const notifyUnread = ref(0)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -220,6 +224,8 @@ export const useCoupleStore = defineStore('couple', () => {
     heatmap.value = null
     moodCurve.value = null
     trafficLight.value = null
+    notifies.value = []
+    notifyUnread.value = 0
     loadedLists.value = {
       promises: false,
       question: false,
@@ -808,6 +814,20 @@ export const useCoupleStore = defineStore('couple', () => {
     trafficLight.value = tl
   }
 
+  // ---------- F41 通知中心 ----------
+
+  async function loadNotifies() {
+    const vo = await coupleApi.notifyMine()
+    notifies.value = vo.items ?? []
+    notifyUnread.value = vo.unread ?? 0
+  }
+
+  async function readAllNotifies() {
+    await coupleApi.notifyReadAll()
+    notifies.value = notifies.value.map((n) => ({ ...n, read: true }))
+    notifyUnread.value = 0
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -1099,6 +1119,11 @@ export const useCoupleStore = defineStore('couple', () => {
       default:
         break
     }
+    // F41 通知中心：任何情侣事件都计入未读（列表加载过才同步刷新）
+    notifyUnread.value++
+    if (notifies.value.length > 0) {
+      void loadNotifies()
+    }
   }
 
   return {
@@ -1144,6 +1169,8 @@ export const useCoupleStore = defineStore('couple', () => {
     heatmap,
     moodCurve,
     trafficLight,
+    notifies,
+    notifyUnread,
     promiseDraft,
     space,
     established,
@@ -1244,5 +1271,7 @@ export const useCoupleStore = defineStore('couple', () => {
     loadMonthlyReport,
     loadDataOverview,
     loadGame,
+    loadNotifies,
+    readAllNotifies,
   }
 })

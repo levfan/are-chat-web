@@ -54,6 +54,11 @@
             </div>
           </div>
           <div class="header-actions">
+            <el-badge :value="couple.notifyUnread" :hidden="couple.notifyUnread <= 0" :max="99">
+              <el-button size="small" plain data-testid="couple-notify-bell" @click="openNotifies">
+                🔔 通知
+              </el-button>
+            </el-badge>
             <el-button size="small" plain data-testid="couple-anniv-edit" @click="openAnnivEdit">
               <el-icon class="btn-ico"><EditPen /></el-icon>纪念日
             </el-button>
@@ -68,6 +73,11 @@
       <div v-if="morningUnlocked || nightUnlocked" class="theme-banner" data-testid="couple-theme-banner">
         <span v-if="morningUnlocked">🌅 今日专属背景已点亮（{{ themeLabel }}）</span>
         <span v-if="nightUnlocked">🌙 今日专属贴纸 {{ themeStickers[0] }} {{ themeStickers[1] }} 已解锁</span>
+      </div>
+
+      <!-- F43 里程碑天数：今天是有意义的日子 -->
+      <div v-if="milestone" class="milestone-banner" data-testid="couple-milestone-banner">
+        🎉 今天是在一起第 <b>{{ milestone }}</b> 天！这个数字值得纪念 💕
       </div>
 
       <!-- 空间个性化：我们的宣言 + 装扮入口（宣言/主题/贴纸墙） -->
@@ -169,6 +179,30 @@
         </template>
       </el-dialog>
 
+      <!-- F41 通知中心弹窗 -->
+      <el-dialog v-model="notifyVisible" title="🔔 空间动态通知" width="400px" draggable data-testid="couple-notify-dialog">
+        <div class="notify-toolbar">
+          <span class="notify-unread" data-testid="couple-notify-unread">{{ couple.notifyUnread }} 条未读</span>
+          <el-button size="small" round data-testid="couple-notify-readall" @click="onReadAll">全部已读</el-button>
+        </div>
+        <el-empty v-if="!couple.notifies.length" description="还没有空间动态，互动起来吧 💞" :image-size="60" />
+        <div v-else class="notify-list">
+          <div
+            v-for="n in couple.notifies"
+            :key="n.id"
+            class="notify-item"
+            :class="{ unread: !n.read }"
+            :data-testid="`couple-notify-${n.event}`"
+          >
+            <span class="notify-dot">{{ n.read ? '·' : '🔵' }}</span>
+            <div class="notify-body">
+              <p class="notify-detail">{{ n.detail }}</p>
+              <span class="notify-time">{{ formatNotifyTime(n.created) }} · {{ n.actor === 'system' ? '小助手' : 'TA' }}</span>
+            </div>
+          </div>
+        </div>
+      </el-dialog>
+
       <!-- 专属爱称弹窗 -->
       <el-dialog v-model="petEditVisible" title="给 TA 起个专属爱称" width="360px" draggable data-testid="couple-pet-dialog">
         <el-input
@@ -234,6 +268,34 @@ const savingAnniv = ref(false)
 const petEditVisible = ref(false)
 const petEditName = ref('')
 const savingPet = ref(false)
+/** F41 通知中心 */
+const notifyVisible = ref(false)
+
+/** F43 里程碑天数：命中 100/200/365/520/666/888/1000/1314/2000 时今天值得庆祝 */
+const MILESTONE_DAYS = [100, 200, 365, 520, 666, 888, 1000, 1314, 2000]
+const milestone = computed(() => {
+  const days = couple.space?.days
+  return days && MILESTONE_DAYS.includes(days) ? days : null
+})
+
+function openNotifies() {
+  void couple.loadNotifies()
+  notifyVisible.value = true
+}
+
+async function onReadAll() {
+  try {
+    await couple.readAllNotifies()
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '操作失败')
+  }
+}
+
+function formatNotifyTime(at: number) {
+  const d = new Date(at)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getMonth() + 1}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 /** 悄悄话 tab 标题：有可拆未拆的信时带数量红点 */
 const letterTabLabel = computed(() =>
@@ -452,5 +514,67 @@ onMounted(() => {
   font-size: 12px;
   color: var(--im-muted, #8f959e);
   margin: 8px 0 0;
+}
+/* F43 里程碑天数横幅 */
+.milestone-banner {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #fff0f0, #fff8e6);
+  border: 1px solid #f8d3a3;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c45656;
+  text-align: center;
+}
+.milestone-banner b {
+  font-size: 18px;
+  color: #f56c6c;
+}
+/* F41 通知中心 */
+.notify-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.notify-unread {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.notify-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.notify-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--el-fill-color-lighter, #fafafa);
+}
+.notify-item.unread {
+  background: #fff5f5;
+}
+.notify-dot {
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.notify-body {
+  min-width: 0;
+}
+.notify-detail {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: break-all;
+}
+.notify-time {
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
 }
 </style>

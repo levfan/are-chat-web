@@ -272,6 +272,8 @@ export interface UserProfileVO {
   signature: string
   avatar: string
   presenceStatus: PresenceStatus
+  /** F42 生日（yyyy-MM-dd 或 MM-dd，null = 未填写） */
+  birthday?: string | null
 }
 
 /** 服务端通过 WebSocket 推送的 IM 事件 */
@@ -940,4 +942,50 @@ export interface CoupleTrafficLightVO {
   advice: string
   hoursSinceLast: number | null
   lastDay: string | null
+}
+
+// ============ 情侣空间：通知中心 / 生日 / 关系徽章 / 管理看板 ============
+
+/** F41 通知中心条目 */
+export interface CoupleNotifyVO {
+  id: string
+  event: string
+  /** 触发人（system = 定时任务） */
+  actor: string | null
+  detail: string
+  read: boolean
+  created: number
+}
+
+export interface CoupleNotifyListVO {
+  items: CoupleNotifyVO[]
+  unread: number
+}
+
+/** F42 好友生日条目：daysUntil 为今年生日的剩余天数（今天 = 0） */
+export interface FriendBirthdayVO {
+  username: string
+  nickname: string
+  birthday: string
+  daysUntil: number
+  today: boolean
+}
+
+/** F44 恋爱中徽章 */
+export interface CoupleRelationshipVO {
+  inRelationship: boolean
+  days: number | null
+  anniversary: string | null
+}
+
+/** F45 管理看板：情侣空间运营统计 */
+export interface CoupleAdminStatsVO {
+  activeSpaces: number
+  dissolvedSpaces: number
+  avgDays: number
+  totalLetters: number
+  totalActions: number
+  totalPromisesDone: number
+  totalCapsules: number
+  spacesCreatedThisMonth: number
 }

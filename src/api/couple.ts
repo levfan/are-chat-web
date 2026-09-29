@@ -8,6 +8,7 @@ import type {
   CoupleCapsuleVO,
   CoupleCheckinStateVO,
   CoupleCheckinKind,
+  CoupleAdminStatsVO,
   CoupleChoreVO,
   CoupleCityCardVO,
   CoupleCipherVO,
@@ -42,6 +43,8 @@ import type {
   CoupleQuestionHistoryVO,
   CoupleQuestionVO,
   CoupleMonthlyReportVO,
+  CoupleNotifyListVO,
+  CoupleRelationshipVO,
   CoupleReconcileVO,
   CoupleSpaceVO,
   CoupleStoryVO,
@@ -307,4 +310,15 @@ export const coupleApi = {
   moodCurve: () => http.get<CoupleMoodCurveVO>('/api/couple/game/mood-curve'),
   /** 恋爱红绿灯 */
   trafficLight: () => http.get<CoupleTrafficLightVO>('/api/couple/game/traffic-light'),
+
+  // ---------- 通知中心 / 关系徽章 / 管理看板 ----------
+  /** F41 我的最近 50 条通知 + 未读数 */
+  notifyMine: () => http.get<CoupleNotifyListVO>('/api/couple/notify'),
+  /** F41 全部标记已读 */
+  notifyReadAll: () => http.postJson<void>('/api/couple/notify/read-all', {}),
+  /** F44 恋爱中徽章：某人是否在恋爱中 + 天数（仅其好友可查） */
+  relationshipOf: (username: string) =>
+    http.get<CoupleRelationshipVO>(`/api/couple/relationship-of/${encodeURIComponent(username)}`),
+  /** F45 管理看板：情侣空间运营统计（仅管理员） */
+  adminCoupleStats: () => http.get<CoupleAdminStatsVO>('/api/couple/admin/stats'),
 }

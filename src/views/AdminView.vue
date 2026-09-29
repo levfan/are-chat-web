@@ -178,6 +178,48 @@
           </el-table-column>
         </el-table>
       </el-tab-pane>
+
+      <!-- ============ F45 情侣空间运营看板 ============ -->
+      <el-tab-pane label="情侣看板" name="couple" lazy>
+        <div class="couple-stats" data-testid="admin-couple-stats">
+          <el-button size="small" :loading="loadingCoupleStats" @click="loadCoupleStats">刷新</el-button>
+          <div v-if="coupleStats" class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-num">{{ coupleStats.activeSpaces }}</span>
+              <span class="stat-label">存续中的空间</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">{{ coupleStats.spacesCreatedThisMonth }}</span>
+              <span class="stat-label">本月新建立</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">{{ coupleStats.avgDays }}</span>
+              <span class="stat-label">平均在一起天数</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">{{ coupleStats.dissolvedSpaces }}</span>
+              <span class="stat-label">已解散</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">{{ coupleStats.totalActions }}</span>
+              <span class="stat-label">累计贴贴次数</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">{{ coupleStats.totalLetters }}</span>
+              <span class="stat-label">累计悄悄话</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">{{ coupleStats.totalPromisesDone }}</span>
+              <span class="stat-label">完成的约定</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num">{{ coupleStats.totalCapsules }}</span>
+              <span class="stat-label">时光胶囊</span>
+            </div>
+          </div>
+          <el-empty v-else description="点击「刷新」加载情侣空间运营数据" :image-size="60" />
+        </div>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -186,8 +228,15 @@
 import { onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { adminApi } from '@/api/auth'
+import { coupleApi } from '@/api/couple'
 import { useImStore } from '@/stores/im'
-import type { AdminAnnouncementVO, AdminApplicationVO, AdminAuditVO, AdminUserVO } from '@/types'
+import type {
+  AdminAnnouncementVO,
+  AdminApplicationVO,
+  AdminAuditVO,
+  AdminUserVO,
+  CoupleAdminStatsVO,
+} from '@/types'
 
 const im = useImStore()
 const tab = ref<'applications' | 'users' | 'announcements' | 'audit'>('applications')
@@ -196,6 +245,21 @@ const applications = ref<AdminApplicationVO[]>([])
 const applicationFilter = ref('PENDING')
 const loadingApps = ref(false)
 const pendingCount = ref(0)
+
+// ============ F45 情侣空间运营看板 ============
+const coupleStats = ref<CoupleAdminStatsVO | null>(null)
+const loadingCoupleStats = ref(false)
+
+async function loadCoupleStats() {
+  loadingCoupleStats.value = true
+  try {
+    coupleStats.value = await coupleApi.adminCoupleStats()
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '看板加载失败')
+  } finally {
+    loadingCoupleStats.value = false
+  }
+}
 
 const users = ref<AdminUserVO[]>([])
 const userKeyword = ref('')
@@ -491,5 +555,30 @@ watch(tab, (value) => {
 }
 .announce-editor .el-button {
   align-self: flex-start;
+}
+/* F45 情侣空间运营看板 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px;
+  border-radius: 10px;
+  background: var(--el-fill-color-lighter, #fafafa);
+}
+.stat-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: #f56c6c;
+}
+.stat-label {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
 }
 </style>
