@@ -22,6 +22,10 @@ import type {
   CoupleFortuneVO,
   CoupleFundVO,
   CoupleHabitVO,
+  CoupleHeatmapVO,
+  CoupleIntimacyBoostVO,
+  CoupleMoodCurveVO,
+  CoupleTrafficLightVO,
   CoupleIntimacyVO,
   CoupleItemKind,
   CoupleItemVO,
@@ -110,6 +114,11 @@ export const useCoupleStore = defineStore('couple', () => {
   /** 月报与总览 */
   const monthlyReport = ref<CoupleMonthlyReportVO | null>(null)
   const dataOverview = ref<CoupleDataOverviewVO | null>(null)
+  /** 恋爱游戏化 */
+  const boost = ref<CoupleIntimacyBoostVO | null>(null)
+  const heatmap = ref<CoupleHeatmapVO | null>(null)
+  const moodCurve = ref<CoupleMoodCurveVO | null>(null)
+  const trafficLight = ref<CoupleTrafficLightVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -207,6 +216,10 @@ export const useCoupleStore = defineStore('couple', () => {
     ciphers.value = []
     monthlyReport.value = null
     dataOverview.value = null
+    boost.value = null
+    heatmap.value = null
+    moodCurve.value = null
+    trafficLight.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -779,6 +792,22 @@ export const useCoupleStore = defineStore('couple', () => {
     dataOverview.value = await coupleApi.dataOverview()
   }
 
+  // ---------- 恋爱游戏化 ----------
+
+  /** 一次性加载：加成 + 热力图 + 心情曲线 + 红绿灯 */
+  async function loadGame() {
+    const [b, hm, mc, tl] = await Promise.all([
+      coupleApi.boost(),
+      coupleApi.heatmap(),
+      coupleApi.moodCurve(),
+      coupleApi.trafficLight(),
+    ])
+    boost.value = b
+    heatmap.value = hm
+    moodCurve.value = mc
+    trafficLight.value = tl
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -1104,6 +1133,10 @@ export const useCoupleStore = defineStore('couple', () => {
     ciphers,
     monthlyReport,
     dataOverview,
+    boost,
+    heatmap,
+    moodCurve,
+    trafficLight,
     promiseDraft,
     space,
     established,
@@ -1203,5 +1236,6 @@ export const useCoupleStore = defineStore('couple', () => {
     updateProfile,
     loadMonthlyReport,
     loadDataOverview,
+    loadGame,
   }
 })

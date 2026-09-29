@@ -95,7 +95,10 @@
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
           <el-tab-pane label="🫶 贴贴" name="bond" lazy>
-            <CoupleBond />
+            <div class="tab-stack">
+              <CoupleBond />
+              <CoupleGame />
+            </div>
           </el-tab-pane>
           <el-tab-pane label="🤝 约定" name="promises">
             <div class="tab-stack">
@@ -209,6 +212,7 @@ import CoupleOnThisDay from '@/components/couple/CoupleOnThisDay.vue'
 import CoupleLife from '@/components/couple/CoupleLife.vue'
 import CoupleProfile from '@/components/couple/CoupleProfile.vue'
 import CoupleReport from '@/components/couple/CoupleReport.vue'
+import CoupleGame from '@/components/couple/CoupleGame.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'

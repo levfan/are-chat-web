@@ -467,6 +467,8 @@ export interface CoupleIntimacyVO {
   icon: string
   /** 下一等级所需分数，满级为 null */
   nextLevelAt: number | null
+  /** 距下一级进度 0-100（满级=100） */
+  levelProgress: number
   breakdown: CoupleIntimacyBreakdown
 }
 
@@ -875,4 +877,63 @@ export interface CoupleMonthlyReportVO {
 export interface CoupleDataOverviewVO {
   daysTogether: number
   items: CoupleReportItem[]
+}
+
+// ============ 情侣空间：恋爱游戏化 ============
+
+/** 今日心动加成单项 */
+export interface CoupleBoostItem {
+  key: string
+  label: string
+  emoji: string
+  done: boolean
+  bonus: number
+  hint: string
+}
+
+/** F31 今日心动加成：每天最多 20 点，24 点清零 */
+export interface CoupleIntimacyBoostVO {
+  day: string
+  items: CoupleBoostItem[]
+  totalBonus: number
+  cheer: string
+}
+
+/** 热力图单格：level 0-4 */
+export interface CoupleHeatCell {
+  day: string
+  count: number
+  level: number
+}
+
+/** F33 互动热力图：最近 12 周 */
+export interface CoupleHeatmapVO {
+  weeks: number
+  cells: CoupleHeatCell[]
+  maxCount: number
+  activeDays: number
+}
+
+/** 心情曲线单日：双方心情分 1-5（没记 = null） */
+export interface CoupleMoodCurveDay {
+  day: string
+  mine: number | null
+  partner: number | null
+}
+
+/** F34 心情曲线 */
+export interface CoupleMoodCurveVO {
+  days: CoupleMoodCurveDay[]
+  myAvg: number
+  partnerAvg: number
+}
+
+/** F35 恋爱红绿灯：GREEN / YELLOW / RED */
+export interface CoupleTrafficLightVO {
+  light: 'GREEN' | 'YELLOW' | 'RED'
+  title: string
+  detail: string
+  advice: string
+  hoursSinceLast: number | null
+  lastDay: string | null
 }

@@ -21,10 +21,14 @@ import type {
   CoupleFirstAidVO,
   CoupleFortuneVO,
   CoupleFundVO,
+  CoupleHabitVO,
+  CoupleHeatmapVO,
+  CoupleIntimacyBoostVO,
   CoupleIntimacyVO,
   CoupleInviteVO,
   CoupleItemVO,
   CoupleLetterVO,
+  CoupleMoodCurveVO,
   CoupleMoodDayVO,
   CoupleMoodKind,
   CoupleMoodReactionKind,
@@ -45,7 +49,7 @@ import type {
   CoupleTacitVO,
   CoupleTaskVO,
   CoupleTimelineDay,
-  CoupleHabitVO,
+  CoupleTrafficLightVO,
   CoupleWeatherVO,
 } from '@/types'
 
@@ -293,4 +297,14 @@ export const coupleApi = {
     http.get<CoupleMonthlyReportVO>(month ? `/api/couple/memory/monthly-report?month=${month}` : '/api/couple/memory/monthly-report'),
   /** 数据总览 */
   dataOverview: () => http.get<CoupleDataOverviewVO>('/api/couple/memory/data-overview'),
+
+  // ---------- 恋爱游戏化 ----------
+  /** 今日心动加成（每天最多 20 点，24 点清零） */
+  boost: () => http.get<CoupleIntimacyBoostVO>('/api/couple/game/boost'),
+  /** 互动热力图（最近 12 周） */
+  heatmap: () => http.get<CoupleHeatmapVO>('/api/couple/game/heatmap'),
+  /** 心情曲线（最近 30 天） */
+  moodCurve: () => http.get<CoupleMoodCurveVO>('/api/couple/game/mood-curve'),
+  /** 恋爱红绿灯 */
+  trafficLight: () => http.get<CoupleTrafficLightVO>('/api/couple/game/traffic-light'),
 }
