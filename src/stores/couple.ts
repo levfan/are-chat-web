@@ -9,12 +9,18 @@ import type {
   CoupleBondStatsVO,
   CoupleCapsuleVO,
   CoupleCheckinKind,
+  CoupleChoreVO,
+  CoupleCipherVO,
   CoupleCityCardVO,
   CoupleCountdownVO,
   CoupleCycleCardVO,
+  CoupleDatePlanVO,
+  CoupleExpenseCategory,
+  CoupleExpenseMonthVO,
   CoupleFirstAidVO,
   CoupleFortuneVO,
   CoupleFundVO,
+  CoupleHabitVO,
   CoupleIntimacyVO,
   CoupleItemKind,
   CoupleItemVO,
@@ -93,6 +99,12 @@ export const useCoupleStore = defineStore('couple', () => {
   const onThisDay = ref<CoupleOnThisDayEvent[]>([])
   const capsules = ref<CoupleCapsuleVO[]>([])
   const countdowns = ref<CoupleCountdownVO[]>([])
+  /** 共同生活：记账 / 家务 / 约会 / 习惯 / 暗号 */
+  const expenses = ref<CoupleExpenseMonthVO | null>(null)
+  const chores = ref<CoupleChoreVO[]>([])
+  const datePlans = ref<CoupleDatePlanVO[]>([])
+  const habits = ref<CoupleHabitVO[]>([])
+  const ciphers = ref<CoupleCipherVO[]>([])
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -110,6 +122,7 @@ export const useCoupleStore = defineStore('couple', () => {
     ritual: false,
     care: false,
     memory: false,
+    life: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -182,6 +195,11 @@ export const useCoupleStore = defineStore('couple', () => {
     onThisDay.value = []
     capsules.value = []
     countdowns.value = []
+    expenses.value = null
+    chores.value = []
+    datePlans.value = []
+    habits.value = []
+    ciphers.value = []
     loadedLists.value = {
       promises: false,
       question: false,
@@ -198,6 +216,7 @@ export const useCoupleStore = defineStore('couple', () => {
       ritual: false,
       care: false,
       memory: false,
+      life: false,
     }
     promiseDraft.value = null
   }
@@ -633,6 +652,102 @@ export const useCoupleStore = defineStore('couple', () => {
     await loadCountdowns()
   }
 
+  // ---------- 共同生活 ----------
+
+  async function loadLife(month?: string) {
+    const [exp, chs, plans, hbs, cph] = await Promise.all([
+      coupleApi.monthExpenses(month),
+      coupleApi.chores(),
+      coupleApi.datePlans(),
+      coupleApi.habits(),
+      coupleApi.ciphers(),
+    ])
+    expenses.value = exp
+    chores.value = chs ?? []
+    datePlans.value = plans ?? []
+    habits.value = hbs ?? []
+    ciphers.value = cph ?? []
+    loadedLists.value.life = true
+  }
+
+  async function addExpense(body: { amount: number; category: CoupleExpenseCategory; note?: string; spentDay?: string }) {
+    await coupleApi.addExpense(body)
+    expenses.value = await coupleApi.monthExpenses()
+  }
+
+  async function deleteExpense(id: string) {
+    await coupleApi.deleteExpense(id)
+    expenses.value = await coupleApi.monthExpenses()
+  }
+
+  async function addChore(title: string, rotate: 'SINGLE' | 'ALTERNATE') {
+    const vo = await coupleApi.addChore(title, rotate)
+    chores.value = (await coupleApi.chores()) ?? []
+    return vo
+  }
+
+  async function doneChore(id: string) {
+    const vo = await coupleApi.doneChore(id)
+    chores.value = (await coupleApi.chores()) ?? []
+    return vo
+  }
+
+  async function deleteChore(id: string) {
+    await coupleApi.deleteChore(id)
+    chores.value = (await coupleApi.chores()) ?? []
+  }
+
+  async function addDatePlan(body: { title: string; planDay: string; place?: string; items?: string }) {
+    const vo = await coupleApi.addDatePlan(body)
+    datePlans.value = (await coupleApi.datePlans()) ?? []
+    return vo
+  }
+
+  async function doneDatePlan(id: string, done: boolean) {
+    const vo = await coupleApi.doneDatePlan(id, done)
+    datePlans.value = (await coupleApi.datePlans()) ?? []
+    return vo
+  }
+
+  async function deleteDatePlan(id: string) {
+    await coupleApi.deleteDatePlan(id)
+    datePlans.value = (await coupleApi.datePlans()) ?? []
+  }
+
+  async function addHabit(title: string) {
+    const vo = await coupleApi.addHabit(title)
+    habits.value = (await coupleApi.habits()) ?? []
+    return vo
+  }
+
+  async function checkinHabit(id: string) {
+    const vo = await coupleApi.checkinHabit(id)
+    habits.value = (await coupleApi.habits()) ?? []
+    return vo
+  }
+
+  async function toggleHabit(id: string, active: boolean) {
+    const vo = await coupleApi.toggleHabit(id, active)
+    habits.value = (await coupleApi.habits()) ?? []
+    return vo
+  }
+
+  async function deleteHabit(id: string) {
+    await coupleApi.deleteHabit(id)
+    habits.value = (await coupleApi.habits()) ?? []
+  }
+
+  async function addCipher(keyword: string, meaning: string) {
+    const vo = await coupleApi.addCipher(keyword, meaning)
+    ciphers.value = (await coupleApi.ciphers()) ?? []
+    return vo
+  }
+
+  async function deleteCipher(id: string) {
+    await coupleApi.deleteCipher(id)
+    ciphers.value = (await coupleApi.ciphers()) ?? []
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -874,6 +989,42 @@ export const useCoupleStore = defineStore('couple', () => {
           void loadCountdowns()
         }
         break
+      case 'chore-added':
+      case 'chore-done':
+        notify('🧹 家务轮值', msg.detail)
+        if (loadedLists.value.life) {
+          void coupleApi.chores().then((v) => (chores.value = v ?? []))
+        }
+        break
+      case 'date-plan-added':
+        notify('📝 约会规划', msg.detail)
+        if (loadedLists.value.life) {
+          void coupleApi.datePlans().then((v) => (datePlans.value = v ?? []))
+        }
+        break
+      case 'date-plan-done':
+        notify('💕 约会完成', msg.detail)
+        if (loadedLists.value.life) {
+          void coupleApi.datePlans().then((v) => (datePlans.value = v ?? []))
+        }
+        if (loadedLists.value.timeline) {
+          void loadTimeline()
+        }
+        break
+      case 'habit-added':
+      case 'habit-checkin':
+      case 'habit-both-done':
+        notify('💪 双人习惯', msg.detail)
+        if (loadedLists.value.life) {
+          void coupleApi.habits().then((v) => (habits.value = v ?? []))
+        }
+        break
+      case 'cipher-added':
+        notify('🔑 暗号小本本', msg.detail)
+        if (loadedLists.value.life) {
+          void coupleApi.ciphers().then((v) => (ciphers.value = v ?? []))
+        }
+        break
       default:
         break
     }
@@ -911,6 +1062,11 @@ export const useCoupleStore = defineStore('couple', () => {
     onThisDay,
     capsules,
     countdowns,
+    expenses,
+    chores,
+    datePlans,
+    habits,
+    ciphers,
     promiseDraft,
     space,
     established,
@@ -992,5 +1148,20 @@ export const useCoupleStore = defineStore('couple', () => {
     addCountdown,
     doneCountdown,
     deleteCountdown,
+    loadLife,
+    addExpense,
+    deleteExpense,
+    addChore,
+    doneChore,
+    deleteChore,
+    addDatePlan,
+    doneDatePlan,
+    deleteDatePlan,
+    addHabit,
+    checkinHabit,
+    toggleHabit,
+    deleteHabit,
+    addCipher,
+    deleteCipher,
   }
 })

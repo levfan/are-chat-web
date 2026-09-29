@@ -8,9 +8,15 @@ import type {
   CoupleCapsuleVO,
   CoupleCheckinStateVO,
   CoupleCheckinKind,
+  CoupleChoreVO,
   CoupleCityCardVO,
+  CoupleCipherVO,
   CoupleCountdownVO,
   CoupleCycleCardVO,
+  CoupleDatePlanVO,
+  CoupleExpenseCategory,
+  CoupleExpenseMonthVO,
+  CoupleExpenseVO,
   CoupleFirstAidVO,
   CoupleFortuneVO,
   CoupleFundVO,
@@ -37,6 +43,7 @@ import type {
   CoupleTacitVO,
   CoupleTaskVO,
   CoupleTimelineDay,
+  CoupleHabitVO,
   CoupleWeatherVO,
 } from '@/types'
 
@@ -224,4 +231,50 @@ export const coupleApi = {
   doneCountdown: (id: string, done: boolean) =>
     http.postJson<CoupleCountdownVO>(`/api/couple/memory/countdowns/${id}/done`, { done }),
   deleteCountdown: (id: string) => http.delete<void>(`/api/couple/memory/countdowns/${id}`),
+
+  // ---------- 共同生活 ----------
+  /** 记一笔开销（amount 单位：分） */
+  addExpense: (body: { amount: number; category: CoupleExpenseCategory; note?: string; spentDay?: string }) =>
+    http.postJson<CoupleExpenseVO>('/api/couple/life/expenses', {
+      amount: body.amount,
+      category: body.category,
+      note: body.note ?? null,
+      spentDay: body.spentDay ?? null,
+    }),
+  /** 某月账单（yyyy-MM，默认当月） */
+  monthExpenses: (month?: string) =>
+    http.get<CoupleExpenseMonthVO>(month ? `/api/couple/life/expenses?month=${month}` : '/api/couple/life/expenses'),
+  deleteExpense: (id: string) => http.delete<void>(`/api/couple/life/expenses/${id}`),
+  /** 添加家务（SINGLE 固定给我 / ALTERNATE 每次轮换） */
+  addChore: (title: string, rotate: 'SINGLE' | 'ALTERNATE') =>
+    http.postJson<CoupleChoreVO>('/api/couple/life/chores', { title, rotate }),
+  chores: () => http.get<CoupleChoreVO[]>('/api/couple/life/chores'),
+  doneChore: (id: string) => http.postJson<CoupleChoreVO>(`/api/couple/life/chores/${id}/done`, {}),
+  deleteChore: (id: string) => http.delete<void>(`/api/couple/life/chores/${id}`),
+  /** 计划一场约会 */
+  addDatePlan: (body: { title: string; planDay: string; place?: string; items?: string }) =>
+    http.postJson<CoupleDatePlanVO>('/api/couple/life/date-plans', {
+      title: body.title,
+      planDay: body.planDay,
+      place: body.place ?? null,
+      items: body.items ?? null,
+    }),
+  datePlans: () => http.get<CoupleDatePlanVO[]>('/api/couple/life/date-plans'),
+  doneDatePlan: (id: string, done: boolean) =>
+    http.postJson<CoupleDatePlanVO>(`/api/couple/life/date-plans/${id}/done`, { done }),
+  deleteDatePlan: (id: string) => http.delete<void>(`/api/couple/life/date-plans/${id}`),
+  /** 创建共同习惯 */
+  addHabit: (title: string) => http.postJson<CoupleHabitVO>('/api/couple/life/habits', { title }),
+  habits: () => http.get<CoupleHabitVO[]>('/api/couple/life/habits'),
+  /** 今日打卡（幂等） */
+  checkinHabit: (id: string) => http.postJson<CoupleHabitVO>(`/api/couple/life/habits/${id}/checkin`, {}),
+  /** 结束/重启习惯 */
+  toggleHabit: (id: string, active: boolean) =>
+    http.postJson<CoupleHabitVO>(`/api/couple/life/habits/${id}/active`, { active }),
+  deleteHabit: (id: string) => http.delete<void>(`/api/couple/life/habits/${id}`),
+  /** 记一条暗号 */
+  addCipher: (keyword: string, meaning: string) =>
+    http.postJson<CoupleCipherVO>('/api/couple/life/ciphers', { keyword, meaning }),
+  ciphers: () => http.get<CoupleCipherVO[]>('/api/couple/life/ciphers'),
+  deleteCipher: (id: string) => http.delete<void>(`/api/couple/life/ciphers/${id}`),
 }

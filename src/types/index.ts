@@ -768,3 +768,78 @@ export interface CoupleCountdownVO {
   createdBy: string
   created: number
 }
+
+// ============ 情侣空间：共同生活 ============
+
+export type CoupleExpenseCategory = 'FOOD' | 'TRANSPORT' | 'FUN' | 'HOME' | 'GIFT' | 'OTHER'
+
+export interface CoupleExpenseVO {
+  id: string
+  username: string
+  /** 金额（分） */
+  amount: number
+  category: CoupleExpenseCategory
+  note: string
+  spentDay: string
+  created: number
+}
+
+/** 月度账单汇总：明细 + 双方合计 + AA 差额提示 */
+export interface CoupleExpenseMonthVO {
+  month: string
+  expenses: CoupleExpenseVO[]
+  mineTotal: number
+  partnerTotal: number
+  total: number
+  /** 双方差额（分，可空） */
+  diff: number | null
+  tip: string
+}
+
+export interface CoupleChoreVO {
+  id: string
+  title: string
+  rotate: 'SINGLE' | 'ALTERNATE'
+  /** 当前值日生用户名 */
+  turn: string
+  /** true = 该我做了 */
+  myTurn: boolean
+  doneCount: number
+  lastDoneDay: string | null
+  lastDoneBy: string | null
+  created: number
+}
+
+export interface CoupleDatePlanVO {
+  id: string
+  title: string
+  planDay: string
+  place: string
+  /** 想做的事（换行分隔） */
+  items: string
+  status: 'PLANNED' | 'DONE'
+  doneAt: number | null
+  createdBy: string
+  created: number
+}
+
+export interface CoupleHabitVO {
+  id: string
+  title: string
+  myToday: boolean
+  partnerToday: boolean
+  /** 双人连续打卡天数 */
+  bothStreak: number
+  /** 累计共同打卡天数 */
+  totalDays: number
+  createdBy: string
+  created: number
+}
+
+export interface CoupleCipherVO {
+  id: string
+  keyword: string
+  meaning: string
+  createdBy: string
+  created: number
+}

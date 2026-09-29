@@ -122,6 +122,7 @@
             <div class="tab-stack">
               <CoupleCityCard />
               <CoupleCountdown />
+              <CoupleLife />
               <CoupleShared />
               <CoupleFund />
             </div>
@@ -199,6 +200,7 @@ import CoupleCapsule from '@/components/couple/CoupleCapsule.vue'
 import CoupleCountdown from '@/components/couple/CoupleCountdown.vue'
 import CoupleBadges from '@/components/couple/CoupleBadges.vue'
 import CoupleOnThisDay from '@/components/couple/CoupleOnThisDay.vue'
+import CoupleLife from '@/components/couple/CoupleLife.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'
