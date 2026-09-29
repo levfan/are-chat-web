@@ -10,6 +10,8 @@
         <div class="brand-name">小帆船</div>
       </div>
       <p class="brand-sub">{{ mode === 'login' ? '登录后与心爱的人保持联系' : '提交注册申请，管理员审批通过后即可登录' }}</p>
+      <!-- F49 今日情话：每天换一句，登录页的小温柔 -->
+      <p class="daily-love" data-testid="login-daily-love">💌 {{ todayLove }}</p>
 
       <el-radio-group v-model="mode" class="mode-tabs" data-testid="auth-mode">
         <el-radio-button value="login">登录</el-radio-button>
@@ -188,6 +190,21 @@ const LOGIN_HEARTS = [
 ]
 const router = useRouter()
 const auth = useAuthStore()
+
+// ---------- F49 今日情话：按天轮换，登录页的小温柔 ----------
+const LOVE_WORDS = [
+  '想你的日子，连风都是甜的。',
+  '世上温柔那么多，我只想给你一个人。',
+  '今天也是爱你的一天，比昨天多一点。',
+  '遇见你之后，人间忽然值得。',
+  '我走过的路里，最想去的是你心里。',
+  '月亮很亮，亮也没用，没用也亮；我喜欢你，喜欢也没用，没用也喜欢。',
+  '余生请你指教，也请多关照我的小朋友脾气。',
+  '你是我温暖的手套，冰凉的啤酒，带着阳光味道的衬衫。',
+  '把星星揉碎，掺进晚安里给你。',
+  '喜欢你不是三分钟热度，是蓄谋已久。',
+]
+const todayLove = LOVE_WORDS[Math.floor(Date.now() / 86400000) % LOVE_WORDS.length]
 
 type Mode = 'login' | 'register'
 const mode = ref<Mode>('login')
@@ -455,6 +472,15 @@ html.dark .login-page {
   color: var(--im-muted, #8f959e);
   font-size: 13px;
   margin: 8px 0 18px;
+}
+/* F49 今日情话 */
+.daily-love {
+  margin: -10px 0 14px;
+  font-size: 12px;
+  color: #c45656;
+  background: linear-gradient(90deg, #fff0f0, #fff8e6);
+  border-radius: 8px;
+  padding: 6px 10px;
 }
 .mode-tabs {
   margin-bottom: 16px;
