@@ -323,6 +323,8 @@ export interface CouplePartnerVO {
   petName: string | null
 }
 
+export type CoupleSpaceTheme = 'classic' | 'cherry' | 'ocean' | 'forest' | 'night'
+
 export interface CoupleSpaceVO {
   id: string
   partner: CouplePartnerVO
@@ -331,6 +333,12 @@ export interface CoupleSpaceVO {
   anniversary: string | null
   /** 在一起天数（建立当天 = 第 1 天） */
   days: number
+  /** 我们的宣言（只有彼此懂的一句话，可空） */
+  slogan: string | null
+  /** 空间主题（classic/cherry/ocean/forest/night） */
+  theme: CoupleSpaceTheme
+  /** 贴纸墙佩戴的贴纸 key（逗号分隔，可空） */
+  stickers: string | null
 }
 
 export interface CoupleCheckinHalf {
@@ -842,4 +850,29 @@ export interface CoupleCipherVO {
   meaning: string
   createdBy: string
   created: number
+}
+
+// ============ 情侣空间：月报与总览 ============
+
+/** 月报/总览里的单项统计 */
+export interface CoupleReportItem {
+  key: string
+  label: string
+  emoji: string
+  value: number
+  unit: string
+}
+
+/** 恋爱月报：某个月双方互动盘点 */
+export interface CoupleMonthlyReportVO {
+  month: string
+  items: CoupleReportItem[]
+  /** 一句温柔总结 */
+  summary: string
+}
+
+/** 数据总览：全部模块累计 */
+export interface CoupleDataOverviewVO {
+  daysTogether: number
+  items: CoupleReportItem[]
 }

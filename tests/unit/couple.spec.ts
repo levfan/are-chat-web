@@ -175,6 +175,9 @@ const establishedOverview = overview({
     created: Date.now() - 10 * 86_400_000,
     anniversary: null,
     days: 11,
+    slogan: null,
+    theme: 'classic',
+    stickers: null,
   },
   checkins: {
     me: { morning: true, night: false },

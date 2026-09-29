@@ -13,6 +13,7 @@ import type {
   CoupleCipherVO,
   CoupleCountdownVO,
   CoupleCycleCardVO,
+  CoupleDataOverviewVO,
   CoupleDatePlanVO,
   CoupleExpenseCategory,
   CoupleExpenseMonthVO,
@@ -36,6 +37,7 @@ import type {
   CouplePromiseVO,
   CoupleQuestionHistoryVO,
   CoupleQuestionVO,
+  CoupleMonthlyReportVO,
   CoupleReconcileVO,
   CoupleSpaceVO,
   CoupleStoryVO,
@@ -277,4 +279,18 @@ export const coupleApi = {
     http.postJson<CoupleCipherVO>('/api/couple/life/ciphers', { keyword, meaning }),
   ciphers: () => http.get<CoupleCipherVO[]>('/api/couple/life/ciphers'),
   deleteCipher: (id: string) => http.delete<void>(`/api/couple/life/ciphers/${id}`),
+
+  // ---------- 空间个性化 / 月报 ----------
+  /** 更新空间个性化：宣言/主题/贴纸墙（传 null 表示不修改该项） */
+  updateProfile: (body: { slogan?: string | null; theme?: string | null; stickers?: string | null }) =>
+    http.putJson<CoupleSpaceVO>('/api/couple/profile', {
+      slogan: body.slogan ?? null,
+      theme: body.theme ?? null,
+      stickers: body.stickers ?? null,
+    }),
+  /** 恋爱月报（yyyy-MM，默认当月） */
+  monthlyReport: (month?: string) =>
+    http.get<CoupleMonthlyReportVO>(month ? `/api/couple/memory/monthly-report?month=${month}` : '/api/couple/memory/monthly-report'),
+  /** 数据总览 */
+  dataOverview: () => http.get<CoupleDataOverviewVO>('/api/couple/memory/data-overview'),
 }

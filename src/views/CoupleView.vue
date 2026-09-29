@@ -5,9 +5,9 @@
 
     <!-- 已建立：空间主页 -->
     <div v-else class="space-page" data-testid="couple-space">
-      <!-- 头部：双方头像 + 在一起天数 + 关系操作（互道早安达成 → 当日专属背景自动点亮） -->
+      <!-- 头部：双方头像 + 在一起天数 + 关系操作（互道早安达成 → 当日专属背景自动点亮；否则用空间主题色） -->
       <el-card shadow="never" class="panel header-card" :class="{ themed: morningUnlocked }"
-               :style="morningUnlocked ? { background: themeGradient } : undefined">
+               :style="headerBackground">
         <div class="header-row">
           <div class="pair">
             <ImAvatar :name="auth.username" :size="52" halo online />
@@ -70,6 +70,9 @@
         <span v-if="nightUnlocked">🌙 今日专属贴纸 {{ themeStickers[0] }} {{ themeStickers[1] }} 已解锁</span>
       </div>
 
+      <!-- 空间个性化：我们的宣言 + 装扮入口（宣言/主题/贴纸墙） -->
+      <CoupleProfile />
+
       <!-- 逾期可爱提醒：全局常驻（不分页签），一键跳到约定页 -->
       <el-alert
         v-if="couple.overdueCount > 0"
@@ -128,7 +131,10 @@
             </div>
           </el-tab-pane>
           <el-tab-pane label="🏅 徽章" name="badges" lazy>
-            <CoupleBadges />
+            <div class="tab-stack">
+              <CoupleBadges />
+              <CoupleReport />
+            </div>
           </el-tab-pane>
           <el-tab-pane label="📖 时光轴" name="timeline" lazy>
             <div class="tab-stack">
@@ -201,6 +207,8 @@ import CoupleCountdown from '@/components/couple/CoupleCountdown.vue'
 import CoupleBadges from '@/components/couple/CoupleBadges.vue'
 import CoupleOnThisDay from '@/components/couple/CoupleOnThisDay.vue'
 import CoupleLife from '@/components/couple/CoupleLife.vue'
+import CoupleProfile from '@/components/couple/CoupleProfile.vue'
+import CoupleReport from '@/components/couple/CoupleReport.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'
@@ -232,6 +240,22 @@ const nightUnlocked = computed(() => !!couple.checkins?.me.night && !!couple.che
 const themeGradient = getTodayBackground()
 const themeLabel = todayThemeLabel()
 const themeStickers = getTodayStickers()
+
+/** F27 空间主题：早安主题优先，否则应用双方选定的空间主题渐变 */
+const THEME_GRADIENTS: Record<string, string> = {
+  classic: 'linear-gradient(90deg, #fff0f0, #ffe3ec)',
+  cherry: 'linear-gradient(90deg, #ffe8f3, #f8e6ff)',
+  ocean: 'linear-gradient(90deg, #e6f7ff, #e3efff)',
+  forest: 'linear-gradient(90deg, #e8f7ee, #f0f9e2)',
+  night: 'linear-gradient(90deg, #313d5c, #4f4372)',
+}
+const headerBackground = computed(() => {
+  if (morningUnlocked.value) {
+    return { background: themeGradient }
+  }
+  const theme = couple.space?.theme ?? 'classic'
+  return { background: THEME_GRADIENTS[theme] ?? THEME_GRADIENTS.classic }
+})
 
 function openAnnivEdit() {
   annivEditDate.value = couple.space?.anniversary ?? null

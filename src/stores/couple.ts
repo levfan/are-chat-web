@@ -14,6 +14,7 @@ import type {
   CoupleCityCardVO,
   CoupleCountdownVO,
   CoupleCycleCardVO,
+  CoupleDataOverviewVO,
   CoupleDatePlanVO,
   CoupleExpenseCategory,
   CoupleExpenseMonthVO,
@@ -29,6 +30,7 @@ import type {
   CoupleMoodKind,
   CoupleMoodReactionKind,
   CoupleMoodReactionVO,
+  CoupleMonthlyReportVO,
   CoupleOnThisDayEvent,
   CoupleOverview,
   CouplePactVO,
@@ -105,6 +107,9 @@ export const useCoupleStore = defineStore('couple', () => {
   const datePlans = ref<CoupleDatePlanVO[]>([])
   const habits = ref<CoupleHabitVO[]>([])
   const ciphers = ref<CoupleCipherVO[]>([])
+  /** 月报与总览 */
+  const monthlyReport = ref<CoupleMonthlyReportVO | null>(null)
+  const dataOverview = ref<CoupleDataOverviewVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -200,6 +205,8 @@ export const useCoupleStore = defineStore('couple', () => {
     datePlans.value = []
     habits.value = []
     ciphers.value = []
+    monthlyReport.value = null
+    dataOverview.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -748,6 +755,30 @@ export const useCoupleStore = defineStore('couple', () => {
     ciphers.value = (await coupleApi.ciphers()) ?? []
   }
 
+  // ---------- 空间个性化 / 月报 ----------
+
+  /** 更新宣言/主题/贴纸墙：本地同步 overview.space，避免整包刷新 */
+  async function updateProfile(body: { slogan?: string | null; theme?: string | null; stickers?: string | null }) {
+    const vo = await coupleApi.updateProfile(body)
+    if (overview.value?.space) {
+      overview.value = {
+        ...overview.value,
+        space: vo,
+      }
+    }
+    return vo
+  }
+
+  /** 恋爱月报（默认当月） */
+  async function loadMonthlyReport(month?: string) {
+    monthlyReport.value = await coupleApi.monthlyReport(month)
+  }
+
+  /** 数据总览 */
+  async function loadDataOverview() {
+    dataOverview.value = await coupleApi.dataOverview()
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -1025,6 +1056,10 @@ export const useCoupleStore = defineStore('couple', () => {
           void coupleApi.ciphers().then((v) => (ciphers.value = v ?? []))
         }
         break
+      case 'space-themed':
+        notify('✨ 空间个性化', msg.detail)
+        void init()
+        break
       default:
         break
     }
@@ -1067,6 +1102,8 @@ export const useCoupleStore = defineStore('couple', () => {
     datePlans,
     habits,
     ciphers,
+    monthlyReport,
+    dataOverview,
     promiseDraft,
     space,
     established,
@@ -1163,5 +1200,8 @@ export const useCoupleStore = defineStore('couple', () => {
     deleteHabit,
     addCipher,
     deleteCipher,
+    updateProfile,
+    loadMonthlyReport,
+    loadDataOverview,
   }
 })

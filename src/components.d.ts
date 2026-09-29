@@ -11,12 +11,22 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    CoupleBadges: typeof import('./components/couple/CoupleBadges.vue')['default']
+    CoupleBond: typeof import('./components/couple/CoupleBond.vue')['default']
+    CoupleCapsule: typeof import('./components/couple/CoupleCapsule.vue')['default']
+    CoupleCare: typeof import('./components/couple/CoupleCare.vue')['default']
     CoupleCityCard: typeof import('./components/couple/CoupleCityCard.vue')['default']
+    CoupleCountdown: typeof import('./components/couple/CoupleCountdown.vue')['default']
+    CoupleDaily: typeof import('./components/couple/CoupleDaily.vue')['default']
     CoupleFund: typeof import('./components/couple/CoupleFund.vue')['default']
     CoupleLetter: typeof import('./components/couple/CoupleLetter.vue')['default']
+    CoupleLife: typeof import('./components/couple/CoupleLife.vue')['default']
     CoupleMood: typeof import('./components/couple/CoupleMood.vue')['default']
+    CoupleOnThisDay: typeof import('./components/couple/CoupleOnThisDay.vue')['default']
     CouplePact: typeof import('./components/couple/CouplePact.vue')['default']
+    CoupleProfile: typeof import('./components/couple/CoupleProfile.vue')['default']
     CouplePromises: typeof import('./components/couple/CouplePromises.vue')['default']
+    CoupleReport: typeof import('./components/couple/CoupleReport.vue')['default']
     CoupleRituals: typeof import('./components/couple/CoupleRituals.vue')['default']
     CoupleSetup: typeof import('./components/couple/CoupleSetup.vue')['default']
     CoupleShared: typeof import('./components/couple/CoupleShared.vue')['default']
