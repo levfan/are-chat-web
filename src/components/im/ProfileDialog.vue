@@ -44,6 +44,16 @@
             maxlength="100"
             data-testid="signature-input"
           />
+          <!-- F42 生日：好友列表会在生日当天/前 7 天亮起蛋糕提醒 -->
+          <div class="setting-title">生日 🎂</div>
+          <el-date-picker
+            v-model="draftBirthday"
+            type="date"
+            placeholder="选择生日（好友会收到提醒）"
+            value-format="YYYY-MM-DD"
+            :clearable="true"
+            data-testid="birthday-picker"
+          />
         </div>
       </el-tab-pane>
 
@@ -301,6 +311,8 @@ const visible = ref(props.modelValue)
 const draftAvatar = ref('c0')
 const draftNickname = ref('')
 const draftSignature = ref('')
+/** F42 生日（yyyy-MM-dd，空 = 未填写） */
+const draftBirthday = ref<string | null>(null)
 // 外观/行为设置草稿（即时生效，不占用保存按钮）
 const draftSkin = ref(currentSkin())
 const draftBg = ref(currentBackground())
@@ -362,6 +374,7 @@ watch(
       draftAvatar.value = isAvatarColorKey(im.myProfile.avatar) ? (im.myProfile.avatar as string) : 'c0'
       draftNickname.value = im.myProfile.nickname
       draftSignature.value = im.myProfile.signature
+      draftBirthday.value = im.myProfile.birthday ?? null
       draftSkin.value = currentSkin()
       draftBg.value = currentBackground()
       draftFont.value = currentFont()
@@ -481,6 +494,8 @@ async function onSave() {
       nickname: draftNickname.value.trim(),
       signature: draftSignature.value.trim(),
       avatar: draftAvatar.value,
+      // F42 生日：空串表示清除
+      birthday: draftBirthday.value ?? '',
     })
     ElMessage.success('资料已更新')
     visible.value = false

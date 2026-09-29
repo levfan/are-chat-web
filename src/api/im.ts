@@ -1,6 +1,7 @@
 import { http } from './http'
 import type {
   AttachmentVO,
+  FriendBirthdayVO,
   FriendRequestVO,
   FriendSuggestion,
   FriendVO,
@@ -75,6 +76,8 @@ export const starsApi = {
 export const profileApi = {
   me: () => http.get<UserProfileVO>('/api/profile'),
   of: (username: string) => http.get<UserProfileVO>(`/api/profile/${enc(username)}`),
-  update: (patch: { nickname?: string; signature?: string; avatar?: string; presenceStatus?: string }) =>
+  update: (patch: { nickname?: string; signature?: string; avatar?: string; presenceStatus?: string; birthday?: string | null }) =>
     http.putJson<UserProfileVO>('/api/profile', patch),
+  /** F42 好友生日列表（按今年剩余天数升序，今天生日的排最前） */
+  friendsBirthdays: () => http.get<FriendBirthdayVO[]>('/api/profile/friends-birthdays'),
 }

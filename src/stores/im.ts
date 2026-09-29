@@ -161,7 +161,13 @@ export const useImStore = defineStore('im', () => {
     myProfile.value = await profileApi.me()
   }
 
-  async function saveProfile(patch: { nickname?: string; signature?: string; avatar?: string; presenceStatus?: string }) {
+  async function saveProfile(patch: {
+    nickname?: string
+    signature?: string
+    avatar?: string
+    presenceStatus?: string
+    birthday?: string | null
+  }) {
     myProfile.value = await profileApi.update(patch)
   }
 

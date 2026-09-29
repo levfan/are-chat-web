@@ -23,6 +23,23 @@
         </div>
       </template>
 
+      <!-- F42 好友生日提醒：今天/7 天内过生日的好友 -->
+      <div v-if="birthdayFriends.length" class="birthday-banner" data-testid="contacts-birthday-banner">
+        <span class="birthday-text">🎂 {{ birthdayText }}</span>
+        <el-button
+          v-for="b in birthdayFriends.slice(0, 2)"
+          :key="b.username"
+          size="small"
+          round
+          type="primary"
+          plain
+          :data-testid="`contacts-birthday-go-${b.username}`"
+          @click="goChat(b.username)"
+        >
+          去{{ b.today ? '送祝福' : '提前准备' }} →
+        </el-button>
+      </div>
+
       <!-- 收到的申请 -->
       <section v-if="im.incoming.length" class="section">
         <h4 class="section-title">收到的申请</h4>
@@ -206,6 +223,14 @@
           <div v-if="viewingRemark" class="card-nickname">昵称：{{ viewingProfile.nickname }}</div>
           <div class="card-username">@{{ viewingProfile.username }}</div>
           <div class="card-signature">{{ viewingProfile.signature || '暂无签名' }}</div>
+          <!-- F44 恋爱中徽章 -->
+          <div v-if="relationshipBadge" class="card-relationship" data-testid="profile-relationship">
+            💗 恋爱中 · 已在一起 {{ relationshipBadge }} 天
+          </div>
+          <!-- F42 对方生日 -->
+          <div v-if="viewingProfile.birthday" class="card-birthday" data-testid="profile-birthday">
+            🎂 生日：{{ viewingProfile.birthday }}
+          </div>
         </template>
       </div>
     </el-dialog>
@@ -229,10 +254,11 @@ import {
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useImStore } from '@/stores/im'
+import { coupleApi } from '@/api/couple'
 import { friendApi, profileApi } from '@/api/im'
 import { formatChatTime, formatLastSeen } from '@/utils/imFormat'
 import ImAvatar from '@/components/im/ImAvatar.vue'
-import type { FriendRelation, FriendSuggestion, FriendVO, UserProfileVO } from '@/types'
+import type { FriendBirthdayVO, FriendRelation, FriendSuggestion, FriendVO, UserProfileVO } from '@/types'
 
 const auth = useAuthStore()
 const im = useImStore()
@@ -252,6 +278,8 @@ const profileVisible = ref(false)
 const viewingRemark = ref('')
 const profileLoading = ref(false)
 const viewingProfile = ref<UserProfileVO | null>(null)
+/** F44 恋爱中徽章：在一起天数（非恋爱对象为 null） */
+const relationshipBadge = ref<number | null>(null)
 
 const pendingOutgoing = computed(() => im.outgoing.filter((r) => r.status === 'PENDING'))
 
@@ -387,6 +415,20 @@ function presenceLabel(friend: FriendVO) {
   return '在线'
 }
 
+// ---------- F42 好友生日提醒 ----------
+
+const birthdays = ref<FriendBirthdayVO[]>([])
+/** 今天 + 未来 7 天过生日的好友 */
+const birthdayFriends = computed(() => birthdays.value.filter((b) => b.daysUntil <= 7))
+const birthdayText = computed(() => {
+  const today = birthdayFriends.value.filter((b) => b.today)
+  const soon = birthdayFriends.value.filter((b) => !b.today)
+  if (today.length) {
+    return `今天是 ${today.map((b) => b.nickname).join('、')} 的生日，快去送祝福吧！`
+  }
+  return `${soon.map((b) => b.nickname).join('、')} 的生日要到了（${soon[0]?.daysUntil ?? 7} 天后）`
+})
+
 /** 97 A–Z 分组 + # 兜底（恒在最后），组内按中文拼音排序 */
 const groups = computed(() => {
   const q = keyword.value.trim().toLowerCase()
@@ -423,10 +465,16 @@ async function onCommand(command: string, friend: FriendVO) {
     profileVisible.value = true
     profileLoading.value = true
     viewingProfile.value = null
+    relationshipBadge.value = null
     // 资料卡主名显示我给 TA 的备注（无备注回落对方昵称）
     viewingRemark.value = friend.remark?.trim() ?? ''
     try {
       viewingProfile.value = await profileApi.of(friend.username)
+      // F44 恋爱中徽章（仅好友可查，失败静默）
+      relationshipBadge.value = await coupleApi
+        .relationshipOf(friend.username)
+        .then((vo) => (vo.inRelationship ? vo.days : null))
+        .catch(() => null)
     } catch (e) {
       ElMessage.error(e instanceof Error ? e.message : '资料卡加载失败')
       profileVisible.value = false
@@ -492,6 +540,13 @@ async function onCommand(command: string, friend: FriendVO) {
 
 onMounted(() => {
   void im.init(auth.username)
+  // F42 好友生日提醒（失败静默，不打扰主流程）
+  void profileApi
+    .friendsBirthdays()
+    .then((list) => {
+      birthdays.value = list ?? []
+    })
+    .catch(() => {})
 })
 </script>
 
@@ -741,5 +796,38 @@ onMounted(() => {
   font-size: 13px;
   color: var(--im-text-2, #51565f);
   text-align: center;
+}
+/* F44 恋爱中徽章 */
+.card-relationship {
+  margin-top: 8px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffe3ec, #fff0f0);
+  color: #c45656;
+  font-size: 12px;
+  font-weight: 600;
+}
+/* F42 生日 */
+.card-birthday {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+/* F42 生日提醒横幅 */
+.birthday-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #fff8e6, #fff0f0);
+  border: 1px solid #f8d3a3;
+  margin-bottom: 14px;
+}
+.birthday-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c45656;
 }
 </style>

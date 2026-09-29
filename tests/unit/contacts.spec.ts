@@ -39,6 +39,7 @@ vi.mock('@/api/im', () => ({
     me: vi.fn(),
     update: vi.fn(),
     of: vi.fn(),
+    friendsBirthdays: vi.fn(),
   },
   starsApi: {
     list: vi.fn(),
@@ -98,6 +99,8 @@ const mockedFriendsList = vi.mocked(friendApi.list)
 const mockedIncoming = vi.mocked(friendApi.incoming)
 const mockedOutgoing = vi.mocked(friendApi.outgoing)
 const mockedProfile = vi.mocked(profileApi.me)
+// F42 生日提醒：默认空列表（组件 onMounted 会加载）
+vi.mocked(profileApi.friendsBirthdays).mockResolvedValue([])
 const mockedApply = vi.mocked(friendApi.apply)
 const mockedAccept = vi.mocked(friendApi.accept)
 
