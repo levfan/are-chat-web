@@ -9,6 +9,7 @@ import type {
   CoupleCheckinStateVO,
   CoupleCheckinKind,
   CoupleAdminStatsVO,
+  CoupleAnswerReactionVO,
   CoupleChoreVO,
   CoupleCityCardVO,
   CoupleCipherVO,
@@ -20,6 +21,7 @@ import type {
   CoupleExpenseMonthVO,
   CoupleExpenseVO,
   CoupleFirstAidVO,
+  CoupleFirstVO,
   CoupleFortuneVO,
   CoupleFundVO,
   CoupleHabitVO,
@@ -321,4 +323,19 @@ export const coupleApi = {
     http.get<CoupleRelationshipVO>(`/api/couple/relationship-of/${encodeURIComponent(username)}`),
   /** F45 管理看板：情侣空间运营统计（仅管理员） */
   adminCoupleStats: () => http.get<CoupleAdminStatsVO>('/api/couple/admin/stats'),
+
+  // ---------- 第一次清单 / 一问互评 ----------
+  /** F46 第一次清单：按发生日期升序 */
+  listFirsts: () => http.get<CoupleFirstVO[]>('/api/couple/memory/firsts'),
+  /** F46 记录一个「我们的第一次」 */
+  addFirst: (title: string, firstDay: string, note?: string | null) =>
+    http.postJson<CoupleFirstVO>('/api/couple/memory/firsts', { title, firstDay, note: note ?? null }),
+  /** F46 删除一条第一次记录 */
+  removeFirst: (id: string) => http.delete(`/api/couple/memory/firsts/${id}`),
+  /** F48 对某天 TA 的回答点一个反应（每人每天一条，可改） */
+  reactAnswer: (day: string, emoji: string) =>
+    http.postJson<CoupleAnswerReactionVO[]>(`/api/couple/answers/${day}/react`, { emoji }),
+  /** F48 某天双方对彼此回答的反应列表 */
+  listAnswerReactions: (day: string) =>
+    http.get<CoupleAnswerReactionVO[]>(`/api/couple/answers/${day}/reactions`),
 }

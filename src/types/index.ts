@@ -989,3 +989,20 @@ export interface CoupleAdminStatsVO {
   totalCapsules: number
   spacesCreatedThisMonth: number
 }
+
+/** F46 第一次清单条目 */
+export interface CoupleFirstVO {
+  id: string
+  title: string
+  firstDay: string
+  note: string | null
+  createdBy: string
+  created: number
+}
+
+/** F48 一问互评条目 */
+export interface CoupleAnswerReactionVO {
+  fromUser: string
+  emoji: string
+  created: number
+}

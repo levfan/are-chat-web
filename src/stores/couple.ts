@@ -19,6 +19,7 @@ import type {
   CoupleExpenseCategory,
   CoupleExpenseMonthVO,
   CoupleFirstAidVO,
+  CoupleFirstVO,
   CoupleFortuneVO,
   CoupleFundVO,
   CoupleHabitVO,
@@ -123,6 +124,8 @@ export const useCoupleStore = defineStore('couple', () => {
   /** F41 通知中心 */
   const notifies = ref<CoupleNotifyVO[]>([])
   const notifyUnread = ref(0)
+  /** F46 第一次清单 */
+  const firsts = ref<CoupleFirstVO[]>([])
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -226,6 +229,7 @@ export const useCoupleStore = defineStore('couple', () => {
     trafficLight.value = null
     notifies.value = []
     notifyUnread.value = 0
+    firsts.value = []
     loadedLists.value = {
       promises: false,
       question: false,
@@ -396,6 +400,13 @@ export const useCoupleStore = defineStore('couple', () => {
   async function loadTimeline() {
     timeline.value = (await coupleApi.timeline()) ?? []
     loadedLists.value.timeline = true
+  }
+
+  // ---------- F46 第一次清单 ----------
+
+  async function loadFirsts() {
+    firsts.value = (await coupleApi.listFirsts()) ?? []
+    loadedLists.value.memory = true
   }
 
   async function loadIntimacy() {
@@ -828,6 +839,19 @@ export const useCoupleStore = defineStore('couple', () => {
     notifyUnread.value = 0
   }
 
+  // ---------- F46 第一次清单 ----------
+
+  async function addFirst(title: string, firstDay: string, note?: string | null) {
+    const vo = await coupleApi.addFirst(title, firstDay, note)
+    await loadFirsts()
+    return vo
+  }
+
+  async function removeFirst(id: string) {
+    await coupleApi.removeFirst(id)
+    firsts.value = firsts.value.filter((f) => f.id !== id)
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -1116,6 +1140,19 @@ export const useCoupleStore = defineStore('couple', () => {
       case 'message-unhearted':
         window.dispatchEvent(new CustomEvent('arechat:heart-changed'))
         break
+      case 'first-added':
+      case 'first-removed':
+        notify('🧾 我们的第一次', msg.detail)
+        if (loadedLists.value.memory) {
+          void loadFirsts()
+        }
+        break
+      case 'answer-reacted':
+        notify('💬 一问互评', msg.detail)
+        break
+      case 'notify-ignored':
+        // 占位事件：仅计入通知未读
+        break
       default:
         break
     }
@@ -1171,6 +1208,7 @@ export const useCoupleStore = defineStore('couple', () => {
     trafficLight,
     notifies,
     notifyUnread,
+    firsts,
     promiseDraft,
     space,
     established,
@@ -1273,5 +1311,8 @@ export const useCoupleStore = defineStore('couple', () => {
     loadGame,
     loadNotifies,
     readAllNotifies,
+    loadFirsts,
+    addFirst,
+    removeFirst,
   }
 })

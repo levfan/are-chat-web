@@ -126,6 +126,24 @@
           {{ question?.myAnswer ? '更新' : '回答' }}
         </el-button>
       </div>
+      <!-- F48 一问互评：给 TA 的回答点一个反应 -->
+      <div v-if="question?.partnerAnswer" class="react-row" data-testid="couple-answer-react">
+        <span class="react-label">给 TA 的回答一个反应：</span>
+        <button
+          v-for="em in REACT_EMOJIS"
+          :key="em"
+          type="button"
+          class="react-btn"
+          :class="{ picked: myReaction === em }"
+          :data-testid="`couple-react-${myReaction === em ? 'on' : 'off'}`"
+          @click="onReact(em)"
+        >
+          {{ em }}
+        </button>
+        <span v-if="partnerReaction" class="react-partner" data-testid="couple-react-partner">
+          TA 回了你 {{ partnerReaction }}
+        </span>
+      </div>
       <div class="history-row">
         <el-button link type="primary" size="small" data-testid="couple-question-history" @click="openHistory">
           📜 翻看历史回顾（最近 30 天）
@@ -164,17 +182,58 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
+import { coupleApi } from '@/api/couple'
 import { todayBackground as themeBackground, todayStickers as themeStickers, todayThemeLabel } from '@/utils/coupleTheme'
-import type { CoupleCheckinKind } from '@/types'
+import type { CoupleAnswerReactionVO, CoupleCheckinKind } from '@/types'
 
 const couple = useCoupleStore()
+const auth = useAuthStore()
 
 const answerText = ref('')
 const answering = ref(false)
 const historyVisible = ref(false)
+
+// ---------- F48 一问互评 ----------
+const REACT_EMOJIS = ['❤️', '😂', '😮', '🥹', '🤗']
+const reactions = ref<CoupleAnswerReactionVO[]>([])
+
+/** 我今天给 TA 的反应（可改） */
+const myReaction = computed(() => reactions.value.find((r) => r.fromUser === auth.username)?.emoji ?? null)
+/** TA 给我的反应 */
+const partnerReaction = computed(
+  () => reactions.value.find((r) => r.fromUser !== auth.username)?.emoji ?? null,
+)
+
+async function loadReactions() {
+  if (!question.value?.day) return
+  try {
+    reactions.value = (await coupleApi.listAnswerReactions(question.value.day)) ?? []
+  } catch {
+    // 互评加载失败不打扰主流程
+  }
+}
+
+async function onReact(emoji: string) {
+  if (!question.value?.day) return
+  try {
+    reactions.value = (await coupleApi.reactAnswer(question.value.day, emoji)) ?? []
+    ElMessage.success('已把反应送给 TA 啦')
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '互评失败')
+  }
+}
+
+watch(
+  () => question.value?.day,
+  (day) => {
+    if (day && question.value?.partnerAnswer) void loadReactions()
+  },
+  { immediate: true },
+)
 
 const state = computed(() => couple.checkins)
 const question = computed(() => couple.question)
@@ -355,6 +414,37 @@ async function openHistory() {
 .lock {
   font-size: 18px;
   opacity: 0.8;
+}
+/* F48 一问互评 */
+.react-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.react-label {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.react-btn {
+  border: 1px solid var(--el-border-color-lighter, #ebeef5);
+  background: transparent;
+  border-radius: 8px;
+  padding: 3px 9px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.react-btn:hover {
+  transform: scale(1.15);
+}
+.react-btn.picked {
+  background: #fff0f0;
+  border-color: #f8b4b4;
+}
+.react-partner {
+  font-size: 12px;
+  color: #c45656;
 }
 .unlock-text {
   font-size: 13px;

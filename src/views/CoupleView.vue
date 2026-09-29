@@ -80,6 +80,11 @@
         🎉 今天是在一起第 <b>{{ milestone }}</b> 天！这个数字值得纪念 💕
       </div>
 
+      <!-- F47 空间周年庆 -->
+      <div v-if="spaceBirthday" class="milestone-banner space-birthday" data-testid="couple-space-birthday">
+        🎂 我们的空间 <b>{{ spaceBirthday }}</b> 周岁啦！感谢有 TA 陪伴的每一天 🎈
+      </div>
+
       <!-- 空间个性化：我们的宣言 + 装扮入口（宣言/主题/贴纸墙） -->
       <CoupleProfile />
 
@@ -152,6 +157,7 @@
           <el-tab-pane label="📖 时光轴" name="timeline" lazy>
             <div class="tab-stack">
               <CoupleOnThisDay />
+              <CoupleFirsts />
               <CoupleHeartMoments />
               <CoupleTimeline />
             </div>
@@ -249,6 +255,7 @@ import CoupleProfile from '@/components/couple/CoupleProfile.vue'
 import CoupleReport from '@/components/couple/CoupleReport.vue'
 import CoupleGame from '@/components/couple/CoupleGame.vue'
 import CoupleHeartMoments from '@/components/couple/CoupleHeartMoments.vue'
+import CoupleFirsts from '@/components/couple/CoupleFirsts.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'
@@ -276,6 +283,20 @@ const MILESTONE_DAYS = [100, 200, 365, 520, 666, 888, 1000, 1314, 2000]
 const milestone = computed(() => {
   const days = couple.space?.days
   return days && MILESTONE_DAYS.includes(days) ? days : null
+})
+
+/** F47 空间周年庆：今天是空间建立的同月同日且满 1 年 */
+const spaceBirthday = computed(() => {
+  const created = couple.space?.created
+  if (!created) return null
+  const birth = new Date(created)
+  const now = new Date()
+  const years = now.getFullYear() - birth.getFullYear()
+  if (years < 1) return null
+  if (now.getMonth() === birth.getMonth() && now.getDate() === birth.getDate()) {
+    return years
+  }
+  return null
 })
 
 function openNotifies() {
