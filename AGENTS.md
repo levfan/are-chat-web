@@ -15,4 +15,6 @@
 ## 版本号（硬性）
 
 - 版本号唯一来源是 `package.json` 的 version 字段，前端展示自动注入，禁止在任何代码、文案、测试里写死；升级/发版按 alpha → rc → stable 阶梯执行，升版独立成 commit，不建立 git tag
+- **升不升版本由 agent 自行判断并直接执行**：完成一个功能批次/里程碑后，按 version-release skill 的「判级参考」自主定级（理由写进升版 commit 正文），无需等用户指示
+- **用户明确说「发布版本 / 发版」= 强制发版**：无条件立即执行一次完整发版流程（判级 → 改 package.json → `pnpm build` 验证 → 独立升版 commit → pull --no-rebase → push），不得反问、不得拖延；用户指定了目标版本时以用户指定为准
 - 完整规范：`.agents/skills/version-release/SKILL.md`

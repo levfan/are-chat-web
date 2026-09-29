@@ -1,7 +1,7 @@
 ---
 name: version-release
-description: 版本升级与发布规范：版本号唯一来源 package.json，语义化 X.Y.Z，预发布走 alpha→rc→stable 三段阶梯（beta 可选），升版必须独立成 commit，不建立 git tag
-whenToUse: 完成功能需要升级版本号、用户要求升版/发版/打预发布版本，或讨论版本阶段（alpha/beta/rc/stable）时使用
+description: 版本升级与发布规范：版本号唯一来源 package.json，语义化 X.Y.Z，预发布走 alpha→rc→stable 三段阶梯（beta 可选），升版必须独立成 commit，不建立 git tag；升不升版由 agent 按判级参考自主决定并直接执行，用户说「发布版本」即强制发版
+whenToUse: 完成功能需要升级版本号、用户要求升版/发版/打预发布版本、用户说「发布版本/发版」（强制发版，立即执行），或讨论版本阶段（alpha/beta/rc/stable）时使用
 ---
 
 # 版本发布与升级规范（version-release）
@@ -36,6 +36,12 @@ whenToUse: 完成功能需要升级版本号、用户要求升版/发版/打预�
 2. 新增功能/新模块，功能尚未收尾 → 下一 minor 的 `alpha.n`
 3. 功能已完成、待验证 → 下一 minor 的 `rc.1`
 4. 累积功能验证通过、用户确认发布 → 去掉后缀转正式
+
+## 升版触发（硬性）
+
+- **agent 自主判级**：完成一个功能批次/里程碑后，agent 按「判级参考」自行决定是否升版，认定该升就直接执行，不必等用户要求、也不必先请示；判级理由写进升版 commit 正文（`git commit -m "build(version): …" -m "理由"`）
+- **用户强制发版**：用户明确说「发布版本 / 发版 / 出个版本」时，无条件立即执行一次完整发版：判级 → 改 package.json → `pnpm build`（涉及逻辑改动跑 `pnpm test`）→ 独立升版 commit → `git pull --no-rebase` → push。不得反问、不得拖延、不得以「功能未完」为由拒绝；真有硬阻塞（构建失败）时修复阻塞后继续发版
+- 用户明确指定目标版本时，以用户指定为准（优先级最高）
 
 ## 操作纪律
 
