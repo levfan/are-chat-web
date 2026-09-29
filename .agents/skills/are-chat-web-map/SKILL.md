@@ -33,17 +33,17 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 
 | 页签 name | 组件 | 内容 |
 |---|---|---|
-| bond | CoupleBond | 贴贴动作宫格/贴贴里程碑/累计统计/动作流 |
+| bond | CoupleBond + CoupleGame | 贴贴动作宫格/贴贴里程碑/累计统计/动作流 + 恋爱加成清单/互动热力图/心情曲线/恋爱红绿灯 |
 | promises（默认） | CouplePromises + CouplePact | 双向约定卡 + 恋爱条约 |
-| rituals | CoupleRituals + CoupleDaily | 早晚安/今日一问/晚安故事 + 甜蜜任务/恋爱运势/默契考验 |
-| letters | CoupleLetter + CoupleCapsule | 悄悄话信箱（含情话抽卡填入）+ 时光胶囊 |
+| rituals | CoupleRituals + CoupleDaily | 早晚安/今日一问(含 F48 互评表情)/晚安故事 + 甜蜜任务/恋爱运势/默契考验 |
+| letters | CoupleLetter + CoupleCapsule | 悄悄话信箱（情话抽卡/情书模板）+ 时光胶囊 |
 | mood | CoupleMood | 心情日记 + 心情回应（回应按钮在本组件内） |
 | care | CoupleCare | 情绪天气/急救箱/和好卡/夸夸墙/生理期关怀 |
-| shared | CoupleCityCard + CoupleCountdown + CoupleShared + CoupleFund | 异地恋/倒数日/共享清单/心愿基金 |
-| badges | CoupleBadges | 里程碑徽章 + 行为成就墙 |
-| timeline | CoupleOnThisDay + CoupleTimeline | 那年今天 + 恋爱时光轴 |
+| shared | CoupleCityCard + CoupleCountdown + CoupleLife + CoupleShared + CoupleFund | 异地恋(对方时区/见面倒数)/倒数日/生活共享(记账/家务/约会/习惯/暗号)/共享清单/心愿基金 |
+| badges | CoupleBadges + CoupleReport | 里程碑徽章 + 行为成就墙 + 恋爱月报/数据总览 |
+| timeline | CoupleOnThisDay + CoupleFirsts + CoupleHeartMoments + CoupleTimeline | 那年今天 + 我们的第一次(F46) + 心动时刻(F36) + 恋爱时光轴 |
 
-头部区：双人头像 + 在一起天数 + 连续晚安 + 心动值 + 纪念日弹窗 + 专属爱称弹窗（`couple-pet-*` testid）。
+头部区：双人头像 + 在一起天数 + 连续晚安 + 心动值 + 纪念日弹窗 + 专属爱称弹窗（`couple-pet-*`）+ 通知铃铛（F41 `couple-notify-*`）+ 里程碑/周年庆横幅（F43/F43+F47）+ 空间个性化 CoupleProfile（宣言/主题/贴纸）。
 
 **新功能标准链路**（照抄任意现成组件）：
 1. `types/index.ts` 追加 VO 类型（放情侣空间区块末尾）
