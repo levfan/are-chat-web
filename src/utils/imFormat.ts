@@ -54,6 +54,13 @@ export function avatarColorByKey(value: string | null | undefined, name: string)
 /** 表情分组：聊天面板表情选择器按组展示（均为常见单码位表情，兼容各系统字体） */
 export const EMOJI_GROUPS: { name: string; emojis: string[] }[] = [
   {
+    name: '💗 情侣贴纸包',
+    emojis: [
+      '💖', '💘', '💝', '🫶', '😘', '💋', '🌹', '💌', '💍', '👩‍❤️‍👨', '🥂', '🍰',
+      '🧸', '🐰', '🐻', '🐥', '🌷', '🌸', '⭐', '🌙', '☕', '🍫', '🎁', '🏠',
+    ],
+  },
+  {
     name: '笑脸',
     emojis: [
       '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃',

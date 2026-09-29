@@ -60,6 +60,12 @@ export const messageApi = {
   /** 95 会话附件：type=image|file */
   attachments: (peer: string, type: 'image' | 'file' = 'image') =>
     http.get<AttachmentVO[]>(`/api/messages/${enc(peer)}/attachments?type=${type}`),
+  /** F36 心动时刻标记/取消标记 */
+  markHeart: (msgId: string, hearted: boolean) =>
+    http.postJson<ImMessage>(`/api/messages/${enc(msgId)}/heart`, { hearted }),
+  /** F36 心动时刻列表（peer 可选：限定与某人的会话） */
+  heartMoments: (peer?: string) =>
+    http.get<ImMessage[]>(peer ? `/api/messages/hearts?peer=${enc(peer)}` : '/api/messages/hearts'),
 }
 
 export const starsApi = {

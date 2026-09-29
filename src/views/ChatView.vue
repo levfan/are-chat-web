@@ -257,6 +257,7 @@
               @pin="onPinMessage"
               @unpin="onUnpinMessage"
               @promise="onPromise"
+              @heart="onHeart"
             />
           </template>
         </div>
@@ -1157,6 +1158,31 @@ function onPromise(message: ImMessage) {
   void router.push({ path: '/couple', query: { tab: 'promises' } })
 }
 
+// ---------- F36 心动时刻标记 ----------
+
+async function onHeart(message: ImMessage) {
+  if (!couple.established) {
+    ElMessage.info('先去「情侣空间」邀请好友建立空间，才能标记心动时刻哦')
+    return
+  }
+  try {
+    const hearted = !message.heartAt
+    await im.markHeart(message.id, hearted)
+    if (hearted) {
+      ElMessage.success('已记入心动时刻 💗 情侣空间可以回顾')
+    }
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '操作失败')
+  }
+}
+
+/** 对方标记了心动时刻：刷新当前会话历史 */
+const onHeartChanged = () => {
+  if (im.activePeer) {
+    void im.refreshHistory(im.activePeer)
+  }
+}
+
 // ---------- 84 会话内置顶 ----------
 
 const pinBrief = computed(() => {
@@ -1598,6 +1624,8 @@ onMounted(async () => {
   window.addEventListener('arechat:appearance', syncAppearance)
   // 65 对方给我回应时飘心
   window.addEventListener('arechat:reaction', onPeerReaction as EventListener)
+  // F36 对方标记了心动时刻：刷新当前会话让 💗 即时出现
+  window.addEventListener('arechat:heart-changed', onHeartChanged as EventListener)
   await im.init(auth.username)
   const peer = typeof route.query.peer === 'string' ? route.query.peer : ''
   if (peer && im.friends.some((f) => f.username === peer)) {
@@ -1609,6 +1637,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeydown)
   window.removeEventListener('arechat:appearance', syncAppearance)
   window.removeEventListener('arechat:reaction', onPeerReaction as EventListener)
+  window.removeEventListener('arechat:heart-changed', onHeartChanged as EventListener)
 })
 </script>
 

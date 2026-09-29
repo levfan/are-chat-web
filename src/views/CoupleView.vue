@@ -142,6 +142,7 @@
           <el-tab-pane label="📖 时光轴" name="timeline" lazy>
             <div class="tab-stack">
               <CoupleOnThisDay />
+              <CoupleHeartMoments />
               <CoupleTimeline />
             </div>
           </el-tab-pane>
@@ -213,6 +214,7 @@ import CoupleLife from '@/components/couple/CoupleLife.vue'
 import CoupleProfile from '@/components/couple/CoupleProfile.vue'
 import CoupleReport from '@/components/couple/CoupleReport.vue'
 import CoupleGame from '@/components/couple/CoupleGame.vue'
+import CoupleHeartMoments from '@/components/couple/CoupleHeartMoments.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
 import CoupleShared from '@/components/couple/CoupleShared.vue'

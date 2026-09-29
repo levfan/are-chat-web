@@ -1089,6 +1089,13 @@ export const useCoupleStore = defineStore('couple', () => {
         notify('✨ 空间个性化', msg.detail)
         void init()
         break
+      case 'message-hearted':
+        notify('💗 心动时刻', msg.detail)
+        window.dispatchEvent(new CustomEvent('arechat:heart-changed'))
+        break
+      case 'message-unhearted':
+        window.dispatchEvent(new CustomEvent('arechat:heart-changed'))
+        break
       default:
         break
     }

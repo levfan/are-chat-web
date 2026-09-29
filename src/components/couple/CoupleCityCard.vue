@@ -9,6 +9,7 @@
       <div class="city-cell">
         <span class="city-owner">我</span>
         <span class="city-name" data-testid="couple-city-mine">{{ couple.cityCard?.myCity || '未设置' }}</span>
+        <span class="city-clock">{{ myClock }}</span>
       </div>
       <div class="city-mid" data-testid="couple-city-metrics">
         <template v-if="couple.cityCard?.hoursDiff !== null && couple.cityCard?.hoursDiff !== undefined">
@@ -26,7 +27,31 @@
       <div class="city-cell">
         <span class="city-owner">TA</span>
         <span class="city-name" data-testid="couple-city-partner">{{ couple.cityCard?.partnerCity || '未设置' }}</span>
+        <span class="city-clock" data-testid="couple-city-clock">{{ partnerClock || ' ' }}</span>
       </div>
+    </div>
+
+    <!-- F39 见面倒数：把「下次见面」变成一个正式的期待 -->
+    <div class="meet-box">
+      <template v-if="meetCountdown">
+        <span class="meet-days" data-testid="couple-meet-days">{{ meetCountdown.daysLeft > 0 ? meetCountdown.daysLeft : '今天' }}</span>
+        <span class="meet-label">距下次见面</span>
+        <span class="meet-day">{{ meetCountdown.targetDay }}</span>
+      </template>
+      <template v-else>
+        <span class="meet-label">还没约下次见面</span>
+        <el-date-picker
+          v-model="meetDay"
+          type="date"
+          value-format="YYYY-MM-DD"
+          placeholder="哪天见面？"
+          class="meet-picker"
+          size="small"
+          :disabled-date="(d: Date) => d.getTime() < Date.now() - 86400000"
+          data-testid="couple-meet-day"
+        />
+        <el-button size="small" type="primary" round data-testid="couple-meet-add" @click="onAddMeet">开始倒数</el-button>
+      </template>
     </div>
 
     <p class="city-tip">
@@ -50,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useCoupleStore } from '@/stores/couple'
 
@@ -66,6 +91,48 @@ const hoursText = computed(() => {
   if (diff === 0) return '同时区'
   return diff > 0 ? `TA 比我快 ${diff} 小时` : `TA 比我慢 ${-diff} 小时`
 })
+
+// ---------- F39 对方当地时间（按城市库 IANA 时区实时显示） ----------
+const now = ref(new Date())
+let timer: ReturnType<typeof setInterval> | undefined
+
+function clockIn(zoneId: string | null | undefined) {
+  if (!zoneId) return ''
+  try {
+    const text = new Intl.DateTimeFormat('zh-CN', {
+      timeZone: zoneId,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(now.value)
+    return `🕐 ${text}`
+  } catch {
+    return ''
+  }
+}
+
+const myClock = computed(() => clockIn(Intl.DateTimeFormat().resolvedOptions().timeZone))
+const partnerClock = computed(() => clockIn(couple.cityCard?.partnerZoneId))
+
+// ---------- F39 见面倒数：复用倒数日，标题固定为「下次见面」 ----------
+const meetDay = ref('')
+const meetCountdown = computed(() =>
+  couple.countdowns.find((c) => !c.done && c.title.includes('见面')),
+)
+
+async function onAddMeet() {
+  if (!meetDay.value) {
+    ElMessage.warning('选一个见面日期')
+    return
+  }
+  try {
+    await couple.addCountdown('下次见面 🥺', meetDay.value, couple.cityCard?.partnerCity ?? undefined)
+    meetDay.value = ''
+    ElMessage.success('见面倒数开始！每一天都是期待 ⏳')
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '添加失败')
+  }
+}
 
 function openEdit() {
   cityInput.value = couple.cityCard?.myCity ?? ''
@@ -104,6 +171,14 @@ async function onClear() {
 
 onMounted(() => {
   void couple.loadCityCard()
+  void couple.loadCountdowns()
+  timer = setInterval(() => (now.value = new Date()), 30_000)
+})
+
+onUnmounted(() => {
+  if (timer) {
+    clearInterval(timer)
+  }
 })
 </script>
 
@@ -115,6 +190,36 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+.city-clock {
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
+  min-height: 14px;
+}
+.meet-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #fff5f5, #fffdf5);
+}
+.meet-days {
+  font-size: 22px;
+  font-weight: 700;
+  color: #f56c6c;
+}
+.meet-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.meet-day {
+  font-size: 11px;
+  color: var(--im-muted, #8f959e);
+}
+.meet-picker {
+  width: 130px;
 }
 .block-head {
   display: flex;

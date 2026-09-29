@@ -481,6 +481,37 @@ export const useImStore = defineStore('im', () => {
     }
   }
 
+  /** F36 心动时刻标记/取消标记（乐观更新，服务端同时向对方推送） */
+  async function markHeart(msgId: string, hearted: boolean) {
+    const target = findMessage(msgId)
+    if (!target) {
+      return
+    }
+    const previous = target.heartAt ?? null
+    target.heartAt = hearted ? Date.now() : null
+    try {
+      await messageApi.markHeart(msgId, hearted)
+    } catch (e) {
+      target.heartAt = previous
+      throw e
+    }
+  }
+
+  /** F36 对方标记了心动时刻：拉新当前会话（保留本地未确认消息），让 💗 即时出现 */
+  async function refreshHistory(peer: string) {
+    const list = messages.value[peer]
+    if (!list || list.length === 0) {
+      return
+    }
+    try {
+      const fresh = await messageApi.history(peer)
+      const localPending = list.filter((m) => m.status === 'SENDING' || m.status === 'FAILED')
+      messages.value[peer] = [...fresh, ...localPending]
+    } catch {
+      // 静默失败：下次打开会话会重新拉取
+    }
+  }
+
   /** 编辑自己 2 分钟内的文本消息（乐观更新） */
   async function editMessage(msgId: string, content: string) {
     const target = findMessage(msgId)
@@ -886,6 +917,8 @@ export const useImStore = defineStore('im', () => {
     clearDraft,
     toggleReaction,
     toggleStar,
+    markHeart,
+    refreshHistory,
     editMessage,
     forwardMessage,
     pinMessage,

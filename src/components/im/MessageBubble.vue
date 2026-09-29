@@ -23,6 +23,7 @@
         <el-icon v-if="message.starred" class="star-mark" :size="12" data-testid="starred-mark">
           <StarFilled />
         </el-icon>
+        <span v-if="message.heartAt" class="heart-mark" title="心动时刻" data-testid="heart-mark">💗</span>
       </div>
       <div class="bubble" data-testid="dm-bubble" @dblclick="onBubbleDblClick" @click="onBubbleTap">
         <!-- 引用块（48 点击定位原消息） -->
@@ -270,6 +271,18 @@
       >
         约定
       </button>
+      <!-- F36 心动时刻：标记这条消息，之后在情侣空间回顾 -->
+      <button
+        v-if="canHeart"
+        class="hover-btn heart-btn"
+        :class="{ active: message.heartAt }"
+        type="button"
+        :title="message.heartAt ? '取消心动时刻' : '标记心动时刻'"
+        data-testid="heart-btn"
+        @click="emit('heart', message)"
+      >
+        {{ message.heartAt ? '心动中 💗' : '心动' }}
+      </button>
       <button
         v-if="canRecall"
         class="hover-btn danger"
@@ -343,6 +356,8 @@ const emit = defineEmits<{
   jump: [msgId: string]
   /** 情侣空间：把这句话记入约定（谁说的就是谁的承诺） */
   promise: [message: ImMessage]
+  /** F36 心动时刻标记/取消标记 */
+  heart: [message: ImMessage]
 }>()
 
 /** 发送者展示名：备注优先（im.displayNameOf 响应式解析，备注修改后历史消息即时换名） */
@@ -354,6 +369,9 @@ const senderName = computed(() => im.displayNameOf(props.message.fromUser))
 const canPromise = computed(
   () => couple.established && props.message.status === 'SENT' && props.message.msgType === 'text',
 )
+
+/** F36 心动时刻入口：已建立情侣空间 + 未撤回消息 */
+const canHeart = computed(() => couple.established && props.message.status === 'SENT')
 
 const centered = computed(() => {
   if (props.message.status === 'RECALLED') {
@@ -769,6 +787,12 @@ const quoteText = computed(() => {
 }
 .hover-btn.danger:hover {
   color: var(--el-color-danger, #f56c6c);
+}
+.hover-btn.heart-btn.active {
+  color: var(--xx-accent, #ec5f92);
+}
+.heart-mark {
+  font-size: 11px;
 }
 /* 回应面板：内联 6×6 宫格卡片，宽度固定，随消息行渲染 */
 .react-grid {

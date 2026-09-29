@@ -30,6 +30,21 @@
         </el-button>
         <span v-if="lastDrawn" class="draw-hint">已替你填好，不满意可以再抽～</span>
       </div>
+      <!-- F40 情书模板：不会写？挑一个模板直接改 -->
+      <div class="draw-row" data-testid="couple-letter-templates">
+        <span class="tpl-label">情书模板：</span>
+        <el-button
+          v-for="tpl in TEMPLATES"
+          :key="tpl.label"
+          size="small"
+          round
+          plain
+          :data-testid="`couple-letter-tpl-${tpl.label}`"
+          @click="applyTemplate(tpl.body)"
+        >
+          {{ tpl.label }}
+        </el-button>
+      </div>
       <p class="compose-tip">慢递信到点前 TA 拆不开；TA 拆开后你们都能看到内容。</p>
     </div>
 
@@ -131,6 +146,35 @@ async function onDraw() {
   } finally {
     drawing.value = false
   }
+}
+
+// ---------- F40 情书模板：不会写就挑一个改 ----------
+const TEMPLATES: { label: string; body: string }[] = [
+  {
+    label: '早安吻',
+    body: '早安呀，今天的第一件事是想你。\n记得吃早餐，出门看好红绿灯，\n晚上回来跟我讲讲今天遇到的事。\n——爱你的我',
+  },
+  {
+    label: '想你啦',
+    body: '不知道为什么，今天特别特别想你。\n可能是天气太好了，好到想立刻见到你。\n下次见面，要抱久一点点。',
+  },
+  {
+    label: '道个歉',
+    body: '刚才是我不好，不该那么说话。\n我的语气很冲，但我的心是想跟你好好的。\n别气了好不好，气坏了身体我会心疼。\n——先低头的那个',
+  },
+  {
+    label: '谢谢你',
+    body: '谢谢你今天为我做的事，虽然你总是说"没什么"。\n但我想让你知道，你的每一次用心，我都记在心里了。\n有你真好。',
+  },
+  {
+    label: '晚安枕',
+    body: '今晚早点睡，不许熬夜玩手机啦。\n把今天的不开心都关在枕头外，\n梦里我们来一场说走就走的旅行。\n晚安，做个有我的梦。',
+  },
+]
+
+function applyTemplate(body: string) {
+  content.value = body
+  lastDrawn.value = false
 }
 
 function isMine(letter: CoupleLetterVO) {
@@ -237,6 +281,11 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   margin-top: 10px;
+  flex-wrap: wrap;
+}
+.tpl-label {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
 }
 .draw-hint {
   font-size: 12px;

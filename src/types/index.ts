@@ -234,6 +234,8 @@ export interface ImMessage {
   edited?: boolean
   /** 我是否收藏了这条消息 */
   starred?: boolean
+  /** F36 心动时刻标记时间（毫秒，null/undefined = 未标记） */
+  heartAt?: number | null
   /** 消息表情回应 */
   reactions?: ImReaction[]
   created: number
@@ -526,6 +528,8 @@ export interface CoupleCityCardVO {
   partnerCity: string | null
   hoursDiff: number | null
   distanceKm: number | null
+  /** F39 对方城市 IANA 时区（不在城市库时为 null），前端据此显示对方当地时间 */
+  partnerZoneId: string | null
 }
 
 export interface CoupleFundDepositVO {
