@@ -85,6 +85,14 @@ import type {
   CoupleReadPlanVO,
   CoupleWatchVO,
   CoupleDictVO,
+  CoupleChronicleYearVO,
+  CoupleArchaeologyCardVO,
+  CoupleQuizQuestionVO,
+  CoupleAnniversaryReportVO,
+  CoupleBirthdayLookVO,
+  CoupleQuoteVO,
+  CoupleTicketVO,
+  CoupleSongVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -544,4 +552,39 @@ export const coupleApi = {
     http.postJson<CoupleDictVO[]>('/api/couple/growth/dict', { word, meaning }),
   /** F78 删除词条 */
   removeWord: (id: string) => http.delete<CoupleDictVO[]>(`/api/couple/growth/dict/${id}`),
+
+  // ---------- 回忆资产（F80-F89） ----------
+  /** F80 恋爱编年史（按年聚合） */
+  chronicle: () => http.get<CoupleChronicleYearVO[]>('/api/couple/chronicle'),
+  /** F81 考古卡（随机挖一张旧记录） */
+  archaeology: () => http.get<CoupleArchaeologyCardVO>('/api/couple/chronicle/archaeology'),
+  /** F82 恋爱问答机（真实数据出题） */
+  quiz: () => http.get<CoupleQuizQuestionVO[]>('/api/couple/chronicle/quiz'),
+  /** F85 周年报告 */
+  anniversaryReport: () => http.get<CoupleAnniversaryReportVO>('/api/couple/chronicle/anniversary-report'),
+  /** F86 生日回顾 */
+  birthdayLook: () => http.get<CoupleBirthdayLookVO>('/api/couple/chronicle/birthday-look'),
+  /** F83 语录册 */
+  quotes: () => http.get<CoupleQuoteVO[]>('/api/couple/keepsake/quotes'),
+  /** F83 收藏语录 */
+  saveQuote: (content: string, context?: string) =>
+    http.postJson<CoupleQuoteVO[]>('/api/couple/keepsake/quotes', { content, context: context ?? null }),
+  /** F83 删除语录 */
+  removeQuote: (id: string) => http.delete<CoupleQuoteVO[]>(`/api/couple/keepsake/quotes/${id}`),
+  /** F88 票根墙 */
+  tickets: () => http.get<CoupleTicketVO[]>('/api/couple/keepsake/tickets'),
+  /** F88 存票根 */
+  saveTicket: (title: string, watchDay?: string, rating?: number, comment?: string) =>
+    http.postJson<CoupleTicketVO[]>('/api/couple/keepsake/tickets',
+      { title, watchDay: watchDay ?? null, rating: rating ?? null, comment: comment ?? null }),
+  /** F88 撕票根 */
+  removeTicket: (id: string) => http.delete<CoupleTicketVO[]>(`/api/couple/keepsake/tickets/${id}`),
+  /** F89 我们的歌单 */
+  songs: () => http.get<CoupleSongVO[]>('/api/couple/keepsake/songs'),
+  /** F89 收藏歌 */
+  saveSong: (title: string, artist?: string, reason?: string) =>
+    http.postJson<CoupleSongVO[]>('/api/couple/keepsake/songs',
+      { title, artist: artist ?? null, reason: reason ?? null }),
+  /** F89 移除歌 */
+  removeSong: (id: string) => http.delete<CoupleSongVO[]>(`/api/couple/keepsake/songs/${id}`),
 }

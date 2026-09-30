@@ -1386,3 +1386,93 @@ export interface CoupleDictVO {
   meaning: string
   created: number
 }
+
+// ============ 情侣空间：回忆资产（F80-F89） ============
+
+/** F80 编年史事件 */
+export interface CoupleChronicleEvent {
+  day: string
+  type: string
+  title: string
+  detail: string
+  icon: string
+}
+
+/** F80 编年史按年分组 */
+export interface CoupleChronicleYearVO {
+  year: string
+  events: CoupleChronicleEvent[]
+}
+
+/** F81 考古卡 */
+export interface CoupleArchaeologyCardVO {
+  kind: string
+  day: string
+  daysAgo: number
+  title: string
+  content: string
+}
+
+/** F82 问答机单题 */
+export interface CoupleQuizQuestionVO {
+  key: string
+  question: string
+  options: string[]
+  answerIndex: number
+}
+
+/** F85 报告条目 */
+export interface CoupleReportItem {
+  key: string
+  label: string
+  emoji: string
+  value: number
+  unit: string
+}
+
+/** F85 周年报告 */
+export interface CoupleAnniversaryReportVO {
+  anniversaryDay: string
+  nthYear: number
+  sinceDay: string
+  items: CoupleReportItem[]
+  summary: string
+}
+
+/** F86 生日回顾 */
+export interface CoupleBirthdayLookVO {
+  partner: string
+  partnerLabel: string
+  birthday: string
+  events: CoupleChronicleEvent[]
+}
+
+/** F83 甜蜜语录 */
+export interface CoupleQuoteVO {
+  id: string
+  fromUser: string
+  content: string
+  context: string | null
+  created: number
+}
+
+/** F88 电影票根 */
+export interface CoupleTicketVO {
+  id: string
+  fromUser: string
+  title: string
+  watchDay: string
+  rating: number
+  comment: string | null
+  created: number
+}
+
+/** F89 我们的歌 */
+export interface CoupleSongVO {
+  id: string
+  fromUser: string
+  title: string
+  artist: string | null
+  reason: string | null
+  created: number
+}

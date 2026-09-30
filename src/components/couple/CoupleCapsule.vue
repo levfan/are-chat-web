@@ -9,14 +9,19 @@
         :rows="3"
         maxlength="500"
         show-word-limit
-        placeholder="把现在的心情、约定或惊喜封进胶囊，30~365 天后的 TA 才能打开…"
+        placeholder="把现在的心情、约定或惊喜封进胶囊，30 天～10 年后的 TA 才能打开…"
         data-testid="couple-capsule-content"
       />
+      <div class="preset-row" data-testid="couple-capsule-presets">
+        <el-button v-for="p in presets" :key="p.days" size="small" plain data-testid="couple-capsule-preset" @click="onPreset(p.days)">
+          {{ p.label }}
+        </el-button>
+      </div>
       <div class="seal-row">
         <el-date-picker
           v-model="openDay"
           type="date"
-          placeholder="开启日期（30~365 天后）"
+          placeholder="开启日期（30 天～10 年后）"
           value-format="YYYY-MM-DD"
           class="seal-picker"
           :disabled-date="disableDate"
@@ -85,11 +90,25 @@ const content = ref('')
 const openDay = ref('')
 const sealing = ref(false)
 
+/** F84 远期胶囊预设（1/3/5/10 年） */
+const presets = [
+  { label: '1 年后', days: 365 },
+  { label: '3 年后', days: 365 * 3 },
+  { label: '5 年后', days: 365 * 5 },
+  { label: '10 年后', days: 365 * 10 },
+]
+
+function onPreset(days: number) {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  openDay.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function disableDate(d: Date) {
   const min = new Date()
   min.setDate(min.getDate() + 30)
   const max = new Date()
-  max.setDate(max.getDate() + 365)
+  max.setDate(max.getDate() + 3650)
   return d.getTime() < min.setHours(0, 0, 0, 0) || d.getTime() > max.getTime()
 }
 
@@ -106,7 +125,7 @@ async function onSeal() {
     return
   }
   if (!openDay.value) {
-    ElMessage.warning('选择一个开启日期（30~365 天后）')
+    ElMessage.warning('选择一个开启日期（30 天～10 年后）')
     return
   }
   sealing.value = true
@@ -157,6 +176,12 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   margin-top: 10px;
+}
+.preset-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
 }
 .seal-picker {
   width: 200px;

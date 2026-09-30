@@ -77,6 +77,14 @@ import type {
   CoupleReadPlanVO,
   CoupleWatchVO,
   CoupleDictVO,
+  CoupleChronicleYearVO,
+  CoupleArchaeologyCardVO,
+  CoupleQuizQuestionVO,
+  CoupleAnniversaryReportVO,
+  CoupleBirthdayLookVO,
+  CoupleQuoteVO,
+  CoupleTicketVO,
+  CoupleSongVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -187,6 +195,15 @@ export const useCoupleStore = defineStore('couple', () => {
   const readPlans = ref<CoupleReadPlanVO[]>([])
   const watchlist = ref<CoupleWatchVO[]>([])
   const dictWords = ref<CoupleDictVO[]>([])
+  /** F80-F89 回忆资产 */
+  const chronicleYears = ref<CoupleChronicleYearVO[]>([])
+  const archaeologyCard = ref<CoupleArchaeologyCardVO | null>(null)
+  const quizQuestions = ref<CoupleQuizQuestionVO[]>([])
+  const anniversaryReport = ref<CoupleAnniversaryReportVO | null>(null)
+  const birthdayLook = ref<CoupleBirthdayLookVO | null>(null)
+  const quotes = ref<CoupleQuoteVO[]>([])
+  const tickets = ref<CoupleTicketVO[]>([])
+  const songs = ref<CoupleSongVO[]>([])
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -212,6 +229,8 @@ export const useCoupleStore = defineStore('couple', () => {
     deep: false,
     whisper: false,
     growth: false,
+    chronicle: false,
+    keepsake: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -325,6 +344,14 @@ export const useCoupleStore = defineStore('couple', () => {
     readPlans.value = []
     watchlist.value = []
     dictWords.value = []
+    chronicleYears.value = []
+    archaeologyCard.value = null
+    quizQuestions.value = []
+    anniversaryReport.value = null
+    birthdayLook.value = null
+    quotes.value = []
+    tickets.value = []
+    songs.value = []
     loadedLists.value = {
       promises: false,
       question: false,
@@ -349,6 +376,8 @@ export const useCoupleStore = defineStore('couple', () => {
       deep: false,
       whisper: false,
       growth: false,
+      chronicle: false,
+      keepsake: false,
     }
     promiseDraft.value = null
   }
@@ -1246,6 +1275,64 @@ export const useCoupleStore = defineStore('couple', () => {
     dictWords.value = (await coupleApi.removeWord(id)) ?? []
   }
 
+  // ---------- F80-F89 回忆资产 ----------
+
+  /** 编年史 + 周年报告 + 生日回顾 */
+  async function loadChronicle() {
+    const [years, report] = await Promise.all([coupleApi.chronicle(), coupleApi.anniversaryReport()])
+    chronicleYears.value = years ?? []
+    anniversaryReport.value = report
+    loadedLists.value.chronicle = true
+  }
+
+  async function digArchaeology() {
+    archaeologyCard.value = await coupleApi.archaeology()
+    return archaeologyCard.value
+  }
+
+  async function loadQuiz() {
+    quizQuestions.value = (await coupleApi.quiz()) ?? []
+    return quizQuestions.value
+  }
+
+  async function loadBirthdayLook() {
+    birthdayLook.value = await coupleApi.birthdayLook()
+    return birthdayLook.value
+  }
+
+  /** 语录册 + 票根 + 歌单 */
+  async function loadKeepsake() {
+    const [q, t, s] = await Promise.all([coupleApi.quotes(), coupleApi.tickets(), coupleApi.songs()])
+    quotes.value = q ?? []
+    tickets.value = t ?? []
+    songs.value = s ?? []
+    loadedLists.value.keepsake = true
+  }
+
+  async function saveQuote(content: string, context?: string) {
+    quotes.value = (await coupleApi.saveQuote(content, context)) ?? []
+  }
+
+  async function removeQuote(id: string) {
+    quotes.value = (await coupleApi.removeQuote(id)) ?? []
+  }
+
+  async function saveTicket(title: string, watchDay?: string, rating?: number, comment?: string) {
+    tickets.value = (await coupleApi.saveTicket(title, watchDay, rating, comment)) ?? []
+  }
+
+  async function removeTicket(id: string) {
+    tickets.value = (await coupleApi.removeTicket(id)) ?? []
+  }
+
+  async function saveSong(title: string, artist?: string, reason?: string) {
+    songs.value = (await coupleApi.saveSong(title, artist, reason)) ?? []
+  }
+
+  async function removeSong(id: string) {
+    songs.value = (await coupleApi.removeSong(id)) ?? []
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -1723,6 +1810,27 @@ export const useCoupleStore = defineStore('couple', () => {
           void loadGrowth()
         }
         break
+      case 'quote-kept':
+        notify('📔 甜蜜语录册', msg.detail)
+        if (loadedLists.value.keepsake) {
+          void loadKeepsake()
+        }
+        break
+      case 'ticket-added':
+        notify('🎫 电影票根墙', msg.detail)
+        if (loadedLists.value.keepsake) {
+          void loadKeepsake()
+        }
+        break
+      case 'song-added':
+        notify('🎵 我们的歌单', msg.detail)
+        if (loadedLists.value.keepsake) {
+          void loadKeepsake()
+        }
+        break
+      case 'capsule-due':
+        notify('⏰ 时光胶囊到期', msg.detail)
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -1945,6 +2053,14 @@ export const useCoupleStore = defineStore('couple', () => {
     readPlans,
     watchlist,
     dictWords,
+    chronicleYears,
+    archaeologyCard,
+    quizQuestions,
+    anniversaryReport,
+    birthdayLook,
+    quotes,
+    tickets,
+    songs,
     loadGrowth,
     checkChallenge,
     depositPassbook,
@@ -1965,5 +2081,16 @@ export const useCoupleStore = defineStore('couple', () => {
     updateWatch,
     addWord,
     removeWord,
+    loadChronicle,
+    digArchaeology,
+    loadQuiz,
+    loadBirthdayLook,
+    loadKeepsake,
+    saveQuote,
+    removeQuote,
+    saveTicket,
+    removeTicket,
+    saveSong,
+    removeSong,
   }
 })

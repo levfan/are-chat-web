@@ -11,11 +11,13 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    CoupleAnniversaryReport: typeof import('./components/couple/CoupleAnniversaryReport.vue')['default']
     CoupleBadges: typeof import('./components/couple/CoupleBadges.vue')['default']
     CoupleBond: typeof import('./components/couple/CoupleBond.vue')['default']
     CoupleCapsule: typeof import('./components/couple/CoupleCapsule.vue')['default']
     CoupleCare: typeof import('./components/couple/CoupleCare.vue')['default']
     CoupleChallenge: typeof import('./components/couple/CoupleChallenge.vue')['default']
+    CoupleChronicle: typeof import('./components/couple/CoupleChronicle.vue')['default']
     CoupleCityCard: typeof import('./components/couple/CoupleCityCard.vue')['default']
     CoupleComfort: typeof import('./components/couple/CoupleComfort.vue')['default']
     CoupleCountdown: typeof import('./components/couple/CoupleCountdown.vue')['default']
@@ -26,6 +28,7 @@ declare module 'vue' {
     CoupleGame: typeof import('./components/couple/CoupleGame.vue')['default']
     CoupleGarden: typeof import('./components/couple/CoupleGarden.vue')['default']
     CoupleHeartMoments: typeof import('./components/couple/CoupleHeartMoments.vue')['default']
+    CoupleKeepsake: typeof import('./components/couple/CoupleKeepsake.vue')['default']
     CoupleLetter: typeof import('./components/couple/CoupleLetter.vue')['default']
     CoupleLife: typeof import('./components/couple/CoupleLife.vue')['default']
     CoupleMakeup: typeof import('./components/couple/CoupleMakeup.vue')['default']
@@ -72,6 +75,7 @@ declare module 'vue' {
     ElRadio: typeof import('element-plus/es')['ElRadio']
     ElRadioButton: typeof import('element-plus/es')['ElRadioButton']
     ElRadioGroup: typeof import('element-plus/es')['ElRadioGroup']
+    ElRate: typeof import('element-plus/es')['ElRate']
     ElResult: typeof import('element-plus/es')['ElResult']
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElStep: typeof import('element-plus/es')['ElStep']

@@ -147,6 +147,7 @@
               <CoupleLetter />
               <CoupleWhisperBox />
               <CoupleCapsule />
+              <CoupleKeepsake />
             </div>
           </el-tab-pane>
           <el-tab-pane label="💗 心情" name="mood" lazy>
@@ -172,6 +173,7 @@
             <div class="tab-stack">
               <CoupleBadges />
               <CoupleReport />
+              <CoupleAnniversaryReport />
             </div>
           </el-tab-pane>
           <el-tab-pane label="📖 时光轴" name="timeline" lazy>
@@ -180,6 +182,7 @@
               <CoupleFirsts />
               <CoupleHeartMoments />
               <CoupleTimeline />
+              <CoupleChronicle />
             </div>
           </el-tab-pane>
         </el-tabs>
@@ -283,6 +286,9 @@ import CouplePact from '@/components/couple/CouplePact.vue'
 import CoupleCityCard from '@/components/couple/CoupleCityCard.vue'
 import CoupleFund from '@/components/couple/CoupleFund.vue'
 import CoupleTimeline from '@/components/couple/CoupleTimeline.vue'
+import CoupleChronicle from '@/components/couple/CoupleChronicle.vue'
+import CoupleAnniversaryReport from '@/components/couple/CoupleAnniversaryReport.vue'
+import CoupleKeepsake from '@/components/couple/CoupleKeepsake.vue'
 import CoupleSurprise from '@/components/couple/CoupleSurprise.vue'
 import CoupleGarden from '@/components/couple/CoupleGarden.vue'
 import CoupleComfort from '@/components/couple/CoupleComfort.vue'
