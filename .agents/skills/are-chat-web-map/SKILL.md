@@ -29,13 +29,14 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 
 ## 三、情侣空间前端全景
 
-`views/CoupleView.vue` 用 el-tabs 组织 **9 个页签**（name 即路由 `?tab=` 参数值，均 lazy）：
+`views/CoupleView.vue` 用 el-tabs 组织 **10 个页签**（name 即路由 `?tab=` 参数值，均 lazy）：
 
 | 页签 name | 组件 | 内容 |
 |---|---|---|
 | bond | CoupleBond + CoupleGame | 贴贴动作宫格/贴贴里程碑/累计统计/动作流 + 恋爱加成清单/互动热力图/心情曲线/恋爱红绿灯 |
 | promises（默认） | CouplePromises + CouplePact | 双向约定卡 + 恋爱条约 |
 | rituals | CoupleRituals + CoupleDaily | 早晚安/今日一问(含 F48 互评表情)/晚安故事 + 甜蜜任务/恋爱运势/默契考验 |
+| surprise | CoupleSurprise + CoupleGarden | 惊喜与期待(F50-F59)：刮刮乐/恋爱盲盒/心动闹钟/思念速递/藏宝图/告白重现 + 爱情花园浇水养成/每日玫瑰/幸运签 |
 | letters | CoupleLetter + CoupleCapsule | 悄悄话信箱（情话抽卡/情书模板）+ 时光胶囊 |
 | mood | CoupleMood | 心情日记 + 心情回应（回应按钮在本组件内） |
 | care | CoupleCare | 情绪天气/急救箱/和好卡/夸夸墙/生理期关怀 |
