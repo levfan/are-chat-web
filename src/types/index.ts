@@ -1130,3 +1130,135 @@ export interface CoupleTreasureVO {
   doneAt: number | null
   created: number
 }
+
+// ============ 情侣空间：懂我与被接住（F60-F69） ============
+
+/** F60 求抱抱条目 */
+export interface CoupleComfortVO {
+  id: string
+  fromUser: string
+  day: string
+  feeling: string
+  feelingLabel: string
+  feelingEmoji: string
+  handled: boolean
+  handledNote: string | null
+  handledAt: number | null
+}
+
+/** F60 求抱抱看板 */
+export interface CoupleComfortBoardVO {
+  mine: CoupleComfortVO | null
+  partnerPending: CoupleComfortVO | null
+  history: CoupleComfortVO[]
+}
+
+/** F64 情绪同步率 */
+export interface CoupleMoodSyncVO {
+  bothDays: number
+  syncedDays: number
+  syncRate: number
+  todaySync: boolean
+  todayMoodMine: string | null
+  todayMoodPartner: string | null
+  streak: number
+}
+
+/** F61 一天的复盘（双方各一份，齐了才是完整锦囊） */
+export interface CouplePeaceDayVO {
+  day: string
+  mine: {
+    id: string
+    byUser: string
+    day: string
+    myPart: string
+    nextTime: string
+    created: number
+  } | null
+  partner: {
+    id: string
+    byUser: string
+    day: string
+    myPart: string
+    nextTime: string
+    created: number
+  } | null
+  complete: boolean
+}
+
+/** F62 道歉券 */
+export interface CoupleSorryTicketVO {
+  id: string
+  fromUser: string
+  note: string
+  status: 'ACTIVE' | 'USED'
+  usedNote: string | null
+  usedAt: number | null
+  created: number
+}
+
+/** F66 今天的真心话 */
+export interface CoupleTruthTodayVO {
+  day: string
+  question: string
+  myAnswer: string | null
+  partnerAnswer: string | null
+}
+
+/** F66 真心话存档 */
+export interface CoupleTruthHistoryVO {
+  day: string
+  question: string
+  myAnswer: string | null
+  partnerAnswer: string | null
+}
+
+/** F67 树洞提问 */
+export interface CoupleWhisperVO {
+  id: string
+  question: string
+  anonymous: boolean
+  askerLabel: string
+  answer: string | null
+  answeredAt: number | null
+  mine: boolean
+  created: number
+}
+
+/** F68 心灵感应单轮 */
+export interface CoupleTelepathyRoundVO {
+  id: string
+  round: number
+  question: string
+  options: string[]
+  answerA: string | null
+  answerB: string | null
+  settled: boolean
+  matched: boolean
+  mineStarted: boolean
+}
+
+/** F68 心灵感应板 */
+export interface CoupleTelepathyBoardVO {
+  current: CoupleTelepathyRoundVO | null
+  history: CoupleTelepathyRoundVO[]
+  roundsLeftToday: number
+  matchedCount: number
+  totalSettled: number
+}
+
+/** F69 情话储蓄罐单条 */
+export interface CoupleLoveBankVO {
+  id: string
+  content: string
+  delivered: boolean
+  deliveredAt: number | null
+  created: number
+}
+
+/** F69 情话储蓄罐看板 */
+export interface CoupleLoveBankBoardVO {
+  inJar: number
+  deliveredCount: number
+  mine: CoupleLoveBankVO[]
+}

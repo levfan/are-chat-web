@@ -59,6 +59,15 @@ import type {
   CoupleGardenVO,
   CoupleRoseBoardVO,
   CoupleSlipBoardVO,
+  CoupleComfortBoardVO,
+  CoupleMoodSyncVO,
+  CouplePeaceDayVO,
+  CoupleSorryTicketVO,
+  CoupleTruthTodayVO,
+  CoupleTruthHistoryVO,
+  CoupleWhisperVO,
+  CoupleTelepathyBoardVO,
+  CoupleLoveBankBoardVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -146,6 +155,19 @@ export const useCoupleStore = defineStore('couple', () => {
   const garden = ref<CoupleGardenVO | null>(null)
   const roseBoard = ref<CoupleRoseBoardVO | null>(null)
   const slipBoard = ref<CoupleSlipBoardVO | null>(null)
+  /** F60/F63/F64 求抱抱 / 情绪同步率 */
+  const comfortBoard = ref<CoupleComfortBoardVO | null>(null)
+  const moodSync = ref<CoupleMoodSyncVO | null>(null)
+  /** F61/F62 矛盾复盘 / 道歉券 */
+  const peaceReviews = ref<CouplePeaceDayVO[]>([])
+  const sorryTickets = ref<CoupleSorryTicketVO[]>([])
+  /** F66/F68 真心话 / 心灵感应 */
+  const truthToday = ref<CoupleTruthTodayVO | null>(null)
+  const truthHistory = ref<CoupleTruthHistoryVO[]>([])
+  const telepathy = ref<CoupleTelepathyBoardVO | null>(null)
+  /** F67/F69 树洞 / 情话储蓄罐 */
+  const whispers = ref<CoupleWhisperVO[]>([])
+  const loveBank = ref<CoupleLoveBankBoardVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -166,6 +188,10 @@ export const useCoupleStore = defineStore('couple', () => {
     life: false,
     surprise: false,
     garden: false,
+    comfort: false,
+    makeup: false,
+    deep: false,
+    whisper: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -261,6 +287,15 @@ export const useCoupleStore = defineStore('couple', () => {
     garden.value = null
     roseBoard.value = null
     slipBoard.value = null
+    comfortBoard.value = null
+    moodSync.value = null
+    peaceReviews.value = []
+    sorryTickets.value = []
+    truthToday.value = null
+    truthHistory.value = []
+    telepathy.value = null
+    whispers.value = []
+    loveBank.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -280,6 +315,10 @@ export const useCoupleStore = defineStore('couple', () => {
       life: false,
       surprise: false,
       garden: false,
+      comfort: false,
+      makeup: false,
+      deep: false,
+      whisper: false,
     }
     promiseDraft.value = null
   }
@@ -990,6 +1029,90 @@ export const useCoupleStore = defineStore('couple', () => {
     slipBoard.value = await coupleApi.drawSlip()
   }
 
+  // ---------- F60-F69 懂我与被接住 ----------
+
+  /** 求抱抱 + 情绪同步率 */
+  async function loadComfort() {
+    const [c, s] = await Promise.all([coupleApi.comfortBoard(), coupleApi.moodSync()])
+    comfortBoard.value = c
+    moodSync.value = s
+    loadedLists.value.comfort = true
+  }
+
+  async function askComfort(feeling: string) {
+    comfortBoard.value = await coupleApi.askComfort(feeling)
+  }
+
+  async function giveComfort(note: string) {
+    const vo = await coupleApi.handleComfort(note)
+    await loadComfort()
+    return vo
+  }
+
+  /** 矛盾复盘 + 道歉券 */
+  async function loadMakeup() {
+    const [r, t] = await Promise.all([coupleApi.peaceReviews(), coupleApi.sorryTickets()])
+    peaceReviews.value = r ?? []
+    sorryTickets.value = t ?? []
+    loadedLists.value.makeup = true
+  }
+
+  async function savePeaceReview(myPart: string, nextTime: string) {
+    peaceReviews.value = (await coupleApi.savePeaceReview(myPart, nextTime)) ?? []
+  }
+
+  async function sendSorry(note: string) {
+    sorryTickets.value = (await coupleApi.sendSorry(note)) ?? []
+  }
+
+  async function useSorry(id: string, usedNote?: string) {
+    sorryTickets.value = (await coupleApi.useSorry(id, usedNote)) ?? []
+  }
+
+  /** 真心话 + 心灵感应 */
+  async function loadDeep() {
+    const [t, h, tp] = await Promise.all([coupleApi.truthToday(), coupleApi.truthHistory(), coupleApi.telepathyBoard()])
+    truthToday.value = t
+    truthHistory.value = h ?? []
+    telepathy.value = tp
+    loadedLists.value.deep = true
+  }
+
+  async function answerTruth(answer: string) {
+    truthToday.value = await coupleApi.answerTruth(answer)
+    truthHistory.value = (await coupleApi.truthHistory()) ?? []
+    return truthToday.value
+  }
+
+  async function startTelepathy() {
+    telepathy.value = await coupleApi.startTelepathy()
+  }
+
+  async function answerTelepathy(answer: string) {
+    telepathy.value = await coupleApi.answerTelepathy(answer)
+    return telepathy.value
+  }
+
+  /** 树洞 + 情话储蓄罐 */
+  async function loadWhisperBox() {
+    const [w, lb] = await Promise.all([coupleApi.whispers(), coupleApi.loveBank()])
+    whispers.value = w ?? []
+    loveBank.value = lb
+    loadedLists.value.whisper = true
+  }
+
+  async function askWhisper(question: string, anonymous: boolean) {
+    whispers.value = (await coupleApi.askWhisper(question, anonymous)) ?? []
+  }
+
+  async function answerWhisper(id: string, answer: string) {
+    whispers.value = (await coupleApi.answerWhisper(id, answer)) ?? []
+  }
+
+  async function depositLove(content: string) {
+    loveBank.value = await coupleApi.depositLove(content)
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -1352,6 +1475,54 @@ export const useCoupleStore = defineStore('couple', () => {
       case 'birthday-card':
         notify('🎂 生日彩蛋', msg.detail)
         break
+      case 'comfort-sent':
+      case 'comfort-given':
+        notify('🫂 求抱抱', msg.detail)
+        if (loadedLists.value.comfort) {
+          void loadComfort()
+        }
+        break
+      case 'night-care':
+        notify('🌙 深夜陪伴', msg.detail)
+        break
+      case 'peace-review-kept':
+      case 'peace-review-done':
+      case 'sorry-received':
+      case 'sorry-used':
+        notify('🕊️ 和好锦囊', msg.detail)
+        if (loadedLists.value.makeup) {
+          void loadMakeup()
+        }
+        break
+      case 'truth-answered':
+        notify('💬 真心话', msg.detail)
+        if (loadedLists.value.deep) {
+          void loadDeep()
+        }
+        break
+      case 'telepathy-started':
+      case 'telepathy-answered':
+      case 'telepathy-matched':
+      case 'telepathy-diff':
+        notify('🧠 心灵感应', msg.detail)
+        if (loadedLists.value.deep) {
+          void loadDeep()
+        }
+        break
+      case 'whisper-asked':
+      case 'whisper-answered':
+        notify('🕳️ 匿名树洞', msg.detail)
+        if (loadedLists.value.whisper) {
+          void loadWhisperBox()
+        }
+        break
+      case 'love-bank-deposit':
+      case 'love-bank-interest':
+        notify('🏦 情话储蓄罐', msg.detail)
+        if (loadedLists.value.whisper) {
+          void loadWhisperBox()
+        }
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -1541,5 +1712,29 @@ export const useCoupleStore = defineStore('couple', () => {
     waterGarden,
     sendRose,
     drawSlip,
+    comfortBoard,
+    moodSync,
+    peaceReviews,
+    sorryTickets,
+    truthToday,
+    truthHistory,
+    telepathy,
+    whispers,
+    loveBank,
+    loadComfort,
+    askComfort,
+    giveComfort,
+    loadMakeup,
+    savePeaceReview,
+    sendSorry,
+    useSorry,
+    loadDeep,
+    answerTruth,
+    startTelepathy,
+    answerTelepathy,
+    loadWhisperBox,
+    askWhisper,
+    answerWhisper,
+    depositLove,
   }
 })

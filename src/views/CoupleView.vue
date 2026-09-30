@@ -125,6 +125,7 @@
             <div class="tab-stack">
               <CoupleRituals />
               <CoupleDaily />
+              <CoupleTruth />
             </div>
           </el-tab-pane>
           <el-tab-pane label="🎁 惊喜" name="surprise" lazy>
@@ -136,6 +137,7 @@
           <el-tab-pane :label="letterTabLabel" name="letters" lazy>
             <div class="tab-stack">
               <CoupleLetter />
+              <CoupleWhisperBox />
               <CoupleCapsule />
             </div>
           </el-tab-pane>
@@ -143,7 +145,11 @@
             <CoupleMood />
           </el-tab-pane>
           <el-tab-pane label="🌈 关怀" name="care" lazy>
-            <CoupleCare />
+            <div class="tab-stack">
+              <CoupleCare />
+              <CoupleComfort />
+              <CoupleMakeup />
+            </div>
           </el-tab-pane>
           <el-tab-pane label="🗓️ 共享空间" name="shared" lazy>
             <div class="tab-stack">
@@ -271,6 +277,10 @@ import CoupleFund from '@/components/couple/CoupleFund.vue'
 import CoupleTimeline from '@/components/couple/CoupleTimeline.vue'
 import CoupleSurprise from '@/components/couple/CoupleSurprise.vue'
 import CoupleGarden from '@/components/couple/CoupleGarden.vue'
+import CoupleComfort from '@/components/couple/CoupleComfort.vue'
+import CoupleMakeup from '@/components/couple/CoupleMakeup.vue'
+import CoupleTruth from '@/components/couple/CoupleTruth.vue'
+import CoupleWhisperBox from '@/components/couple/CoupleWhisperBox.vue'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()

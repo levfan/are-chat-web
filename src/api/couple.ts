@@ -65,6 +65,16 @@ import type {
   CoupleSlipBoardVO,
   CoupleTreasureVO,
   CoupleConfessionVO,
+  CoupleComfortBoardVO,
+  CoupleComfortVO,
+  CoupleMoodSyncVO,
+  CouplePeaceDayVO,
+  CoupleSorryTicketVO,
+  CoupleTruthTodayVO,
+  CoupleTruthHistoryVO,
+  CoupleWhisperVO,
+  CoupleTelepathyBoardVO,
+  CoupleLoveBankBoardVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -401,4 +411,55 @@ export const coupleApi = {
   slipBoard: () => http.get<CoupleSlipBoardVO>('/api/couple/garden/slips'),
   /** F56 为 TA 抽一支今日幸运签 */
   drawSlip: () => http.postJson<CoupleSlipBoardVO>('/api/couple/garden/slips', {}),
+
+  // ---------- 懂我与被接住（F60-F69） ----------
+  /** F60 求抱抱看板 */
+  comfortBoard: () => http.get<CoupleComfortBoardVO>('/api/couple/care/comfort'),
+  /** F60 发出求抱抱 */
+  askComfort: (feeling: string) => http.postJson<CoupleComfortBoardVO>('/api/couple/care/comfort', { feeling }),
+  /** F60 TA 的安慰话术卡（按感受随机 3 张） */
+  comfortCards: (feeling: string) => http.get<string[]>(`/api/couple/care/comfort/cards?feeling=${feeling}`),
+  /** F60 回应 TA 的求抱抱 */
+  handleComfort: (note: string) => http.postJson<CoupleComfortVO>('/api/couple/care/comfort/handle', { note }),
+  /** F63 陪聊话题卡（随机 3 张） */
+  chatTopics: () => http.get<string[]>('/api/couple/care/chat-topics'),
+  /** F64 情绪同步率 */
+  moodSync: () => http.get<CoupleMoodSyncVO>('/api/couple/care/mood-sync'),
+  /** F61 复盘列表（按天聚合） */
+  peaceReviews: () => http.get<CouplePeaceDayVO[]>('/api/couple/makeup/reviews'),
+  /** F61 写今天的复盘 */
+  savePeaceReview: (myPart: string, nextTime: string) =>
+    http.postJson<CouplePeaceDayVO[]>('/api/couple/makeup/reviews', { myPart, nextTime }),
+  /** F62 道歉券列表 */
+  sorryTickets: () => http.get<CoupleSorryTicketVO[]>('/api/couple/makeup/sorry-tickets'),
+  /** F62 递一张道歉券 */
+  sendSorry: (note: string) => http.postJson<CoupleSorryTicketVO[]>('/api/couple/makeup/sorry-tickets', { note }),
+  /** F62 收下道歉券 */
+  useSorry: (id: string, usedNote?: string) =>
+    http.postJson<CoupleSorryTicketVO[]>(`/api/couple/makeup/sorry-tickets/${id}/use`, { usedNote: usedNote ?? null }),
+  /** F66 今天的真心话 */
+  truthToday: () => http.get<CoupleTruthTodayVO>('/api/couple/talk/truth'),
+  /** F66 回答今天的真心话 */
+  answerTruth: (answer: string) => http.postJson<CoupleTruthTodayVO>('/api/couple/talk/truth', { answer }),
+  /** F66 真心话存档 */
+  truthHistory: () => http.get<CoupleTruthHistoryVO[]>('/api/couple/talk/truth/history'),
+  /** F67 树洞列表 */
+  whispers: () => http.get<CoupleWhisperVO[]>('/api/couple/talk/whispers'),
+  /** F67 投一个问题进树洞 */
+  askWhisper: (question: string, anonymous: boolean) =>
+    http.postJson<CoupleWhisperVO[]>('/api/couple/talk/whispers', { question, anonymous }),
+  /** F67 回答树洞提问 */
+  answerWhisper: (id: string, answer: string) =>
+    http.postJson<CoupleWhisperVO[]>(`/api/couple/talk/whispers/${id}/answer`, { answer }),
+  /** F68 心灵感应板 */
+  telepathyBoard: () => http.get<CoupleTelepathyBoardVO>('/api/couple/talk/telepathy'),
+  /** F68 发起一轮心灵感应 */
+  startTelepathy: () => http.postJson<CoupleTelepathyBoardVO>('/api/couple/talk/telepathy/start', {}),
+  /** F68 心灵感应作答 */
+  answerTelepathy: (answer: string) =>
+    http.postJson<CoupleTelepathyBoardVO>('/api/couple/talk/telepathy/answer', { answer }),
+  /** F69 我的情话储蓄罐 */
+  loveBank: () => http.get<CoupleLoveBankBoardVO>('/api/couple/talk/love-bank'),
+  /** F69 存一句情话 */
+  depositLove: (content: string) => http.postJson<CoupleLoveBankBoardVO>('/api/couple/talk/love-bank', { content }),
 }
