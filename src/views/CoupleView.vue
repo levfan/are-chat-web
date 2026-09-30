@@ -88,6 +88,27 @@
       <!-- 空间个性化：我们的宣言 + 装扮入口（宣言/主题/贴纸墙） -->
       <CoupleProfile />
 
+      <!-- F95 今日看点：今天值得做的甜蜜小事 -->
+      <CoupleTodayBoard @goto="(tab: string) => (activeTab = tab)" />
+
+      <!-- F98 新手引导：首次进入空间的三步漫游 -->
+      <el-dialog
+        v-model="guideVisible"
+        title="💝 欢迎来到你们的小天地"
+        width="380px"
+        data-testid="couple-guide-dialog"
+      >
+        <ol class="guide-list">
+          <li>🫶 <b>每天贴贴打卡</b>——早安晚安、求抱抱、双人挑战，坚持就有心动值</li>
+          <li>💌 <b>把心意藏起来</b>——时光胶囊、树洞、情话储蓄罐，惊喜要慢慢拆</li>
+          <li>📜 <b>回忆都会被记住</b>——编年史、考古卡、热力日历，日子越攒越甜</li>
+        </ol>
+        <p class="anniv-tip">顶部页签随便逛，这条提示只出现一次～</p>
+        <template #footer>
+          <el-button type="primary" data-testid="couple-guide-done" @click="closeGuide">开始探索 💕</el-button>
+        </template>
+      </el-dialog>
+
       <!-- 逾期可爱提醒：全局常驻（不分页签），一键跳到约定页 -->
       <el-alert
         v-if="couple.overdueCount > 0"
@@ -174,6 +195,7 @@
               <CoupleBadges />
               <CoupleReport />
               <CoupleAnniversaryReport />
+              <CoupleHeatmap />
             </div>
           </el-tab-pane>
           <el-tab-pane label="📖 时光轴" name="timeline" lazy>
@@ -208,16 +230,27 @@
         </template>
       </el-dialog>
 
-      <!-- F41 通知中心弹窗 -->
+      <!-- F41 通知中心弹窗（F94 增加分类筛选） -->
       <el-dialog v-model="notifyVisible" title="🔔 空间动态通知" width="400px" draggable data-testid="couple-notify-dialog">
         <div class="notify-toolbar">
           <span class="notify-unread" data-testid="couple-notify-unread">{{ couple.notifyUnread }} 条未读</span>
           <el-button size="small" round data-testid="couple-notify-readall" @click="onReadAll">全部已读</el-button>
         </div>
-        <el-empty v-if="!couple.notifies.length" description="还没有空间动态，互动起来吧 💞" :image-size="60" />
+        <div class="notify-filters" data-testid="couple-notify-filters">
+          <el-check-tag
+            v-for="f in NOTIFY_FILTERS"
+            :key="f.key"
+            :checked="notifyFilter === f.key"
+            :data-testid="`couple-notify-filter-${f.key}`"
+            @change="notifyFilter = f.key"
+          >
+            {{ f.label }}
+          </el-check-tag>
+        </div>
+        <el-empty v-if="!filteredNotifies.length" description="这一类还没有动态～" :image-size="60" />
         <div v-else class="notify-list">
           <div
-            v-for="n in couple.notifies"
+            v-for="n in filteredNotifies"
             :key="n.id"
             class="notify-item"
             :class="{ unread: !n.read }"
@@ -289,6 +322,8 @@ import CoupleTimeline from '@/components/couple/CoupleTimeline.vue'
 import CoupleChronicle from '@/components/couple/CoupleChronicle.vue'
 import CoupleAnniversaryReport from '@/components/couple/CoupleAnniversaryReport.vue'
 import CoupleKeepsake from '@/components/couple/CoupleKeepsake.vue'
+import CoupleTodayBoard from '@/components/couple/CoupleTodayBoard.vue'
+import CoupleHeatmap from '@/components/couple/CoupleHeatmap.vue'
 import CoupleSurprise from '@/components/couple/CoupleSurprise.vue'
 import CoupleGarden from '@/components/couple/CoupleGarden.vue'
 import CoupleComfort from '@/components/couple/CoupleComfort.vue'
@@ -339,6 +374,45 @@ function openNotifies() {
   void couple.loadNotifies()
   notifyVisible.value = true
 }
+
+/** F98 新手引导：每个浏览器只出现一次 */
+const GUIDE_KEY = 'arechat_couple_guide_seen'
+const guideVisible = ref(false)
+onMounted(() => {
+  if (!localStorage.getItem(GUIDE_KEY) && couple.space) {
+    guideVisible.value = true
+    localStorage.setItem(GUIDE_KEY, '1')
+  }
+})
+
+function closeGuide() {
+  guideVisible.value = false
+}
+
+/** F94 通知分类筛选 */
+type NotifyFilter = 'all' | 'task' | 'emotion' | 'memory' | 'system'
+const notifyFilter = ref<NotifyFilter>('all')
+const NOTIFY_FILTERS: { key: NotifyFilter; label: string }[] = [
+  { key: 'all', label: '全部' },
+  { key: 'task', label: '任务约定' },
+  { key: 'emotion', label: '情绪贴贴' },
+  { key: 'memory', label: '养成回忆' },
+  { key: 'system', label: '系统提醒' },
+]
+const TASK_EVENTS = ['task-', 'promise-', 'pact-', 'countdown-', 'chore-', 'dateplan-', 'habit-']
+const EMOTION_EVENTS = ['mood-', 'bond-', 'comfort', 'peace-', 'sorry-', 'praise-', 'reconcile', 'night-care', 'poke']
+const MEMORY_EVENTS = ['challenge-', 'passbook', 'hundred-', 'wish-', 'travel-', 'nexttime-', 'read-', 'watch-', 'dict-', 'quote-', 'ticket-', 'song-', 'capsule-', 'truth-', 'whisper-', 'telepathy-', 'love-bank', 'scratch-', 'box-', 'garden-', 'rose-', 'treasure-', 'confession-', 'fortune-']
+const filteredNotifies = computed(() => {
+  if (notifyFilter.value === 'all') {
+    return couple.notifies
+  }
+  const rules =
+    notifyFilter.value === 'task' ? TASK_EVENTS
+      : notifyFilter.value === 'emotion' ? EMOTION_EVENTS
+        : notifyFilter.value === 'memory' ? MEMORY_EVENTS
+          : ['birthday', 'milestone', 'notify-ignored']
+  return couple.notifies.filter((n) => rules.some((prefix) => n.event.startsWith(prefix)))
+})
 
 async function onReadAll() {
   try {
@@ -594,6 +668,13 @@ onMounted(() => {
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 10px;
+}
+/* F94 通知分类筛选条 */
+.notify-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 .notify-unread {
   font-size: 12px;

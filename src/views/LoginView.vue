@@ -10,6 +10,10 @@
         <div class="brand-name">小帆船</div>
       </div>
       <p class="brand-sub">{{ mode === 'login' ? '登录后与心爱的人保持联系' : '提交注册申请，管理员审批通过后即可登录' }}</p>
+      <!-- 93 节日登录页文案：特别的日子说应景的话 -->
+      <p v-if="festival" class="festival-line" data-testid="login-festival">
+        {{ festival.emoji }} {{ festival.text }}
+      </p>
       <!-- F49 今日情话：每天换一句，登录页的小温柔 -->
       <p class="daily-love" data-testid="login-daily-love">💌 {{ todayLove }}</p>
 
@@ -165,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
@@ -205,6 +209,28 @@ const LOVE_WORDS = [
   '喜欢你不是三分钟热度，是蓄谋已久。',
 ]
 const todayLove = LOVE_WORDS[Math.floor(Date.now() / 86400000) % LOVE_WORDS.length]
+
+// 93 节日登录页文案：今天若是特别的日子，先说一句应景的话
+const FESTIVAL_LINES: Record<string, { emoji: string; text: string }> = {
+  '01-01': { emoji: '🎊', text: '新的一年，第一句早安也要说给同一个人听' },
+  '02-14': { emoji: '🌹', text: '今天全世界都在帮我说那三个字' },
+  '03-08': { emoji: '🌷', text: '她值得世界上所有的温柔，今天尤其' },
+  '05-01': { emoji: '🌿', text: '假期快乐！最好的休息是和你待在一起' },
+  '05-20': { emoji: '💗', text: '520，我 You，早就说过了，今天再大声一遍' },
+  '06-01': { emoji: '🎈', text: '谁说大人不能过儿童节，在你面前我永远可以' },
+  '08-04': { emoji: '✨', text: '今天银河帮忙传话：我想你了' },
+  '09-10': { emoji: '📖', text: '谢师之后，也谢谢你教会我什么是爱' },
+  '10-01': { emoji: '🇨🇳', text: '家和国都团圆的日子，别忘记说晚安' },
+  '11-11': { emoji: '🛒', text: '别人过光棍节，我们过「一加一等于全世界」节' },
+  '12-24': { emoji: '🎄', text: '今晚的苹果和月亮，都替我抱抱你' },
+  '12-25': { emoji: '🔔', text: '圣诞老人没来没关系，我来了' },
+  '12-31': { emoji: '🎆', text: '谢谢你陪我走完这一年，明年也请多指教' },
+}
+const festival = computed(() => {
+  const now = new Date()
+  const mmdd = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  return FESTIVAL_LINES[mmdd] ?? null
+})
 
 type Mode = 'login' | 'register'
 const mode = ref<Mode>('login')
@@ -479,6 +505,16 @@ html.dark .login-page {
   font-size: 12px;
   color: #c45656;
   background: linear-gradient(90deg, #fff0f0, #fff8e6);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+/* 93 节日登录页文案 */
+.festival-line {
+  margin: -14px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ad3b8e;
+  background: linear-gradient(90deg, #fdeef9, #fdf3e6);
   border-radius: 8px;
   padding: 6px 10px;
 }

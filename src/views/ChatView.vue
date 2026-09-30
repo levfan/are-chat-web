@@ -371,6 +371,25 @@
                 </button>
               </div>
             </el-popover>
+            <el-popover placement="top-start" :width="200" trigger="click">
+              <template #reference>
+                <button type="button" class="tool-btn" title="贴贴" data-testid="sticker-btn">
+                  <span class="sticker-face">🥰</span>
+                </button>
+              </template>
+              <div class="phrase-list">
+                <button
+                  v-for="sticker in QUICK_STICKERS"
+                  :key="sticker"
+                  type="button"
+                  class="phrase-item"
+                  data-testid="sticker-item"
+                  @click="onQuickSticker(sticker)"
+                >
+                  {{ sticker }}
+                </button>
+              </div>
+            </el-popover>
             <span class="tip">Enter 发送，Shift+Enter 换行，可粘贴/拖拽文件（Ctrl+K 全局搜索）</span>
           </div>
           <el-input
@@ -597,7 +616,7 @@ import { messagePreviewText, useImStore } from '@/stores/im'
 import { useCoupleStore } from '@/stores/couple'
 import { messageApi, profileApi, starsApi } from '@/api/im'
 import { currentBackground, currentPokeSuffix, currentSendKey } from '@/utils/settings'
-import { detectEffect, floatHearts, playEffect } from '@/utils/effects'
+import { detectEffect, detectEggCommand, floatHearts, playEffect } from '@/utils/effects'
 import { formatChatTime, formatDayLabel, formatLastSeen, highlightSegments } from '@/utils/imFormat'
 import type { HighlightSegment } from '@/utils/imFormat'
 import type { AttachmentVO } from '@/types'
@@ -943,12 +962,18 @@ async function onSend() {
     return
   }
   try {
-    await im.sendText(im.activePeer, content, { replyToId: replyTo.value?.id ?? null })
+    // 91 消息彩蛋指令：整条消息命中 /抱抱 这类暗号时，发送彩蛋文案并放全屏特效
+    const egg = detectEggCommand(content)
+    const outgoing = egg ? egg.reply : content
+    await im.sendText(im.activePeer, outgoing, { replyToId: replyTo.value?.id ?? null })
     draft.value = ''
     replyTo.value = null
     im.sendTyping(im.activePeer, false)
+    if (egg) {
+      playEffect(egg.kind)
+    }
     // 66 关键词特效：生日快乐 / 新年快乐 / 下雪 / 爱你…
-    const effect = detectEffect(content)
+    const effect = detectEffect(outgoing)
     if (effect) {
       playEffect(effect)
     }
@@ -1126,6 +1151,21 @@ async function onPoke() {
     await im.sendPoke(im.activePeer, currentPokeSuffix())
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '拍一拍失败')
+  }
+}
+
+/** F90 私聊快捷贴贴：一键把亲亲/抱抱/摸摸头拍给对方，附带飘心动画 */
+const QUICK_STICKERS = ['亲亲你 😘', '抱抱你 🤗', '摸摸头 🫳', '举高高 🙌']
+
+async function onQuickSticker(sticker: string) {
+  if (!im.activePeer) {
+    return
+  }
+  try {
+    await im.sendPoke(im.activePeer, sticker)
+    floatHearts(document.querySelector('[data-testid="sticker-btn"]'), '💗')
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '贴贴失败')
   }
 }
 
@@ -2025,6 +2065,11 @@ onUnmounted(() => {
 .tool-btn:hover {
   background: var(--im-hover, #f2f3f5);
   color: var(--xx-accent, #ec5f92);
+}
+/* F90 贴贴按钮里的小表情 */
+.sticker-face {
+  font-size: 16px;
+  line-height: 1;
 }
 .tip {
   font-size: 11px;

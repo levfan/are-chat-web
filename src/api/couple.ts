@@ -93,6 +93,8 @@ import type {
   CoupleQuoteVO,
   CoupleTicketVO,
   CoupleSongVO,
+  CoupleTodayBoardVO,
+  CoupleYearHeatmapVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -587,4 +589,11 @@ export const coupleApi = {
       { title, artist: artist ?? null, reason: reason ?? null }),
   /** F89 移除歌 */
   removeSong: (id: string) => http.delete<CoupleSongVO[]>(`/api/couple/keepsake/songs/${id}`),
+
+  // ---------- 体验与其它菜单（F90-F99） ----------
+  /** F95 今日看点（今天值得做的甜蜜小事聚合） */
+  todayBoard: () => http.get<CoupleTodayBoardVO>('/api/couple/today'),
+  /** F96 年度热力日历（缺省当年） */
+  yearHeatmap: (year?: number) =>
+    http.get<CoupleYearHeatmapVO>(`/api/couple/today/heatmap${year ? `?year=${year}` : ''}`),
 }

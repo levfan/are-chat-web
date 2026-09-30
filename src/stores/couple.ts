@@ -85,6 +85,8 @@ import type {
   CoupleQuoteVO,
   CoupleTicketVO,
   CoupleSongVO,
+  CoupleTodayBoardVO,
+  CoupleYearHeatmapVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -204,6 +206,9 @@ export const useCoupleStore = defineStore('couple', () => {
   const quotes = ref<CoupleQuoteVO[]>([])
   const tickets = ref<CoupleTicketVO[]>([])
   const songs = ref<CoupleSongVO[]>([])
+  /** F95/F96 体验优化 */
+  const todayBoard = ref<CoupleTodayBoardVO | null>(null)
+  const yearHeatmap = ref<CoupleYearHeatmapVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -352,6 +357,8 @@ export const useCoupleStore = defineStore('couple', () => {
     quotes.value = []
     tickets.value = []
     songs.value = []
+    todayBoard.value = null
+    yearHeatmap.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -1333,6 +1340,18 @@ export const useCoupleStore = defineStore('couple', () => {
     songs.value = (await coupleApi.removeSong(id)) ?? []
   }
 
+  // ---------- F95/F96 体验优化 ----------
+
+  async function loadTodayBoard() {
+    todayBoard.value = await coupleApi.todayBoard()
+    return todayBoard.value
+  }
+
+  async function loadHeatmap(year?: number) {
+    yearHeatmap.value = await coupleApi.yearHeatmap(year)
+    return yearHeatmap.value
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -2061,6 +2080,8 @@ export const useCoupleStore = defineStore('couple', () => {
     quotes,
     tickets,
     songs,
+    todayBoard,
+    yearHeatmap,
     loadGrowth,
     checkChallenge,
     depositPassbook,
@@ -2092,5 +2113,7 @@ export const useCoupleStore = defineStore('couple', () => {
     removeTicket,
     saveSong,
     removeSong,
+    loadTodayBoard,
+    loadHeatmap,
   }
 })

@@ -280,3 +280,27 @@ export function detectEffect(text: string): EffectKind | null {
   }
   return null
 }
+
+// ---------- 91 消息彩蛋指令：输入 /抱抱 这类暗号，发送时变成彩蛋 ----------
+
+export interface EggCommand {
+  kind: EffectKind
+  reply: string
+}
+
+/** 精确匹配的彩蛋指令表（整条消息 = 指令才触发，不打扰正常聊天） */
+const COMMAND_EGGS: Record<string, EggCommand> = {
+  '/抱抱': { kind: 'hearts', reply: '(ˊoˋ) 给你一个大大的拥抱 🤗' },
+  '/亲亲': { kind: 'hearts', reply: '啵～😘 亲亲已送达' },
+  '/贴贴': { kind: 'hearts', reply: '贴贴 🥰 (´▽`ʃ♡ƪ)' },
+  '/摸摸头': { kind: 'hearts', reply: '摸摸头 🫳 好乖，不许难过' },
+  '/举高高': { kind: 'balloons', reply: '举高高 🙌 飞起来咯～' },
+  '/撒花': { kind: 'confetti', reply: '🎉🎉🎉 撒花庆祝！' },
+  '/放烟花': { kind: 'fireworks', reply: '🎆 砰！砰！为你放一场烟花' },
+  '/下雪': { kind: 'snow', reply: '❄️ 轻轻的，雪落下来了' },
+}
+
+/** F91 彩蛋指令识别：整条消息精确命中才返回 */
+export function detectEggCommand(text: string): EggCommand | null {
+  return COMMAND_EGGS[text.trim()] ?? null
+}

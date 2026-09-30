@@ -1476,3 +1476,32 @@ export interface CoupleSongVO {
   reason: string | null
   created: number
 }
+
+// ============ 情侣空间：体验与其它菜单（F90-F99） ============
+
+/** F95 今日看点 */
+export interface CoupleTodayBoardVO {
+  day: string
+  challengeDone: boolean
+  truthAnswered: boolean
+  moodLogged: boolean
+  passbookDeposited: boolean
+  hundredChecked: boolean
+  pactDayNumber: number | null
+  nextCapsuleDay: string | null
+  capsuleDaysLeft: number | null
+}
+
+/** F96 年度热力日历（单格） */
+export interface CoupleHeatmapDayVO {
+  day: string
+  count: number
+  level: number
+}
+
+/** F96 年度热力日历 */
+export interface CoupleYearHeatmapVO {
+  year: number
+  days: CoupleHeatmapDayVO[]
+  totalActive: number
+}

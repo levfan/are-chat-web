@@ -178,4 +178,10 @@ onMounted(() => {
   color: var(--im-muted, #8f959e);
   word-break: break-all;
 }
+/* 97 窄屏：报告网格降为两列 */
+@media (max-width: 520px) {
+  .report-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 </style>

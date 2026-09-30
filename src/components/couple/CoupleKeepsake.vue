@@ -228,4 +228,14 @@ onMounted(() => {
   color: var(--im-muted, #8f959e);
   word-break: break-all;
 }
+/* 97 窄屏：表单行纵向排列 */
+@media (max-width: 520px) {
+  .form-row {
+    flex-direction: column;
+  }
+  .form-row .el-input,
+  .form-row .el-date-editor {
+    width: 100% !important;
+  }
+}
 </style>
