@@ -182,6 +182,22 @@ vi.mock('@/api/couple', () => ({
     ]),
     saveSong: vi.fn().mockResolvedValue([]),
     removeSong: vi.fn().mockResolvedValue([]),
+    todayBoard: vi.fn().mockResolvedValue({
+      day: '2026-09-30',
+      challengeDone: false,
+      truthAnswered: false,
+      moodLogged: true,
+      passbookDeposited: false,
+      hundredChecked: false,
+      pactDayNumber: 12,
+      nextCapsuleDay: '2026-10-10',
+      capsuleDaysLeft: 10,
+    }),
+    yearHeatmap: vi.fn().mockResolvedValue({
+      year: 2026,
+      days: [{ day: '2026-06-01', count: 4, level: 2 }],
+      totalActive: 1,
+    }),
   },
 }))
 
@@ -735,5 +751,24 @@ describe('CoupleView 情侣空间', () => {
     await wrapper.find('[data-testid="couple-quote-save"]').trigger('click')
     await flushPromises()
     expect(coupleApi.saveQuote).toHaveBeenCalledWith('你今天也很好看', undefined)
+  })
+
+  it('今日看点显示待办清单，徽章页签热力日历渲染格子', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+
+    // F95 今日看点：心情已记录，挑战待打卡，百日第 12 天
+    const board = wrapper.find('[data-testid="couple-today-board"]')
+    expect(board.exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-today-mood"]').text()).toContain('已记录')
+    expect(wrapper.find('[data-testid="couple-today-challenge"]').text()).toContain('待打卡')
+    expect(wrapper.find('[data-testid="couple-today-pact"]').text()).toContain('12')
+
+    // F96 热力日历挂在徽章页签
+    await wrapper.find('#tab-badges').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-heatmap-grid"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-heatmap-total"]').text()).toContain('1')
   })
 })
