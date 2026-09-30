@@ -93,6 +93,28 @@ vi.mock('@/api/couple', () => ({
     sendRose: vi.fn(),
     slipBoard: vi.fn().mockResolvedValue({ mySlipToday: null, receivedToday: null, recent: [] }),
     drawSlip: vi.fn(),
+    comfortBoard: vi.fn().mockResolvedValue({ mine: null, partnerPending: null, history: [] }),
+    askComfort: vi.fn(),
+    comfortCards: vi.fn().mockResolvedValue(['抱抱，不用说话，我在这儿']),
+    handleComfort: vi.fn(),
+    chatTopics: vi.fn().mockResolvedValue(['说一件今天最小但最开心的事', '今晚的月亮好看吗？去看一眼再回来', '说一部你想拉我一起看的片子']),
+    moodSync: vi.fn().mockResolvedValue({ bothDays: 10, syncedDays: 6, syncRate: 60, todaySync: true, todayMoodMine: 'HAPPY', todayMoodPartner: 'HAPPY', streak: 2 }),
+    peaceReviews: vi.fn().mockResolvedValue([]),
+    savePeaceReview: vi.fn().mockResolvedValue([]),
+    sorryTickets: vi.fn().mockResolvedValue([]),
+    sendSorry: vi.fn().mockResolvedValue([]),
+    useSorry: vi.fn().mockResolvedValue([]),
+    truthToday: vi.fn().mockResolvedValue({ day: '2026-09-30', question: '你最怕我哪一点生气？（说实话）', myAnswer: null, partnerAnswer: null }),
+    answerTruth: vi.fn(),
+    truthHistory: vi.fn().mockResolvedValue([]),
+    whispers: vi.fn().mockResolvedValue([]),
+    askWhisper: vi.fn().mockResolvedValue([]),
+    answerWhisper: vi.fn().mockResolvedValue([]),
+    telepathyBoard: vi.fn().mockResolvedValue({ current: null, history: [], roundsLeftToday: 3, matchedCount: 0, totalSettled: 0 }),
+    startTelepathy: vi.fn(),
+    answerTelepathy: vi.fn(),
+    loveBank: vi.fn().mockResolvedValue({ inJar: 0, deliveredCount: 0, mine: [] }),
+    depositLove: vi.fn(),
   },
 }))
 
@@ -457,5 +479,112 @@ describe('CoupleView 情侣空间', () => {
     await wrapper.find('[data-testid="couple-garden-water"]').trigger('click')
     await flushPromises()
     expect(coupleApi.waterGarden).toHaveBeenCalledOnce()
+  })
+
+  it('关怀页签：没有求抱抱时显示感受按钮，点击难过调用 askComfort 接口并显示情绪同步率', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.askComfort).mockResolvedValue({
+      mine: { id: 'c1', fromUser: 'alice', day: '2026-09-30', feeling: 'SAD', feelingLabel: '难过', feelingEmoji: '😢', handled: false, handledNote: null, handledAt: null },
+      partnerPending: null,
+      history: [],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-care').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-sync-rate"]').text()).toContain('60')
+    await wrapper.find('[data-testid="couple-comfort-feel-SAD"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.askComfort).toHaveBeenCalledWith('SAD')
+  })
+
+  it('关怀页签：TA 求抱抱时展示话术卡，点击话术调用 handleComfort 回应', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.comfortBoard).mockResolvedValue({
+      mine: null,
+      partnerPending: { id: 'c2', fromUser: 'bob', day: '2026-09-30', feeling: 'WRONGED', feelingLabel: '委屈', feelingEmoji: '🥺', handled: false, handledNote: null, handledAt: null },
+      history: [],
+    })
+    vi.mocked(coupleApi.handleComfort).mockResolvedValue({
+      id: 'c2', fromUser: 'bob', day: '2026-09-30', feeling: 'WRONGED', feelingLabel: '委屈', feelingEmoji: '🥺', handled: true, handledNote: '抱抱，不用说话，我在这儿', handledAt: Date.now(),
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-care').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-comfort-pending"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-comfort-word"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-comfort-word"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.handleComfort).toHaveBeenCalledWith('抱抱，不用说话，我在这儿')
+  })
+
+  it('小仪式页签：今日真心话显示题目，交卷调用 answerTruth 接口；心灵感应可发起', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.answerTruth).mockResolvedValue({
+      day: '2026-09-30',
+      question: '你最怕我哪一点生气？（说实话）',
+      myAnswer: '怕你哭，一哭我就手足无措',
+      partnerAnswer: null,
+    })
+    vi.mocked(coupleApi.startTelepathy).mockResolvedValue({
+      current: { id: 't1', round: 1, question: 'TA 现在更想吃哪一样？（不许商量！）', options: ['火锅', '烧烤', '奶茶', '蛋糕'], answerA: null, answerB: null, settled: false, matched: false, mineStarted: true },
+      history: [],
+      roundsLeftToday: 2,
+      matchedCount: 0,
+      totalSettled: 0,
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-rituals').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-truth-question"]').text()).toContain('最怕我')
+    await wrapper.find('[data-testid="couple-truth-input"]').setValue('怕你哭，一哭我就手足无措')
+    await wrapper.find('[data-testid="couple-truth-submit"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.answerTruth).toHaveBeenCalledWith('怕你哭，一哭我就手足无措')
+
+    await wrapper.find('[data-testid="couple-telepathy-start"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.startTelepathy).toHaveBeenCalledOnce()
+    expect(wrapper.find('[data-testid="couple-telepathy-current"]').exists()).toBe(true)
+  })
+
+  it('信箱页签：匿名树洞可投递问题（默认匿名），点击投进树洞调用 askWhisper', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.askWhisper).mockResolvedValue([
+      { id: 'w1', question: '你有没有哪次偷偷为我骄傲过？', anonymous: true, askerLabel: '我问的', answer: null, answeredAt: null, mine: true, created: Date.now() },
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-letters').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-whisper-question"]').setValue('你有没有哪次偷偷为我骄傲过？')
+    await wrapper.find('[data-testid="couple-whisper-ask"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.askWhisper).toHaveBeenCalledWith('你有没有哪次偷偷为我骄傲过？', true)
+  })
+
+  it('信箱页签：情话储蓄罐显示罐内数量，存入情话调用 depositLove 接口', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.depositLove).mockResolvedValue({
+      inJar: 1,
+      deliveredCount: 0,
+      mine: [{ id: 'lb1', content: '今天你笑起来的样子，我又多喜欢了你一点', delivered: false, deliveredAt: null, created: Date.now() }],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-letters').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-love-input"]').setValue('今天你笑起来的样子，我又多喜欢了你一点')
+    await wrapper.find('[data-testid="couple-love-deposit"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.depositLove).toHaveBeenCalledWith('今天你笑起来的样子，我又多喜欢了你一点')
+    expect(wrapper.find('[data-testid="couple-love-jar"]').text()).toContain('1')
   })
 })
