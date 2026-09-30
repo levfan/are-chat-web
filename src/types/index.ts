@@ -1262,3 +1262,127 @@ export interface CoupleLoveBankBoardVO {
   deliveredCount: number
   mine: CoupleLoveBankVO[]
 }
+
+// ============ 情侣空间：共同养成（F70-F79） ============
+
+/** F70 单日挑战 */
+export interface CoupleChallengeVO {
+  day: string
+  taskText: string
+  doneMine: boolean
+  donePartner: boolean
+  bothDone: boolean
+}
+
+/** F70 挑战看板 */
+export interface CoupleChallengeBoardVO {
+  today: CoupleChallengeVO | null
+  history: CoupleChallengeVO[]
+  wonCount: number
+}
+
+/** F71 存折流水 */
+export interface CouplePassbookEntryVO {
+  id: string
+  fromUser: string
+  day: string
+  content: string
+  mine: boolean
+}
+
+/** F71 恋爱存折看板 */
+export interface CouplePassbookBoardVO {
+  mineToday: CouplePassbookEntryVO | null
+  partnerToday: CouplePassbookEntryVO | null
+  myStreak: number
+  milestone: string | null
+  recent: CouplePassbookEntryVO[]
+}
+
+/** F72 百日之约 */
+export interface CoupleHundredVO {
+  id: string
+  goal: string
+  startDay: string
+  status: 'ACTIVE' | 'DONE' | 'BROKEN'
+  dayNumber: number
+  bothCheckedDays: number
+  todayCheckedMine: boolean
+  todayCheckedPartner: boolean
+}
+
+/** F77 星座配对（静态） */
+export interface CoupleZodiacVO {
+  mine: string
+  mineLabel: string
+  partner: string
+  partnerLabel: string
+  score: number
+  comment: string
+}
+
+/** F73 心愿互换 */
+export interface CoupleWishVO {
+  id: string
+  fromUser: string
+  wish: string
+  status: 'PENDING' | 'ACCEPTED' | 'DONE'
+  doneNote: string | null
+  created: number
+}
+
+/** F75 旅行心愿 */
+export interface CoupleTravelVO {
+  id: string
+  fromUser: string
+  place: string
+  wantTodo: string | null
+  visited: boolean
+  visitedNote: string | null
+  created: number
+}
+
+/** F79 下次一定 */
+export interface CoupleNextTimeVO {
+  id: string
+  fromUser: string
+  content: string
+  status: 'PENDING' | 'DONE'
+  doneAt: number | null
+  created: number
+}
+
+/** F74 共读计划 */
+export interface CoupleReadPlanVO {
+  id: string
+  title: string
+  totalUnits: number
+  unitLabel: string
+  status: 'READING' | 'FINISHED'
+  myUnit: number | null
+  partnerUnit: number | null
+  myNote: string | null
+  partnerNote: string | null
+  created: number
+}
+
+/** F76 追剧清单 */
+export interface CoupleWatchVO {
+  id: string
+  title: string
+  currentUnit: number
+  totalUnit: number | null
+  updatedBy: string | null
+  updatedByMine: boolean
+  status: 'WATCHING' | 'DONE'
+  created: number
+}
+
+/** F78 恋爱词典词条 */
+export interface CoupleDictVO {
+  id: string
+  fromUser: string
+  word: string
+  meaning: string
+  created: number
+}

@@ -75,6 +75,16 @@ import type {
   CoupleWhisperVO,
   CoupleTelepathyBoardVO,
   CoupleLoveBankBoardVO,
+  CoupleChallengeBoardVO,
+  CouplePassbookBoardVO,
+  CoupleHundredVO,
+  CoupleZodiacVO,
+  CoupleWishVO,
+  CoupleTravelVO,
+  CoupleNextTimeVO,
+  CoupleReadPlanVO,
+  CoupleWatchVO,
+  CoupleDictVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -462,4 +472,76 @@ export const coupleApi = {
   loveBank: () => http.get<CoupleLoveBankBoardVO>('/api/couple/talk/love-bank'),
   /** F69 存一句情话 */
   depositLove: (content: string) => http.postJson<CoupleLoveBankBoardVO>('/api/couple/talk/love-bank', { content }),
+
+  // ---------- 共同养成（F70-F79） ----------
+  /** F70 今日挑战看板 */
+  challenge: () => http.get<CoupleChallengeBoardVO>('/api/couple/growth/challenge'),
+  /** F70 打卡今日挑战 */
+  checkChallenge: () => http.postJson<CoupleChallengeBoardVO>('/api/couple/growth/challenge/check', {}),
+  /** F71 恋爱存折看板 */
+  passbook: () => http.get<CouplePassbookBoardVO>('/api/couple/growth/passbook'),
+  /** F71 存一笔小事 */
+  depositPassbook: (content: string) => http.postJson<CouplePassbookBoardVO>('/api/couple/growth/passbook', { content }),
+  /** F72 百日之约列表 */
+  hundreds: () => http.get<CoupleHundredVO[]>('/api/couple/growth/hundreds'),
+  /** F72 发起百日之约 */
+  createHundred: (goal: string, startDay?: string) =>
+    http.postJson<CoupleHundredVO[]>('/api/couple/growth/hundreds', { goal, startDay: startDay ?? null }),
+  /** F72 百日之约打卡 */
+  checkinHundred: (id: string, note?: string) =>
+    http.postJson<CoupleHundredVO[]>(`/api/couple/growth/hundreds/${id}/checkin`, { note: note ?? null }),
+  /** F72 中止百日之约 */
+  breakHundred: (id: string) => http.postJson<CoupleHundredVO[]>(`/api/couple/growth/hundreds/${id}/break`, {}),
+  /** F77 星座配对（静态） */
+  zodiacPair: (mine: string, partner: string) =>
+    http.get<CoupleZodiacVO>(`/api/couple/growth/zodiac?mine=${mine}&partner=${partner}`),
+  /** F73 心愿互换列表 */
+  wishes: () => http.get<CoupleWishVO[]>('/api/couple/growth/wishes'),
+  /** F73 许愿 */
+  makeWish: (wish: string) => http.postJson<CoupleWishVO[]>('/api/couple/growth/wishes', { wish }),
+  /** F73 接单 TA 的心愿（TA 接我的） */
+  acceptWish: (id: string) => http.postJson<CoupleWishVO[]>(`/api/couple/growth/wishes/${id}/accept`, {}),
+  /** F73 实现 TA 的心愿 */
+  fulfillWish: (id: string, doneNote?: string) =>
+    http.postJson<CoupleWishVO[]>(`/api/couple/growth/wishes/${id}/fulfill`, { doneNote: doneNote ?? null }),
+  /** F75 旅行心愿地图 */
+  travels: () => http.get<CoupleTravelVO[]>('/api/couple/growth/travels'),
+  /** F75 添加旅行心愿 */
+  addTravel: (place: string, wantTodo?: string) =>
+    http.postJson<CoupleTravelVO[]>('/api/couple/growth/travels', { place, wantTodo: wantTodo ?? null }),
+  /** F75 打卡去过 */
+  visitTravel: (id: string, visitedNote?: string) =>
+    http.postJson<CoupleTravelVO[]>(`/api/couple/growth/travels/${id}/visit`, { visitedNote: visitedNote ?? null }),
+  /** F79 下次一定清单 */
+  nextTimes: () => http.get<CoupleNextTimeVO[]>('/api/couple/growth/next-times'),
+  /** F79 登记下次一定（byUser 空则记自己） */
+  addNextTime: (content: string, byUser?: string) =>
+    http.postJson<CoupleNextTimeVO[]>('/api/couple/growth/next-times', { content, byUser: byUser ?? null }),
+  /** F79 催 TA 兑现 */
+  nudgeNextTime: (id: string) => http.postJson<CoupleNextTimeVO[]>(`/api/couple/growth/next-times/${id}/nudge`, {}),
+  /** F79 兑现我的承诺 */
+  fulfillNextTime: (id: string) => http.postJson<CoupleNextTimeVO[]>(`/api/couple/growth/next-times/${id}/fulfill`, {}),
+  /** F74 共读计划列表 */
+  readPlans: () => http.get<CoupleReadPlanVO[]>('/api/couple/growth/read-plans'),
+  /** F74 开共读计划 */
+  createReadPlan: (title: string, totalUnits: number, unitLabel: string) =>
+    http.postJson<CoupleReadPlanVO[]>('/api/couple/growth/read-plans', { title, totalUnits, unitLabel }),
+  /** F74 上报进度 */
+  reportReadProgress: (id: string, unit: number, note?: string) =>
+    http.postJson<CoupleReadPlanVO[]>(`/api/couple/growth/read-plans/${id}/progress`, { unit, note: note ?? null }),
+  /** F76 追剧清单 */
+  watchlist: () => http.get<CoupleWatchVO[]>('/api/couple/growth/watchlist'),
+  /** F76 加剧 */
+  addWatch: (title: string, totalUnit?: number) =>
+    http.postJson<CoupleWatchVO[]>('/api/couple/growth/watchlist', { title, totalUnit: totalUnit ?? null }),
+  /** F76 更新共同进度 */
+  updateWatch: (id: string, currentUnit: number) =>
+    http.postJson<CoupleWatchVO[]>(`/api/couple/growth/watchlist/${id}/progress`, { currentUnit }),
+  /** F78 恋爱词典 */
+  dictWords: () => http.get<CoupleDictVO[]>('/api/couple/growth/dict'),
+  /** F78 收录词条 */
+  addWord: (word: string, meaning: string) =>
+    http.postJson<CoupleDictVO[]>('/api/couple/growth/dict', { word, meaning }),
+  /** F78 删除词条 */
+  removeWord: (id: string) => http.delete<CoupleDictVO[]>(`/api/couple/growth/dict/${id}`),
 }

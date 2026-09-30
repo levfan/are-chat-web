@@ -68,6 +68,15 @@ import type {
   CoupleWhisperVO,
   CoupleTelepathyBoardVO,
   CoupleLoveBankBoardVO,
+  CoupleChallengeBoardVO,
+  CouplePassbookBoardVO,
+  CoupleHundredVO,
+  CoupleWishVO,
+  CoupleTravelVO,
+  CoupleNextTimeVO,
+  CoupleReadPlanVO,
+  CoupleWatchVO,
+  CoupleDictVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -168,6 +177,16 @@ export const useCoupleStore = defineStore('couple', () => {
   /** F67/F69 树洞 / 情话储蓄罐 */
   const whispers = ref<CoupleWhisperVO[]>([])
   const loveBank = ref<CoupleLoveBankBoardVO | null>(null)
+  /** F70-F79 共同养成 */
+  const challenge = ref<CoupleChallengeBoardVO | null>(null)
+  const passbook = ref<CouplePassbookBoardVO | null>(null)
+  const hundreds = ref<CoupleHundredVO[]>([])
+  const wishes = ref<CoupleWishVO[]>([])
+  const travels = ref<CoupleTravelVO[]>([])
+  const nextTimes = ref<CoupleNextTimeVO[]>([])
+  const readPlans = ref<CoupleReadPlanVO[]>([])
+  const watchlist = ref<CoupleWatchVO[]>([])
+  const dictWords = ref<CoupleDictVO[]>([])
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -192,6 +211,7 @@ export const useCoupleStore = defineStore('couple', () => {
     makeup: false,
     deep: false,
     whisper: false,
+    growth: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -296,6 +316,15 @@ export const useCoupleStore = defineStore('couple', () => {
     telepathy.value = null
     whispers.value = []
     loveBank.value = null
+    challenge.value = null
+    passbook.value = null
+    hundreds.value = []
+    wishes.value = []
+    travels.value = []
+    nextTimes.value = []
+    readPlans.value = []
+    watchlist.value = []
+    dictWords.value = []
     loadedLists.value = {
       promises: false,
       question: false,
@@ -319,6 +348,7 @@ export const useCoupleStore = defineStore('couple', () => {
       makeup: false,
       deep: false,
       whisper: false,
+      growth: false,
     }
     promiseDraft.value = null
   }
@@ -1113,6 +1143,109 @@ export const useCoupleStore = defineStore('couple', () => {
     loveBank.value = await coupleApi.depositLove(content)
   }
 
+  // ---------- F70-F79 共同养成 ----------
+
+  /** 挑战 + 存折 + 百日 + 心愿 + 旅行 + 下次一定 + 共读 + 追剧 + 词典 */
+  async function loadGrowth() {
+    const [c, pb, hd, w, tv, nt, rp, wl, dw] = await Promise.all([
+      coupleApi.challenge(),
+      coupleApi.passbook(),
+      coupleApi.hundreds(),
+      coupleApi.wishes(),
+      coupleApi.travels(),
+      coupleApi.nextTimes(),
+      coupleApi.readPlans(),
+      coupleApi.watchlist(),
+      coupleApi.dictWords(),
+    ])
+    challenge.value = c
+    passbook.value = pb
+    hundreds.value = hd ?? []
+    wishes.value = w ?? []
+    travels.value = tv ?? []
+    nextTimes.value = nt ?? []
+    readPlans.value = rp ?? []
+    watchlist.value = wl ?? []
+    dictWords.value = dw ?? []
+    loadedLists.value.growth = true
+  }
+
+  async function checkChallenge() {
+    challenge.value = await coupleApi.checkChallenge()
+  }
+
+  async function depositPassbook(content: string) {
+    passbook.value = await coupleApi.depositPassbook(content)
+  }
+
+  async function createHundred(goal: string, startDay?: string) {
+    hundreds.value = (await coupleApi.createHundred(goal, startDay)) ?? []
+  }
+
+  async function checkinHundred(id: string, note?: string) {
+    hundreds.value = (await coupleApi.checkinHundred(id, note)) ?? []
+  }
+
+  async function breakHundred(id: string) {
+    hundreds.value = (await coupleApi.breakHundred(id)) ?? []
+  }
+
+  async function makeWish(wish: string) {
+    wishes.value = (await coupleApi.makeWish(wish)) ?? []
+  }
+
+  async function acceptWish(id: string) {
+    wishes.value = (await coupleApi.acceptWish(id)) ?? []
+  }
+
+  async function fulfillWish(id: string, doneNote?: string) {
+    wishes.value = (await coupleApi.fulfillWish(id, doneNote)) ?? []
+  }
+
+  async function addTravel(place: string, wantTodo?: string) {
+    travels.value = (await coupleApi.addTravel(place, wantTodo)) ?? []
+  }
+
+  async function visitTravel(id: string, visitedNote?: string) {
+    travels.value = (await coupleApi.visitTravel(id, visitedNote)) ?? []
+  }
+
+  async function addNextTime(content: string, byUser?: string) {
+    nextTimes.value = (await coupleApi.addNextTime(content, byUser)) ?? []
+  }
+
+  async function nudgeNextTime(id: string) {
+    nextTimes.value = (await coupleApi.nudgeNextTime(id)) ?? []
+  }
+
+  async function fulfillNextTime(id: string) {
+    nextTimes.value = (await coupleApi.fulfillNextTime(id)) ?? []
+  }
+
+  async function createReadPlan(title: string, totalUnits: number, unitLabel: string) {
+    readPlans.value = (await coupleApi.createReadPlan(title, totalUnits, unitLabel)) ?? []
+  }
+
+  async function reportReadProgress(id: string, unit: number, note?: string) {
+    readPlans.value = (await coupleApi.reportReadProgress(id, unit, note)) ?? []
+  }
+
+  async function addWatch(title: string, totalUnit?: number) {
+    watchlist.value = (await coupleApi.addWatch(title, totalUnit)) ?? []
+  }
+
+  async function updateWatch(id: string, currentUnit: number) {
+    watchlist.value = (await coupleApi.updateWatch(id, currentUnit)) ?? []
+  }
+
+  async function addWord(word: string, meaning: string) {
+    dictWords.value = (await coupleApi.addWord(word, meaning)) ?? []
+  }
+
+  async function removeWord(id: string) {
+    dictWords.value = (await coupleApi.removeWord(id)) ?? []
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -1523,6 +1656,73 @@ export const useCoupleStore = defineStore('couple', () => {
           void loadWhisperBox()
         }
         break
+      case 'challenge-checked':
+      case 'challenge-done':
+        notify('🏆 双人挑战赛', msg.detail)
+        if (loadedLists.value.growth) {
+          void loadGrowth()
+        }
+        break
+      case 'passbook-deposit':
+        notify('💰 恋爱存折', msg.detail)
+        if (loadedLists.value.growth) {
+          void loadGrowth()
+        }
+        break
+      case 'hundred-started':
+      case 'hundred-checkin':
+      case 'hundred-done':
+      case 'hundred-broken':
+        notify('🎯 百日之约', msg.detail)
+        if (loadedLists.value.growth) {
+          void loadGrowth()
+        }
+        break
+      case 'wish-received':
+      case 'wish-accepted':
+      case 'wish-done':
+        notify('🌠 心愿互换', msg.detail)
+        if (loadedLists.value.growth) {
+          void loadGrowth()
+        }
+        break
+      case 'travel-added':
+      case 'travel-visited':
+        notify('🗺️ 旅行心愿地图', msg.detail)
+        if (loadedLists.value.growth) {
+          void loadGrowth()
+        }
+        break
+      case 'nexttime-added':
+      case 'nexttime-nudged':
+      case 'nexttime-done':
+        notify('📝 下次一定', msg.detail)
+        if (loadedLists.value.growth) {
+          void loadGrowth()
+        }
+        break
+      case 'read-started':
+      case 'read-progress':
+      case 'read-finished':
+        notify('📚 共读计划', msg.detail)
+        if (loadedLists.value.growth) {
+          void loadGrowth()
+        }
+        break
+      case 'watch-added':
+      case 'watch-updated':
+      case 'watch-finished':
+        notify('📺 追剧清单', msg.detail)
+        if (loadedLists.value.growth) {
+          void loadGrowth()
+        }
+        break
+      case 'dict-added':
+        notify('📖 恋爱词典', msg.detail)
+        if (loadedLists.value.growth) {
+          void loadGrowth()
+        }
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -1736,5 +1936,34 @@ export const useCoupleStore = defineStore('couple', () => {
     askWhisper,
     answerWhisper,
     depositLove,
+    challenge,
+    passbook,
+    hundreds,
+    wishes,
+    travels,
+    nextTimes,
+    readPlans,
+    watchlist,
+    dictWords,
+    loadGrowth,
+    checkChallenge,
+    depositPassbook,
+    createHundred,
+    checkinHundred,
+    breakHundred,
+    makeWish,
+    acceptWish,
+    fulfillWish,
+    addTravel,
+    visitTravel,
+    addNextTime,
+    nudgeNextTime,
+    fulfillNextTime,
+    createReadPlan,
+    reportReadProgress,
+    addWatch,
+    updateWatch,
+    addWord,
+    removeWord,
   }
 })
