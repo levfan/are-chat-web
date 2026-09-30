@@ -115,6 +115,35 @@ vi.mock('@/api/couple', () => ({
     answerTelepathy: vi.fn(),
     loveBank: vi.fn().mockResolvedValue({ inJar: 0, deliveredCount: 0, mine: [] }),
     depositLove: vi.fn(),
+    challenge: vi.fn().mockResolvedValue({ today: null, history: [], wonCount: 0 }),
+    checkChallenge: vi.fn(),
+    passbook: vi.fn().mockResolvedValue({ mineToday: null, partnerToday: null, myStreak: 0, milestone: null, recent: [] }),
+    depositPassbook: vi.fn(),
+    hundreds: vi.fn().mockResolvedValue([]),
+    createHundred: vi.fn().mockResolvedValue([]),
+    checkinHundred: vi.fn().mockResolvedValue([]),
+    breakHundred: vi.fn().mockResolvedValue([]),
+    wishes: vi.fn().mockResolvedValue([]),
+    makeWish: vi.fn().mockResolvedValue([]),
+    acceptWish: vi.fn().mockResolvedValue([]),
+    fulfillWish: vi.fn().mockResolvedValue([]),
+    travels: vi.fn().mockResolvedValue([]),
+    addTravel: vi.fn().mockResolvedValue([]),
+    visitTravel: vi.fn().mockResolvedValue([]),
+    nextTimes: vi.fn().mockResolvedValue([]),
+    addNextTime: vi.fn().mockResolvedValue([]),
+    nudgeNextTime: vi.fn().mockResolvedValue([]),
+    fulfillNextTime: vi.fn().mockResolvedValue([]),
+    readPlans: vi.fn().mockResolvedValue([]),
+    createReadPlan: vi.fn().mockResolvedValue([]),
+    reportReadProgress: vi.fn().mockResolvedValue([]),
+    watchlist: vi.fn().mockResolvedValue([]),
+    addWatch: vi.fn().mockResolvedValue([]),
+    updateWatch: vi.fn().mockResolvedValue([]),
+    dictWords: vi.fn().mockResolvedValue([]),
+    addWord: vi.fn().mockResolvedValue([]),
+    removeWord: vi.fn().mockResolvedValue([]),
+    zodiacPair: vi.fn().mockResolvedValue({ mine: 'aries', mineLabel: '白羊座 ♈', partner: 'leo', partnerLabel: '狮子座 ♌', score: 95, comment: '一个负责冲，一个负责稳，刚好互补' }),
   },
 }))
 
@@ -586,5 +615,50 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     expect(coupleApi.depositLove).toHaveBeenCalledWith('今天你笑起来的样子，我又多喜欢了你一点')
     expect(wrapper.find('[data-testid="couple-love-jar"]').text()).toContain('1')
+  })
+
+  it('养成页签：今日挑战显示题目，打卡调用 checkChallenge 接口', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.challenge).mockResolvedValue({
+      today: { day: '2026-09-30', taskText: '今天夸对方 3 次，要夸到具体的点', doneMine: false, donePartner: false, bothDone: false },
+      history: [],
+      wonCount: 2,
+    })
+    vi.mocked(coupleApi.checkChallenge).mockResolvedValue({
+      today: { day: '2026-09-30', taskText: '今天夸对方 3 次，要夸到具体的点', doneMine: true, donePartner: false, bothDone: false },
+      history: [],
+      wonCount: 2,
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-growth').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-challenge-task"]').text()).toContain('夸对方')
+    await wrapper.find('[data-testid="couple-challenge-check"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.checkChallenge).toHaveBeenCalledOnce()
+  })
+
+  it('养成页签：恋爱词典可收录词条，星座配对出指数', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.addWord).mockResolvedValue([
+      { id: 'dw1', fromUser: 'alice', word: '小蛋糕', meaning: '生气只有三分钟，哄一下就好', created: Date.now() },
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-growth').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-dict-word"]').setValue('小蛋糕')
+    await wrapper.find('[data-testid="couple-dict-meaning"]').setValue('生气只有三分钟，哄一下就好')
+    await wrapper.find('[data-testid="couple-dict-add"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.addWord).toHaveBeenCalledWith('小蛋糕', '生气只有三分钟，哄一下就好')
+    expect(wrapper.find('[data-testid="couple-dict-term"]').text()).toContain('小蛋糕')
+
+    await wrapper.find('[data-testid="couple-zodiac-check"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-zodiac-result"]').exists()).toBe(true)
   })
 })
