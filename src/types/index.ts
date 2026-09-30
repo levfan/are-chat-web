@@ -1006,3 +1006,127 @@ export interface CoupleAnswerReactionVO {
   emoji: string
   created: number
 }
+
+// ============ 情侣空间：惊喜与期待（F50-F59） ============
+
+/** F50 爱情刮刮乐：每周一张来自 TA 的奖励券 */
+export interface CoupleScratchVO {
+  id: string
+  weekKey: string
+  fromUser: string
+  prizeKind: string
+  /** 未刮开时对收券人隐藏 */
+  prizeText: string | null
+  scratched: boolean
+  redeemed: boolean
+  scratchedAt: number | null
+}
+
+/** F51 恋爱盲盒 */
+export interface CoupleBoxVO {
+  id: string
+  fromUser: string
+  kind: 'whisper' | 'task'
+  /** 未到开箱日且不是自己装的盒子，内容隐藏 */
+  content: string | null
+  openDay: string
+  opened: boolean
+  canOpen: boolean
+  created: number
+}
+
+/** F52 心动闹钟 */
+export interface CoupleAlarmVO {
+  id: string
+  message: string
+  fireAt: number
+  fired: boolean
+  firedAt: number | null
+}
+
+/** F53 思念速递单条 */
+export interface CoupleMissVO {
+  id: string
+  deliverAt: number
+  delivered: boolean
+  deliveredAt: number | null
+}
+
+/** F53 思念速递看板 */
+export interface CoupleMissBoardVO {
+  myTotal: number
+  partnerTotal: number
+  inTransit: number
+  recent: CoupleMissVO[]
+}
+
+/** F54 爱情花园状态 */
+export interface CoupleGardenVO {
+  stage: number
+  stageName: string
+  emoji: string
+  totalWater: number
+  wateredTodayMe: boolean
+  wateredTodayPartner: boolean
+  withered: boolean
+  revivedCount: number
+  waterToNextStage: number
+  daysSinceWater: number
+}
+
+/** F55 玫瑰单条 */
+export interface CoupleRoseVO {
+  id: string
+  fromUser: string
+  flowerKey: string
+  emoji: string
+  word: string
+  created: number
+}
+
+/** F55 玫瑰看板 */
+export interface CoupleRoseBoardVO {
+  todayMine: number
+  todayPartner: number
+  remainingToday: number
+  today: CoupleRoseVO[]
+  recent: CoupleRoseVO[]
+}
+
+/** F56 幸运签单条 */
+export interface CoupleSlipVO {
+  id: string
+  fromUser: string
+  day: string
+  level: string
+  content: string
+  created: number
+}
+
+/** F56 幸运签看板 */
+export interface CoupleSlipBoardVO {
+  mySlipToday: CoupleSlipVO | null
+  receivedToday: CoupleSlipVO | null
+  recent: CoupleSlipVO[]
+}
+
+/** F57 告白重现 */
+export interface CoupleConfessionVO {
+  id: string
+  content: string
+  confessDay: string
+  createdBy: string
+  created: number
+}
+
+/** F58 藏宝图任务 */
+export interface CoupleTreasureVO {
+  id: string
+  fromUser: string
+  taskText: string
+  /** 未揭晓时对挖宝人隐藏 */
+  prizeText: string | null
+  status: 'PENDING' | 'DONE'
+  doneAt: number | null
+  created: number
+}

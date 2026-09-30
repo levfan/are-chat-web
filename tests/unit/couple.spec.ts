@@ -58,6 +58,41 @@ vi.mock('@/api/couple', () => ({
     createFund: vi.fn(),
     depositFund: vi.fn(),
     deleteFund: vi.fn(),
+    // F50-F59 惊喜与期待
+    scratches: vi.fn().mockResolvedValue([]),
+    scratchCard: vi.fn(),
+    redeemScratch: vi.fn(),
+    boxes: vi.fn().mockResolvedValue([]),
+    createBox: vi.fn(),
+    openBox: vi.fn(),
+    alarms: vi.fn().mockResolvedValue([]),
+    createAlarm: vi.fn(),
+    cancelAlarm: vi.fn(),
+    missBoard: vi.fn().mockResolvedValue({ myTotal: 0, partnerTotal: 0, inTransit: 0, recent: [] }),
+    sendMiss: vi.fn(),
+    confessions: vi.fn().mockResolvedValue([]),
+    createConfession: vi.fn(),
+    deleteConfession: vi.fn(),
+    treasures: vi.fn().mockResolvedValue([]),
+    createTreasure: vi.fn(),
+    completeTreasure: vi.fn(),
+    garden: vi.fn().mockResolvedValue({
+      stage: 0,
+      stageName: '种子',
+      emoji: '🌰',
+      totalWater: 0,
+      wateredTodayMe: false,
+      wateredTodayPartner: false,
+      withered: false,
+      revivedCount: 0,
+      waterToNextStage: 7,
+      daysSinceWater: 0,
+    }),
+    waterGarden: vi.fn(),
+    roseBoard: vi.fn().mockResolvedValue({ todayMine: 0, todayPartner: 0, remainingToday: 3, today: [], recent: [] }),
+    sendRose: vi.fn(),
+    slipBoard: vi.fn().mockResolvedValue({ mySlipToday: null, receivedToday: null, recent: [] }),
+    drawSlip: vi.fn(),
   },
 }))
 
@@ -345,5 +380,82 @@ describe('CoupleView 情侣空间', () => {
     )
     await flushPromises()
     expect(couple.incomingInvite?.id).toBe('i1')
+  })
+
+  it('惊喜页签：未刮开的刮刮乐显示神秘券面，点击刮开调用 scratchCard 接口', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.scratches).mockResolvedValue([
+      {
+        id: 'sc1',
+        weekKey: '2026-W40',
+        fromUser: 'bob',
+        prizeKind: 'hug',
+        prizeText: null,
+        scratched: false,
+        redeemed: false,
+        scratchedAt: null,
+      },
+    ])
+    vi.mocked(coupleApi.scratchCard).mockResolvedValue({
+      id: 'sc1',
+      weekKey: '2026-W40',
+      fromUser: 'bob',
+      prizeKind: 'hug',
+      prizeText: '一个不少于 10 秒的用力抱抱',
+      scratched: true,
+      redeemed: false,
+      scratchedAt: Date.now(),
+    })
+    const couple = useCoupleStore()
+    couple.overview = establishedOverview
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-surprise').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-scratch-unknown"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-scratch-scratch"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.scratchCard).toHaveBeenCalledWith('sc1')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-scratch-prize"]').text()).toContain('抱抱')
+  })
+
+  it('惊喜页签：思念速递一键寄出，点击按钮调用 sendMiss 接口', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.sendMiss).mockResolvedValue({ myTotal: 1, partnerTotal: 0, inTransit: 1, recent: [] })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-surprise').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-miss-send"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.sendMiss).toHaveBeenCalledOnce()
+  })
+
+  it('花园页签：显示成长阶段与浇水按钮，点击浇水调用 waterGarden 接口', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.waterGarden).mockResolvedValue({
+      stage: 0,
+      stageName: '种子',
+      emoji: '🌰',
+      totalWater: 1,
+      wateredTodayMe: true,
+      wateredTodayPartner: false,
+      withered: false,
+      revivedCount: 0,
+      waterToNextStage: 6,
+      daysSinceWater: 0,
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-surprise').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-garden-emoji"]').text()).toBe('🌰')
+    await wrapper.find('[data-testid="couple-garden-water"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.waterGarden).toHaveBeenCalledOnce()
   })
 })

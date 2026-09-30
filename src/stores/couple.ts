@@ -50,6 +50,15 @@ import type {
   CoupleTaskVO,
   CoupleTimelineDay,
   CoupleWeatherVO,
+  CoupleScratchVO,
+  CoupleBoxVO,
+  CoupleAlarmVO,
+  CoupleMissBoardVO,
+  CoupleTreasureVO,
+  CoupleConfessionVO,
+  CoupleGardenVO,
+  CoupleRoseBoardVO,
+  CoupleSlipBoardVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -126,6 +135,17 @@ export const useCoupleStore = defineStore('couple', () => {
   const notifyUnread = ref(0)
   /** F46 第一次清单 */
   const firsts = ref<CoupleFirstVO[]>([])
+  /** F50-F59 惊喜与期待：刮刮乐 / 盲盒 / 闹钟 / 思念 / 藏宝图 / 告白 */
+  const scratches = ref<CoupleScratchVO[]>([])
+  const boxes = ref<CoupleBoxVO[]>([])
+  const alarms = ref<CoupleAlarmVO[]>([])
+  const missBoard = ref<CoupleMissBoardVO | null>(null)
+  const treasures = ref<CoupleTreasureVO[]>([])
+  const confessions = ref<CoupleConfessionVO[]>([])
+  /** F54-F56 花园 / 玫瑰 / 幸运签 */
+  const garden = ref<CoupleGardenVO | null>(null)
+  const roseBoard = ref<CoupleRoseBoardVO | null>(null)
+  const slipBoard = ref<CoupleSlipBoardVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -144,6 +164,8 @@ export const useCoupleStore = defineStore('couple', () => {
     care: false,
     memory: false,
     life: false,
+    surprise: false,
+    garden: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -230,6 +252,15 @@ export const useCoupleStore = defineStore('couple', () => {
     notifies.value = []
     notifyUnread.value = 0
     firsts.value = []
+    scratches.value = []
+    boxes.value = []
+    alarms.value = []
+    missBoard.value = null
+    treasures.value = []
+    confessions.value = []
+    garden.value = null
+    roseBoard.value = null
+    slipBoard.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -247,6 +278,8 @@ export const useCoupleStore = defineStore('couple', () => {
       care: false,
       memory: false,
       life: false,
+      surprise: false,
+      garden: false,
     }
     promiseDraft.value = null
   }
@@ -852,6 +885,111 @@ export const useCoupleStore = defineStore('couple', () => {
     firsts.value = firsts.value.filter((f) => f.id !== id)
   }
 
+  // ---------- F50-F59 惊喜与期待 ----------
+
+  /** 一次性加载惊喜板块（刮刮乐/盲盒/闹钟/思念/藏宝图/告白） */
+  async function loadSurprise() {
+    const [s, b, a, m, t, c] = await Promise.all([
+      coupleApi.scratches(),
+      coupleApi.boxes(),
+      coupleApi.alarms(),
+      coupleApi.missBoard(),
+      coupleApi.treasures(),
+      coupleApi.confessions(),
+    ])
+    scratches.value = s ?? []
+    boxes.value = b ?? []
+    alarms.value = a ?? []
+    missBoard.value = m
+    treasures.value = t ?? []
+    confessions.value = c ?? []
+    loadedLists.value.surprise = true
+  }
+
+  async function scratchCard(id: string) {
+    const vo = await coupleApi.scratchCard(id)
+    scratches.value = scratches.value.map((c) => (c.id === id ? { ...vo } : c))
+    return vo
+  }
+
+  async function redeemScratch(id: string) {
+    const vo = await coupleApi.redeemScratch(id)
+    scratches.value = scratches.value.map((c) => (c.id === id ? { ...c, redeemed: vo.redeemed } : c))
+    return vo
+  }
+
+  async function createBox(kind: 'whisper' | 'task', content: string, openDay: string) {
+    const vo = await coupleApi.createBox(kind, content, openDay)
+    await loadSurprise()
+    return vo
+  }
+
+  async function openBox(id: string) {
+    const vo = await coupleApi.openBox(id)
+    await loadSurprise()
+    return vo
+  }
+
+  async function createAlarm(message: string, fireAt: number) {
+    const vo = await coupleApi.createAlarm(message, fireAt)
+    alarms.value = [vo, ...alarms.value]
+    return vo
+  }
+
+  async function cancelAlarm(id: string) {
+    await coupleApi.cancelAlarm(id)
+    alarms.value = alarms.value.filter((a) => a.id !== id)
+  }
+
+  async function sendMiss() {
+    missBoard.value = await coupleApi.sendMiss()
+  }
+
+  async function createConfession(content: string, confessDay: string) {
+    const vo = await coupleApi.createConfession(content, confessDay)
+    await loadSurprise()
+    return vo
+  }
+
+  async function deleteConfession(id: string) {
+    await coupleApi.deleteConfession(id)
+    confessions.value = confessions.value.filter((c) => c.id !== id)
+  }
+
+  async function createTreasure(taskText: string, prizeText: string) {
+    const vo = await coupleApi.createTreasure(taskText, prizeText)
+    await loadSurprise()
+    return vo
+  }
+
+  async function completeTreasure(id: string) {
+    const vo = await coupleApi.completeTreasure(id)
+    await loadSurprise()
+    return vo
+  }
+
+  // ---------- F54-F56 花园 / 玫瑰 / 幸运签 ----------
+
+  async function loadGarden() {
+    const [g, r, s] = await Promise.all([coupleApi.garden(), coupleApi.roseBoard(), coupleApi.slipBoard()])
+    garden.value = g
+    roseBoard.value = r
+    slipBoard.value = s
+    loadedLists.value.garden = true
+  }
+
+  async function waterGarden() {
+    garden.value = await coupleApi.waterGarden()
+  }
+
+  async function sendRose(flowerKey: string) {
+    roseBoard.value = await coupleApi.sendRose(flowerKey)
+  }
+
+  async function drawSlip() {
+    slipBoard.value = await coupleApi.drawSlip()
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -1150,6 +1288,70 @@ export const useCoupleStore = defineStore('couple', () => {
       case 'answer-reacted':
         notify('💬 一问互评', msg.detail)
         break
+      case 'scratch-scratched':
+      case 'scratch-redeemed':
+        notify('🎟️ 爱情刮刮乐', msg.detail)
+        if (loadedLists.value.surprise) {
+          void loadSurprise()
+        }
+        break
+      case 'box-received':
+      case 'box-opened':
+        notify('🎁 恋爱盲盒', msg.detail)
+        if (loadedLists.value.surprise) {
+          void loadSurprise()
+        }
+        break
+      case 'alarm-fired':
+        notify('⏰ 心动闹钟', msg.detail)
+        if (loadedLists.value.surprise) {
+          void loadSurprise()
+        }
+        break
+      case 'miss-delivered':
+        notify('📮 思念速递', msg.detail)
+        if (loadedLists.value.surprise) {
+          void loadSurprise()
+        }
+        break
+      case 'treasure-sent':
+      case 'treasure-done':
+        notify('🗺️ 藏宝图', msg.detail)
+        if (loadedLists.value.surprise) {
+          void loadSurprise()
+        }
+        break
+      case 'confession-kept':
+      case 'confession-replay':
+        notify('💌 告白重现', msg.detail)
+        if (loadedLists.value.surprise) {
+          void loadSurprise()
+        }
+        break
+      case 'garden-watered':
+      case 'garden-stageup':
+      case 'garden-withered':
+      case 'garden-revived':
+        notify('🌱 爱情花园', msg.detail)
+        if (loadedLists.value.garden) {
+          void loadGarden()
+        }
+        break
+      case 'rose-received':
+        notify('🌹 每日玫瑰', msg.detail)
+        if (loadedLists.value.garden) {
+          void loadGarden()
+        }
+        break
+      case 'slip-received':
+        notify('🔮 幸运签', msg.detail)
+        if (loadedLists.value.garden) {
+          void loadGarden()
+        }
+        break
+      case 'birthday-card':
+        notify('🎂 生日彩蛋', msg.detail)
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -1314,5 +1516,30 @@ export const useCoupleStore = defineStore('couple', () => {
     loadFirsts,
     addFirst,
     removeFirst,
+    scratches,
+    boxes,
+    alarms,
+    missBoard,
+    treasures,
+    confessions,
+    garden,
+    roseBoard,
+    slipBoard,
+    loadSurprise,
+    scratchCard,
+    redeemScratch,
+    createBox,
+    openBox,
+    createAlarm,
+    cancelAlarm,
+    sendMiss,
+    createConfession,
+    deleteConfession,
+    createTreasure,
+    completeTreasure,
+    loadGarden,
+    waterGarden,
+    sendRose,
+    drawSlip,
   }
 })

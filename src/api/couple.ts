@@ -56,6 +56,15 @@ import type {
   CoupleTimelineDay,
   CoupleTrafficLightVO,
   CoupleWeatherVO,
+  CoupleGardenVO,
+  CoupleRoseBoardVO,
+  CoupleScratchVO,
+  CoupleBoxVO,
+  CoupleAlarmVO,
+  CoupleMissBoardVO,
+  CoupleSlipBoardVO,
+  CoupleTreasureVO,
+  CoupleConfessionVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -338,4 +347,58 @@ export const coupleApi = {
   /** F48 某天双方对彼此回答的反应列表 */
   listAnswerReactions: (day: string) =>
     http.get<CoupleAnswerReactionVO[]>(`/api/couple/answers/${day}/reactions`),
+
+  // ---------- 惊喜与期待（F50-F59） ----------
+  /** F50 我的刮刮乐（自动补发本周的卡） */
+  scratches: () => http.get<CoupleScratchVO[]>('/api/couple/surprise/scratches'),
+  /** F50 刮开我的券 */
+  scratchCard: (id: string) => http.postJson<CoupleScratchVO>(`/api/couple/surprise/scratches/${id}/scratch`, {}),
+  /** F50 送券人核销 */
+  redeemScratch: (id: string) => http.postJson<CoupleScratchVO>(`/api/couple/surprise/scratches/${id}/redeem`, {}),
+  /** F51 盲盒列表 */
+  boxes: () => http.get<CoupleBoxVO[]>('/api/couple/surprise/boxes'),
+  /** F51 装一个盲盒（最早明天开箱） */
+  createBox: (kind: 'whisper' | 'task', content: string, openDay: string) =>
+    http.postJson<CoupleBoxVO>('/api/couple/surprise/boxes', { kind, content, openDay }),
+  /** F51 开盲盒 */
+  openBox: (id: string) => http.postJson<CoupleBoxVO>(`/api/couple/surprise/boxes/${id}/open`, {}),
+  /** F52 我设的心动闹钟 */
+  alarms: () => http.get<CoupleAlarmVO[]>('/api/couple/surprise/alarms'),
+  /** F52 设一个心动闹钟（未来 24 小时内） */
+  createAlarm: (message: string, fireAt: number) =>
+    http.postJson<CoupleAlarmVO>('/api/couple/surprise/alarms', { message, fireAt }),
+  /** F52 取消闹钟 */
+  cancelAlarm: (id: string) => http.delete<void>(`/api/couple/surprise/alarms/${id}`),
+  /** F53 思念速递看板 */
+  missBoard: () => http.get<CoupleMissBoardVO>('/api/couple/surprise/misses'),
+  /** F53 寄出一份思念（5~30 分钟随机送达） */
+  sendMiss: () => http.postJson<CoupleMissBoardVO>('/api/couple/surprise/misses', {}),
+  /** F57 告白存档列表 */
+  confessions: () => http.get<CoupleConfessionVO[]>('/api/couple/surprise/confessions'),
+  /** F57 收藏一段告白（每年今天自动重播） */
+  createConfession: (content: string, confessDay: string) =>
+    http.postJson<CoupleConfessionVO>('/api/couple/surprise/confessions', { content, confessDay }),
+  /** F57 删除告白存档 */
+  deleteConfession: (id: string) => http.delete<void>(`/api/couple/surprise/confessions/${id}`),
+  /** F58 藏宝图列表 */
+  treasures: () => http.get<CoupleTreasureVO[]>('/api/couple/surprise/treasures'),
+  /** F58 埋一个宝藏 */
+  createTreasure: (taskText: string, prizeText: string) =>
+    http.postJson<CoupleTreasureVO>('/api/couple/surprise/treasures', { taskText, prizeText }),
+  /** F58 完成任务挖宝 */
+  completeTreasure: (id: string) => http.postJson<CoupleTreasureVO>(`/api/couple/surprise/treasures/${id}/done`, {}),
+
+  // ---------- 爱情花园 / 玫瑰 / 幸运签（F54-F56） ----------
+  /** F54 花园状态 */
+  garden: () => http.get<CoupleGardenVO>('/api/couple/garden'),
+  /** F54 浇水（每人每天一次） */
+  waterGarden: () => http.postJson<CoupleGardenVO>('/api/couple/garden/water', {}),
+  /** F55 玫瑰看板 */
+  roseBoard: () => http.get<CoupleRoseBoardVO>('/api/couple/garden/roses'),
+  /** F55 送一朵玫瑰（每天限 3 朵） */
+  sendRose: (flowerKey: string) => http.postJson<CoupleRoseBoardVO>('/api/couple/garden/roses', { flowerKey }),
+  /** F56 幸运签看板 */
+  slipBoard: () => http.get<CoupleSlipBoardVO>('/api/couple/garden/slips'),
+  /** F56 为 TA 抽一支今日幸运签 */
+  drawSlip: () => http.postJson<CoupleSlipBoardVO>('/api/couple/garden/slips', {}),
 }
