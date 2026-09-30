@@ -144,6 +144,44 @@ vi.mock('@/api/couple', () => ({
     addWord: vi.fn().mockResolvedValue([]),
     removeWord: vi.fn().mockResolvedValue([]),
     zodiacPair: vi.fn().mockResolvedValue({ mine: 'aries', mineLabel: '白羊座 ♈', partner: 'leo', partnerLabel: '狮子座 ♌', score: 95, comment: '一个负责冲，一个负责稳，刚好互补' }),
+    chronicle: vi.fn().mockResolvedValue([
+      {
+        year: '2025',
+        events: [{ day: '2025-02-14', type: 'first', title: '第一次一起看海', detail: '风很大，但很暖', icon: '🧾' }],
+      },
+    ]),
+    archaeology: vi.fn().mockResolvedValue({ kind: 'passbook', day: '2026-08-30', daysAgo: 31, title: '那天 TA 往恋爱存折里存了', content: '陪 TA 散步' }),
+    quiz: vi.fn().mockResolvedValue([
+      { key: 'days', question: '到今天为止，我们已经在一起多少天了？', options: ['100', '365', '700', '200'], answerIndex: 2 },
+    ]),
+    anniversaryReport: vi.fn().mockResolvedValue({
+      anniversaryDay: '2024-10-01',
+      nthYear: 3,
+      sinceDay: '2025-10-01',
+      items: [{ key: 'promises', label: '兑现的约定', emoji: '🤝', value: 4, unit: '个' }],
+      summary: '这一年你们又攒下了 4 件值得写进史册的事',
+    }),
+    birthdayLook: vi.fn().mockResolvedValue({
+      partner: 'bob',
+      partnerLabel: 'bob',
+      birthday: '1999-03-15',
+      events: [{ day: '2025-03-15', type: 'passbook', title: '存折里的一笔', detail: '给 TA 做了长寿面', icon: '💰' }],
+    }),
+    quotes: vi.fn().mockResolvedValue([
+      { id: 'q1', fromUser: 'alice', content: '别怕，有我在', context: '某个加班的深夜', created: Date.now() },
+    ]),
+    saveQuote: vi.fn().mockResolvedValue([]),
+    removeQuote: vi.fn().mockResolvedValue([]),
+    tickets: vi.fn().mockResolvedValue([
+      { id: 't1', fromUser: 'alice', title: '你的名字', watchDay: '2025-05-20', rating: 5, comment: '看完想立刻见到你', created: Date.now() },
+    ]),
+    saveTicket: vi.fn().mockResolvedValue([]),
+    removeTicket: vi.fn().mockResolvedValue([]),
+    songs: vi.fn().mockResolvedValue([
+      { id: 's1', fromUser: 'bob', title: '告白气球', artist: '周杰伦', reason: '第一次约会时店里在放', created: Date.now() },
+    ]),
+    saveSong: vi.fn().mockResolvedValue([]),
+    removeSong: vi.fn().mockResolvedValue([]),
   },
 }))
 
@@ -660,5 +698,42 @@ describe('CoupleView 情侣空间', () => {
     await wrapper.find('[data-testid="couple-zodiac-check"]').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="couple-zodiac-result"]').exists()).toBe(true)
+  })
+
+  it('时光轴页签：考古卡能挖出旧记录，编年史按年展示事件', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-timeline').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-archaeology-dig"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.archaeology).toHaveBeenCalledOnce()
+    expect(wrapper.find('[data-testid="couple-archaeology-card"]').text()).toContain('31 天前')
+
+    expect(wrapper.find('[data-testid="couple-history-year-2025"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-history-event-0"]').text()).toContain('第一次一起看海')
+  })
+
+  it('徽章页签：周年报告显示第 N 年与统计，信箱页签语录册可收藏', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-badges').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-report-year"]').text()).toContain('第')
+    expect(wrapper.find('[data-testid="couple-report-promises"]').text()).toContain('4')
+
+    await wrapper.find('#tab-letters').trigger('click')
+    await flushPromises()
+    vi.mocked(coupleApi.saveQuote).mockResolvedValue([
+      { id: 'q2', fromUser: 'alice', content: '你今天也很好看', context: null, created: Date.now() },
+    ])
+    await wrapper.find('[data-testid="couple-quote-content"]').setValue('你今天也很好看')
+    await wrapper.find('[data-testid="couple-quote-save"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.saveQuote).toHaveBeenCalledWith('你今天也很好看', undefined)
   })
 })
