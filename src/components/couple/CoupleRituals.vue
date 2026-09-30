@@ -209,23 +209,28 @@ const partnerReaction = computed(
 )
 
 async function loadReactions() {
-  if (!question.value?.day) return
+  if (!couple.question?.day) return
   try {
-    reactions.value = (await coupleApi.listAnswerReactions(question.value.day)) ?? []
+    reactions.value = (await coupleApi.listAnswerReactions(couple.question.day)) ?? []
   } catch {
     // 互评加载失败不打扰主流程
   }
 }
 
 async function onReact(emoji: string) {
-  if (!question.value?.day) return
+  if (!couple.question?.day) return
   try {
-    reactions.value = (await coupleApi.reactAnswer(question.value.day, emoji)) ?? []
+    reactions.value = (await coupleApi.reactAnswer(couple.question.day, emoji)) ?? []
     ElMessage.success('已把反应送给 TA 啦')
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '互评失败')
   }
 }
+
+const state = computed(() => couple.checkins)
+const question = computed(() => couple.question)
+const morningUnlocked = computed(() => !!state.value?.me.morning && !!state.value?.partner.morning)
+const nightUnlocked = computed(() => !!state.value?.me.night && !!state.value?.partner.night)
 
 watch(
   () => question.value?.day,
@@ -234,11 +239,6 @@ watch(
   },
   { immediate: true },
 )
-
-const state = computed(() => couple.checkins)
-const question = computed(() => couple.question)
-const morningUnlocked = computed(() => !!state.value?.me.morning && !!state.value?.partner.morning)
-const nightUnlocked = computed(() => !!state.value?.me.night && !!state.value?.partner.night)
 
 /** 当日专属主题（公共工具色板：同一天双方同一款） */
 const todayBackground = computed(() => ({ background: themeBackground() }))
