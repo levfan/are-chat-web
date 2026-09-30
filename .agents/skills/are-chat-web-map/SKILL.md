@@ -35,11 +35,11 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 |---|---|---|
 | bond | CoupleBond + CoupleGame | 贴贴动作宫格/贴贴里程碑/累计统计/动作流 + 恋爱加成清单/互动热力图/心情曲线/恋爱红绿灯 |
 | promises（默认） | CouplePromises + CouplePact | 双向约定卡 + 恋爱条约 |
-| rituals | CoupleRituals + CoupleDaily | 早晚安/今日一问(含 F48 互评表情)/晚安故事 + 甜蜜任务/恋爱运势/默契考验 |
+| rituals | CoupleRituals + CoupleDaily + CoupleTruth | 早晚安/今日一问(含 F48 互评表情)/晚安故事 + 甜蜜任务/恋爱运势/默契考验 + 今日真心话(F66 双方同题必答+存档)/心灵感应(F68 每天三轮选题作答自动结算) |
 | surprise | CoupleSurprise + CoupleGarden | 惊喜与期待(F50-F59)：刮刮乐/恋爱盲盒/心动闹钟/思念速递/藏宝图/告白重现 + 爱情花园浇水养成/每日玫瑰/幸运签 |
-| letters | CoupleLetter + CoupleCapsule | 悄悄话信箱（情话抽卡/情书模板）+ 时光胶囊 |
+| letters | CoupleLetter + CoupleWhisperBox + CoupleCapsule | 悄悄话信箱（情话抽卡/情书模板）+ 匿名树洞(F67)/情话储蓄罐(F69 21 点利息送达) + 时光胶囊 |
 | mood | CoupleMood | 心情日记 + 心情回应（回应按钮在本组件内） |
-| care | CoupleCare | 情绪天气/急救箱/和好卡/夸夸墙/生理期关怀 |
+| care | CoupleCare + CoupleComfort + CoupleMakeup | 情绪天气/急救箱/和好卡/夸夸墙/生理期关怀 + 求抱抱(F60 感受按钮/话术卡回应)/陪聊话题卡(F63)/情绪同步率(F64) + 矛盾复盘(F61 和好锦囊)/道歉券(F62) |
 | shared | CoupleCityCard + CoupleCountdown + CoupleLife + CoupleShared + CoupleFund | 异地恋(对方时区/见面倒数)/倒数日/生活共享(记账/家务/约会/习惯/暗号)/共享清单/心愿基金 |
 | badges | CoupleBadges + CoupleReport | 里程碑徽章 + 行为成就墙 + 恋爱月报/数据总览 |
 | timeline | CoupleOnThisDay + CoupleFirsts + CoupleHeartMoments + CoupleTimeline | 那年今天 + 我们的第一次(F46) + 心动时刻(F36) + 恋爱时光轴 |
@@ -53,7 +53,7 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 4. 新组件放 `components/couple/`，根元素 `data-testid="couple-xxx"`，按钮/输入框同样补 testid（测试与 e2e 依赖）
 5. CoupleView 挂到对应页签（页签加 `lazy`）
 
-WS 事件约定：后端 `ImPushService.pushCoupleEvent(Both)` 推 `{type:'couple', event, detail}`，im store 转发为 `arechat:couple` 自定义事件，couple store `handleCoupleEvent` 按 event 名分发。现有 event 清单见后端各 Service（如 bond-action、task-done、tacit-settled、reconcile-accepted、capsule-sealed、countdown-reminder 等）。
+WS 事件约定：后端 `ImPushService.pushCoupleEvent(Both)` 推 `{type:'couple', event, detail}`，im store 转发为 `arechat:couple` 自定义事件，couple store `handleCoupleEvent` 按 event 名分发。现有 event 清单见后端各 Service（如 bond-action、task-done、tacit-settled、reconcile-accepted、capsule-sealed、countdown-reminder、scratch-scratched、box-opened、garden-watered、comfort-sent、comfort-given、night-care、peace-review-done、sorry-used、truth-answered、whisper-answered、telepathy-matched、love-bank-interest 等）。
 
 ## 四、惯例与红线
 
