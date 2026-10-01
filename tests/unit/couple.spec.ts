@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
-import { coupleApi, manageApi, museumApi, pinApi } from '@/api/couple'
+import { coupleApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
@@ -268,10 +268,47 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F210-F219 两个人的饭桌 diningApi：默认空数据，用例内按需覆盖
+  const diningBase: Record<string, ReturnType<typeof vi.fn>> = {
+    dineToday: vi.fn().mockResolvedValue({
+      day: '2026-10-02',
+      mine: null,
+      partner: null,
+      hit: false,
+      verdict: null,
+      topic: '今晚想吃热的还是清淡的？',
+      topicMarked: false,
+    }),
+    dineRates: vi.fn().mockResolvedValue([]),
+    dineRate: vi.fn().mockResolvedValue([]),
+    dineNogos: vi.fn().mockResolvedValue([]),
+    dineAddNogo: vi.fn().mockResolvedValue([]),
+    dineRemoveNogo: vi.fn().mockResolvedValue([]),
+    dineBoard: vi.fn().mockResolvedValue({ week: '', plans: [], homecooks: [], cart: [] }),
+    dineYear: vi.fn().mockResolvedValue({
+      year: '2026',
+      rateCount: 0,
+      avgStars: 0,
+      topDishes: [],
+      nogoCount: 0,
+      ticketCount: 0,
+      plannedCount: 0,
+    }),
+  }
+  const diningWrapped = new Proxy(diningBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(undefined)
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
     museumApi: museumWrapped,
+    diningApi: diningWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -1292,6 +1329,133 @@ describe('CoupleView 情侣空间', () => {
     expect(g.exists()).toBe(true)
     expect(g.text()).toContain('在一起 620 天')
     expect(g.text()).toContain('静音时段')
+  })
+
+  it('两个人的饭桌：撞菜时命中徽标与裁决文案渲染', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(diningApi.dineToday).mockResolvedValue({
+      day: '2026-10-02',
+      mine: { fromUser: 'alice', mine: true, dish: '番茄牛腩', reason: '想吃热的' },
+      partner: { fromUser: 'bob', mine: false, dish: '番茄牛腩', reason: '同款馋' },
+      hit: true,
+      verdict: '两个人的票撞在番茄牛腩上，今晚就它了！',
+      topic: '今晚想吃热的还是清淡的？',
+      topicMarked: false,
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+    // F210：今晚饭桌在「🧾 过日子」子页签（默认激活）
+    expect(wrapper.find('#tab-daily').classes()).toContain('is-active')
+
+    expect(wrapper.find('[data-testid="couple-dine-ticket-hit"]').text()).toContain('撞菜')
+    expect(wrapper.find('[data-testid="couple-dine-ticket-hit"]').text()).toContain('番茄牛腩')
+    expect(wrapper.find('[data-testid="couple-dine-ticket-verdict"]').text()).toContain('今晚就它了')
+  })
+
+  it('两个人的饭桌：投饭票调用 dineCastTicket 并用返回 TodayVO 刷新双方票', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(diningApi.dineCastTicket).mockResolvedValue({
+      day: '2026-10-02',
+      mine: { fromUser: 'alice', mine: true, dish: '酸菜鱼', reason: '天冷吃酸汤' },
+      partner: null,
+      hit: false,
+      verdict: null,
+      topic: '今晚想吃热的还是清淡的？',
+      topicMarked: false,
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-dine-ticket-dish"]').setValue('酸菜鱼')
+    await wrapper.find('[data-testid="couple-dine-ticket-reason"]').setValue('天冷吃酸汤')
+    await wrapper.find('[data-testid="couple-dine-ticket-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(diningApi.dineCastTicket).toHaveBeenCalledWith('酸菜鱼', '天冷吃酸汤')
+    expect(wrapper.find('[data-testid="couple-dine-ticket-mine"]').text()).toContain('酸菜鱼')
+    expect(wrapper.find('[data-testid="couple-dine-ticket-partner"]').text()).toContain('还没投')
+  })
+
+  it('两个人的饭桌：点单机按心情出今日一杯', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(diningApi.dineDrink).mockResolvedValue({ mood: '有点累', emoji: '🍋', name: '柠檬气泡水', note: '酸一下也提神' })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-dine-drink-btn-有点累"]').trigger('click')
+    await flushPromises()
+
+    expect(diningApi.dineDrink).toHaveBeenCalledWith('有点累')
+    expect(wrapper.find('[data-testid="couple-dine-drink-result"]').text()).toContain('柠檬气泡水')
+    expect(wrapper.find('[data-testid="couple-dine-drink-result"]').text()).toContain('酸一下也提神')
+  })
+
+  it('两个人的饭桌：搭伙车 canLock 按钮渲染，点击锁定返回 LOCKED 显示🔒', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const boardCart = (lockedId: string, status: 'OPEN' | 'LOCKED') => ({
+      week: '2026-09-28',
+      plans: [],
+      homecooks: [],
+      cart: [
+        { id: lockedId, fromUser: 'bob', mine: false, item: '火锅底料', qty: 2, status, locked: status === 'LOCKED' ? ['bob', 'alice'] : ['bob'], canLock: status === 'OPEN' },
+        { id: 'dc2', fromUser: 'alice', mine: true, item: '香菜', qty: 1, status: 'OPEN' as const, locked: [], canLock: false },
+      ],
+    })
+    vi.mocked(diningApi.dineBoard).mockResolvedValue(boardCart('dc1', 'OPEN'))
+    vi.mocked(diningApi.dineCartLock).mockResolvedValue(boardCart('dc1', 'LOCKED'))
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+
+    const lockBtn = wrapper.find('[data-testid="couple-dine-cart-lock-dc1"]')
+    expect(lockBtn.exists()).toBe(true)
+    // 本人未锁的 OPEN 菜可撤
+    expect(wrapper.find('[data-testid="couple-dine-cart-del-dc2"]').exists()).toBe(true)
+
+    await lockBtn.trigger('click')
+    await flushPromises()
+
+    expect(diningApi.dineCartLock).toHaveBeenCalledWith('dc1')
+    expect(wrapper.find('[data-testid="couple-dine-cart-lock-dc1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-dine-cart-dc1"]').find('[data-testid="couple-dine-cart-locked-icon"]').text()).toContain('已上车')
+  })
+
+  it('两个人的饭桌：年度干饭账渲染 topDishes 排行与统计', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(diningApi.dineYear).mockResolvedValue({
+      year: String(new Date().getFullYear()),
+      rateCount: 48,
+      avgStars: 4.2,
+      topDishes: [
+        { dish: '番茄牛腩', times: 12, avgStars: 4.8 },
+        { dish: '酸菜鱼', times: 9, avgStars: 4.5 },
+      ],
+      nogoCount: 3,
+      ticketCount: 120,
+      plannedCount: 30,
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-dine-year-ratecount"]').text()).toContain('48')
+    expect(wrapper.find('[data-testid="couple-dine-year-avgstars"]').text()).toContain('4.2')
+    expect(wrapper.find('[data-testid="couple-dine-year-ticketcount"]').text()).toContain('120')
+    expect(wrapper.find('[data-testid="couple-dine-year-plannedcount"]').text()).toContain('30')
+    expect(wrapper.find('[data-testid="couple-dine-year-nogocount"]').text()).toContain('3')
+    const top1 = wrapper.find('[data-testid="couple-dine-year-top-番茄牛腩"]')
+    expect(top1.exists()).toBe(true)
+    expect(top1.text()).toContain('12 次')
+    expect(top1.text()).toContain('4.8')
+    expect(wrapper.find('[data-testid="couple-dine-year-top-酸菜鱼"]').text()).toContain('9 次')
   })
 
   it('F200：shared 拆成「过日子/经营所」两个子页签并分别渲染对应组件', async () => {
