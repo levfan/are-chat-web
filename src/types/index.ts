@@ -2967,3 +2967,114 @@ export interface CoupleBdOverviewVO {
   card: CoupleBdCardVO
   weekly: CoupleBdWeeklyVO
 }
+
+// ============ 夫妻老黄历（F250-F259） ============
+
+/** F250 节气当日跟风的人（mine=我点的；note=晒的那一句话，没写为空串） */
+export interface CoupleAlmCheckUserVO {
+  fromUser: string
+  note: string
+  mine: boolean
+}
+
+/** F250-F251 今日节气头牌（非节气日 term 为 null；下个节气无数据时 nextTerm/nextDays 为 null） */
+export interface CoupleAlmTermTodayVO {
+  term: string | null
+  nextTerm: string | null
+  nextDays: number | null
+  todayChecks: CoupleAlmCheckUserVO[]
+}
+
+/** F251 节气过法卡（mine=我写的，只有我能划；lastDoneYear 空串=今年还没打勾） */
+export interface CoupleAlmRitualVO {
+  id: string
+  term: string
+  content: string
+  mine: boolean
+  lastDoneYear: string
+}
+
+/** F252 择吉日（mine=我择的日，等 TA 盖章；confirmed=双盖章已生效；comment=黄历点评） */
+export interface CoupleAlmLuckyVO {
+  id: string
+  day: string
+  matter: string
+  comment: string
+  mine: boolean
+  confirmed: boolean
+}
+
+/** F254 节日家档（一天一节日的今年过法，mine/partner 双案互见，空串=没交卷） */
+export interface CoupleAlmFestivalVO {
+  key: string
+  label: string
+  day: string
+  mine: string
+  partner: string
+}
+
+/** F255 节气手账（一人一笔，本人可改写，空串=没写） */
+export interface CoupleAlmNoteVO {
+  term: string
+  mine: string
+  partner: string
+}
+
+/** F257 长假愿望（wish 为两段共写文本，空串=还没人写） */
+export interface CoupleAlmHolidayVO {
+  key: string
+  name: string
+  day: string
+  daysLeft: number | null
+  wish: string
+  wishedBy: string
+  appendedBy: string
+}
+
+/** F258 反仪式感放空日（today=今天正是放空日，当日挡打卡；days=今年已提报的日期） */
+export interface CoupleAlmNormalVO {
+  today: boolean
+  days: string[]
+}
+
+/** F253 农历生日换算（lunarMd=mmdd 四位农历月日，nextSolars=未来对应公历日） */
+export interface CoupleAlmLunarVO {
+  id: string
+  title: string
+  lunarMd: string
+  nextSolars: string[]
+}
+
+/** F250-F259 今日老黄历总览（除 zodiac/yearly 外全部写接口均返回整份，前端整体替换） */
+export interface CoupleAlmTodayVO {
+  day: string
+  year: string
+  term: CoupleAlmTermTodayVO
+  rituals: CoupleAlmRitualVO[]
+  lucky: CoupleAlmLuckyVO[]
+  festivals: CoupleAlmFestivalVO[]
+  notes: CoupleAlmNoteVO[]
+  holiday: CoupleAlmHolidayVO | null
+  normal: CoupleAlmNormalVO
+  lunar: CoupleAlmLunarVO[]
+}
+
+/** F256 生肖年运（未填生日时后端给「未填生日」） */
+export interface CoupleAlmZodiacVO {
+  zodiacMine: string
+  zodiacPartner: string
+  fortune: string
+}
+
+/** F259 一年日子小结（计数 + 节气长卷 scroll） */
+export interface CoupleAlmYearVO {
+  year: string
+  checksDone: number
+  notesDone: number
+  ritualsTotal: number
+  ritualsDone: number
+  luckyCount: number
+  festivalPlans: number
+  normalDays: number
+  scroll: string[]
+}

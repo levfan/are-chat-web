@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    CoupleAlmanac: typeof import('./components/couple/CoupleAlmanac.vue')['default']
     CoupleAnniversaryReport: typeof import('./components/couple/CoupleAnniversaryReport.vue')['default']
     CoupleBadges: typeof import('./components/couple/CoupleBadges.vue')['default']
     CoupleBoard: typeof import('./components/couple/CoupleBoard.vue')['default']

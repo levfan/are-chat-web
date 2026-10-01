@@ -64,6 +64,12 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-dine-week', label: '本周饭桌', tab: 'shared', sub: 'daily' },
   { key: 'couple-dine-restaurant', label: '我们的餐厅', tab: 'shared', sub: 'daily' },
   { key: 'couple-dine-year', label: '年度干饭账', tab: 'shared', sub: 'daily' },
+  // 🧾 夫妻老黄历（F250-F259，shared/daily 子页签）
+  { key: 'couple-alm-today', label: '今日节气', tab: 'shared', sub: 'daily' },
+  { key: 'couple-alm-lucky', label: '择吉日', tab: 'shared', sub: 'daily' },
+  { key: 'couple-alm-festival', label: '节日家档', tab: 'shared', sub: 'daily' },
+  { key: 'couple-alm-holiday', label: '长假愿望', tab: 'shared', sub: 'daily' },
+  { key: 'couple-alm-year', label: '年运与小结', tab: 'shared', sub: 'daily' },
   { key: 'couple-manage', label: '生活经营所', tab: 'shared', sub: 'manage' },
   // 🏪 我们公司（F240-F249，shared/manage 子页签）
   { key: 'couple-bd-org', label: '组织架构', tab: 'shared', sub: 'manage' },

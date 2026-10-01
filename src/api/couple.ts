@@ -205,6 +205,9 @@ import type {
   CoupleCerChronicleVO,
   CoupleCerOverviewVO,
   CoupleBdOverviewVO,
+  CoupleAlmTodayVO,
+  CoupleAlmYearVO,
+  CoupleAlmZodiacVO,
   CouplePinVO,
 } from '@/types'
 
@@ -1450,4 +1453,45 @@ export const boardApi = {
   /** F247 例会一键签到（10 秒窗口内双签到=会议召开，每天一次），返回整份总览 */
   bdAttend: () =>
     http.postJson<CoupleBdOverviewVO>('/api/couple/board/attend', {}),
+}
+
+/** F250-F259 夫妻老黄历：节气跟风/过法/择吉日/节日家档/手账/长假愿望/放空日/生肖年运/一年小结（方法统一 alm 前缀防撞名） */
+export const almanacApi = {
+  /** F250-F259 今日岁时总览：节气/过法/吉日/家档/手账/长假/放空/农历换算一次拉齐 */
+  almToday: () => http.get<CoupleAlmTodayVO>('/api/couple/almanac/today'),
+  /** F250 节气当日一键跟风（非节气日/放空日/已跟过 后端 400 中文直透；note 晒的一句话 ≤140 字），返回整份总览 */
+  almCheck: (note?: string) =>
+    http.postJson<CoupleAlmTodayVO>('/api/couple/almanac/check', { note: note ?? '' }),
+  /** F251 给某个节气写过法（每节气最多 2 条，超出后端 400），返回整份总览 */
+  almRitualAdd: (term: string, content: string) =>
+    http.postJson<CoupleAlmTodayVO>('/api/couple/almanac/ritual', { term, content }),
+  /** F251 划掉一条过法（谁写的谁划，TA 写的后端 400），返回整份总览 */
+  almRitualRemove: (id: string) =>
+    http.postJson<CoupleAlmTodayVO>('/api/couple/almanac/ritual/remove', { id }),
+  /** F251 节气当日给过法打勾（不在那天打后端 400；放空日挡打），返回整份总览 */
+  almRitualMark: (id: string) =>
+    http.postJson<CoupleAlmTodayVO>('/api/couple/almanac/ritual/mark', { id }),
+  /** F252 为大事择吉日（须往未来挑，matter ≤60 字，后端出黄历点评），返回整份总览 */
+  almLucky: (day: string, matter: string) =>
+    http.postJson<CoupleAlmTodayVO>('/api/couple/almanac/lucky', { day, matter }),
+  /** F252 吉日盖章（限对方发起的那条，自己择的日后端 400），返回整份总览 */
+  almLuckyConfirm: (id: string) =>
+    http.postJson<CoupleAlmTodayVO>('/api/couple/almanac/lucky/confirm', { id }),
+  /** F254 写某节日今年的过法（可改写；festival 须是八个节日之一，plan ≤200 字），返回整份总览 */
+  almFestival: (festival: string, year: string, plan: string) =>
+    http.postJson<CoupleAlmTodayVO>('/api/couple/almanac/festival', { festival, year, plan }),
+  /** F255 节气手账：给某节气记一件小事（本人可改写，≤140 字；year 空=今年），返回整份总览 */
+  almNote: (term: string, year: string, text: string) =>
+    http.postJson<CoupleAlmTodayVO>('/api/couple/almanac/note', { term, year, text }),
+  /** F257 长假愿望：首写或补写（60 天内无长假后端 400；wish ≤200 字），返回整份总览 */
+  almWish: (wish: string) =>
+    http.postJson<CoupleAlmTodayVO>('/api/couple/almanac/wish', { wish }),
+  /** F258 提报放空日（往未来放，一年最多 3 天，超出/重复后端 400），返回整份总览 */
+  almNormal: (day: string) =>
+    http.postJson<CoupleAlmTodayVO>('/api/couple/almanac/normal', { day }),
+  /** F256 生肖年运：双方生肖 + 本年双人年运一句（读接口） */
+  almZodiac: () => http.get<CoupleAlmZodiacVO>('/api/couple/almanac/zodiac'),
+  /** F259 一年日子小结（year：yyyy，缺省今年；返回计数与节气长卷） */
+  almYearly: (year?: string) =>
+    http.get<CoupleAlmYearVO>(year ? `/api/couple/almanac/yearly?year=${encodeURIComponent(year)}` : '/api/couple/almanac/yearly'),
 }
