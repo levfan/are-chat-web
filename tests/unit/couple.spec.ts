@@ -3,11 +3,11 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, coupleApi, ceremonyApi, cozyApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
+import { almanacApi, boardApi, coupleApi, ceremonyApi, cozyApi, diningApi, listenApi, manageApi, museumApi, pinApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleLsTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -439,6 +439,53 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F260-F269 倾听与发声 listenApi：默认全空但形状完整的 TodayVO，用例内按需覆盖
+  const lsEmptyToday = () => ({
+    day: '2026-10-02',
+    week: '2026-09-28',
+    slot: null,
+    recentSlots: [],
+    proxyDraft: null,
+    adopted: [],
+    misrewinds: [],
+    stuck: [],
+    letters: [],
+    holds: [],
+    nextHoldDay: null,
+    three: { morning: '', thanks: '', praise: '', streakMine: 0, streakPartner: 0, badgeDays: 21 },
+    tones: [],
+    truce: null,
+    nameDay: null,
+  })
+  const listenBase: Record<string, ReturnType<typeof vi.fn>> = {
+    lsToday: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsRequestSlot: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsConfirmSlot: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsDoneSlot: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsRateSlot: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsProxy: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsProxyAdopt: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsMisrewind: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsStuck: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsStuckAnswer: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsLetter: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsLetterOpen: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsHold: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsThree: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsTone: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsTruce: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsTruceDecide: vi.fn().mockResolvedValue(lsEmptyToday()),
+    lsNameUse: vi.fn().mockResolvedValue(lsEmptyToday()),
+  }
+  const listenWrapped = new Proxy(listenBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(lsEmptyToday())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -448,6 +495,7 @@ vi.mock('@/api/couple', () => {
     ceremonyApi: ceremonyWrapped,
     boardApi: boardWrapped,
     almanacApi: almanacWrapped,
+    listenApi: listenWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -2203,6 +2251,210 @@ describe('CoupleView 情侣空间', () => {
     expect(almanacApi.almYearly).toHaveBeenCalledWith('2026')
     expect(wrapper.find('[data-testid="couple-alm-checks-done"]').text()).toBe('12')
     expect(wrapper.find('[data-testid="couple-alm-scroll-0"]').text()).toContain('寒露')
+  })
+
+  // ============ 批次二十二：倾听与发声（F260-F269，care 页签「🚑 情绪急救」子页签 CoupleListen） ============
+
+  /** 今日倾听台空态基底（用例内按分区覆盖） */
+  function lsVo(partial: Partial<CoupleLsTodayVO> = {}): CoupleLsTodayVO {
+    return {
+      day: '2026-10-02',
+      week: '2026-09-28',
+      slot: null,
+      recentSlots: [],
+      proxyDraft: null,
+      adopted: [],
+      misrewinds: [],
+      stuck: [],
+      letters: [],
+      holds: [],
+      nextHoldDay: null,
+      three: { morning: '', thanks: '', praise: '', streakMine: 0, streakPartner: 0, badgeDays: 21 },
+      tones: [],
+      truce: null,
+      nameDay: null,
+      ...partial,
+    }
+  }
+
+  /** 挂载并切到 care 页签（默认子页签「🚑 情绪急救」即 CoupleListen 所在区） */
+  async function mountOnCareRescue() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-care').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 倾听台折叠态落库键清理，避免污染后续用例
+    localStorage.removeItem(`arechat_couple_collapse_couple-ls-misrewind`)
+    localStorage.removeItem(`arechat_couple_collapse_couple-ls-letter`)
+  })
+
+  it('倾听与发声：申请时段后在途卡出现，对方申请的时段点确认调 lsConfirmSlot', async () => {
+    const mineOpen = lsVo({
+      slot: { id: 'ls1', day: '2026-10-02', topic: '工作那件憋着的事', status: 'OPEN', mine: true, confirmed: false, rateMine: null, ratePartner: null, note: '' },
+      recentSlots: [{ id: 'ls1', day: '2026-10-02', topic: '工作那件憋着的事', status: 'OPEN', mine: true, confirmed: false, rateMine: null, ratePartner: null, note: '' }],
+    })
+    vi.mocked(listenApi.lsToday).mockResolvedValue(lsVo())
+    vi.mocked(listenApi.lsRequestSlot).mockResolvedValue(mineOpen)
+    const wrapper = await mountOnCareRescue()
+    expect(wrapper.find('[data-testid="couple-listen"]').exists()).toBe(true)
+    // 无在途时段时才给申请表单
+    expect(wrapper.find('[data-testid="couple-ls-slot-topic"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-ls-slot-topic"]').setValue('工作那件憋着的事')
+    await wrapper.find('[data-testid="couple-ls-slot-submit"]').trigger('click')
+    await flushPromises()
+    expect(listenApi.lsRequestSlot).toHaveBeenCalledWith('工作那件憋着的事')
+    expect(wrapper.find('[data-testid="couple-ls-slot-ls1"]').text()).toContain('工作那件憋着的事')
+    expect(wrapper.find('[data-testid="couple-ls-slot-status-ls1"]').text()).toContain('等 TA 确认开麦')
+    // 说的人不能自己确认，所以没有确认按钮
+    expect(wrapper.find('[data-testid="couple-ls-slot-confirm"]').exists()).toBe(false)
+    // 已在途时申请表单收起
+    expect(wrapper.find('[data-testid="couple-ls-slot-topic"]').exists()).toBe(false)
+
+    wrapper.unmount()
+    // 换 TA 申请的在途时段：耳朵是我的，出现确认按钮
+    vi.mocked(listenApi.lsToday).mockResolvedValue(lsVo({
+      slot: { id: 'ls2', day: '2026-10-02', topic: '妈那件事', status: 'OPEN', mine: false, confirmed: false, rateMine: null, ratePartner: null, note: '' },
+      recentSlots: [{ id: 'ls2', day: '2026-10-02', topic: '妈那件事', status: 'OPEN', mine: false, confirmed: false, rateMine: null, ratePartner: null, note: '' }],
+    }))
+    vi.mocked(listenApi.lsConfirmSlot).mockResolvedValue(lsVo({
+      slot: { id: 'ls2', day: '2026-10-02', topic: '妈那件事', status: 'CONFIRMED', mine: false, confirmed: true, rateMine: null, ratePartner: null, note: '' },
+      recentSlots: [{ id: 'ls2', day: '2026-10-02', topic: '妈那件事', status: 'CONFIRMED', mine: false, confirmed: true, rateMine: null, ratePartner: null, note: '' }],
+    }))
+    const wrapper2 = await mountOnCareRescue()
+    expect(wrapper2.find('[data-testid="couple-ls-slot-confirm"]').exists()).toBe(true)
+    await wrapper2.find('[data-testid="couple-ls-slot-confirm"]').trigger('click')
+    await flushPromises()
+    expect(listenApi.lsConfirmSlot).toHaveBeenCalledWith('ls2')
+    expect(wrapper2.find('[data-testid="couple-ls-slot-status-ls2"]').text()).toContain('已开麦')
+    wrapper2.unmount()
+  })
+
+  it('倾听与发声：替我说提交草稿回填，TA 写我的稿子点定稿调 lsProxyAdopt', async () => {
+    vi.mocked(listenApi.lsToday).mockResolvedValue(lsVo())
+    vi.mocked(listenApi.lsProxy).mockResolvedValue(lsVo({
+      proxyDraft: { id: 'lp1', content: '你其实很累对吧，别硬撑', fromUser: 'alice', mine: true, status: 'DRAFT', finalText: null, adoptedBy: null },
+    }))
+    const wrapper = await mountOnCareRescue()
+    await wrapper.find('[data-testid="couple-ls-proxy-input"]').setValue('你其实很累对吧，别硬撑')
+    await wrapper.find('[data-testid="couple-ls-proxy-submit"]').trigger('click')
+    await flushPromises()
+    expect(listenApi.lsProxy).toHaveBeenCalledWith('你其实很累对吧，别硬撑')
+    expect(wrapper.find('[data-testid="couple-ls-proxy-mine"]').text()).toContain('你其实很累对吧')
+    expect((wrapper.find('[data-testid="couple-ls-proxy-input"]').element as HTMLTextAreaElement).value).toContain('别硬撑')
+    wrapper.unmount()
+
+    // TA 用我的口吻写的在途稿：出现照念/改写定稿，定稿后入已定稿区
+    const partnerDraft = { id: 'lp9', content: '我想你抱我一下', fromUser: 'bob', mine: false, status: 'DRAFT' as const, finalText: null, adoptedBy: null }
+    vi.mocked(listenApi.lsToday).mockResolvedValue(lsVo({ adopted: [partnerDraft] }))
+    vi.mocked(listenApi.lsProxyAdopt).mockResolvedValue(lsVo({
+      adopted: [{ ...partnerDraft, status: 'ADOPTED' as const, finalText: '我想你抱我一下', adoptedBy: 'alice' }],
+    }))
+    const wrapper2 = await mountOnCareRescue()
+    expect(wrapper2.find('[data-testid="couple-ls-proxy-item-lp9"]').text()).toContain('我想你抱我一下')
+    await wrapper2.find('[data-testid="couple-ls-proxy-adopt-read-lp9"]').trigger('click')
+    await flushPromises()
+    expect(listenApi.lsProxyAdopt).toHaveBeenCalledWith('lp9', '我想你抱我一下')
+    expect(wrapper2.find('[data-testid="couple-ls-proxy-adopted-lp9"]').text()).toContain('已定稿')
+    wrapper2.unmount()
+  })
+
+  it('倾听与发声：三行打卡提交调 lsThree，连续天数与进度条数字渲染', async () => {
+    vi.mocked(listenApi.lsToday).mockResolvedValue(lsVo({
+      three: { morning: '', thanks: '', praise: '', streakMine: 3, streakPartner: 21, badgeDays: 21 },
+    }))
+    vi.mocked(listenApi.lsThree).mockResolvedValue(lsVo({
+      three: { morning: '今天你先给我倒了水', thanks: '谢你接住我的坏情绪', praise: '夸你把家收拾得亮堂', streakMine: 4, streakPartner: 21, badgeDays: 21 },
+    }))
+    const wrapper = await mountOnCareRescue()
+    expect(wrapper.find('[data-testid="couple-ls-three-streak-mine"]').text()).toContain('3 天')
+    expect(wrapper.find('[data-testid="couple-ls-three-badge-partner"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-ls-three-morning"]').setValue('今天你先给我倒了水')
+    await wrapper.find('[data-testid="couple-ls-three-thanks"]').setValue('谢你接住我的坏情绪')
+    await wrapper.find('[data-testid="couple-ls-three-praise"]').setValue('夸你把家收拾得亮堂')
+    await wrapper.find('[data-testid="couple-ls-three-submit"]').trigger('click')
+    await flushPromises()
+    expect(listenApi.lsThree).toHaveBeenCalledWith('今天你先给我倒了水', '谢你接住我的坏情绪', '夸你把家收拾得亮堂')
+    expect(wrapper.find('[data-testid="couple-ls-three-streak-mine"]').text()).toContain('4 天')
+    expect(wrapper.find('[data-testid="couple-ls-three-bar-mine"]').attributes('style')).toContain('19%')
+  })
+
+  it('倾听与发声：举休战旗出倒计时，到期后继续/算了两按钮分人表态调 lsTruceDecide', async () => {
+    vi.mocked(listenApi.lsToday).mockResolvedValue(lsVo())
+    vi.mocked(listenApi.lsTruce).mockResolvedValue(lsVo({
+      truce: { id: 'lt1', raiser: 'alice', untilAt: Date.now() + 30 * 60_000, expired: false, mine: true, decideA: null, decideB: null, ended: false },
+    }))
+    const wrapper = await mountOnCareRescue()
+    expect(wrapper.find('[data-testid="couple-ls-truce-card"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="couple-ls-truce-raise"]').trigger('click')
+    await flushPromises()
+    expect(listenApi.lsTruce).toHaveBeenCalledWith(undefined)
+    expect(wrapper.find('[data-testid="couple-ls-truce-card"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-ls-truce-countdown"]').text()).toMatch(/\d{2}:\d{2}/)
+    expect(wrapper.find('[data-testid="couple-ls-truce-goon"]').exists()).toBe(false)
+    wrapper.unmount()
+
+    // 到期态：出「继续/算了」双按钮，表态后按钮收起
+    vi.mocked(listenApi.lsToday).mockResolvedValue(lsVo({
+      truce: { id: 'lt2', raiser: 'bob', untilAt: Date.now() - 1000, expired: true, mine: false, decideA: null, decideB: null, ended: false },
+    }))
+    vi.mocked(listenApi.lsTruceDecide).mockResolvedValue(lsVo({
+      truce: { id: 'lt2', raiser: 'bob', untilAt: Date.now() - 1000, expired: true, mine: false, decideA: 1, decideB: null, ended: false },
+    }))
+    const wrapper2 = await mountOnCareRescue()
+    expect(wrapper2.find('[data-testid="couple-ls-truce-expired"]').exists()).toBe(true)
+    await wrapper2.find('[data-testid="couple-ls-truce-goon"]').trigger('click')
+    await flushPromises()
+    expect(listenApi.lsTruceDecide).toHaveBeenCalledWith(true)
+    expect(wrapper2.find('[data-testid="couple-ls-truce-goon"]').exists()).toBe(false)
+    expect(wrapper2.find('[data-testid="couple-ls-truce-decided"]').text()).toContain('1/2')
+    wrapper2.unmount()
+  })
+
+  it('倾听与发声：误会倒带双栏并排、TA 的题可作答，换位信到日才出拆信按钮', async () => {
+    const stuckVo = (answered: boolean) => [{
+      id: 'lq2',
+      question: '我哪句话最让你缩回去？',
+      answer: answered ? '那句「算了不用了」' : null,
+      mine: false,
+      answered,
+    }]
+    const letterVo = (opened: boolean) => [
+      { id: 'le1', day: '2026-09-20', openDay: '2026-09-27', status: 'SEALED' as const, mine: false, due: false, content: '封存中，2026-09-27 可见' },
+      { id: 'le2', day: '2026-09-25', openDay: '2026-10-02', status: opened ? ('OPENED' as const) : ('SEALED' as const), mine: false, due: !opened, content: opened ? '我其实是在等你先抱我' : '' },
+    ]
+    const baseVo = (answered: boolean, opened: boolean) => lsVo({
+      misrewinds: [{ day: '2026-10-01', topic: '昨晚那句随便你', mineThought: '你以为我无所谓', mineGuess: '你其实想我留你', partnerThought: '你不想聊', partnerGuess: '你想我主动', both: true }],
+      stuck: stuckVo(answered),
+      letters: letterVo(opened),
+    })
+    vi.mocked(listenApi.lsToday).mockResolvedValue(baseVo(false, false))
+    vi.mocked(listenApi.lsStuckAnswer).mockResolvedValue(baseVo(true, false))
+    vi.mocked(listenApi.lsLetterOpen).mockResolvedValue(baseVo(true, true))
+    const wrapper = await mountOnCareRescue()
+    expect(wrapper.find('[data-testid="couple-ls-mis-0"]').text()).toContain('昨晚那句随便你')
+    expect(wrapper.find('[data-testid="couple-ls-mis-mine-0"]').text()).toContain('你以为我无所谓')
+    expect(wrapper.find('[data-testid="couple-ls-mis-partner-0"]').text()).toContain('你不想聊')
+    expect(wrapper.find('[data-testid="couple-ls-mis-both-0"]').exists()).toBe(true)
+    // TA 的题可作答（自己的题不给输入框）
+    await wrapper.find('[data-testid="couple-ls-stuck-answer-lq2"]').setValue('那句「算了不用了」')
+    await wrapper.find('[data-testid="couple-ls-stuck-answer-btn-lq2"]').trigger('click')
+    await flushPromises()
+    expect(listenApi.lsStuckAnswer).toHaveBeenCalledWith('lq2', '那句「算了不用了」')
+    expect(wrapper.find('[data-testid="couple-ls-stuck-answered-lq2"]').text()).toContain('算了不用了')
+    // 未到开放日没有拆信按钮，due 的那封才有
+    expect(wrapper.find('[data-testid="couple-ls-letter-wait-le1"]').text()).toContain('2026-09-27')
+    expect(wrapper.find('[data-testid="couple-ls-letter-open-btn-le1"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="couple-ls-letter-open-btn-le2"]').trigger('click')
+    await flushPromises()
+    expect(listenApi.lsLetterOpen).toHaveBeenCalledWith('le2')
+    expect(wrapper.find('[data-testid="couple-ls-letter-read-le2"]').text()).toContain('等你先抱我')
   })
 
   // ============ F205 卡片折叠（CoupleCollapsible） ============
