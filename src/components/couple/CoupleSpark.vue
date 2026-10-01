@@ -1,7 +1,7 @@
 <template>
   <div class="couple-spark" data-testid="couple-spark">
-    <!-- F176 默契仪表盘 -->
-    <div class="card" data-testid="couple-dashboard">
+    <!-- F176 默契仪表盘（testid 避开 CoupleTodayBoard 的 couple-dashboard） -->
+    <div class="card" data-testid="couple-spark-dash">
       <h4 class="title">🎧 默契仪表盘 <span class="sub">默契不是玄学，是可以练习的</span></h4>
       <template v-if="dash">
         <div class="dash-row">

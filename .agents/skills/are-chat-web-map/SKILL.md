@@ -29,23 +29,23 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 
 ## 三、情侣空间前端全景
 
-`views/CoupleView.vue` 用 el-tabs 组织 **11 个页签**（name 即路由 `?tab=` 参数值，除默认外均 lazy）：
+`views/CoupleView.vue` 用 el-tabs 组织 **11 个页签**（name 即路由 `?tab=` 参数值，除默认外均 lazy）。批次十六（F200-F204）把 rituals/letters/care/shared/timeline 5 个臃肿页签拆成嵌套二级子页签（子 pane 均 lazy，子页签 DOM id 形如 `#tab-<sub>`，测试可点）：
 
 | 页签 name | 组件 | 内容 |
 |---|---|---|
 | bond | CoupleBond + CoupleGame | 贴贴动作宫格/贴贴里程碑/累计统计/动作流 + 恋爱加成清单/互动热力图/心情曲线/恋爱红绿灯 |
 | promises（默认） | CouplePromises + CoupleSecure + CouplePact | 双向约定卡 + 确定感与安全感(F120-F129：安全感账户/恋爱体检/十年之约/愿景板/承诺博物馆/信任存折/恋爱年轮/双人契约/守护兽) + 恋爱条约 |
-| rituals | CoupleRituals + CoupleDaily + CoupleTruth + CoupleFunTalk + CouplePlay | 早晚安/今日一问(含 F48 互评表情)/晚安故事 + 甜蜜任务/恋爱运势/默契考验 + 今日真心话(F66 双方同题必答+存档)/心灵感应(F68 每天三轮选题作答自动结算) + 趣味游戏(F130-F139：今日抽签区心动概率/恋爱天气/塔罗、家务骰子纯前端、一百问答一题解锁、出题考TA、世界情话课、周末盲选、情话Battle、抽象画 seed SVG) |
+| rituals | 子页签 ceremony「🌙 每日仪式」CoupleRituals+CoupleDaily+CoupleTruth / fun「🎲 玩趣时间」CoupleFunTalk+CouplePlay | 早晚安/今日一问(含 F48 互评表情)/晚安故事 + 甜蜜任务/恋爱运势/默契考验 + 今日真心话(F66 双方同题必答+存档)/心灵感应(F68 每天三轮选题作答自动结算) + 趣味游戏(F130-F139：今日抽签区心动概率/恋爱天气/塔罗、家务骰子纯前端、一百问答一题解锁、出题考TA、世界情话课、周末盲选、情话Battle、抽象画 seed SVG) |
 | growth | CoupleChallenge + CoupleReadWatch + CoupleWishBoard + CoupleDict | 共同养成(F70-F79)：双人挑战赛/恋爱存折/百日之约 + 共读计划/追剧清单 + 心愿互换/旅行心愿地图/下次一定清单 + 恋爱词典/星座配对 |
 | surprise | CoupleSurprise + CoupleGarden | 惊喜与期待(F50-F59)：刮刮乐/恋爱盲盒/心动闹钟/思念速递/藏宝图/告白重现 + 爱情花园浇水养成/每日玫瑰/幸运签 |
-| letters | CoupleLetter + CoupleWhisperBox + CoupleCapsule + CoupleKeepsake + CouplePoem | 悄悄话信箱（情话抽卡/情书模板）+ 匿名树洞(F67)/情话储蓄罐(F69 21 点利息送达) + 时光胶囊(F84 远期预设 1/3/5/10 年) + 回忆资产收藏系(F83/F88/F89)：甜蜜语录册/电影票根墙/我们的歌单 + 文字浪漫(F160-F169)：情诗接龙/醒来第一条/心情漂流瓶/数字密码情书(前端 a=1..z=26 编码器)/灵魂一问/三行情书/贴纸手账/恋爱语录机 |
+| letters | 子页签 send「💌 寄给你」CoupleLetter+CoupleWhisperBox+CoupleCapsule+CouplePoem / collect「🗃️ 收藏册」CoupleKeepsake | 悄悄话信箱（情话抽卡/情书模板）+ 匿名树洞(F67)/情话储蓄罐(F69 21 点利息送达) + 时光胶囊(F84 远期预设 1/3/5/10 年) + 文字浪漫(F160-F169)：情诗接龙/醒来第一条/心情漂流瓶/数字密码情书(前端 a=1..z=26 编码器)/灵魂一问/三行情书/贴纸手账/恋爱语录机；收藏册=回忆资产收藏系(F83/F88/F89)：甜蜜语录册/电影票根墙/我们的歌单 |
 | mood | CoupleMood | 心情日记 + 心情回应（回应按钮在本组件内） |
-| care | CoupleCare + CoupleComfort + CoupleMakeup + CoupleSoft + CoupleSpark | 情绪天气/急救箱/和好卡/夸夸墙/生理期关怀 + 求抱抱(F60 感受按钮/话术卡回应)/陪聊话题卡(F63)/情绪同步率(F64) + 矛盾复盘(F61 和好锦囊)/道歉券(F62) + 默契亲密(F170-F179)：默契仪表盘/同频共振按键(10s 窗口)/爱语测评 12 题+对照卡/「如果」问答/心动闪光/动作暗语/心动日历邮戳/默契周报 |
-| shared | CoupleCityCard + CoupleDistance + CoupleCountdown + CoupleLife + CoupleShared + CoupleManage + CoupleDailyLife + CoupleFund | 异地恋(对方时区/见面倒数/隔空牵手/想念计量/作息/见面信/云约会/平安卡/见面日记/能量) + 倒数日/生活共享(记账/家务/约会/习惯/暗号)/共享清单 + 生活经营(F180-F189：家庭会议/本周主理人/技能交换所/月度互评/家庭应急卡/情侣存档点/家务积分市场/五年计划双轨/纪念日策划案/经营周报) + 深度陪伴(F140-F149：今日主题曲/接头暗号/夸夸复制/情绪SOS抱抱/每日三问/梦境手账/美食地图/TA使用手册/自定义成就) + 心愿基金 |
+| care | 子页签 rescue「🚑 情绪急救」CoupleCare+CoupleComfort+CoupleMakeup / intimate「✨ 默契亲密」CoupleSoft+CoupleSpark | 情绪天气/急救箱/和好卡/夸夸墙/生理期关怀 + 求抱抱(F60 感受按钮/话术卡回应)/陪聊话题卡(F63)/情绪同步率(F64) + 矛盾复盘(F61 和好锦囊)/道歉券(F62)；默契亲密(F170-F179)：默契仪表盘(卡 testid `couple-spark-dash`)/同频共振按键(10s 窗口)/爱语测评 12 题+对照卡/「如果」问答/心动闪光/动作暗语/心动日历邮戳/默契周报 |
+| shared | 子页签 daily「🧾 过日子」CoupleCityCard+CoupleDistance+CoupleCountdown+CoupleLife+CoupleShared+CoupleDailyLife+CoupleFund / manage「🏪 经营所」CoupleManage | 异地恋(对方时区/见面倒数/隔空牵手/想念计量/作息/见面信/云约会/平安卡/见面日记/能量) + 倒数日/生活共享(记账/家务/约会/习惯/暗号)/共享清单 + 深度陪伴(F140-F149：今日主题曲/接头暗号/夸夸复制/情绪SOS抱抱/每日三问/梦境手账/美食地图/TA使用手册/自定义成就) + 心愿基金；经营所=生活经营(F180-F189：家庭会议/本周主理人/技能交换所/月度互评/家庭应急卡/情侣存档点/家务积分市场/五年计划双轨/纪念日策划案/经营周报) |
 | badges | CoupleBadges + CoupleReport + CoupleAnniversaryReport + CoupleHeatmap | 里程碑徽章 + 行为成就墙 + 恋爱月报/数据总览 + 回忆资产报告系(F85-F86)：周年报告/生日回顾 + 年度热力日历(F96，store 键 `yearHeatmap` 避免与游戏化 heatmap 撞名) |
-| timeline | CoupleOnThisDay + CoupleFirsts + CoupleHeartMoments + CoupleTimeline + CoupleMuseum + CoupleChronicle | 那年今天 + 我们的第一次(F46) + 心动时刻(F36) + 恋爱时光轴 + 时光博物馆(F190-F199) + 回忆资产聚合系(F80-F82)：恋爱编年史/记忆考古卡/恋爱问答机 |
+| timeline | 子页签 flow「⏳ 时光流」CoupleOnThisDay+CoupleFirsts+CoupleHeartMoments+CoupleTimeline+CoupleChronicle / museum「🏛️ 博物馆」CoupleMuseum | 那年今天 + 我们的第一次(F46) + 心动时刻(F36) + 恋爱时光轴 + 回忆资产聚合系(F80-F82)：恋爱编年史/记忆考古卡/恋爱问答机；博物馆=时光博物馆(F190-F199) |
 
-头部区：双人头像 + 在一起天数 + 连续晚安 + 心动值 + 纪念日弹窗 + 专属爱称弹窗（`couple-pet-*`）+ 通知铃铛（F41 `couple-notify-*`）+ 里程碑/周年庆横幅（F43/F43+F47）+ 空间个性化 CoupleProfile（宣言/主题/贴纸）。
+头部区：双人头像 + 在一起天数 + 连续晚安 + 心动值 + 纪念日弹窗 + 专属爱称弹窗（`couple-pet-*`）+ 通知铃铛（F41 `couple-notify-*`）+ **F206 找功能搜索框（`couple-search`，回车按 label 包含匹配 → 切一级/子页签 + scrollIntoView + 1.5s `.couple-card-flash` 高亮）+ F207「⭐ 常用」收藏 popover（`couple-pin-open`/`couple-pin-panel`/`couple-pin-opt-*`/`couple-pin-save`，≤6 个，pin 成功后各页签顶部渲染 `couple-pins` chip 行，点 chip 同款跳转）** + 里程碑/周年庆横幅（F43/F43+F47）+ 空间个性化 CoupleProfile（宣言/主题/贴纸）。F208：每个一级页签首次进入在内容顶部显示一行提示条（`couple-tab-tip`/`couple-tab-tip-close`，localStorage 键 `arechat_couple_tab_tip_{tab}`），页签附加行由 CoupleView 内局部组件 `TabExtras`（render 函数）统一渲染。
 
 **新功能标准链路**（照抄任意现成组件）：
 1. `types/index.ts` 追加 VO 类型（放情侣空间区块末尾）
@@ -65,6 +65,8 @@ WS 事件约定：后端 `ImPushService.pushCoupleEvent(Both)` 推 `{type:'coupl
 批次十四（F180-F189 生活经营）：api 层新增独立分组对象 `manageApi`（`src/api/couple.ts`，与 coupleApi 并列导出）；类型统一 `CoupleManage*VO` 前缀（Meeting/Host/Skill/MonthReview+MonthBoard/EmergencyCard/Snapshot/Reward+PointHistory+PointAccount/FiveYearPlan/AnnivPlan/Weekly）；组件 `CoupleManage.vue` 挂 shared 页签 CoupleShared 之后，**组件内自持数据**（onMounted 并发拉取 manageApi，不进 store、无 WS 事件），testid 前缀 `couple-meeting-*`/`couple-host-*`/`couple-skill-*`/`couple-month-*`/`couple-emergency-*`/`couple-snapshot-*`/`couple-point-*`/`couple-plan-*`/`couple-annivplan-*`/`couple-manage-weekly-*`；测试 mock 需在 `vi.mock('@/api/couple')` 工厂里同时返回 `manageApi`（已带默认空数据 Proxy）。
 
 批次十五（F190-F199 时光博物馆）：api 层新增独立分组对象 `museumApi`（`src/api/couple.ts`，基址 `/api/couple/museum`，写接口均返回最新全量列表）；类型统一 `CoupleMuseum*VO` 前缀（DocScene/Exhibit/Achievement/YearCounter/Mirror/SilverLine/Word/Rule/Dnd/Chapter/Book）；组件 `CoupleMuseum.vue` 挂 timeline 页签 CoupleTimeline 之后，同样**组件内自持数据**（onMounted 并发拉取 museumApi，未建空间时静默降级），testid 前缀 `couple-museum-*`（scenes/exhibits/mirror/silver/words/achievements/rules/dnd/book）；测试 mock 工厂需同时返回 `museumApi`（默认空数据 Proxy）。
+
+批次十六（F200-F208 体验重构）：新增功能卡索引表 `src/components/couple/coupleCards.registry.ts`（`COUPLE_CARDS`：{ key=卡根 data-testid, label 中文名, tab 一级页签, sub 子页签 }，覆盖全部 47 张卡 + `COUPLE_TAB_LABELS`/`findCardByKey`/`searchCoupleCards`），F206 搜索与 F207 收藏、跳转高亮均以 key 为唯一标识；api 层新增 `pinApi`（GET/POST `/api/couple/pin`，`CouplePinVO { mine, partner }`，>6 后端 400、无空间 404 前端静默），数据在 CoupleView 加载（established 时 `pinApi.list()`），**测试 `vi.mock('@/api/couple')` 工厂必须同时返回 `pinApi`**；CoupleView `?tab=` 白名单补齐 growth；CoupleSpark 默契仪表盘卡根 testid 由重复的 `couple-dashboard` 改为 `couple-spark-dash`（`couple-dashboard` 专属 CoupleTodayBoard F149）。
 
 批次五体验项（F90-F99）落点：F90/F91 在 `ChatView.vue`（工具条贴贴 popover `data-testid="sticker-*"` 走 `im.sendPoke`；彩蛋指令 `utils/effects.ts` 的 `detectEggCommand`，onSend 命中即换彩蛋文案+playEffect）；F93 在 `LoginView.vue`（`FESTIVAL_LINES` 按 MM-dd 命中显示 `data-testid="login-festival"`）；F94 通知分类筛选在 CoupleView 通知弹窗（`NOTIFY_FILTERS` + `filteredNotifies`）；F95 `CoupleTodayBoard` 挂 CoupleProfile 之下全局区（`@goto` 切页签）；F98 新手引导 dialog（localStorage `arechat_couple_guide_seen` 只弹一次）。
 

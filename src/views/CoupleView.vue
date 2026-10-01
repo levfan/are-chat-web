@@ -54,6 +54,43 @@
             </div>
           </div>
           <div class="header-actions">
+            <!-- F206 空间功能搜索：按功能卡名命中 → 切页签并滚动定位 -->
+            <el-input
+              v-model="searchQuery"
+              size="small"
+              clearable
+              placeholder="🔍 找功能…"
+              class="couple-search"
+              data-testid="couple-search"
+              @keyup.enter="onSearchEnter"
+            />
+            <!-- F207 常用收藏：pin ≤6 张功能卡，置顶在各页签开头 -->
+            <el-popover v-model:visible="pinPanelVisible" placement="bottom-end" :width="280" trigger="click" :teleported="false">
+              <template #reference>
+                <el-button size="small" plain data-testid="couple-pin-open">⭐ 常用</el-button>
+              </template>
+              <div class="pin-panel" data-testid="couple-pin-panel">
+                <p class="pin-hint">勾选最常逛的功能（最多 6 个），会置顶在每个页签开头～</p>
+                <el-checkbox-group v-model="pinDraft" class="pin-group">
+                  <el-checkbox
+                    v-for="c in COUPLE_CARDS"
+                    :key="c.key"
+                    :value="c.key"
+                    :disabled="pinDraft.length >= 6 && !pinDraft.includes(c.key)"
+                    :data-testid="`couple-pin-opt-${c.key}`"
+                    class="pin-item"
+                  >
+                    {{ c.label }}
+                  </el-checkbox>
+                </el-checkbox-group>
+                <div class="pin-foot">
+                  <span class="pin-count" data-testid="couple-pin-count">{{ pinDraft.length }}/6</span>
+                  <el-button size="small" type="primary" :loading="savingPins" data-testid="couple-pin-save" @click="onSavePins">
+                    保存
+                  </el-button>
+                </div>
+              </div>
+            </el-popover>
             <el-badge :value="couple.notifyUnread" :hidden="couple.notifyUnread <= 0" :max="99">
               <el-button size="small" plain data-testid="couple-notify-bell" @click="openNotifies">
                 🔔 通知
@@ -131,28 +168,41 @@
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
           <el-tab-pane label="🫶 贴贴" name="bond" lazy>
+            <TabExtras tab="bond" />
             <div class="tab-stack">
               <CoupleBond />
               <CoupleGame />
             </div>
           </el-tab-pane>
           <el-tab-pane label="🤝 约定" name="promises">
+            <TabExtras tab="promises" />
             <div class="tab-stack">
               <CouplePromises />
               <CoupleSecure />
               <CouplePact />
             </div>
           </el-tab-pane>
+          <!-- F202 小仪式拆分：🌙 每日仪式 / 🎲 玩趣时间 -->
           <el-tab-pane label="🌅 小仪式" name="rituals" lazy>
-            <div class="tab-stack">
-              <CoupleRituals />
-              <CoupleDaily />
-              <CoupleTruth />
-              <CoupleFunTalk />
-              <CouplePlay />
-            </div>
+            <TabExtras tab="rituals" />
+            <el-tabs v-model="subTabs.rituals" class="sub-tabs">
+              <el-tab-pane label="🌙 每日仪式" name="ceremony" lazy>
+                <div class="tab-stack">
+                  <CoupleRituals />
+                  <CoupleDaily />
+                  <CoupleTruth />
+                </div>
+              </el-tab-pane>
+              <el-tab-pane label="🎲 玩趣时间" name="fun" lazy>
+                <div class="tab-stack">
+                  <CoupleFunTalk />
+                  <CouplePlay />
+                </div>
+              </el-tab-pane>
+            </el-tabs>
           </el-tab-pane>
           <el-tab-pane label="🌱 养成" name="growth" lazy>
+            <TabExtras tab="growth" />
             <div class="tab-stack">
               <CoupleChallenge />
               <CoupleCoach />
@@ -162,48 +212,81 @@
             </div>
           </el-tab-pane>
           <el-tab-pane label="🎁 惊喜" name="surprise" lazy>
+            <TabExtras tab="surprise" />
             <div class="tab-stack">
               <CoupleSurprise />
               <CoupleGarden />
             </div>
           </el-tab-pane>
+          <!-- F203 悄悄话拆分：💌 寄给你 / 🗃️ 收藏册 -->
           <el-tab-pane :label="letterTabLabel" name="letters" lazy>
-            <div class="tab-stack">
-              <CoupleLetter />
-              <CoupleWhisperBox />
-              <CoupleCapsule />
-              <CoupleKeepsake />
-              <CouplePoem />
-            </div>
+            <TabExtras tab="letters" />
+            <el-tabs v-model="subTabs.letters" class="sub-tabs">
+              <el-tab-pane label="💌 寄给你" name="send" lazy>
+                <div class="tab-stack">
+                  <CoupleLetter />
+                  <CoupleWhisperBox />
+                  <CoupleCapsule />
+                  <CouplePoem />
+                </div>
+              </el-tab-pane>
+              <el-tab-pane label="🗃️ 收藏册" name="collect" lazy>
+                <div class="tab-stack">
+                  <CoupleKeepsake />
+                </div>
+              </el-tab-pane>
+            </el-tabs>
           </el-tab-pane>
           <el-tab-pane label="💗 心情" name="mood" lazy>
+            <TabExtras tab="mood" />
             <div class="tab-stack">
               <CoupleMood />
               <CoupleMoodRelay />
             </div>
           </el-tab-pane>
+          <!-- F201 关怀拆分：🚑 情绪急救 / ✨ 默契亲密 -->
           <el-tab-pane label="🌈 关怀" name="care" lazy>
-            <div class="tab-stack">
-              <CoupleCare />
-              <CoupleComfort />
-              <CoupleMakeup />
-              <CoupleSoft />
-              <CoupleSpark />
-            </div>
+            <TabExtras tab="care" />
+            <el-tabs v-model="subTabs.care" class="sub-tabs">
+              <el-tab-pane label="🚑 情绪急救" name="rescue" lazy>
+                <div class="tab-stack">
+                  <CoupleCare />
+                  <CoupleComfort />
+                  <CoupleMakeup />
+                </div>
+              </el-tab-pane>
+              <el-tab-pane label="✨ 默契亲密" name="intimate" lazy>
+                <div class="tab-stack">
+                  <CoupleSoft />
+                  <CoupleSpark />
+                </div>
+              </el-tab-pane>
+            </el-tabs>
           </el-tab-pane>
+          <!-- F200 共享空间拆分：🧾 过日子 / 🏪 经营所 -->
           <el-tab-pane label="🗓️ 共享空间" name="shared" lazy>
-            <div class="tab-stack">
-              <CoupleCityCard />
-              <CoupleDistance />
-              <CoupleCountdown />
-              <CoupleLife />
-              <CoupleShared />
-              <CoupleManage />
-              <CoupleDailyLife />
-              <CoupleFund />
-            </div>
+            <TabExtras tab="shared" />
+            <el-tabs v-model="subTabs.shared" class="sub-tabs">
+              <el-tab-pane label="🧾 过日子" name="daily" lazy>
+                <div class="tab-stack">
+                  <CoupleCityCard />
+                  <CoupleDistance />
+                  <CoupleCountdown />
+                  <CoupleLife />
+                  <CoupleShared />
+                  <CoupleDailyLife />
+                  <CoupleFund />
+                </div>
+              </el-tab-pane>
+              <el-tab-pane label="🏪 经营所" name="manage" lazy>
+                <div class="tab-stack">
+                  <CoupleManage />
+                </div>
+              </el-tab-pane>
+            </el-tabs>
           </el-tab-pane>
           <el-tab-pane label="🏅 徽章" name="badges" lazy>
+            <TabExtras tab="badges" />
             <div class="tab-stack">
               <CoupleBadges />
               <CoupleReport />
@@ -211,15 +294,25 @@
               <CoupleHeatmap />
             </div>
           </el-tab-pane>
+          <!-- F204 时光轴拆分：⏳ 时光流 / 🏛️ 博物馆 -->
           <el-tab-pane label="📖 时光轴" name="timeline" lazy>
-            <div class="tab-stack">
-              <CoupleOnThisDay />
-              <CoupleFirsts />
-              <CoupleHeartMoments />
-              <CoupleTimeline />
-              <CoupleMuseum />
-              <CoupleChronicle />
-            </div>
+            <TabExtras tab="timeline" />
+            <el-tabs v-model="subTabs.timeline" class="sub-tabs">
+              <el-tab-pane label="⏳ 时光流" name="flow" lazy>
+                <div class="tab-stack">
+                  <CoupleOnThisDay />
+                  <CoupleFirsts />
+                  <CoupleHeartMoments />
+                  <CoupleTimeline />
+                  <CoupleChronicle />
+                </div>
+              </el-tab-pane>
+              <el-tab-pane label="🏛️ 博物馆" name="museum" lazy>
+                <div class="tab-stack">
+                  <CoupleMuseum />
+                </div>
+              </el-tab-pane>
+            </el-tabs>
           </el-tab-pane>
         </el-tabs>
       </el-card>
@@ -302,12 +395,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import type { VNode } from 'vue'
 import { useRoute } from 'vue-router'
 import { EditPen } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
+import { pinApi } from '@/api/couple'
+import { COUPLE_CARDS, findCardByKey, searchCoupleCards } from '@/components/couple/coupleCards.registry'
 import { todayBackground as getTodayBackground, todayStickers as getTodayStickers, todayThemeLabel } from '@/utils/coupleTheme'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import CoupleSetup from '@/components/couple/CoupleSetup.vue'
@@ -374,6 +470,182 @@ const petEditName = ref('')
 const savingPet = ref(false)
 /** F41 通知中心 */
 const notifyVisible = ref(false)
+
+// ============ F200-F204 页签拆分：子页签状态 ============
+const subTabs = reactive<Record<'rituals' | 'letters' | 'care' | 'shared' | 'timeline', string>>({
+  rituals: 'ceremony',
+  letters: 'send',
+  care: 'rescue',
+  shared: 'daily',
+  timeline: 'flow',
+})
+
+// ============ F206 空间功能搜索 ============
+const searchQuery = ref('')
+
+function onSearchEnter() {
+  const hits = searchCoupleCards(searchQuery.value)
+  if (!hits.length) {
+    ElMessage.warning('没找到这个功能…换个词试试 🔍')
+    return
+  }
+  jumpToCard(hits[0].key)
+  searchQuery.value = ''
+}
+
+/** 切到目标（子）页签 → 等面板挂载后滚动定位并闪烁高亮 1.5s */
+function jumpToCard(key: string) {
+  const card = findCardByKey(key)
+  if (!card) return
+  activeTab.value = card.tab
+  if (card.sub && card.tab in subTabs) {
+    subTabs[card.tab as keyof typeof subTabs] = card.sub
+  }
+  void nextTick(() => {
+    window.setTimeout(() => {
+      const el = document.querySelector(`[data-testid="${key}"]`)
+      if (!(el instanceof HTMLElement)) return
+      if (typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+      el.classList.add('couple-card-flash')
+      window.setTimeout(() => el.classList.remove('couple-card-flash'), 1500)
+    }, 60)
+  })
+}
+
+// ============ F207 常用收藏（pin ≤6） ============
+const myPins = ref<string[]>([])
+const pinDraft = ref<string[]>([])
+const pinPanelVisible = ref(false)
+const savingPins = ref(false)
+const pinnedCards = computed(() => myPins.value.map(findCardByKey).filter(Boolean) as typeof COUPLE_CARDS)
+
+async function loadPins() {
+  try {
+    const vo = await pinApi.list()
+    myPins.value = vo?.mine ?? []
+    pinDraft.value = [...myPins.value]
+  } catch {
+    // 无空间/网络异常：静默
+  }
+}
+
+async function onSavePins() {
+  if (pinDraft.value.length > 6) {
+    ElMessage.warning('最多收藏 6 个功能卡哦 ⭐')
+    return
+  }
+  savingPins.value = true
+  try {
+    const vo = await pinApi.save(pinDraft.value)
+    myPins.value = vo?.mine ?? [...pinDraft.value]
+    pinDraft.value = [...myPins.value]
+    ElMessage.success('常用功能已保存 ⭐')
+    pinPanelVisible.value = false
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '保存失败')
+  } finally {
+    savingPins.value = false
+  }
+}
+
+watch(() => couple.established, (v) => { if (v) void loadPins() }, { immediate: true })
+
+// ============ F208 页签首访气泡 ============
+const TAB_TIPS: Record<string, string> = {
+  bond: '🫶 贴贴区：宫格动作打卡、恋爱加成清单，每天贴一贴，心动值涨涨涨～',
+  promises: '🤝 约定区：互相立约、安全感账户和恋爱条约，说到做到最迷人～',
+  rituals: '🌅 仪式区：早晚安、真心话和趣味小游戏，日常仪式感拉满～',
+  growth: '🌱 养成区：挑战赛、成长搭子、共读追剧和心愿板，一起变更好～',
+  surprise: '🎁 惊喜区：刮刮乐、盲盒与爱情花园，甜蜜要慢慢拆～',
+  letters: '💌 悄悄话区：信箱、树洞、时光胶囊和情诗，把心意藏进文字里～',
+  mood: '💗 心情区：心情日记与情绪接力棒，TA 的心情你来接～',
+  care: '🌈 关怀区：情绪急救、求抱抱和默契亲密，难过的时候有我在～',
+  shared: '🗓️ 共享空间：双城、账本、倒数日和生活经营，把日子过成我们的～',
+  badges: '🏅 荣誉区：徽章墙、月报、周年报告和热力日历，回忆都是勋章～',
+  timeline: '📖 时光轴：那年今天、第一次清单和时光博物馆，我们的故事都在～',
+}
+const visibleTabTips = ref<Record<string, boolean>>({})
+
+function maybeShowTabTip(tab: string) {
+  if (!(tab in TAB_TIPS)) return
+  if (!couple.established) return
+  const key = `arechat_couple_tab_tip_${tab}`
+  if (localStorage.getItem(key)) return
+  try {
+    localStorage.setItem(key, '1')
+  } catch {
+    // 隐私模式等写入失败不影响展示
+  }
+  visibleTabTips.value = { ...visibleTabTips.value, [tab]: true }
+}
+
+function closeTabTip(tab: string) {
+  visibleTabTips.value = { ...visibleTabTips.value, [tab]: false }
+}
+
+watch(activeTab, (t) => maybeShowTabTip(t))
+
+// 空间建立后：加载常用收藏 + 首个可见页签（默认或路由直达）的首访提示
+watch(
+  () => couple.established,
+  (v) => {
+    if (!v) return
+    void loadPins()
+    maybeShowTabTip(activeTab.value)
+  },
+  { immediate: true },
+)
+
+/** 每个一级页签内容顶部：F208 首访提示条 + F207「我的常用」chip 横排 */
+const TabExtras = defineComponent({
+  name: 'TabExtras',
+  props: { tab: { type: String, required: true } },
+  setup(props) {
+    return () => {
+      const nodes: VNode[] = []
+      if (visibleTabTips.value[props.tab]) {
+        nodes.push(
+          h('div', { class: 'tab-tip', 'data-testid': 'couple-tab-tip' }, [
+            h('span', TAB_TIPS[props.tab]),
+            h(
+              'button',
+              {
+                type: 'button',
+                class: 'tab-tip-close',
+                'data-testid': 'couple-tab-tip-close',
+                onClick: () => closeTabTip(props.tab),
+              },
+              '×',
+            ),
+          ]),
+        )
+      }
+      if (pinnedCards.value.length) {
+        nodes.push(
+          h('div', { class: 'tab-pins', 'data-testid': 'couple-pins' }, [
+            h('span', { class: 'tab-pins-label' }, '⭐ 我的常用'),
+            ...pinnedCards.value.map((c) =>
+              h(
+                'button',
+                {
+                  type: 'button',
+                  class: 'tab-pin-chip',
+                  'data-testid': `couple-pin-chip-${c.key}`,
+                  onClick: () => jumpToCard(c.key),
+                },
+                c.label,
+              ),
+            ),
+          ]),
+        )
+      }
+      if (!nodes.length) return null
+      return h('div', { class: 'tab-extras' }, nodes)
+    }
+  },
+})
 
 /** F43 里程碑天数：命中 100/200/365/520/666/888/1000/1314/2000 时今天值得庆祝 */
 const MILESTONE_DAYS = [100, 200, 365, 520, 666, 888, 1000, 1314, 2000]
@@ -538,9 +810,9 @@ async function onDissolve() {
 }
 
 onMounted(() => {
-  // 聊天「记入约定」跳转：?tab=promises 直接定位到约定页
+  // 聊天「记入约定」跳转：?tab=promises 直接定位到约定页（growth 走查缺陷修复：补进白名单）
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
-  if (['bond', 'promises', 'rituals', 'surprise', 'letters', 'mood', 'care', 'shared', 'badges', 'timeline'].includes(tab)) {
+  if (['bond', 'promises', 'rituals', 'growth', 'surprise', 'letters', 'mood', 'care', 'shared', 'badges', 'timeline'].includes(tab)) {
     activeTab.value = tab
   }
   // MainLayout 已在登录后 init 过：这里兜底刷新总览（邀请状态可能变化）
@@ -660,6 +932,60 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   margin-left: auto;
+  align-items: center;
+}
+.couple-search {
+  width: 150px;
+}
+/* F200-F204 二级子页签 */
+.sub-tabs :deep(.el-tabs__header) {
+  margin-bottom: 12px;
+}
+/* F207 收藏面板 */
+.pin-panel .pin-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.pin-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.pin-item {
+  margin-right: 0;
+}
+.pin-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.pin-count {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+}
+.pin-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.pin-item {
+  margin-right: 0;
+}
+.pin-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.pin-count {
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
 }
 .btn-ico {
   margin-right: 2px;
@@ -740,5 +1066,77 @@ onMounted(() => {
 .notify-time {
   font-size: 11px;
   color: var(--im-muted, #8f959e);
+}
+</style>
+
+<style>
+/* F206/F207 跳转高亮：外部按 data-testid 找到卡片根元素后加的临时 class（非 scoped 才能作用到子组件） */
+.couple-card-flash {
+  border-radius: 12px;
+  animation: couple-card-flash-kf 0.5s ease-in-out 3;
+}
+@keyframes couple-card-flash-kf {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 108, 108, 0);
+    outline: 2px solid rgba(245, 108, 108, 0);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px rgba(245, 108, 108, 0.45);
+    outline: 2px solid rgba(245, 108, 108, 0.85);
+  }
+}
+/* F208 首访提示条 + F207 常用 chip 行（TabExtras 为局部渲染组件，scoped 触不到） */
+.couple-page .tab-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.couple-page .tab-tip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+  background: var(--el-fill-color-lighter, #fafafa);
+}
+.couple-page .tab-tip-close {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--im-muted, #8f959e);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.couple-page .tab-tip-close:hover {
+  color: #f56c6c;
+}
+.couple-page .tab-pins {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.couple-page .tab-pins-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ad6800;
+}
+.couple-page .tab-pin-chip {
+  border: 1px solid #f3d19e;
+  border-radius: 999px;
+  background: #fff8e6;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: #b8860b;
+  cursor: pointer;
+}
+.couple-page .tab-pin-chip:hover {
+  border-color: #f56c6c;
+  color: #f56c6c;
 }
 </style>

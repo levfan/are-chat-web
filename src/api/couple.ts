@@ -190,6 +190,7 @@ import type {
   CoupleMuseumRuleVO,
   CoupleMuseumSilverLineVO,
   CoupleMuseumWordVO,
+  CouplePinVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -1270,4 +1271,12 @@ export const museumApi = {
 
   /** F197 今日问候条（叠加免打扰状态） */
   getGreeting: () => http.get<CoupleMuseumGreetingVO>('/api/couple/museum/greeting'),
+}
+
+// ============ 常用收藏（F207） ============
+export const pinApi = {
+  /** 双方收藏的功能卡 key（mine/partner 各 ≤6 个） */
+  list: () => http.get<CouplePinVO>('/api/couple/pin'),
+  /** 全量覆盖保存我的收藏（超过 6 个后端 400；无空间 404 由调用方静默） */
+  save: (pins: string[]) => http.postJson<CouplePinVO>('/api/couple/pin', { pins }),
 }

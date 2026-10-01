@@ -2529,3 +2529,11 @@ export interface CoupleMuseumGreetingVO {
   daysTogether?: number
   quietNow: boolean
 }
+
+// ============ 常用收藏（F207） ============
+
+/** 双方收藏的功能卡 key 列表（≤6 个，key 为功能卡 data-testid） */
+export interface CouplePinVO {
+  mine: string[]
+  partner: string[]
+}
