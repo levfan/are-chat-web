@@ -918,4 +918,21 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     expect(coupleApi.depositSecurity).toHaveBeenCalledWith('别担心，钱我来想办法')
   })
+
+  it('趣味游戏：今日抽签展示心动概率与恋爱天气，掷骰子本地出结果', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.heartbeat).mockResolvedValue({ score: 88, line: '心动指数爆表！今天的拥抱建议延长 30 秒 📈' })
+    vi.mocked(coupleApi.loveWeather).mockResolvedValue({ name: '彩虹', emoji: '🌈', tip: '甜度爆表。' })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-rituals').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-heartbeat"]').text()).toContain('88%')
+    expect(wrapper.find('[data-testid="couple-weather"]').text()).toContain('彩虹')
+
+    await wrapper.find('[data-testid="couple-dice-roll"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-dice-result"]').text()).not.toBe('')
+  })
 })
