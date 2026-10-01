@@ -87,6 +87,15 @@ import type {
   CoupleSongVO,
   CoupleTodayBoardVO,
   CoupleYearHeatmapVO,
+  CoupleTranslationVO,
+  CoupleCoolDownVO,
+  CoupleRelayVO,
+  CoupleGuessVO,
+  CoupleStoryChainVO,
+  CoupleDictQuizVO,
+  CoupleApologyVO,
+  CoupleFeelingVO,
+  CoupleRadioVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -209,6 +218,17 @@ export const useCoupleStore = defineStore('couple', () => {
   /** F95/F96 体验优化 */
   const todayBoard = ref<CoupleTodayBoardVO | null>(null)
   const yearHeatmap = ref<CoupleYearHeatmapVO | null>(null)
+  /** F100-F109 会说情话·沟通增强 */
+  const commTranslation = ref<CoupleTranslationVO | null>(null)
+  const coolDowns = ref<CoupleCoolDownVO[]>([])
+  const relays = ref<CoupleRelayVO[]>([])
+  const guessRounds = ref<CoupleGuessVO[]>([])
+  const stories = ref<CoupleStoryChainVO[]>([])
+  const dictQuiz = ref<CoupleDictQuizVO | null>(null)
+  const sweetLine = ref<string>('')
+  const apologies = ref<CoupleApologyVO[]>([])
+  const feelings = ref<CoupleFeelingVO[]>([])
+  const goodnightRadio = ref<CoupleRadioVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -236,6 +256,7 @@ export const useCoupleStore = defineStore('couple', () => {
     growth: false,
     chronicle: false,
     keepsake: false,
+    comm: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -359,6 +380,16 @@ export const useCoupleStore = defineStore('couple', () => {
     songs.value = []
     todayBoard.value = null
     yearHeatmap.value = null
+    commTranslation.value = null
+    coolDowns.value = []
+    relays.value = []
+    guessRounds.value = []
+    stories.value = []
+    dictQuiz.value = null
+    sweetLine.value = ''
+    apologies.value = []
+    feelings.value = []
+    goodnightRadio.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -385,6 +416,7 @@ export const useCoupleStore = defineStore('couple', () => {
       growth: false,
       chronicle: false,
       keepsake: false,
+      comm: false,
     }
     promiseDraft.value = null
   }
@@ -1352,6 +1384,99 @@ export const useCoupleStore = defineStore('couple', () => {
     return yearHeatmap.value
   }
 
+  // ---------- F100-F109 会说情话·沟通增强 ----------
+
+  /** 冷静角 + 接力棒 + 比划猜 + 故事 + 道歉卡 + 情绪词 */
+  async function loadComm() {
+    const [cd, rl, gs, st, ap, fw] = await Promise.all([
+      coupleApi.coolDowns(),
+      coupleApi.relays(),
+      coupleApi.guesses(),
+      coupleApi.stories(),
+      coupleApi.apologies(),
+      coupleApi.feelings(),
+    ])
+    coolDowns.value = cd ?? []
+    relays.value = rl ?? []
+    guessRounds.value = gs ?? []
+    stories.value = st ?? []
+    apologies.value = ap ?? []
+    feelings.value = fw ?? []
+    loadedLists.value.comm = true
+  }
+
+  async function translateText(text: string) {
+    commTranslation.value = await coupleApi.translate(text)
+    return commTranslation.value
+  }
+
+  async function startCoolDown(reason?: string) {
+    coolDowns.value = (await coupleApi.startCoolDown(reason)) ?? []
+  }
+
+  async function softenCool(id: string, content: string) {
+    coolDowns.value = (await coupleApi.softenCool(id, content)) ?? []
+  }
+
+  async function tossRelay(moodWord: string, moodEmoji?: string, note?: string) {
+    relays.value = (await coupleApi.tossRelay(moodWord, moodEmoji, note)) ?? []
+  }
+
+  async function catchRelay(id: string, catchNote?: string, myMood?: string, myEmoji?: string, myNote?: string) {
+    relays.value = (await coupleApi.catchRelay(id, catchNote, myMood, myEmoji, myNote)) ?? []
+  }
+
+  async function startGuess() {
+    guessRounds.value = (await coupleApi.startGuess()) ?? []
+  }
+
+  async function clueGuess(id: string, clue: string) {
+    guessRounds.value = (await coupleApi.clueGuess(id, clue)) ?? []
+  }
+
+  async function doGuess(id: string, word: string) {
+    guessRounds.value = (await coupleApi.doGuess(id, word)) ?? []
+  }
+
+  async function startStory(content: string) {
+    stories.value = (await coupleApi.startStory(content)) ?? []
+  }
+
+  async function addStoryLine(chainId: string, content: string) {
+    stories.value = (await coupleApi.addStoryLine(chainId, content)) ?? []
+  }
+
+  async function finishStory(chainId: string) {
+    stories.value = (await coupleApi.finishStory(chainId)) ?? []
+  }
+
+  async function loadDictQuiz() {
+    dictQuiz.value = await coupleApi.dictQuiz()
+    return dictQuiz.value
+  }
+
+  async function rollSweet(seed: number) {
+    sweetLine.value = await coupleApi.synthSweet(seed)
+    return sweetLine.value
+  }
+
+  async function sendApology(whatWrong: string, whyWrong: string, willDo: string) {
+    apologies.value = (await coupleApi.sendApology(whatWrong, whyWrong, willDo)) ?? []
+  }
+
+  async function acceptApology(id: string) {
+    apologies.value = (await coupleApi.acceptApology(id)) ?? []
+  }
+
+  async function saveFeeling(word: string, note?: string) {
+    feelings.value = (await coupleApi.saveFeeling(word, note)) ?? []
+  }
+
+  async function loadGoodnightRadio() {
+    goodnightRadio.value = await coupleApi.goodnightRadio()
+    return goodnightRadio.value
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -1850,6 +1975,51 @@ export const useCoupleStore = defineStore('couple', () => {
       case 'capsule-due':
         notify('⏰ 时光胶囊到期', msg.detail)
         break
+      case 'cool-started':
+      case 'cool-soften':
+      case 'cool-healed':
+        notify('🧊 冷静角', msg.detail)
+        if (loadedLists.value.comm) {
+          void coupleApi.coolDowns().then((v) => (coolDowns.value = v ?? []))
+        }
+        break
+      case 'relay-tossed':
+      case 'relay-caught':
+        notify('🥎 情绪接力棒', msg.detail)
+        if (loadedLists.value.comm) {
+          void coupleApi.relays().then((v) => (relays.value = v ?? []))
+        }
+        break
+      case 'guess-started':
+      case 'guess-clued':
+      case 'guess-wrong':
+      case 'guess-hit':
+      case 'guess-missed':
+        notify('🙈 你比划我猜', msg.detail)
+        if (loadedLists.value.comm) {
+          void coupleApi.guesses().then((v) => (guessRounds.value = v ?? []))
+        }
+        break
+      case 'story-line':
+      case 'story-done':
+        notify('📖 故事接龙', msg.detail)
+        if (loadedLists.value.comm) {
+          void coupleApi.stories().then((v) => (stories.value = v ?? []))
+        }
+        break
+      case 'apology-sent':
+      case 'apology-accepted':
+        notify('🙇 道歉三部曲', msg.detail)
+        if (loadedLists.value.comm) {
+          void coupleApi.apologies().then((v) => (apologies.value = v ?? []))
+        }
+        break
+      case 'feeling-word':
+        notify('📖 情绪词汇', msg.detail)
+        if (loadedLists.value.comm) {
+          void coupleApi.feelings().then((v) => (feelings.value = v ?? []))
+        }
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -2115,5 +2285,33 @@ export const useCoupleStore = defineStore('couple', () => {
     removeSong,
     loadTodayBoard,
     loadHeatmap,
+    commTranslation,
+    coolDowns,
+    relays,
+    guessRounds,
+    stories,
+    dictQuiz,
+    sweetLine,
+    apologies,
+    feelings,
+    goodnightRadio,
+    loadComm,
+    translateText,
+    startCoolDown,
+    softenCool,
+    tossRelay,
+    catchRelay,
+    startGuess,
+    clueGuess,
+    doGuess,
+    startStory,
+    addStoryLine,
+    finishStory,
+    loadDictQuiz,
+    rollSweet,
+    sendApology,
+    acceptApology,
+    saveFeeling,
+    loadGoodnightRadio,
   }
 })

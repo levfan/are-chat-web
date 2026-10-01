@@ -95,6 +95,15 @@ import type {
   CoupleSongVO,
   CoupleTodayBoardVO,
   CoupleYearHeatmapVO,
+  CoupleTranslationVO,
+  CoupleCoolDownVO,
+  CoupleRelayVO,
+  CoupleGuessVO,
+  CoupleStoryChainVO,
+  CoupleDictQuizVO,
+  CoupleApologyVO,
+  CoupleFeelingVO,
+  CoupleRadioVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -596,4 +605,69 @@ export const coupleApi = {
   /** F96 年度热力日历（缺省当年） */
   yearHeatmap: (year?: number) =>
     http.get<CoupleYearHeatmapVO>(`/api/couple/today/heatmap${year ? `?year=${year}` : ''}`),
+
+  // ---------- 会说情话·沟通增强（F100-F109） ----------
+  /** F100 恋爱翻译器 */
+  translate: (text: string) =>
+    http.get<CoupleTranslationVO>(`/api/couple/comm/translate?text=${encodeURIComponent(text)}`),
+  /** F101 冷静角列表 */
+  coolDowns: () => http.get<CoupleCoolDownVO[]>('/api/couple/comm/cool-downs'),
+  /** F101 发起冷静角 */
+  startCoolDown: (reason?: string) =>
+    http.postJson<CoupleCoolDownVO[]>('/api/couple/comm/cool-downs', { reason: reason ?? null }),
+  /** F101 冷静期结束后留软话 */
+  softenCool: (id: string, content: string) =>
+    http.postJson<CoupleCoolDownVO[]>(`/api/couple/comm/cool-downs/${id}/soften`, { content }),
+  /** F102 接力棒列表 */
+  relays: () => http.get<CoupleRelayVO[]>('/api/couple/comm/relays'),
+  /** F102 抛心情 */
+  tossRelay: (moodWord: string, moodEmoji?: string, note?: string) =>
+    http.postJson<CoupleRelayVO[]>('/api/couple/comm/relays',
+      { moodWord, moodEmoji: moodEmoji ?? null, note: note ?? null }),
+  /** F102 接住并回抛 */
+  catchRelay: (id: string, catchNote?: string, myMood?: string, myEmoji?: string, myNote?: string) =>
+    http.postJson<CoupleRelayVO[]>(`/api/couple/comm/relays/${id}/catch`,
+      { catchNote: catchNote ?? null, myMood: myMood ?? null, myEmoji: myEmoji ?? null, myNote: myNote ?? null }),
+  /** F103 比划猜对局 */
+  guesses: () => http.get<CoupleGuessVO[]>('/api/couple/comm/guesses'),
+  /** F103 开一轮 */
+  startGuess: () => http.postJson<CoupleGuessVO[]>('/api/couple/comm/guesses', {}),
+  /** F103 出提示 */
+  clueGuess: (id: string, clue: string) =>
+    http.postJson<CoupleGuessVO[]>(`/api/couple/comm/guesses/${id}/clue`, { clue }),
+  /** F103 猜词 */
+  doGuess: (id: string, word: string) =>
+    http.postJson<CoupleGuessVO[]>(`/api/couple/comm/guesses/${id}/guess`, { word }),
+  /** F104 故事列表 */
+  stories: () => http.get<CoupleStoryChainVO[]>('/api/couple/comm/stories'),
+  /** F104 开新故事 */
+  startStory: (content: string) =>
+    http.postJson<CoupleStoryChainVO[]>('/api/couple/comm/stories', { content }),
+  /** F104 接一句 */
+  addStoryLine: (chainId: string, content: string) =>
+    http.postJson<CoupleStoryChainVO[]>(`/api/couple/comm/stories/${chainId}/lines`, { content }),
+  /** F104 完结本篇 */
+  finishStory: (chainId: string) =>
+    http.postJson<CoupleStoryChainVO[]>(`/api/couple/comm/stories/${chainId}/finish`, {}),
+  /** F105 词典小考出题 */
+  dictQuiz: () => http.get<CoupleDictQuizVO>('/api/couple/comm/dict-quiz'),
+  /** F106 情话合成 */
+  synthSweet: (seed: number) =>
+    http.get<string>(`/api/couple/comm/sweet-synth?seed=${seed}`),
+  /** F107 道歉三部曲列表 */
+  apologies: () => http.get<CoupleApologyVO[]>('/api/couple/comm/apologies'),
+  /** F107 送出道歉 */
+  sendApology: (whatWrong: string, whyWrong: string, willDo: string) =>
+    http.postJson<CoupleApologyVO[]>('/api/couple/comm/apologies',
+      { whatWrong, whyWrong, willDo }),
+  /** F107 收下道歉 */
+  acceptApology: (id: string) =>
+    http.postJson<CoupleApologyVO[]>(`/api/couple/comm/apologies/${id}/accept`, {}),
+  /** F108 情绪词汇列表 */
+  feelings: () => http.get<CoupleFeelingVO[]>('/api/couple/comm/feelings'),
+  /** F108 记录今天的心情词 */
+  saveFeeling: (word: string, note?: string) =>
+    http.postJson<CoupleFeelingVO[]>('/api/couple/comm/feelings', { word, note: note ?? null }),
+  /** F109 晚安电台 */
+  goodnightRadio: () => http.get<CoupleRadioVO>('/api/couple/comm/goodnight-radio'),
 }

@@ -1505,3 +1505,110 @@ export interface CoupleYearHeatmapVO {
   days: CoupleHeatmapDayVO[]
   totalActive: number
 }
+
+// ============ 情侣空间：会说情话·沟通增强（F100-F109） ============
+
+/** F100 恋爱翻译结果 */
+export interface CoupleTranslationVO {
+  phrase: string
+  subtext: string
+  reply: string
+}
+
+/** F101 冷静角 */
+export interface CoupleCoolDownVO {
+  id: string
+  fromUser: string
+  reason: string | null
+  status: string
+  endAt: number
+  softA: string | null
+  softB: string | null
+  healedAt: number | null
+  created: number
+}
+
+/** F102 情绪接力棒 */
+export interface CoupleRelayVO {
+  id: string
+  fromUser: string
+  moodWord: string
+  moodEmoji: string | null
+  note: string | null
+  status: string
+  catchNote: string | null
+  caughtAt: number | null
+  created: number
+}
+
+/** F103 比划猜对局 */
+export interface CoupleGuessVO {
+  id: string
+  day: string
+  fromUser: string
+  word: string | null
+  clue: string | null
+  guess: string | null
+  attempts: number
+  status: string
+  settledAt: number | null
+  created: number
+}
+
+/** F104 接龙句 */
+export interface CoupleStoryLineVO {
+  id: string
+  chainId: string
+  seq: number
+  byUser: string
+  content: string
+  isFinal: boolean
+  created: number
+}
+
+/** F104 故事接龙（链） */
+export interface CoupleStoryChainVO {
+  chainId: string
+  lines: CoupleStoryLineVO[]
+  finished: boolean
+  updated: number
+}
+
+/** F105 词典小考题 */
+export interface CoupleDictQuizVO {
+  wordId: string
+  word: string
+  options: string[]
+  correctIndex: number
+}
+
+/** F107 道歉三部曲 */
+export interface CoupleApologyVO {
+  id: string
+  fromUser: string
+  whatWrong: string
+  whyWrong: string
+  willDo: string
+  status: string
+  acceptedAt: number | null
+  created: number
+}
+
+/** F108 情绪词汇 */
+export interface CoupleFeelingVO {
+  id: string
+  fromUser: string
+  day: string
+  word: string
+  note: string | null
+  created: number
+}
+
+/** F109 晚安电台 */
+export interface CoupleRadioVO {
+  title: string | null
+  artist: string | null
+  reason: string | null
+  line: string
+  hasSong: boolean
+}

@@ -147,6 +147,7 @@
               <CoupleRituals />
               <CoupleDaily />
               <CoupleTruth />
+              <CoupleFunTalk />
             </div>
           </el-tab-pane>
           <el-tab-pane label="🌱 养成" name="growth" lazy>
@@ -172,13 +173,17 @@
             </div>
           </el-tab-pane>
           <el-tab-pane label="💗 心情" name="mood" lazy>
-            <CoupleMood />
+            <div class="tab-stack">
+              <CoupleMood />
+              <CoupleMoodRelay />
+            </div>
           </el-tab-pane>
           <el-tab-pane label="🌈 关怀" name="care" lazy>
             <div class="tab-stack">
               <CoupleCare />
               <CoupleComfort />
               <CoupleMakeup />
+              <CoupleSoft />
             </div>
           </el-tab-pane>
           <el-tab-pane label="🗓️ 共享空间" name="shared" lazy>
@@ -334,6 +339,9 @@ import CoupleChallenge from '@/components/couple/CoupleChallenge.vue'
 import CoupleReadWatch from '@/components/couple/CoupleReadWatch.vue'
 import CoupleWishBoard from '@/components/couple/CoupleWishBoard.vue'
 import CoupleDict from '@/components/couple/CoupleDict.vue'
+import CoupleSoft from '@/components/couple/CoupleSoft.vue'
+import CoupleMoodRelay from '@/components/couple/CoupleMoodRelay.vue'
+import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()
