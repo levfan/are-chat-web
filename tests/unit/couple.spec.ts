@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
-import { coupleApi, manageApi } from '@/api/couple'
+import { coupleApi, manageApi, museumApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
@@ -242,7 +242,33 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
-  return { coupleApi: wrapped, manageApi: manageWrapped }
+  // F190-F199 时光博物馆 museumApi：默认空数据，用例内按需覆盖
+  const museumBase: Record<string, ReturnType<typeof vi.fn>> = {
+    listScenes: vi.fn().mockResolvedValue([]),
+    createScene: vi.fn().mockResolvedValue([]),
+    listExhibits: vi.fn().mockResolvedValue([]),
+    createExhibit: vi.fn().mockResolvedValue([]),
+    getLastYear: vi.fn().mockResolvedValue(null),
+    getSilverLine: vi.fn().mockResolvedValue(null),
+    getWords: vi.fn().mockResolvedValue([]),
+    getAchievements: vi.fn().mockResolvedValue([]),
+    getRules: vi.fn().mockResolvedValue([]),
+    createRule: vi.fn().mockResolvedValue([]),
+    signRule: vi.fn().mockResolvedValue([]),
+    getDnd: vi.fn().mockResolvedValue([]),
+    saveDnd: vi.fn().mockResolvedValue([]),
+    getAnnualBook: vi.fn().mockResolvedValue(null),
+  }
+  const museumWrapped = new Proxy(museumBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(undefined)
+      return target[prop]
+    },
+  })
+  return { coupleApi: wrapped, manageApi: manageWrapped, museumApi: museumWrapped }
 })
 
 vi.mock('@/api/im', () => ({
@@ -1131,5 +1157,97 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     expect(manageApi.claimFiveYearPlan).toHaveBeenCalledWith('fp1')
     expect(wrapper.find('[data-testid="couple-plan-owner-fp1"]').text()).toContain('alice')
+  })
+
+  it('时光博物馆：纪录片三幕、家规签字按钮与高频词 chip 渲染', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(museumApi.listScenes).mockResolvedValue([
+      {
+        id: 'ms1', title: '我们的秋天校园', actOne: '秋天在图书馆第一次借你笔记',
+        actTwo: '后来每天都一起走那条林荫路', actThree: '往里去，一直走到白头',
+        fromUser: 'alice', mine: true, created: Date.now(),
+      },
+    ])
+    vi.mocked(museumApi.getWords).mockResolvedValue([{ word: '抱抱', count: 12 }])
+    vi.mocked(museumApi.getRules).mockResolvedValue([
+      {
+        id: 'mr1', kind: 'RULE', refId: null, content: '吵架不过夜',
+        proposedBy: 'bob', mine: false, signed: false, signedBy: null, created: Date.now(),
+      },
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-timeline').trigger('click')
+    await flushPromises()
+
+    const scene = wrapper.find('[data-testid="couple-museum-scene-ms1"]')
+    expect(scene.text()).toContain('秋天在图书馆第一次借你笔记')
+    expect(scene.text()).toContain('后来每天都一起走那条林荫路')
+    expect(scene.text()).toContain('往里去，一直走到白头')
+    expect(wrapper.find('[data-testid="couple-museum-word-抱抱"]').text()).toContain('12')
+    expect(wrapper.find('[data-testid="couple-museum-rule-sign-mr1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-museum-rule-state-mr1"]').text()).toContain('待对方签字')
+  })
+
+  it('时光博物馆：点击签字调用 signRule 并用返回列表刷新为已签字', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const rule = {
+      id: 'mr2', kind: 'RULE' as const, refId: null, content: '纪念日提前一周商量',
+      proposedBy: 'bob', mine: false, signed: false, signedBy: null, created: Date.now(),
+    }
+    vi.mocked(museumApi.getRules).mockResolvedValue([rule])
+    vi.mocked(museumApi.signRule).mockResolvedValue([{ ...rule, signed: true, signedBy: 'alice' }])
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-timeline').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-museum-rule-sign-mr2"]').trigger('click')
+    await flushPromises()
+    expect(museumApi.signRule).toHaveBeenCalledWith('mr2')
+    expect(wrapper.find('[data-testid="couple-museum-rule-state-mr2"]').text()).toContain('已签字')
+    expect(wrapper.find('[data-testid="couple-museum-rule-sign-mr2"]').exists()).toBe(false)
+  })
+
+  it('时光博物馆：接口全部失败（未建空间）时静默降级，卡片标题仍在', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const err = () => new Error('未建立情侣空间')
+    vi.mocked(museumApi.listScenes).mockRejectedValue(err())
+    vi.mocked(museumApi.listExhibits).mockRejectedValue(err())
+    vi.mocked(museumApi.getLastYear).mockRejectedValue(err())
+    vi.mocked(museumApi.getSilverLine).mockRejectedValue(err())
+    vi.mocked(museumApi.getWords).mockRejectedValue(err())
+    vi.mocked(museumApi.getAchievements).mockRejectedValue(err())
+    vi.mocked(museumApi.getRules).mockRejectedValue(err())
+    vi.mocked(museumApi.getDnd).mockRejectedValue(err())
+    vi.mocked(museumApi.getAnnualBook).mockRejectedValue(err())
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-timeline').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-museum"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-museum-scenes"]').text()).toContain('恋爱纪录片')
+    expect(wrapper.find('[data-testid="couple-museum-rules"]').text()).toContain('家规宪法')
+    expect(wrapper.find('[data-testid="couple-museum-book"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-museum-words-empty"]').text()).toContain('词云会长出来')
+  })
+
+  it('今日看点：F198 问候横幅渲染时段文案与静音角标', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(museumApi.getGreeting).mockResolvedValue({
+      period: '夜晚',
+      icon: '🌙',
+      text: '在一起 620 天，晚安我的宝贝',
+      daysTogether: 620,
+      quietNow: true,
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    const g = wrapper.find('[data-testid="couple-greeting"]')
+    expect(g.exists()).toBe(true)
+    expect(g.text()).toContain('在一起 620 天')
+    expect(g.text()).toContain('静音时段')
   })
 })
