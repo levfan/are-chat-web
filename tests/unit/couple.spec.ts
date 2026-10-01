@@ -744,6 +744,35 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.find('[data-testid="couple-zodiac-result"]').exists()).toBe(true)
   })
 
+  it('养成页签：习惯搭子打卡，感恩便签上墙', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const streak = {
+      id: 'hs1', fromUser: 'alice', mine: true, title: '每天读书30分钟',
+      targetDays: 21, doneDays: 3, doneToday: false, status: 'OPEN' as const,
+      doneAt: null, created: Date.now(),
+    }
+    vi.mocked(coupleApi.coachHabits).mockResolvedValue([streak])
+    vi.mocked(coupleApi.coachCheckinHabit).mockResolvedValue([{ ...streak, doneDays: 4, doneToday: true }])
+    vi.mocked(coupleApi.thanks).mockResolvedValue([])
+    vi.mocked(coupleApi.addThanks).mockResolvedValue([
+      { id: 'tn1', fromUser: 'alice', mine: true, content: '谢谢你帮我带伞', created: Date.now() },
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-growth').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-streak-checkin-hs1"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.coachCheckinHabit).toHaveBeenCalledWith('hs1')
+
+    await wrapper.find('[data-testid="couple-thanks-input"]').setValue('谢谢你帮我带伞')
+    await wrapper.find('[data-testid="couple-thanks-add"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.addThanks).toHaveBeenCalledWith('谢谢你帮我带伞')
+    expect(wrapper.find('[data-testid="couple-thanks-tn1"]').text()).toContain('带伞')
+  })
+
   it('时光轴页签：考古卡能挖出旧记录，编年史按年展示事件', async () => {
     mockedOverview.mockResolvedValue(establishedOverview)
     const wrapper = mountView()
