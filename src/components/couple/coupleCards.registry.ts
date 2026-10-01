@@ -58,6 +58,10 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-shared', label: '共享清单', tab: 'shared', sub: 'daily' },
   { key: 'couple-daily-life', label: '深度陪伴', tab: 'shared', sub: 'daily' },
   { key: 'couple-funds', label: '心愿基金', tab: 'shared', sub: 'daily' },
+  { key: 'couple-dine-today', label: '今晚饭桌', tab: 'shared', sub: 'daily' },
+  { key: 'couple-dine-week', label: '本周饭桌', tab: 'shared', sub: 'daily' },
+  { key: 'couple-dine-restaurant', label: '我们的餐厅', tab: 'shared', sub: 'daily' },
+  { key: 'couple-dine-year', label: '年度干饭账', tab: 'shared', sub: 'daily' },
   { key: 'couple-manage', label: '生活经营所', tab: 'shared', sub: 'manage' },
   // 🏅 徽章
   { key: 'couple-badges', label: '里程碑徽章墙', tab: 'badges' },

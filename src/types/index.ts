@@ -2537,3 +2537,110 @@ export interface CouplePinVO {
   mine: string[]
   partner: string[]
 }
+
+// ============ 两个人的饭桌（F210-F219） ============
+
+/** F210 饭票：每人每天一票，改票即覆盖 */
+export interface CoupleDineTicketVO {
+  fromUser: string
+  mine: boolean
+  dish: string
+  reason: string
+}
+
+/** F210/F211 今日饭桌：双方饭票 + 撞菜命中 + 吃什么裁决 + 今日话题打卡 */
+export interface CoupleDineTodayVO {
+  day: string
+  mine: CoupleDineTicketVO | null
+  partner: CoupleDineTicketVO | null
+  hit: boolean
+  verdict: string | null
+  topic: string
+  topicMarked: boolean
+}
+
+/** F215 餐厅星评流水 */
+export interface CoupleDineRateVO {
+  id: string
+  day: string
+  dish: string
+  stars: number
+  comment: string
+  fromUser: string
+  mine: boolean
+  created: number
+}
+
+/** F216 踩雷库条目（仅提议人可删） */
+export interface CoupleDineNogoVO {
+  id: string
+  name: string
+  reason: string
+  fromUser: string
+  mine: boolean
+  created: number
+}
+
+/** F212 本周饭桌菜单格（dish 空 = 该格是空的） */
+export interface CoupleDinePlanVO {
+  day: string
+  dish: string
+  updatedBy: string
+  mineLastEdit: boolean
+}
+
+/** F213 本周拿手菜（按人 upsert，score 1-5） */
+export interface CoupleDineHomecookVO {
+  fromUser: string
+  mine: boolean
+  dish: string
+  score: number
+}
+
+export type CoupleDineCartStatus = 'OPEN' | 'LOCKED'
+
+/** F214 搭伙车条目（双方各锁一次才 LOCKED；仅本人且未锁可删） */
+export interface CoupleDineCartVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  item: string
+  qty: number
+  status: CoupleDineCartStatus
+  locked: string[]
+  canLock: boolean
+}
+
+/** F212-F214 本周饭桌整板（写接口均返回全量，前端整体替换） */
+export interface CoupleDineBoardVO {
+  week: string
+  plans: CoupleDinePlanVO[]
+  homecooks: CoupleDineHomecookVO[]
+  cart: CoupleDineCartVO[]
+}
+
+/** F219 点单机：心情 5 选 1 → 今日一杯 */
+export interface CoupleDineDrinkVO {
+  mood: string
+  emoji: string
+  name: string
+  note: string
+}
+
+/** F217 年度干饭账：最常点菜 top 项 */
+export interface CoupleDineDishTopVO {
+  dish: string
+  times: number
+  avgStars: number
+}
+
+/** F217 年度干饭账总览 */
+export interface CoupleDineYearVO {
+  year: string
+  rateCount: number
+  avgStars: number
+  topDishes: CoupleDineDishTopVO[]
+  nogoCount: number
+  ticketCount: number
+  plannedCount: number
+}

@@ -190,6 +190,16 @@ import type {
   CoupleMuseumRuleVO,
   CoupleMuseumSilverLineVO,
   CoupleMuseumWordVO,
+  CoupleDineBoardVO,
+  CoupleDineCartVO,
+  CoupleDineDrinkVO,
+  CoupleDineHomecookVO,
+  CoupleDineNogoVO,
+  CoupleDinePlanVO,
+  CoupleDineRateVO,
+  CoupleDineTicketVO,
+  CoupleDineTodayVO,
+  CoupleDineYearVO,
   CouplePinVO,
 } from '@/types'
 
@@ -1279,4 +1289,51 @@ export const pinApi = {
   list: () => http.get<CouplePinVO>('/api/couple/pin'),
   /** 全量覆盖保存我的收藏（超过 6 个后端 400；无空间 404 由调用方静默） */
   save: (pins: string[]) => http.postJson<CouplePinVO>('/api/couple/pin', { pins }),
+}
+
+// ============ 两个人的饭桌（F210-F219） ============
+export const diningApi = {
+  /** F210 今日饭桌：双方饭票 + 撞菜命中 + 裁决 + 话题打卡状态 */
+  dineToday: () => http.get<CoupleDineTodayVO>('/api/couple/dining/today'),
+  /** F210 投/改今日饭票（每人每天一票，改票即覆盖），返回最新今日饭桌 */
+  dineCastTicket: (dish: string, reason: string) =>
+    http.postJson<CoupleDineTodayVO>('/api/couple/dining/ticket', { dish, reason }),
+  /** F211 今日话题打卡（幂等），返回最新今日饭桌 */
+  dineMarkTopic: () => http.postJson<CoupleDineTodayVO>('/api/couple/dining/topic/mark', {}),
+
+  /** F215 餐厅星评流水（最新 30 条） */
+  dineRates: () => http.get<CoupleDineRateVO[]>('/api/couple/dining/rates'),
+  /** F215 记一笔星评（stars 后端钳 1-5），返回最新流水 */
+  dineRate: (body: { day: string; dish: string; stars: number; comment: string }) =>
+    http.postJson<CoupleDineRateVO[]>('/api/couple/dining/rate', body),
+
+  /** F216 踩雷库列表 */
+  dineNogos: () => http.get<CoupleDineNogoVO[]>('/api/couple/dining/nogos'),
+  /** F216 添加踩雷（同名后端 400），返回最新列表 */
+  dineAddNogo: (name: string, reason: string) =>
+    http.postJson<CoupleDineNogoVO[]>('/api/couple/dining/nogo', { name, reason }),
+  /** F216 删除踩雷（仅提议人可删，否则 400），返回最新列表 */
+  dineRemoveNogo: (id: string) => http.delete<CoupleDineNogoVO[]>(`/api/couple/dining/nogo/${id}`),
+
+  /** F212-F214 本周饭桌整板（周菜单 + 拿手菜 + 搭伙车） */
+  dineBoard: () => http.get<CoupleDineBoardVO>('/api/couple/dining/board'),
+  /** F212 排/擦本周某天菜单（day：本周内 yyyy-MM-dd；dish 空串=擦掉该格），返回整板 */
+  dineSavePlan: (day: string, dish: string) =>
+    http.postJson<CoupleDineBoardVO>('/api/couple/dining/plan', { day, dish }),
+  /** F213 本周拿手菜 upsert（score 1-5），返回整板 */
+  dineSaveHomecook: (dish: string, score: number) =>
+    http.postJson<CoupleDineBoardVO>('/api/couple/dining/homecook', { dish, score }),
+  /** F214 搭伙车加菜（qty 份数），返回整板 */
+  dineCartAdd: (item: string, qty: number) =>
+    http.postJson<CoupleDineBoardVO>('/api/couple/dining/cart', { item, qty }),
+  /** F214 锁一份菜（双方各锁一次才 LOCKED），返回整板 */
+  dineCartLock: (id: string) => http.postJson<CoupleDineBoardVO>(`/api/couple/dining/cart/${id}/lock`, {}),
+  /** F214 撤掉本人未锁的菜，返回整板 */
+  dineCartRemove: (id: string) => http.delete<CoupleDineBoardVO>(`/api/couple/dining/cart/${id}`),
+
+  /** F219 点单机：按心情领今日一杯（mood 非法值后端兜底返回开心） */
+  dineDrink: (mood: string) => http.get<CoupleDineDrinkVO>(`/api/couple/dining/drink?mood=${encodeURIComponent(mood)}`),
+
+  /** F217 年度干饭账（year：yyyy） */
+  dineYear: (year: string) => http.get<CoupleDineYearVO>(`/api/couple/dining/year?year=${encodeURIComponent(year)}`),
 }
