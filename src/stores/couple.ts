@@ -105,6 +105,15 @@ import type {
   CoupleReunionLogVO,
   CoupleEnergyVO,
   CoupleDistanceReportVO,
+  CoupleSecurityBoardVO,
+  CoupleCheckupVO,
+  CoupleDecadeVO,
+  CoupleVisionVO,
+  CoupleOathVO,
+  CoupleTrustBoardVO,
+  CoupleRingBoardVO,
+  CoupleContractVO,
+  CouplePetVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -248,6 +257,16 @@ export const useCoupleStore = defineStore('couple', () => {
   const reunionLogs = ref<CoupleReunionLogVO[]>([])
   const energy = ref<CoupleEnergyVO | null>(null)
   const distanceReport = ref<CoupleDistanceReportVO | null>(null)
+  // 确定感（F120-F129）
+  const securityBoard = ref<CoupleSecurityBoardVO | null>(null)
+  const checkup = ref<CoupleCheckupVO | null>(null)
+  const decade = ref<CoupleDecadeVO | null>(null)
+  const visions = ref<CoupleVisionVO[]>([])
+  const oaths = ref<CoupleOathVO[]>([])
+  const trustBoard = ref<CoupleTrustBoardVO | null>(null)
+  const rings = ref<CoupleRingBoardVO | null>(null)
+  const contracts = ref<CoupleContractVO[]>([])
+  const pet = ref<CouplePetVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -277,6 +296,7 @@ export const useCoupleStore = defineStore('couple', () => {
     keepsake: false,
     comm: false,
     distance: false,
+    secure: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -419,6 +439,15 @@ export const useCoupleStore = defineStore('couple', () => {
     reunionLogs.value = []
     energy.value = null
     distanceReport.value = null
+    securityBoard.value = null
+    checkup.value = null
+    decade.value = null
+    visions.value = []
+    oaths.value = []
+    trustBoard.value = null
+    rings.value = null
+    contracts.value = []
+    pet.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -447,6 +476,7 @@ export const useCoupleStore = defineStore('couple', () => {
       keepsake: false,
       comm: false,
       distance: false,
+      secure: false,
     }
     promiseDraft.value = null
   }
@@ -569,7 +599,7 @@ export const useCoupleStore = defineStore('couple', () => {
     loadedLists.value.anniversaries = true
   }
 
-  async function createAnniversary(body: { title: string; date: string; yearly: boolean }) {
+  async function createAnniversary(body: { title: string; date: string; yearly: boolean; kind?: string }) {
     const vo = await coupleApi.createAnniversary(body)
     await loadAnniversaries()
     return vo
@@ -1571,6 +1601,84 @@ export const useCoupleStore = defineStore('couple', () => {
     distanceReport.value = await coupleApi.distanceReport()
   }
 
+  // ---------- 确定感与安全感（F120-F129） ----------
+
+  async function loadSecure() {
+    const [sec, chk, dec, vis, oth, trs, rng, ctr, pt] = await Promise.all([
+      coupleApi.security(),
+      coupleApi.checkup(),
+      coupleApi.decade(),
+      coupleApi.visions(),
+      coupleApi.oaths(),
+      coupleApi.trust(),
+      coupleApi.rings(),
+      coupleApi.contracts(),
+      coupleApi.pet(),
+    ])
+    securityBoard.value = sec
+    checkup.value = chk
+    decade.value = dec
+    visions.value = vis ?? []
+    oaths.value = oth ?? []
+    trustBoard.value = trs
+    rings.value = rng
+    contracts.value = ctr ?? []
+    pet.value = pt
+    loadedLists.value.secure = true
+  }
+
+  async function depositSecurity(content: string) {
+    securityBoard.value = await coupleApi.depositSecurity(content)
+  }
+
+  async function acceptSecurity(id: string) {
+    securityBoard.value = await coupleApi.acceptSecurity(id)
+  }
+
+  async function loadCheckup() {
+    checkup.value = await coupleApi.checkup()
+  }
+
+  async function saveDecade(content: string) {
+    decade.value = await coupleApi.saveDecade(content)
+  }
+
+  async function addVision(word: string, note?: string) {
+    visions.value = (await coupleApi.addVision(word, note)) ?? []
+  }
+
+  async function makeOath(content: string) {
+    oaths.value = (await coupleApi.makeOath(content)) ?? []
+  }
+
+  async function stampOath(id: string) {
+    oaths.value = (await coupleApi.stampOath(id)) ?? []
+  }
+
+  async function depositTrust(reason?: string) {
+    trustBoard.value = await coupleApi.depositTrust(reason)
+  }
+
+  async function loadRings() {
+    rings.value = await coupleApi.rings()
+  }
+
+  async function makeContract(title: string, content?: string) {
+    contracts.value = (await coupleApi.makeContract(title, content)) ?? []
+  }
+
+  async function checkContract(id: string) {
+    contracts.value = (await coupleApi.checkContract(id)) ?? []
+  }
+
+  async function adoptPet(name: string, kind: string) {
+    pet.value = await coupleApi.adoptPet(name, kind)
+  }
+
+  async function carePet() {
+    pet.value = await coupleApi.carePet()
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -2160,6 +2268,55 @@ export const useCoupleStore = defineStore('couple', () => {
           void loadDistance()
         }
         break
+      case 'security-deposit':
+      case 'security-accepted':
+        notify('🫙 安全感账户', msg.detail)
+        if (loadedLists.value.secure) {
+          void coupleApi.security().then((v) => (securityBoard.value = v))
+        }
+        break
+      case 'decade-written':
+      case 'decade-complete':
+        notify('⏳ 十年之约', msg.detail)
+        if (loadedLists.value.secure) {
+          void coupleApi.decade().then((v) => (decade.value = v))
+        }
+        break
+      case 'vision-added':
+      case 'vision-resonate':
+        notify('✨ 愿景板', msg.detail)
+        if (loadedLists.value.secure) {
+          void coupleApi.visions().then((v) => (visions.value = v ?? []))
+        }
+        break
+      case 'oath-made':
+      case 'oath-stamped':
+      case 'oath-exhibited':
+        notify('🖋️ 承诺博物馆', msg.detail)
+        if (loadedLists.value.secure) {
+          void coupleApi.oaths().then((v) => (oaths.value = v ?? []))
+        }
+        break
+      case 'trust-deposit':
+        notify('🪙 信任存折', msg.detail)
+        if (loadedLists.value.secure) {
+          void coupleApi.trust().then((v) => (trustBoard.value = v))
+        }
+        break
+      case 'contract-made':
+      case 'contract-checkin':
+        notify('📜 双人契约', msg.detail)
+        if (loadedLists.value.secure) {
+          void coupleApi.contracts().then((v) => (contracts.value = v ?? []))
+        }
+        break
+      case 'pet-adopted':
+      case 'pet-cared':
+        notify('🐾 守护兽', msg.detail)
+        if (loadedLists.value.secure) {
+          void coupleApi.pet().then((v) => (pet.value = v))
+        }
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -2444,6 +2601,15 @@ export const useCoupleStore = defineStore('couple', () => {
     reunionLogs,
     energy,
     distanceReport,
+    securityBoard,
+    checkup,
+    decade,
+    visions,
+    oaths,
+    trustBoard,
+    rings,
+    contracts,
+    pet,
     loadComm,
     translateText,
     startCoolDown,
@@ -2472,5 +2638,19 @@ export const useCoupleStore = defineStore('couple', () => {
     doneCloudDate,
     pingSafety,
     logReunion,
+    loadSecure,
+    depositSecurity,
+    acceptSecurity,
+    loadCheckup,
+    saveDecade,
+    addVision,
+    makeOath,
+    stampOath,
+    depositTrust,
+    loadRings,
+    makeContract,
+    checkContract,
+    adoptPet,
+    carePet,
   }
 })

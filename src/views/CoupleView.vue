@@ -139,6 +139,7 @@
           <el-tab-pane label="🤝 约定" name="promises">
             <div class="tab-stack">
               <CouplePromises />
+              <CoupleSecure />
               <CouplePact />
             </div>
           </el-tab-pane>
@@ -342,6 +343,7 @@ import CoupleWishBoard from '@/components/couple/CoupleWishBoard.vue'
 import CoupleDict from '@/components/couple/CoupleDict.vue'
 import CoupleSoft from '@/components/couple/CoupleSoft.vue'
 import CoupleDistance from '@/components/couple/CoupleDistance.vue'
+import CoupleSecure from '@/components/couple/CoupleSecure.vue'
 import CoupleMoodRelay from '@/components/couple/CoupleMoodRelay.vue'
 import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
 

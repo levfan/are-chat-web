@@ -414,6 +414,8 @@ export interface CoupleAnniversaryVO {
   title: string
   date: string
   yearly: boolean
+  /** F127 大日子类型：NORMAL / LOVE / FAMILY / FRIEND / WORK */
+  kind: string
   createdBy: string
   created: number
 }
@@ -1697,4 +1699,92 @@ export interface CoupleDistanceReportVO {
   cloudDoneCount: number
   sealedLetters: number
   summary: string
+}
+
+// ============ 情侣空间·确定感与安全感（F120-F129） ============
+
+export interface CoupleSecurityItemVO {
+  id: string
+  fromUser: string
+  content: string
+  status: 'DEPOSITED' | 'ACCEPTED'
+  mine: boolean
+  created: number
+}
+
+export interface CoupleSecurityBoardVO {
+  balance: number
+  recent: CoupleSecurityItemVO[]
+}
+
+export interface CoupleCheckupItemVO {
+  name: string
+  score: number
+  advice: string
+}
+
+export interface CoupleCheckupVO {
+  total: number
+  level: string
+  items: CoupleCheckupItemVO[]
+}
+
+export interface CoupleDecadeVO {
+  mine: { content: string; created: number } | null
+  partner: { content: string; created: number } | null
+  complete: boolean
+}
+
+export interface CoupleVisionVO {
+  id: string
+  fromUser: string
+  word: string
+  note: string | null
+  resonate: boolean
+  mine: boolean
+  created: number
+}
+
+export interface CoupleOathVO {
+  id: string
+  fromUser: string
+  content: string
+  stampMine: boolean
+  stampPartner: boolean
+  exhibited: boolean
+  created: number
+}
+
+export interface CoupleTrustBoardVO {
+  mineBalance: number
+  partnerBalance: number
+  recent: { id: string; fromUser: string; reason: string | null; created: number }[]
+}
+
+export interface CoupleRingVO {
+  year: number
+  days: number
+  events: number
+}
+
+export interface CoupleRingBoardVO {
+  years: number
+  rings: CoupleRingVO[]
+}
+
+export interface CoupleContractVO {
+  row: { id: string; title: string; content: string | null; countA: number; countB: number; created: number }
+  myCount: number
+  partnerCount: number
+}
+
+export interface CouplePetVO {
+  id: string
+  name: string
+  kind: string
+  careCount: number
+  mood: string
+  moodLine: string
+  lastCareAt: number | null
+  created: number
 }

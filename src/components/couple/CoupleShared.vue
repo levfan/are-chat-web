@@ -74,6 +74,9 @@
         <div v-if="couple.anniversaries.length === 0" class="empty-line">添加属于你们的纪念日吧 💕</div>
         <div v-for="row in couple.anniversaries" :key="row.id" class="item-row" :data-testid="`couple-anniv-${row.id}`">
           <span class="item-title">{{ row.yearly ? '🔁' : '📍' }} {{ row.title }}</span>
+          <el-tag size="small" :type="row.kind && row.kind !== 'NORMAL' ? 'warning' : 'info'">
+            {{ ANNIV_KIND_META[row.kind]?.emoji ?? '📌' }} {{ ANNIV_KIND_META[row.kind]?.label ?? '普通' }}
+          </el-tag>
           <span class="item-due">{{ row.date }}</span>
           <el-button link size="small" type="danger" @click="onDeleteAnniv(row)">删除</el-button>
         </div>
@@ -137,6 +140,16 @@
         />
       </div>
       <el-checkbox v-model="annivForm.yearly" label="每年重复（生日 / 周年）" data-testid="couple-anniv-yearly" />
+      <div class="due-row stack-input">
+        <span class="due-label">分类：</span>
+        <el-select v-model="annivForm.kind" data-testid="couple-anniv-kind" style="width: 160px">
+          <el-option label="💕 恋爱纪念" value="LOVE" />
+          <el-option label="👨‍👩‍👧 家人相关" value="FAMILY" />
+          <el-option label="🧑‍🤝‍🧑 朋友相关" value="FRIEND" />
+          <el-option label="💼 工作日子" value="WORK" />
+          <el-option label="📌 普通日子" value="NORMAL" />
+        </el-select>
+      </div>
       <template #footer>
         <el-button @click="annivDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="savingAnniv" data-testid="couple-anniv-save" @click="onSaveAnniv">保存</el-button>
@@ -176,7 +189,16 @@ const itemForm = ref<{ kind: CoupleItemKind; title: string; note: string; dueDat
 
 const annivDialogVisible = ref(false)
 const savingAnniv = ref(false)
-const annivForm = ref<{ title: string; date: string | null; yearly: boolean }>({ title: '', date: null, yearly: true })
+const annivForm = ref<{ title: string; date: string | null; yearly: boolean; kind: string }>({ title: '', date: null, yearly: true, kind: 'LOVE' })
+
+/** F127 大日子分类标签 */
+const ANNIV_KIND_META: Record<string, { emoji: string; label: string }> = {
+  LOVE: { emoji: '💕', label: '恋爱' },
+  FAMILY: { emoji: '👨‍👩‍👧', label: '家人' },
+  FRIEND: { emoji: '🧑‍🤝‍🧑', label: '朋友' },
+  WORK: { emoji: '💼', label: '工作' },
+  NORMAL: { emoji: '📌', label: '普通' },
+}
 
 const itemGroups = computed(() =>
   KIND_ORDER.map((kind) => ({ kind, items: couple.items.filter((item) => item.kind === kind) })),
@@ -238,10 +260,10 @@ async function onSaveAnniv() {
   }
   savingAnniv.value = true
   try {
-    await couple.createAnniversary({ title, date: annivForm.value.date, yearly: annivForm.value.yearly })
+    await couple.createAnniversary({ title, date: annivForm.value.date, yearly: annivForm.value.yearly, kind: annivForm.value.kind })
     ElMessage.success('纪念日已加入共同日历 📅')
     annivDialogVisible.value = false
-    annivForm.value = { title: '', date: null, yearly: true }
+    annivForm.value = { title: '', date: null, yearly: true, kind: 'LOVE' }
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '保存失败')
   } finally {

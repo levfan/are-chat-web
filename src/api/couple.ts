@@ -113,6 +113,15 @@ import type {
   CoupleReunionLogVO,
   CoupleEnergyVO,
   CoupleDistanceReportVO,
+  CoupleSecurityBoardVO,
+  CoupleCheckupVO,
+  CoupleDecadeVO,
+  CoupleVisionVO,
+  CoupleOathVO,
+  CoupleTrustBoardVO,
+  CoupleRingBoardVO,
+  CoupleContractVO,
+  CouplePetVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -153,7 +162,7 @@ export const coupleApi = {
     http.putJson<CoupleItemVO>(`/api/couple/items/${id}`, { ...body, dueDate: body.dueDate ?? null }),
   deleteItem: (id: string) => http.delete<void>(`/api/couple/items/${id}`),
   anniversaries: () => http.get<CoupleAnniversaryVO[]>('/api/couple/anniversaries'),
-  createAnniversary: (body: { title: string; date: string; yearly: boolean }) =>
+  createAnniversary: (body: { title: string; date: string; yearly: boolean; kind?: string }) =>
     http.postJson<CoupleAnniversaryVO>('/api/couple/anniversaries', body),
   deleteAnniversary: (id: string) => http.delete<void>(`/api/couple/anniversaries/${id}`),
 
@@ -725,4 +734,56 @@ export const coupleApi = {
   energy: () => http.get<CoupleEnergyVO>('/api/couple/distance/energy'),
   /** F119 异地恋报告 */
   distanceReport: () => http.get<CoupleDistanceReportVO>('/api/couple/distance/report'),
+
+  // ============ 确定感与安全感（F120-F129） ============
+  /** F120 安全感账户 */
+  security: () => http.get<CoupleSecurityBoardVO>('/api/couple/secure/security'),
+  /** F120 存一句安心话 */
+  depositSecurity: (content: string) =>
+    http.postJson<CoupleSecurityBoardVO>('/api/couple/secure/security', { content }),
+  /** F120 收下一句安心话 */
+  acceptSecurity: (id: string) =>
+    http.postJson<CoupleSecurityBoardVO>(`/api/couple/secure/security/${id}/accept`, {}),
+  /** F121 恋爱体检 */
+  checkup: () => http.get<CoupleCheckupVO>('/api/couple/secure/checkup'),
+  /** F122 十年之约 */
+  decade: () => http.get<CoupleDecadeVO>('/api/couple/secure/decade'),
+  /** F122 写/改我的十年之约 */
+  saveDecade: (content: string) =>
+    http.postJson<CoupleDecadeVO>('/api/couple/secure/decade', { content }),
+  /** F123 愿景板 */
+  visions: () => http.get<CoupleVisionVO[]>('/api/couple/secure/visions'),
+  /** F123 贴一张愿景卡 */
+  addVision: (word: string, note?: string) =>
+    http.postJson<CoupleVisionVO[]>('/api/couple/secure/visions', { word, note: note ?? null }),
+  /** F124 承诺博物馆 */
+  oaths: () => http.get<CoupleOathVO[]>('/api/couple/secure/oaths'),
+  /** F124 立一份承诺 */
+  makeOath: (content: string) =>
+    http.postJson<CoupleOathVO[]>('/api/couple/secure/oaths', { content }),
+  /** F124 盖章 */
+  stampOath: (id: string) =>
+    http.postJson<CoupleOathVO[]>(`/api/couple/secure/oaths/${id}/stamp`, {}),
+  /** F125 信任存折 */
+  trust: () => http.get<CoupleTrustBoardVO>('/api/couple/secure/trust'),
+  /** F125 存一枚信任币（每天一枚） */
+  depositTrust: (reason?: string) =>
+    http.postJson<CoupleTrustBoardVO>('/api/couple/secure/trust', { reason: reason ?? null }),
+  /** F126 恋爱年轮 */
+  rings: () => http.get<CoupleRingBoardVO>('/api/couple/secure/rings'),
+  /** F128 双人契约 */
+  contracts: () => http.get<CoupleContractVO[]>('/api/couple/secure/contracts'),
+  /** F128 立契约 */
+  makeContract: (title: string, content?: string) =>
+    http.postJson<CoupleContractVO[]>('/api/couple/secure/contracts', { title, content: content ?? null }),
+  /** F128 契约打卡 */
+  checkContract: (id: string) =>
+    http.postJson<CoupleContractVO[]>(`/api/couple/secure/contracts/${id}/checkin`, {}),
+  /** F129 守护兽 */
+  pet: () => http.get<CouplePetVO | null>('/api/couple/secure/pet'),
+  /** F129 领养守护兽 */
+  adoptPet: (name: string, kind: string) =>
+    http.postJson<CouplePetVO>('/api/couple/secure/pet', { name, kind }),
+  /** F129 照料守护兽 */
+  carePet: () => http.postJson<CouplePetVO>('/api/couple/secure/pet/care', {}),
 }
