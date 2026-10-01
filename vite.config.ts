@@ -62,6 +62,8 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['tests/unit/**/*.spec.ts'],
     setupFiles: ['vitest.setup.ts'],
+    // 整页挂载用例（CoupleView 全组件树）成本随批次增长，默认 5s 已不够
+    testTimeout: 20000,
     // 让 element-plus 的样式导入走 Vite 转换（否则 Node 原生 ESM 无法加载 .css）
     css: true,
     server: {

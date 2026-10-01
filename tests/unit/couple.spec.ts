@@ -3,11 +3,11 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, coupleApi, ceremonyApi, cozyApi, diningApi, listenApi, manageApi, museumApi, pinApi } from '@/api/couple'
+import { almanacApi, boardApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleLsTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -486,6 +486,64 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F270-F279 二人制造厂 factoryApi：默认全空但形状完整的 BoardVO，用例内按需覆盖
+  const fyEmptyBoard = () => ({
+    day: '2026-10-02',
+    week: '2026-09-28',
+    month: '2026-10',
+    spins: [],
+    owed: [],
+    spinLine: '命运转盘开始转动，本周家务听天由命 🎡',
+    shop: [],
+    shopChampion: '',
+    stock: [],
+    expiring: [],
+    parcels: [],
+    wake: [],
+    meds: [],
+    stand: { mineToday: false, partnerToday: false, pairedToday: false, weekPairedDays: 0 },
+    advances: [],
+    openTotalCents: 0,
+    groceries: [],
+    check: { month: '2026-10', mine: '', partner: '', bothIn: false },
+    checkMiss: [],
+  })
+  const factoryBase: Record<string, ReturnType<typeof vi.fn>> = {
+    fyBoard: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fySpin: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fySpinConfirm: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fySpinDone: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyShopAdd: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyShopRemove: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyShopDone: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyStockAdd: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyStockOut: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyParcelNew: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyParcelGrab: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyParcelDone: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyWakeSet: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyWakeGive: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyMedAdd: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyMedStop: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyMedRemind: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyMedTaken: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyStandup: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyAdvanceAdd: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyAdvanceSettle: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyGrocery: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyGroceryGuess: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyGroceryRate: vi.fn().mockResolvedValue(fyEmptyBoard()),
+    fyHomeCheck: vi.fn().mockResolvedValue(fyEmptyBoard()),
+  }
+  const factoryWrapped = new Proxy(factoryBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(fyEmptyBoard())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -496,6 +554,7 @@ vi.mock('@/api/couple', () => {
     boardApi: boardWrapped,
     almanacApi: almanacWrapped,
     listenApi: listenWrapped,
+    factoryApi: factoryWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -2455,6 +2514,344 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     expect(listenApi.lsLetterOpen).toHaveBeenCalledWith('le2')
     expect(wrapper.find('[data-testid="couple-ls-letter-read-le2"]').text()).toContain('等你先抱我')
+  })
+
+  // ============ 批次二十三：二人制造厂（F270-F279，shared 页签「🧾 过日子」子页签 CoupleFactory） ============
+
+  /** 本周车间总览空态基底（用例内按分区覆盖） */
+  function fyBoardVo(partial: Partial<CoupleFyBoardVO> = {}): CoupleFyBoardVO {
+    return {
+      day: '2026-10-02',
+      week: '2026-09-28',
+      month: '2026-10',
+      spins: [],
+      owed: [],
+      spinLine: '抽到就是天选打工人，恭喜上岗。',
+      shop: [],
+      shopChampion: '',
+      stock: [],
+      expiring: [],
+      parcels: [],
+      wake: [],
+      meds: [],
+      stand: { mineToday: false, partnerToday: false, pairedToday: false, weekPairedDays: 0 },
+      advances: [],
+      openTotalCents: 0,
+      groceries: [],
+      check: { month: '2026-10', mine: '', partner: '', bothIn: false },
+      checkMiss: [],
+      ...partial,
+    }
+  }
+
+  afterEach(() => {
+    // 制造厂折叠态落库键清理，避免污染后续用例
+    localStorage.removeItem(`arechat_couple_collapse_couple-fy-spin`)
+    localStorage.removeItem(`arechat_couple_collapse_couple-fy-shop`)
+    localStorage.removeItem(`arechat_couple_collapse_couple-fy-errand`)
+    localStorage.removeItem(`arechat_couple_collapse_couple-fy-books`)
+  })
+
+  it('二人制造厂：一转后任务行出现，对方那格可认账调 fySpinConfirm、自己已认账那格可干完调 fySpinDone', async () => {
+    const partnerRow = { id: 'fs1', week: '2026-09-28', item: '倒垃圾', assignedUser: 'bob', mine: false, confirmed: false, done: false }
+    const myRow = { id: 'fs2', week: '2026-09-28', item: '洗碗', assignedUser: 'alice', mine: true, confirmed: true, done: false }
+    const owedLine = '2026-09-21 · 拖地（alice）'
+    vi.mocked(factoryApi.fyBoard).mockResolvedValue(fyBoardVo())
+    vi.mocked(factoryApi.fySpin).mockResolvedValue(fyBoardVo({ spins: [partnerRow, myRow], owed: [owedLine] }))
+    vi.mocked(factoryApi.fySpinConfirm).mockResolvedValue(fyBoardVo({ spins: [{ ...partnerRow, confirmed: true }, myRow], owed: [owedLine] }))
+    vi.mocked(factoryApi.fySpinDone).mockResolvedValue(fyBoardVo({ spins: [{ ...partnerRow, confirmed: true }, { ...myRow, done: true }] }))
+    const wrapper = await mountOnSharedDaily()
+    // 本周还没转盘：给一转表单
+    expect(wrapper.find('[data-testid="couple-fy-spin-items"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-fy-spin-items"]').setValue('倒垃圾，洗碗')
+    await wrapper.find('[data-testid="couple-fy-spin-submit"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fySpin).toHaveBeenCalledWith('倒垃圾，洗碗')
+    expect(wrapper.find('[data-testid="couple-fy-spin-line"]').text()).toContain('天选打工人')
+    // 一周一转：转过之后表单收起
+    expect(wrapper.find('[data-testid="couple-fy-spin-items"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-spin-closed"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-fy-spin-fs1"]').text()).toContain('倒垃圾')
+    expect(wrapper.find('[data-testid="couple-fy-spin-who-fs1"]').text()).toContain('派给 bob')
+    // 对方那格只给认账按钮；我那格（已认账）只给干完按钮
+    expect(wrapper.find('[data-testid="couple-fy-spin-confirm-fs1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-fy-spin-done-fs1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-spin-confirm-fs2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-spin-status-fs2"]').text()).toContain('双签生效')
+    // 欠账栏（近三周没干完的赖不掉）
+    expect(wrapper.find('[data-testid="couple-fy-spin-owed-0"]').text()).toContain('拖地')
+
+    await wrapper.find('[data-testid="couple-fy-spin-confirm-fs1"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fySpinConfirm).toHaveBeenCalledWith('fs1')
+    expect(wrapper.find('[data-testid="couple-fy-spin-status-fs1"]').text()).toContain('已认账')
+    await wrapper.find('[data-testid="couple-fy-spin-done-fs2"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fySpinDone).toHaveBeenCalledWith('fs2')
+    expect(wrapper.find('[data-testid="couple-fy-spin-fs2"]').classes()).toContain('is-done')
+    expect(wrapper.find('[data-testid="couple-fy-spin-status-fs2"]').text()).toContain('干完了')
+    // 本周干完，欠账栏回到空态文案
+    expect(wrapper.find('[data-testid="couple-fy-spin-owed"]').text()).toContain('账上干净')
+    wrapper.unmount()
+  })
+
+  it('二人制造厂：清单「我买了」调 fyShopDone、只有登记者可删；冰箱临期行高亮并可调 fyStockOut', async () => {
+    const champion = 'alice · 本月生活委员 🧺（7 件）'
+    const mineRow = { id: 'fh2', name: '垃圾袋', qty: '一卷', fromUser: 'alice', mine: true, doneBy: '' }
+    const catLitter = { id: 'fh3', name: '猫砂', qty: '两袋', fromUser: 'alice', mine: true, doneBy: '' }
+    const stockRow = { id: 'fk1', item: '草莓', qty: '一盒', expireDay: '2026-10-03', mine: true, expiring: true }
+    const expireLine = '冰箱里的「草莓」快到赏味期了，今晚吃掉它？'
+    vi.mocked(factoryApi.fyBoard).mockResolvedValue(fyBoardVo({
+      shopChampion: champion,
+      shop: [{ id: 'fh1', name: '无糖酸奶', qty: '两板', fromUser: 'bob', mine: false, doneBy: '' }, mineRow],
+      stock: [stockRow],
+      expiring: [expireLine],
+    }))
+    // 买回后整份替换：酸奶下墙，其余不动
+    vi.mocked(factoryApi.fyShopDone).mockResolvedValue(fyBoardVo({ shopChampion: champion, shop: [mineRow], stock: [stockRow], expiring: [expireLine] }))
+    vi.mocked(factoryApi.fyStockOut).mockResolvedValue(fyBoardVo({ shopChampion: champion, shop: [mineRow], stock: [], expiring: [] }))
+    vi.mocked(factoryApi.fyShopAdd).mockResolvedValue(fyBoardVo({ shopChampion: champion, shop: [mineRow, catLitter] }))
+    vi.mocked(factoryApi.fyStockAdd).mockResolvedValue(fyBoardVo({
+      shopChampion: champion,
+      shop: [mineRow, catLitter],
+      stock: [{ id: 'fk2', item: '鸡蛋', qty: '', expireDay: '', mine: true, expiring: false }],
+    }))
+    const wrapper = await mountOnSharedDaily()
+    expect(wrapper.find('[data-testid="couple-fy-shop-champion"]').text()).toContain('生活委员')
+    // TA 点的也能顺手买回，但不给删（谁登记谁划）；自己登记的删与买回都在
+    expect(wrapper.find('[data-testid="couple-fy-shop-bought-fh1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-fy-shop-del-fh1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-shop-del-fh2"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-fy-shop-bought-fh1"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyShopDone).toHaveBeenCalledWith('fh1')
+    expect(wrapper.find('[data-testid="couple-fy-shop-fh1"]').exists()).toBe(false)
+
+    // 冰箱：临期行高亮 + 顶部提示条 + 用完按钮
+    expect(wrapper.find('[data-testid="couple-fy-stock-fk1"]').classes()).toContain('is-expiring')
+    expect(wrapper.find('[data-testid="couple-fy-expiring-0"]').text()).toContain('草莓')
+    expect(wrapper.find('[data-testid="couple-fy-stock-warn-fk1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-fy-stock-expire-fk1"]').text()).toContain('2026-10-03')
+    await wrapper.find('[data-testid="couple-fy-stock-out-fk1"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyStockOut).toHaveBeenCalledWith('fk1')
+    expect(wrapper.find('[data-testid="couple-fy-stock-fk1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-expiring"]').exists()).toBe(false)
+
+    // 加清单与补货：入参与后端字段一一对齐（赏味期空串=不写）
+    await wrapper.find('[data-testid="couple-fy-shop-name"]').setValue('猫砂')
+    await wrapper.find('[data-testid="couple-fy-shop-qty"]').setValue('两袋')
+    await wrapper.find('[data-testid="couple-fy-shop-submit"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyShopAdd).toHaveBeenCalledWith('猫砂', '两袋')
+    expect(wrapper.find('[data-testid="couple-fy-shop-title-fh3"]').text()).toContain('猫砂')
+    await wrapper.find('[data-testid="couple-fy-stock-name"]').setValue('鸡蛋')
+    await wrapper.find('[data-testid="couple-fy-stock-submit"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyStockAdd).toHaveBeenCalledWith('鸡蛋', '', '')
+    expect(wrapper.find('[data-testid="couple-fy-stock-expire-fk2"]').text()).toContain('没写赏味期')
+    expect(wrapper.find('[data-testid="couple-fy-stock-fk2"]').classes()).not.toContain('is-expiring')
+    wrapper.unmount()
+  })
+
+  it('二人制造厂：快递三态流 fyParcelNew→fyParcelGrab→fyParcelDone，叫醒卡只递 TA 的词且当天禁用', async () => {
+    const myParcel = { id: 'fp1', note: '驿站 3 号柜', fromUser: 'alice', mine: true, status: 'SENT' as const, grabber: '' }
+    const taSent = { id: 'fp2', note: '生鲜柜', fromUser: 'bob', mine: false, status: 'SENT' as const, grabber: '' }
+    const taGrabbed = { ...taSent, status: 'GRABBED' as const, grabber: 'alice' }
+    const taDone = { ...taSent, status: 'DONE' as const, grabber: 'alice' }
+    const wakeMine = { fromUser: 'alice', content: '早安，今天也爱你', mine: true, givenToday: true }
+    const wakeTa = { fromUser: 'bob', content: '再睡五分钟就亲你', mine: false, givenToday: false }
+    const wakeTaGiven = { ...wakeTa, givenToday: true }
+    const wakeMineNew = { ...wakeMine, content: '叫你起床小懒猪' }
+    const boardOf = (parcels: CoupleFyBoardVO['parcels'], wake: CoupleFyBoardVO['wake'] = [wakeMine, wakeTa]) => fyBoardVo({ parcels, wake })
+    vi.mocked(factoryApi.fyBoard).mockResolvedValue(boardOf([myParcel, taSent]))
+    vi.mocked(factoryApi.fyParcelNew).mockResolvedValue(boardOf([myParcel, taSent]))
+    vi.mocked(factoryApi.fyParcelGrab).mockResolvedValue(boardOf([myParcel, taGrabbed]))
+    vi.mocked(factoryApi.fyParcelDone).mockResolvedValue(boardOf([myParcel, taDone]))
+    vi.mocked(factoryApi.fyWakeGive).mockResolvedValue(boardOf([myParcel, taDone], [wakeMine, wakeTaGiven]))
+    vi.mocked(factoryApi.fyWakeSet).mockResolvedValue(boardOf([myParcel, taDone], [wakeMineNew, wakeTaGiven]))
+    const wrapper = await mountOnSharedDaily()
+    // 自己下的单不能自己接，TA 的单才有接单侠按钮
+    expect(wrapper.find('[data-testid="couple-fy-parcel-grab-fp1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-parcel-status-fp1"]').text()).toContain('等 TA 来领养')
+    expect(wrapper.find('[data-testid="couple-fy-parcel-note-fp2"]').text()).toContain('生鲜柜')
+
+    await wrapper.find('[data-testid="couple-fy-parcel-note"]').setValue('大件，两个人抬')
+    await wrapper.find('[data-testid="couple-fy-parcel-submit"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyParcelNew).toHaveBeenCalledWith('大件，两个人抬')
+
+    await wrapper.find('[data-testid="couple-fy-parcel-grab-fp2"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyParcelGrab).toHaveBeenCalledWith('fp2')
+    expect(wrapper.find('[data-testid="couple-fy-parcel-status-fp2"]').text()).toContain('我接的')
+    // 谁领的单谁销单：接单后送达按钮才出现
+    await wrapper.find('[data-testid="couple-fy-parcel-done-fp2"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyParcelDone).toHaveBeenCalledWith('fp2')
+    expect(wrapper.find('[data-testid="couple-fy-parcel-status-fp2"]').text()).toContain('已送达')
+
+    // 叫醒：本周双词，递卡只能递 TA 的词且今天还没递
+    expect(wrapper.find('[data-testid="couple-fy-wake-mine"]').text()).toContain('今天也爱你')
+    expect(wrapper.find('[data-testid="couple-fy-wake-partner"]').text()).toContain('再睡五分钟')
+    expect(wrapper.find('[data-testid="couple-fy-wake-give"]').attributes('disabled')).toBeUndefined()
+    await wrapper.find('[data-testid="couple-fy-wake-give"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyWakeGive).toHaveBeenCalledOnce()
+    expect(wrapper.find('[data-testid="couple-fy-wake-given"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-fy-wake-give"]').attributes('disabled')).toBeDefined()
+    // 定词表单回填我这周的词，提交走 fyWakeSet
+    expect((wrapper.find('[data-testid="couple-fy-wake-input"]').element as HTMLInputElement).value).toContain('今天也爱你')
+    await wrapper.find('[data-testid="couple-fy-wake-input"]').setValue('叫你起床小懒猪')
+    await wrapper.find('[data-testid="couple-fy-wake-submit"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyWakeSet).toHaveBeenCalledWith('叫你起床小懒猪')
+    expect(wrapper.find('[data-testid="couple-fy-wake-mine"]').text()).toContain('小懒猪')
+    wrapper.unmount()
+  })
+
+  it('二人制造厂：「提醒了」按钮只在对方药上出现并调 fyMedRemind，久坐大按钮调 fyStandup 并渲染同起态', async () => {
+    const myMed = { id: 'fm1', name: '维生素D', times: '早饭后', fromUser: 'alice', mine: true, remindedToday: true, takenToday: false, streak: 6 }
+    const taMed = { id: 'fm2', name: '护肝片', times: '睡前', fromUser: 'bob', mine: false, remindedToday: false, takenToday: false, streak: 12 }
+    const taReminded = { ...taMed, remindedToday: true }
+    const myTaken = { ...myMed, takenToday: true, streak: 7 }
+    const standUntapped = { mineToday: false, partnerToday: true, pairedToday: false, weekPairedDays: 3 }
+    vi.mocked(factoryApi.fyBoard).mockResolvedValue(fyBoardVo({ meds: [myMed, taMed], stand: standUntapped }))
+    vi.mocked(factoryApi.fyMedRemind).mockResolvedValue(fyBoardVo({ meds: [myMed, taReminded], stand: standUntapped }))
+    vi.mocked(factoryApi.fyMedTaken).mockResolvedValue(fyBoardVo({ meds: [myTaken, taReminded], stand: standUntapped }))
+    vi.mocked(factoryApi.fyStandup).mockResolvedValue(fyBoardVo({
+      meds: [myTaken, taReminded],
+      stand: { mineToday: true, partnerToday: true, pairedToday: true, weekPairedDays: 4 },
+    }))
+    const wrapper = await mountOnSharedDaily()
+    // 对方药：只给「提醒了」；本人药：只给「吃了」与「停药」
+    expect(wrapper.find('[data-testid="couple-fy-med-remind-fm2"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-fy-med-take-fm2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-med-remind-fm1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-med-take-fm1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-fy-med-stop-fm1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-fy-med-title-fm2"]').text()).toContain('护肝片')
+    expect(wrapper.find('[data-testid="couple-fy-med-streak-fm2"]').text()).toContain('12 天')
+    expect(wrapper.find('[data-testid="couple-fy-med-remind-flag-fm2"]').text()).toContain('⏳')
+    await wrapper.find('[data-testid="couple-fy-med-remind-fm2"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyMedRemind).toHaveBeenCalledWith('fm2')
+    expect(wrapper.find('[data-testid="couple-fy-med-remind-flag-fm2"]').text()).toContain('✅')
+    // 自己报吃了走 fyMedTaken，链 +1
+    await wrapper.find('[data-testid="couple-fy-med-take-fm1"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyMedTaken).toHaveBeenCalledWith('fm1')
+    expect(wrapper.find('[data-testid="couple-fy-med-streak-fm1"]').text()).toContain('7 天')
+
+    // 久坐：未拍可点，拍完双签同起 + 本周同起数 +1
+    expect(wrapper.find('[data-testid="couple-fy-stand-week"]').text()).toContain('3 天')
+    expect(wrapper.find('[data-testid="couple-fy-stand-paired"]').text()).not.toContain('达成')
+    expect(wrapper.find('[data-testid="couple-fy-stand-btn"]').attributes('disabled')).toBeUndefined()
+    await wrapper.find('[data-testid="couple-fy-stand-btn"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyStandup).toHaveBeenCalledOnce()
+    expect(wrapper.find('[data-testid="couple-fy-stand-paired"]').text()).toContain('今日同起达成')
+    expect(wrapper.find('[data-testid="couple-fy-stand-week"]').text()).toContain('4 天')
+    expect(wrapper.find('[data-testid="couple-fy-stand-btn"]').attributes('disabled')).toBeDefined()
+    wrapper.unmount()
+  })
+
+  it('二人制造厂：垫付按元显示、欠款方「清账」调 fyAdvanceSettle；战利品猜动机与打分分别调对应接口', async () => {
+    const myAdv = { id: 'fa1', item: '打车接你', payerUser: 'alice', amountCents: 3200, note: '', mine: true, daysOpen: 1 }
+    const taAdv = { id: 'fa2', item: '猫粮', payerUser: 'bob', amountCents: 12500, note: '含罐头', mine: false, daysOpen: 3 }
+    const taGrocery = { id: 'fg1', week: '2026-09-28', fromUser: 'bob', mine: false, items: '草莓、蜡烛', guess: '', guessBy: '', score: null }
+    const myGrocery = { id: 'fg2', week: '2026-09-28', fromUser: 'alice', mine: true, items: '布丁', guess: '你就是馋了', guessBy: 'bob', score: null }
+    const afterGuess = { ...taGrocery, guess: '浪漫要来了', guessBy: 'alice' }
+    const afterScore = { ...myGrocery, score: 4 }
+    // 清账后：TA 垫的那笔下账，本周两份战利品还在（猜心还没开始）
+    const settled = fyBoardVo({ advances: [myAdv], openTotalCents: 3200, groceries: [taGrocery, myGrocery] })
+    const guessed = fyBoardVo({ advances: [myAdv], openTotalCents: 3200, groceries: [afterGuess, myGrocery] })
+    vi.mocked(factoryApi.fyBoard).mockResolvedValue(fyBoardVo({
+      advances: [myAdv, taAdv],
+      openTotalCents: 15700,
+      groceries: [taGrocery, myGrocery],
+    }))
+    vi.mocked(factoryApi.fyAdvanceSettle).mockResolvedValue(settled)
+    vi.mocked(factoryApi.fyGroceryGuess).mockResolvedValue(guessed)
+    vi.mocked(factoryApi.fyGroceryRate).mockResolvedValue(fyBoardVo({ advances: [myAdv], openTotalCents: 3200, groceries: [afterGuess, afterScore] }))
+    vi.mocked(factoryApi.fyAdvanceAdd).mockResolvedValue(fyBoardVo({
+      advances: [myAdv, { id: 'fa3', item: '水电费', payerUser: 'alice', amountCents: 8888, note: '代缴', mine: true, daysOpen: 0 }],
+      openTotalCents: 12088,
+      groceries: [afterGuess, afterScore],
+    }))
+    const wrapper = await mountOnSharedDaily()
+    // 金额分→元显示与未清合计
+    expect(wrapper.find('[data-testid="couple-fy-adv-amount-fa2"]').text()).toBe('125.00 元')
+    expect(wrapper.find('[data-testid="couple-fy-adv-total"]').text()).toBe('157.00 元')
+    expect(wrapper.find('[data-testid="couple-fy-adv-days-fa2"]').text()).toContain('3 天')
+    // 我垫的那笔不给清账（还钱的一方按确认键），只给等待提示
+    expect(wrapper.find('[data-testid="couple-fy-adv-settle-fa1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-adv-wait-fa1"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-fy-adv-settle-fa2"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyAdvanceSettle).toHaveBeenCalledWith('fa2')
+    expect(wrapper.find('[data-testid="couple-fy-adv-total"]').text()).toBe('32.00 元')
+    expect(wrapper.find('[data-testid="couple-fy-adv-fa2"]').exists()).toBe(false)
+
+    // 战利品：TA 的单给猜动机表单，我的单给打分按钮
+    expect(wrapper.find('[data-testid="couple-fy-grocery-partner-fg1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-fy-grocery-mine-fg2"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-fy-grocery-rate-fg1-3"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-grocery-score-fg2"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="couple-fy-grocery-guess-fg1"]').setValue('浪漫要来了')
+    await wrapper.find('[data-testid="couple-fy-grocery-guess-btn-fg1"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyGroceryGuess).toHaveBeenCalledWith('fg1', '浪漫要来了')
+    expect(wrapper.find('[data-testid="couple-fy-grocery-guessed-fg1"]').text()).toContain('浪漫要来了')
+    expect(wrapper.find('[data-testid="couple-fy-grocery-guess-btn-fg1"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="couple-fy-grocery-rate-fg2-4"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyGroceryRate).toHaveBeenCalledWith('fg2', 4)
+    expect(wrapper.find('[data-testid="couple-fy-grocery-score-fg2"]').text()).toContain('4/5')
+
+    // 记一笔：元输入换算成分入参
+    await wrapper.find('[data-testid="couple-fy-adv-item"]').setValue('水电费')
+    await wrapper.find('[data-testid="couple-fy-adv-yuan"]').setValue('88.88')
+    await wrapper.find('[data-testid="couple-fy-adv-note"]').setValue('代缴')
+    await wrapper.find('[data-testid="couple-fy-adv-submit"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyAdvanceAdd).toHaveBeenCalledWith('水电费', 8888, '代缴')
+    expect(wrapper.find('[data-testid="couple-fy-adv-amount-fa3"]').text()).toBe('88.88 元')
+    expect(wrapper.find('[data-testid="couple-fy-adv-total"]').text()).toBe('120.88 元')
+    wrapper.unmount()
+  })
+
+  it('二人制造厂：家安月检六项勾齐才交卷调 fyHomeCheck，双签与漏检提示条按后端渲染', async () => {
+    vi.mocked(factoryApi.fyBoard).mockResolvedValue(fyBoardVo({
+      check: { month: '2026-10', mine: '', partner: 'GAS,WATER,ELEC,WINDOW,LOCK,FIRSTAID', bothIn: false },
+      checkMiss: ['2026-09 的家安月检还没交齐，水电气不等人 ⚠️', '2026-08 的家安月检还没交齐，水电气不等人 ⚠️'],
+    }))
+    vi.mocked(factoryApi.fyHomeCheck).mockResolvedValue(fyBoardVo({
+      check: { month: '2026-10', mine: 'GAS,WATER,ELEC,WINDOW,LOCK,FIRSTAID', partner: 'GAS,WATER,ELEC,WINDOW,LOCK,FIRSTAID', bothIn: true },
+      checkMiss: [],
+    }))
+    const wrapper = await mountOnSharedDaily()
+    // TA 已交、我没交：差一份，且未勾齐时提交禁用
+    expect(wrapper.find('[data-testid="couple-fy-check-partner"]').text()).toContain('TA 本月已交卷')
+    expect(wrapper.find('[data-testid="couple-fy-check-mine"]').text()).toContain('还没交卷')
+    expect(wrapper.find('[data-testid="couple-fy-check-both"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-fy-check-miss-0"]').text()).toContain('2026-09')
+    expect(wrapper.find('[data-testid="couple-fy-check-submit"]').attributes('disabled')).toBeDefined()
+
+    for (const code of ['GAS', 'WATER', 'ELEC', 'WINDOW', 'LOCK', 'FIRSTAID']) {
+      const box = wrapper.find(`[data-testid="couple-fy-check-${code}"]`).find('input')
+      await box.setValue(true)
+    }
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-fy-check-submit"]').attributes('disabled')).toBeUndefined()
+    await wrapper.find('[data-testid="couple-fy-check-submit"]').trigger('click')
+    await flushPromises()
+    expect(factoryApi.fyHomeCheck).toHaveBeenCalledWith('GAS,WATER,ELEC,WINDOW,LOCK,FIRSTAID')
+    // 整份刷新后：我那份回填、双签达成、漏检条清空
+    expect(wrapper.find('[data-testid="couple-fy-check-mine"]').text()).toContain('6/6 项')
+    expect(wrapper.find('[data-testid="couple-fy-check-both"]').text()).toContain('双签齐了')
+    expect(wrapper.find('[data-testid="couple-fy-check-miss-0"]').exists()).toBe(false)
+    wrapper.unmount()
   })
 
   // ============ F205 卡片折叠（CoupleCollapsible） ============
