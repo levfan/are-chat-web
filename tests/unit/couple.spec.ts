@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
-import { coupleApi } from '@/api/couple'
+import { coupleApi, manageApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
@@ -220,7 +220,29 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
-  return { coupleApi: wrapped }
+  // F180-F189 生活经营 manageApi：默认空数据，用例内按需覆盖
+  const manageBase: Record<string, ReturnType<typeof vi.fn>> = {
+    meetings: vi.fn().mockResolvedValue([]),
+    host: vi.fn().mockResolvedValue(null),
+    skills: vi.fn().mockResolvedValue([]),
+    monthReviews: vi.fn().mockResolvedValue(null),
+    emergencyCards: vi.fn().mockResolvedValue([]),
+    snapshots: vi.fn().mockResolvedValue([]),
+    points: vi.fn().mockResolvedValue(null),
+    fiveYearPlans: vi.fn().mockResolvedValue([]),
+    annivPlans: vi.fn().mockResolvedValue([]),
+    weekly: vi.fn().mockResolvedValue(null),
+  }
+  const manageWrapped = new Proxy(manageBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(undefined)
+      return target[prop]
+    },
+  })
+  return { coupleApi: wrapped, manageApi: manageWrapped }
 })
 
 vi.mock('@/api/im', () => ({
@@ -1050,5 +1072,64 @@ describe('CoupleView 情侣空间', () => {
     expect(todos.text()).toContain('今日三问')
     expect(memories.exists()).toBe(true)
     expect(memories.text()).toContain('告白气球')
+  })
+
+  it('生活经营：主理人显示当家、积分余额与周报 summary 渲染', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(manageApi.host).mockResolvedValue({ week: '2026-W40', host: 'alice', mine: true, plan: '周五吃火锅' })
+    vi.mocked(manageApi.points).mockResolvedValue({
+      balance: 30,
+      totalEarned: 50,
+      rewards: [{ code: 'movie', name: '电影一晚', emoji: '🎬', points: 20, affordable: true }],
+      history: [{ id: 'ph1', fromUser: 'alice', mine: true, type: 'EARN', item: '拖地', points: 10, created: Date.now() }],
+    })
+    vi.mocked(manageApi.weekly).mockResolvedValue({
+      meetings: [],
+      closedMeetings: [],
+      earned: 10,
+      spent: 0,
+      host: { week: '2026-W40', host: 'alice', mine: true, plan: '周五吃火锅' },
+      summary: '本周开了 0 场家庭会议，赚 10 分换 0 分',
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-host-name"]').text()).toContain('我')
+    expect(wrapper.find('[data-testid="couple-host-plan"]').text()).toContain('周五吃火锅')
+    expect(wrapper.find('[data-testid="couple-point-balance"]').text()).toContain('30')
+    expect(wrapper.find('[data-testid="couple-manage-weekly-summary"]').text()).toContain('赚 10 分')
+  })
+
+  it('生活经营：纪念日策划案可推进、五年计划 OURS 可认领', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(manageApi.annivPlans).mockResolvedValue([
+      { id: 'ap1', day: '2026-11-11', title: '一百天', planner: 'alice', mine: true, idea: '去看海', status: 'IDEA', updatedAt: Date.now() },
+    ])
+    vi.mocked(manageApi.advanceAnnivPlan).mockResolvedValue([
+      { id: 'ap1', day: '2026-11-11', title: '一百天', planner: 'alice', mine: true, idea: '去看海', status: 'LOCKED', updatedAt: Date.now() },
+    ])
+    vi.mocked(manageApi.fiveYearPlans).mockResolvedValue([
+      { id: 'fp1', track: 'OURS', fromUser: 'bob', mine: false, content: '一起去看极光', ownerUser: null, done: false, created: Date.now() },
+    ])
+    vi.mocked(manageApi.claimFiveYearPlan).mockResolvedValue([
+      { id: 'fp1', track: 'OURS', fromUser: 'bob', mine: false, content: '一起去看极光', ownerUser: 'alice', done: false, created: Date.now() },
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-annivplan-ap1"]').text()).toContain('一百天')
+    await wrapper.find('[data-testid="couple-annivplan-advance-ap1"]').trigger('click')
+    await flushPromises()
+    expect(manageApi.advanceAnnivPlan).toHaveBeenCalledWith('ap1')
+    expect(wrapper.find('[data-testid="couple-annivplan-advance-ap1"]').text()).toContain('落地')
+
+    await wrapper.find('[data-testid="couple-plan-claim-fp1"]').trigger('click')
+    await flushPromises()
+    expect(manageApi.claimFiveYearPlan).toHaveBeenCalledWith('fp1')
+    expect(wrapper.find('[data-testid="couple-plan-owner-fp1"]').text()).toContain('alice')
   })
 })
