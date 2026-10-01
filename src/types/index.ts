@@ -2193,3 +2193,107 @@ export interface CoupleLetterTemplateVO {
   scene: string
   body: string
 }
+
+// ============ 情侣空间·默契亲密（F170-F179） ============
+
+export interface CoupleSparkQuizOptionVO {
+  text: string
+  lang: string
+}
+
+export interface CoupleSparkQuizVO {
+  question: string
+  optionA: CoupleSparkQuizOptionVO
+  optionB: CoupleSparkQuizOptionVO
+}
+
+export interface CoupleLoveLangVO {
+  fromUser: string
+  mine: boolean
+  scores: number[]
+  primaryLang: string
+  updatedAt: number
+}
+
+export interface CoupleLoveLangPairVO {
+  mine: CoupleLoveLangVO
+  partner: CoupleLoveLangVO
+  myLang: string
+  partnerLang: string
+  myTip: string
+  partnerTip: string
+}
+
+export interface CoupleFlashVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  moment: string
+  created: number
+}
+
+export interface CoupleWhatIfRowVO {
+  id: string
+  fromUser: string
+  day: string
+  answer: string
+  created: number
+}
+
+export interface CoupleWhatIfVO {
+  day: string
+  question: string
+  mine: CoupleWhatIfRowVO | null
+  partner: CoupleWhatIfRowVO | null
+  bothAnswered: boolean
+  firstStar: string | null
+}
+
+export interface CoupleSignalVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  signal: string
+  meaning: string
+  created: number
+}
+
+export interface CoupleTapResultVO {
+  diffMs: number | null
+  hit: boolean
+  bestMs: number | null
+  attempts: number
+  hits: number
+}
+
+export interface CoupleHeartDayVO {
+  id: string
+  day: string
+  fromUser: string
+  mine: boolean
+  level: number
+  updatedAt: number
+}
+
+export interface CoupleSyncRankVO {
+  day: string
+  bestMs: number
+  attempts: number
+  hits: number
+}
+
+export interface CoupleSparkDashboardVO {
+  score: number
+  label: string
+  bestMs: number | null
+  whatIfBothDays: number
+  heartDays: number
+  signals: number
+}
+
+export interface CoupleSparkWeeklyVO {
+  whatIfBoth: number
+  heartMarks: number
+  syncAttempts: number
+  summary: string
+}

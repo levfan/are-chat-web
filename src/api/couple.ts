@@ -159,6 +159,17 @@ import type {
   CoupleSoulVO,
   CoupleJournalVO,
   CoupleLetterTemplateVO,
+  CoupleSparkQuizVO,
+  CoupleLoveLangVO,
+  CoupleLoveLangPairVO,
+  CoupleFlashVO,
+  CoupleWhatIfVO,
+  CoupleSignalVO,
+  CoupleTapResultVO,
+  CoupleHeartDayVO,
+  CoupleSyncRankVO,
+  CoupleSparkDashboardVO,
+  CoupleSparkWeeklyVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -1053,4 +1064,45 @@ export const coupleApi = {
   letterTemplates: () => http.get<CoupleLetterTemplateVO[]>('/api/couple/poem/letter-templates'),
   /** F169 手账贴纸库 */
   stickers: () => http.get<string[]>('/api/couple/poem/stickers'),
+
+  // ============ 默契亲密（F170-F179） ============
+  /** F170 爱语测评卷（静态） */
+  sparkQuiz: () => http.get<CoupleSparkQuizVO[]>('/api/couple/spark/love-lang/quiz'),
+  /** F170 提交爱语答卷 */
+  submitLoveLang: (answers: string[]) =>
+    http.postJson<CoupleLoveLangVO>('/api/couple/spark/love-lang', { answers }),
+  /** F170 我的爱语结果 */
+  myLoveLang: () => http.get<CoupleLoveLangVO>('/api/couple/spark/love-lang/mine'),
+  /** F171 爱语对照卡 */
+  loveLangPair: () => http.get<CoupleLoveLangPairVO>('/api/couple/spark/love-lang/pair'),
+  /** F172 心动闪光列表 */
+  flashes: () => http.get<CoupleFlashVO[]>('/api/couple/spark/flashes'),
+  /** F172 速记心动 */
+  addFlash: (moment: string) =>
+    http.postJson<CoupleFlashVO[]>('/api/couple/spark/flashes', { moment }),
+  /** F173 今日「如果」 */
+  whatIf: () => http.get<CoupleWhatIfVO>('/api/couple/spark/what-if'),
+  /** F173 回答「如果」 */
+  answerWhatIf: (answer: string) =>
+    http.postJson<CoupleWhatIfVO>('/api/couple/spark/what-if', { answer }),
+  /** F174 动作暗语列表 */
+  signals: () => http.get<CoupleSignalVO[]>('/api/couple/spark/signals'),
+  /** F174 约定动作暗语 */
+  addSignal: (signal: string, meaning: string) =>
+    http.postJson<CoupleSignalVO[]>('/api/couple/spark/signals', { signal, meaning }),
+  /** F175 按键（同频共振） */
+  tap: () => http.postJson<CoupleTapResultVO>('/api/couple/spark/tap', {}),
+  /** F175 今日按键状态 */
+  tapToday: () => http.get<CoupleTapResultVO>('/api/couple/spark/tap/today'),
+  /** F176 默契仪表盘 */
+  sparkDashboard: () => http.get<CoupleSparkDashboardVO>('/api/couple/spark/dashboard'),
+  /** F177 心动日历 */
+  heartDays: () => http.get<CoupleHeartDayVO[]>('/api/couple/spark/heart-days'),
+  /** F177 盖心动邮戳 */
+  markHeartDay: (level: number) =>
+    http.postJson<CoupleHeartDayVO[]>('/api/couple/spark/heart-days', { level }),
+  /** F178 同频排行榜 */
+  syncRank: () => http.get<CoupleSyncRankVO[]>('/api/couple/spark/sync-rank'),
+  /** F179 默契周报 */
+  sparkWeekly: () => http.get<CoupleSparkWeeklyVO>('/api/couple/spark/weekly'),
 }

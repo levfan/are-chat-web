@@ -150,6 +150,16 @@ import type {
   CoupleSoulVO,
   CoupleJournalVO,
   CoupleLetterTemplateVO,
+  CoupleLoveLangVO,
+  CoupleLoveLangPairVO,
+  CoupleFlashVO,
+  CoupleWhatIfVO,
+  CoupleSignalVO,
+  CoupleTapResultVO,
+  CoupleHeartDayVO,
+  CoupleSyncRankVO,
+  CoupleSparkDashboardVO,
+  CoupleSparkWeeklyVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -345,6 +355,17 @@ export const useCoupleStore = defineStore('couple', () => {
   const loveQuote = ref('')
   const letterTemplates = ref<CoupleLetterTemplateVO[]>([])
   const stickerList = ref<string[]>([])
+  // 默契亲密（F170-F179）
+  const loveLang = ref<CoupleLoveLangVO | null>(null)
+  const loveLangPair = ref<CoupleLoveLangPairVO | null>(null)
+  const flashList = ref<CoupleFlashVO[]>([])
+  const whatIfQ = ref<CoupleWhatIfVO | null>(null)
+  const signalList = ref<CoupleSignalVO[]>([])
+  const tapToday = ref<CoupleTapResultVO | null>(null)
+  const sparkDash = ref<CoupleSparkDashboardVO | null>(null)
+  const heartDayList = ref<CoupleHeartDayVO[]>([])
+  const syncRankList = ref<CoupleSyncRankVO[]>([])
+  const sparkWeekly = ref<CoupleSparkWeeklyVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -379,6 +400,7 @@ export const useCoupleStore = defineStore('couple', () => {
     dailyLife: false,
     coach: false,
     poem: false,
+    spark: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -568,6 +590,16 @@ export const useCoupleStore = defineStore('couple', () => {
     loveQuote.value = ''
     letterTemplates.value = []
     stickerList.value = []
+    loveLang.value = null
+    loveLangPair.value = null
+    flashList.value = []
+    whatIfQ.value = null
+    signalList.value = []
+    tapToday.value = null
+    sparkDash.value = null
+    heartDayList.value = []
+    syncRankList.value = []
+    sparkWeekly.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -601,6 +633,7 @@ export const useCoupleStore = defineStore('couple', () => {
       dailyLife: false,
       coach: false,
       poem: false,
+      spark: false,
     }
     promiseDraft.value = null
   }
@@ -2077,6 +2110,63 @@ export const useCoupleStore = defineStore('couple', () => {
     loveQuote.value = (await coupleApi.quote()) ?? ''
   }
 
+  // ---------- 默契亲密（F170-F179） ----------
+
+  async function loadSpark() {
+    const [ll, pair, fl, wi, sg, tp, dash, hd, rank, wk] = await Promise.all([
+      coupleApi.myLoveLang().catch(() => null),
+      coupleApi.loveLangPair().catch(() => null),
+      coupleApi.flashes(),
+      coupleApi.whatIf(),
+      coupleApi.signals(),
+      coupleApi.tapToday(),
+      coupleApi.sparkDashboard(),
+      coupleApi.heartDays(),
+      coupleApi.syncRank(),
+      coupleApi.sparkWeekly(),
+    ])
+    loveLang.value = ll
+    loveLangPair.value = pair
+    flashList.value = fl ?? []
+    whatIfQ.value = wi
+    signalList.value = sg ?? []
+    tapToday.value = tp
+    sparkDash.value = dash
+    heartDayList.value = hd ?? []
+    syncRankList.value = rank ?? []
+    sparkWeekly.value = wk
+    loadedLists.value.spark = true
+  }
+
+  async function submitLoveLang(answers: string[]) {
+    loveLang.value = await coupleApi.submitLoveLang(answers)
+    // 重测后对照卡可能解锁，静默刷新
+    loveLangPair.value = await coupleApi.loveLangPair().catch(() => null)
+  }
+
+  async function addFlash(moment: string) {
+    flashList.value = (await coupleApi.addFlash(moment)) ?? []
+  }
+
+  async function answerWhatIf(answer: string) {
+    whatIfQ.value = await coupleApi.answerWhatIf(answer)
+  }
+
+  async function addSignal(signal: string, meaning: string) {
+    signalList.value = (await coupleApi.addSignal(signal, meaning)) ?? []
+  }
+
+  async function tap() {
+    tapToday.value = await coupleApi.tap()
+    // 命中后排行/仪表盘会变，静默刷新
+    syncRankList.value = (await coupleApi.syncRank()) ?? []
+    sparkDash.value = await coupleApi.sparkDashboard()
+  }
+
+  async function markHeartDay(level: number) {
+    heartDayList.value = (await coupleApi.markHeartDay(level)) ?? []
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -2887,6 +2977,38 @@ export const useCoupleStore = defineStore('couple', () => {
           void coupleApi.journal().then((v) => (journalList.value = v ?? []))
         }
         break
+      case 'love-lang-done':
+        notify('💗 爱语说明书', msg.detail)
+        if (loadedLists.value.spark) {
+          void coupleApi.loveLangPair().then((v) => (loveLangPair.value = v)).catch(() => undefined)
+        }
+        break
+      case 'heart-flash':
+        notify('⚡ 心动闪光', msg.detail)
+        if (loadedLists.value.spark) {
+          void coupleApi.flashes().then((v) => (flashList.value = v ?? []))
+        }
+        break
+      case 'whatif-answered':
+      case 'whatif-both':
+        notify('🌌 「如果」问答', msg.detail)
+        if (loadedLists.value.spark) {
+          void coupleApi.whatIf().then((v) => (whatIfQ.value = v))
+        }
+        break
+      case 'signal-added':
+        notify('🤝 动作暗语', msg.detail)
+        if (loadedLists.value.spark) {
+          void coupleApi.signals().then((v) => (signalList.value = v ?? []))
+        }
+        break
+      case 'sync-tap-hit':
+        notify('🎧 同频共振', msg.detail)
+        if (loadedLists.value.spark) {
+          void coupleApi.tapToday().then((v) => (tapToday.value = v))
+          void coupleApi.syncRank().then((v) => (syncRankList.value = v ?? []))
+        }
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -3218,6 +3340,16 @@ export const useCoupleStore = defineStore('couple', () => {
     loveQuote,
     letterTemplates,
     stickerList,
+    loveLang,
+    loveLangPair,
+    flashList,
+    whatIfQ,
+    signalList,
+    tapToday,
+    sparkDash,
+    heartDayList,
+    syncRankList,
+    sparkWeekly,
     loadComm,
     translateText,
     startCoolDown,
@@ -3306,5 +3438,12 @@ export const useCoupleStore = defineStore('couple', () => {
     answerSoul,
     saveJournalPage,
     reloadQuote,
+    loadSpark,
+    submitLoveLang,
+    addFlash,
+    answerWhatIf,
+    addSignal,
+    tap,
+    markHeartDay,
   }
 })

@@ -188,6 +188,7 @@
               <CoupleComfort />
               <CoupleMakeup />
               <CoupleSoft />
+              <CoupleSpark />
             </div>
           </el-tab-pane>
           <el-tab-pane label="🗓️ 共享空间" name="shared" lazy>
@@ -347,6 +348,7 @@ import CoupleWishBoard from '@/components/couple/CoupleWishBoard.vue'
 import CoupleDict from '@/components/couple/CoupleDict.vue'
 import CoupleCoach from '@/components/couple/CoupleCoach.vue'
 import CouplePoem from '@/components/couple/CouplePoem.vue'
+import CoupleSpark from '@/components/couple/CoupleSpark.vue'
 import CoupleSoft from '@/components/couple/CoupleSoft.vue'
 import CoupleDistance from '@/components/couple/CoupleDistance.vue'
 import CoupleSecure from '@/components/couple/CoupleSecure.vue'
