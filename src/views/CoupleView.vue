@@ -228,6 +228,7 @@
                   <CoupleWhisperBox />
                   <CoupleCapsule />
                   <CouplePoem />
+                  <CouplePost />
                 </div>
               </el-tab-pane>
               <el-tab-pane label="🗃️ 收藏册" name="collect" lazy>
@@ -457,6 +458,7 @@ import CoupleWishBoard from '@/components/couple/CoupleWishBoard.vue'
 import CoupleDict from '@/components/couple/CoupleDict.vue'
 import CoupleCoach from '@/components/couple/CoupleCoach.vue'
 import CouplePoem from '@/components/couple/CouplePoem.vue'
+import CouplePost from '@/components/couple/CouplePost.vue'
 import CoupleSpark from '@/components/couple/CoupleSpark.vue'
 import CoupleManage from '@/components/couple/CoupleManage.vue'
 import CoupleDining from '@/components/couple/CoupleDining.vue'

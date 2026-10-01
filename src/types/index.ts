@@ -3483,3 +3483,174 @@ export interface CoupleCxOverviewVO {
   type: CoupleCxTypeVO | null
   entryCount: number
 }
+
+// ============ 明日邮局（F290-F299） ============
+
+/** F291 人生大事状态（OPEN 进行中 / DONE 步骤走完 / GONE 发起人放下了；总览只下发 OPEN） */
+export type CouplePostBucketStatus = 'OPEN' | 'DONE' | 'GONE'
+
+/** F292 拍卖单状态（SHELF 在架等认领 / TAKEN 已认领并排了期 / DONE 真做了销单 / EXPIRED 7 天没人接落灰；总览只下发 SHELF 与 TAKEN） */
+export type CouplePostSomedayStatus = 'SHELF' | 'TAKEN' | 'DONE' | 'EXPIRED'
+
+/** F296 时光胶囊接龙状态（SEALED 封存中 / OPENED 已被拆开） */
+export type CouplePostRelayStatus = 'SEALED' | 'OPENED'
+
+/** F299 未来信用卡的旗状态（OPEN 立着 / KEPT 圆上了 / BROKEN 逾期没圆上；总览只下发 OPEN） */
+export type CouplePostCreditStatus = 'OPEN' | 'KEPT' | 'BROKEN'
+
+/**
+ * F290 五年后新年卡一张（只下发我写的，一年一张）。
+ * sent=已到 deliverDay 被后端放行寄出（再改写会 400「这张已经寄出去了」）；
+ * partnerContent=TA 那年的卡，只有 TA 那张也寄出了才给正文，空串=还没到 / TA 没写。
+ */
+export interface CouplePostOathVO {
+  id: string
+  year: string
+  content: string
+  deliverDay: string
+  mine: boolean
+  sent: boolean
+  partnerContent: string
+}
+
+/**
+ * F291 大事拆的一步（seq 从 1 起；doneBy 空串=还没人打勾）。
+ * ⚠️ 以后端源码为准：CouplePostService.StepVO 已定义但没有挂进 PostVO，BucketVO 只下发
+ * doneSteps/totalSteps 两个计数，且 StepVO 本身不含 id，所以逐条打勾要等后端补下 steps（含 id）才能点亮；
+ * 前端按「bucket.steps 有值就渲染行内打勾钮」实现，没下发时退化成进度条。
+ */
+export interface CouplePostStepVO {
+  id?: string
+  seq: number
+  text: string
+  done: boolean
+  doneBy: string
+}
+
+/** F291 一件人生大事（mine=我立的，只有立的人能放弃；targetDay/note 空串=没写；status 见 CouplePostBucketStatus） */
+export interface CouplePostBucketVO {
+  id: string
+  name: string
+  targetDay: string
+  note: string
+  mine: boolean
+  status: CouplePostBucketStatus
+  doneSteps: number
+  totalSteps: number
+  steps?: CouplePostStepVO[]
+}
+
+/**
+ * F292 拍卖货架上的一单（mine=我上的架，自己的架不能自己接；takenBy 空串=还没人接；scheduledDay 空串=没排期）。
+ * daysLeft 双语义：SHELF=在架还剩几天（0=今天没人接就落灰下架），TAKEN=离排期日还有几天。
+ */
+export interface CouplePostSomedayVO {
+  id: string
+  thing: string
+  mine: boolean
+  status: CouplePostSomedayStatus
+  takenBy: string
+  scheduledDay: string
+  daysLeft: number
+}
+
+/** F293 某一版「想象中的家」（只下发我的版本，partnerIn=TA 是否也交了同年版；四个字段空串=没填，各 ≤100 字；同年可改写） */
+export interface CouplePostHomeVO {
+  year: string
+  rooms: string
+  windowView: string
+  smell: string
+  corner: string
+  mine: boolean
+  partnerIn: boolean
+}
+
+/** F294 退休计划一档（ageBand 只有 30 / 40 / 50；mine/partner 空串=那位还没写；bothIn=双写完成可对照分歧） */
+export interface CouplePostRetireVO {
+  ageBand: string
+  mine: string
+  partner: string
+  bothIn: boolean
+}
+
+/** F295 许愿井周问（week=本周周一 yyyy-MM-dd；myAnswer/partnerAnswer 空串=没答；bothIn=双答完成） */
+export interface CouplePostWellVO {
+  week: string
+  question: string
+  myAnswer: string
+  partnerAnswer: string
+  bothIn: boolean
+}
+
+/**
+ * F296 时光胶囊接龙一笔（mine=我写的，我写的归 TA 拆；due=TA 写的且已到开启日，才给拆封钮）。
+ * ⚠️ 以后端源码为准：RelayVO 不下发 content，所以拆封前后都看不到正文，要等后端补字段。
+ */
+export interface CouplePostRelayVO {
+  id: string
+  mine: boolean
+  openDay: string
+  status: CouplePostRelayStatus
+  due: boolean
+}
+
+/** F297 解梦局一案（mine=我做的梦，只有做梦人能盖章；reading/readBy 空串=解梦官还没点评；good：null 没盖 / 1 解得灵 / 0 胡说八道） */
+export interface CouplePostDreamVO {
+  id: string
+  day: string
+  dream: string
+  mine: boolean
+  reading: string
+  readBy: string
+  good: number | null
+}
+
+/** F298 周年愿望一条（mine=我立的愿，只有本人能给自己盖章；verdict 空串=没盖，KEPT 圆上了 / PIGEON 鸽了；只有往年才可盖章） */
+export interface CouplePostWishVO {
+  id: string
+  year: string
+  wish: string
+  mine: boolean
+  verdict: string
+}
+
+/** F299 一张还立着的旗（总览只下发 OPEN；mine=我立的旗，只有我能销；daysLeft=离兑现期限还有几天） */
+export interface CouplePostCreditVO {
+  id: string
+  promise: string
+  dueDay: string
+  mine: boolean
+  status: CouplePostCreditStatus
+  daysLeft: number
+}
+
+/** F299 未来信用卡额度条（tier=后端算好的档位文案；kept/broken=我名下兑现/逾期数；open=两人合计还立着的旗数） */
+export interface CouplePostCreditLineVO {
+  tier: string
+  kept: number
+  broken: number
+  open: number
+}
+
+/**
+ * F290-F299 明日邮局总览（GET /api/couple/post/box 一次拉齐；20 个 POST 写接口全部返回整份 PostVO，前端整体替换即五卡刷新）。
+ * day/week/year 由后端下发（今天 / 本周周一 / 今年年份）；well 与 creditLine 恒有值；
+ * wellYear=本年我的井答存档（带 TA 那份）；列表口径按后端：大事只给 OPEN、旗只给 OPEN、梦案最近 15 条、货架只给 SHELF/TAKEN。
+ */
+export interface CouplePostVO {
+  day: string
+  week: string
+  year: string
+  oaths: CouplePostOathVO[]
+  buckets: CouplePostBucketVO[]
+  somedays: CouplePostSomedayVO[]
+  homes: CouplePostHomeVO[]
+  retires: CouplePostRetireVO[]
+  well: CouplePostWellVO
+  wellYear: CouplePostWellVO[]
+  relays: CouplePostRelayVO[]
+  dreams: CouplePostDreamVO[]
+  wishes: CouplePostWishVO[]
+  credits: CouplePostCreditVO[]
+  creditLine: CouplePostCreditLineVO
+}

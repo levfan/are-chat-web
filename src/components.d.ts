@@ -54,6 +54,7 @@ declare module 'vue' {
     CouplePact: typeof import('./components/couple/CouplePact.vue')['default']
     CouplePlay: typeof import('./components/couple/CouplePlay.vue')['default']
     CouplePoem: typeof import('./components/couple/CouplePoem.vue')['default']
+    CouplePost: typeof import('./components/couple/CouplePost.vue')['default']
     CoupleProfile: typeof import('./components/couple/CoupleProfile.vue')['default']
     CouplePromises: typeof import('./components/couple/CouplePromises.vue')['default']
     CoupleReadWatch: typeof import('./components/couple/CoupleReadWatch.vue')['default']

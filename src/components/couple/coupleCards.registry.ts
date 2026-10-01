@@ -40,6 +40,12 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-whisper-box', label: '匿名树洞与情话罐', tab: 'letters', sub: 'send' },
   { key: 'couple-capsules', label: '时光胶囊', tab: 'letters', sub: 'send' },
   { key: 'couple-poem', label: '情诗与文字浪漫', tab: 'letters', sub: 'send' },
+  // 💌 明日邮局（F290-F299，letters/send 子页签）
+  { key: 'couple-post-oath', label: '五年后的新年卡', tab: 'letters', sub: 'send' },
+  { key: 'couple-post-bucket', label: '人生大事与改天拍卖', tab: 'letters', sub: 'send' },
+  { key: 'couple-post-home', label: '想象中的家与退休', tab: 'letters', sub: 'send' },
+  { key: 'couple-post-well', label: '许愿井与解梦局', tab: 'letters', sub: 'send' },
+  { key: 'couple-post-ledger', label: '愿望台账与未来信用卡', tab: 'letters', sub: 'send' },
   { key: 'couple-keepsake', label: '回忆收藏册', tab: 'letters', sub: 'collect' },
   // 💗 心情
   { key: 'couple-mood', label: '心情日记', tab: 'mood' },

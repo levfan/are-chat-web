@@ -212,6 +212,7 @@ import type {
   CoupleLsToneKey,
   CoupleFyBoardVO,
   CoupleCxOverviewVO,
+  CouplePostVO,
   CouplePinVO,
 } from '@/types'
 
@@ -1707,4 +1708,79 @@ export const codexApi = {
   /** F289 提交八题四维人格速测（answers=8 个 1/2 逗号分隔，缺一题或出现别的值后端 400；当年重测覆盖），返回整份总览 */
   cxType: (answers: string) =>
     http.postJson<CoupleCxOverviewVO>('/api/couple/codex/type', { answers }),
+}
+
+/**
+ * F290-F299 明日邮局（postApi，基址 /api/couple/post）
+ * postBox 为唯一读接口；其余 20 个 POST 写接口全部返回整份 PostVO，前端整体替换即五卡刷新。
+ * 业务规则由后端 400 中文 message 直透 ElMessage（新年卡一年一张、已寄出的收不回笔、
+ * 大事名 ≤40 字且同名即已在册、一件大事最多拆 12 步、谁立的大事谁才有资格鸽、
+ * 改天上架 ≤5 件且自己不能接自己的架、排期日要在今天之后、没认领不能直接完成、
+ * 梦想家版本年须 yyyy、退休档位只有 30/40/50、井答 ≤140 字、胶囊只寄往 1/2/3 年后且在途 ≤3 笔、
+ * 自己写的那笔不归自己拆、解梦官不能审自己的案、一晚只投一案、盖章只能做梦人本人、
+ * 往年愿望才可盖章、旗的期限必须放未来、旗是谁立的谁销等）。
+ */
+export const postApi = {
+  /** F290-F299 明日邮局总览（十板块一次拉齐，读时后端惰性结算：新年卡到期放行 / 拍卖逾期下架 / 承诺逾期降额；未建空间 404 前端静默降级） */
+  postBox: () => http.get<CouplePostVO>('/api/couple/post/box'),
+  /** F290 写/改写今年的五年后新年卡（content ≤500 字，一年一张；已寄出再写后端 400），返回整份总览 */
+  postOath: (content: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/oath', { content }),
+  /** F291 立一件人生大事（name ≤40 字必填，targetDay 空串=不定期限且格式须 yyyy-MM-dd，note ≤200 字可空；同名后端 400），返回整份总览 */
+  postBucketAdd: (name: string, targetDay: string, note: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/bucket', { name, targetDay, note }),
+  /** F291 放弃一件大事（只有发起人能鸽，放弃后留档 GONE 不再下发；点 TA 立的后端 400），返回整份总览 */
+  postBucketAbandon: (id: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/bucket/abandon', { id }),
+  /** F291 给大事拆一步（text ≤80 字必填；一件大事 ≤12 步，超出后端 400），返回整份总览 */
+  postStepAdd: (bucketId: string, text: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/bucket/step', { bucketId, text }),
+  /** F291 给一步打勾（双方都可点：本人完成 / TA 补进展章；走完全部步骤后端把大事记为 DONE 并推双方），返回整份总览 */
+  postStepDone: (id: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/bucket/step/done', { id }),
+  /** F292 把「改天一定」上拍（thing ≤80 字必填，在架 ≤5 件、7 天无人认领后端自动下架），返回整份总览 */
+  postShelf: (thing: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/shelf', { thing }),
+  /** F292 认领 TA 的架并排期（scheduledDay 必填且要在今天之后、格式 yyyy-MM-dd；自己上的架自己接后端 400），返回整份总览 */
+  postShelfTake: (id: string, scheduledDay: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/shelf/take', { id, scheduledDay }),
+  /** F292 做完销单（任一方都可点；还没认领的单直接完成后端 400。请求体沿用 TakeRequest，scheduledDay 传空串即可），返回整份总览 */
+  postShelfDone: (id: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/shelf/done', { id, scheduledDay: '' }),
+  /** F293 交/改写某一版的「想象中的家」（year 空串=今年、格式须 yyyy；四字段各 ≤100 字可空），返回整份总览 */
+  postHome: (year: string, rooms: string, windowView: string, smell: string, corner: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/home', { year, rooms, windowView, smell, corner }),
+  /** F294 写某一岁的退休计划（ageBand 仅 30/40/50，其它后端 400；text ≤200 字必填；同人同档可改写），返回整份总览 */
+  postRetire: (ageBand: string, text: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/retire', { ageBand, text }),
+  /** F295 答本周井题（answer ≤140 字必填，本周可改写；题目由后端按周序从题库取），返回整份总览 */
+  postWell: (answer: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/well', { answer }),
+  /** F296 封存一笔未来信给 TA（content ≤500 字必填，years 仅 1/2/3 年后；名下在途 ≥3 笔后端 400），返回整份总览 */
+  postRelay: (content: string, years: number) =>
+    http.postJson<CouplePostVO>('/api/couple/post/relay', { content, years }),
+  /** F296 拆 TA 写给我的到期那笔（我写的自己拆后端 400；没到开启日后端 400 带日期），返回整份总览 */
+  postRelayOpen: (id: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/relay/open', { id }),
+  /** F297 记一笔梦投稿解梦局（dream ≤300 字必填；一晚只投一案，重复后端 400），返回整份总览 */
+  postDream: (dream: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/dream', { dream }),
+  /** F297 解梦官出点评（reading ≤300 字必填；审自己的案/这案已结后端 400），返回整份总览 */
+  postDreamRead: (id: string, reading: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/dream/read', { id, reading }),
+  /** F298 做梦人盖章：good=true 解得灵 / false 胡说八道（非本人、还没点评后端 400，盖过幂等），返回整份总览 */
+  postDreamJudge: (id: string, good: boolean) =>
+    http.postJson<CouplePostVO>('/api/couple/post/dream/judge', { id, good }),
+  /** F298 立/改某年的周年愿望（year 空串=今年、格式须 yyyy；wish ≤300 字必填；该年已盖过章后端 400），返回整份总览 */
+  postWish: (year: string, wish: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/wish', { year, wish }),
+  /** F298 给往年愿望盖章：kept=true 圆上了 / false 鸽了（TA 的愿望、今年还没到期后端 400，盖过幂等），返回整份总览 */
+  postWishVerdict: (id: string, kept: boolean) =>
+    http.postJson<CouplePostVO>('/api/couple/post/wish/verdict', { id, kept }),
+  /** F299 立一张未来信用卡的旗（promise ≤80 字必填，dueDay 须是未来日 yyyy-MM-dd 否则后端 400），返回整份总览 */
+  postPromise: (promise: string, dueDay: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/promise', { promise, dueDay }),
+  /** F299 兑现销旗（只有立旗的本人能销，点 TA 的旗后端 400；逾期会被后端降额），返回整份总览 */
+  postPromiseKeep: (id: string) =>
+    http.postJson<CouplePostVO>('/api/couple/post/promise/keep', { id }),
 }
