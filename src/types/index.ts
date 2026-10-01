@@ -1788,3 +1788,115 @@ export interface CouplePetVO {
   lastCareAt: number | null
   created: number
 }
+
+// ============ 情侣空间·趣味游戏（F130-F139） ============
+
+export interface CoupleSurveyAnswerVO {
+  qNo: number
+  answer: string
+}
+
+export interface CoupleSurveyVO {
+  total: number
+  myCount: number
+  partnerCount: number
+  questions: string[]
+  my: CoupleSurveyAnswerVO[]
+  /** 只含我已作答题目的 TA 答案（答一题解锁一题） */
+  partnerUnlocked: CoupleSurveyAnswerVO[]
+}
+
+export interface CoupleQuizVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  question: string
+  answerText: string | null
+  status: 'OPEN' | 'ANSWERED' | 'JUDGED'
+  verdict: 'RIGHT' | 'WRONG' | null
+  created: number
+}
+
+export interface CoupleLoveWordVO {
+  id: string
+  fromUser: string
+  word: string
+  meaning: string | null
+  created: number
+}
+
+export interface CoupleLessonVO {
+  language: string
+  word: string
+  meaning: string
+  collected: CoupleLoveWordVO[]
+}
+
+export interface CoupleBlindPickVO {
+  id: string
+  fromUser: string
+  week: string
+  picks: string
+  created: number
+}
+
+export interface CoupleBlindVO {
+  week: string
+  mine: string[]
+  partnerSubmitted: boolean
+  planMine: string | null
+  planPartner: string | null
+  settled: boolean
+  history: CoupleBlindPickVO[]
+}
+
+export interface CoupleBattleLineVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  content: string
+}
+
+export interface CoupleBattleRowVO {
+  id: string
+  day: string
+  status: string
+  winner: string | null
+  created: number
+}
+
+export interface CoupleBattleVO {
+  id: string | null
+  day: string
+  status: 'OPEN' | 'FULL' | 'DONE'
+  voted: boolean
+  winner: string | null
+  lines: CoupleBattleLineVO[]
+  history: CoupleBattleRowVO[]
+}
+
+export interface CoupleHeartbeatVO {
+  score: number
+  line: string
+}
+
+/** F137 今日恋爱天气预报（与 F68 双人心情天气不同） */
+export interface CoupleLoveWeatherVO {
+  name: string
+  emoji: string
+  tip: string
+}
+
+export interface CoupleTarotVO {
+  name: string
+  emoji: string
+  message: string
+}
+
+export interface CoupleArtVO {
+  id: string
+  fromUser: string
+  title: string
+  seed: number
+  created: number
+}

@@ -149,6 +149,7 @@
               <CoupleDaily />
               <CoupleTruth />
               <CoupleFunTalk />
+              <CouplePlay />
             </div>
           </el-tab-pane>
           <el-tab-pane label="🌱 养成" name="growth" lazy>
@@ -344,6 +345,7 @@ import CoupleDict from '@/components/couple/CoupleDict.vue'
 import CoupleSoft from '@/components/couple/CoupleSoft.vue'
 import CoupleDistance from '@/components/couple/CoupleDistance.vue'
 import CoupleSecure from '@/components/couple/CoupleSecure.vue'
+import CouplePlay from '@/components/couple/CouplePlay.vue'
 import CoupleMoodRelay from '@/components/couple/CoupleMoodRelay.vue'
 import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
 

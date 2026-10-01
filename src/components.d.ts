@@ -39,6 +39,7 @@ declare module 'vue' {
     CoupleMoodRelay: typeof import('./components/couple/CoupleMoodRelay.vue')['default']
     CoupleOnThisDay: typeof import('./components/couple/CoupleOnThisDay.vue')['default']
     CouplePact: typeof import('./components/couple/CouplePact.vue')['default']
+    CouplePlay: typeof import('./components/couple/CouplePlay.vue')['default']
     CoupleProfile: typeof import('./components/couple/CoupleProfile.vue')['default']
     CouplePromises: typeof import('./components/couple/CouplePromises.vue')['default']
     CoupleReadWatch: typeof import('./components/couple/CoupleReadWatch.vue')['default']

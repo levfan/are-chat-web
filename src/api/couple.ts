@@ -122,6 +122,15 @@ import type {
   CoupleRingBoardVO,
   CoupleContractVO,
   CouplePetVO,
+  CoupleSurveyVO,
+  CoupleQuizVO,
+  CoupleLessonVO,
+  CoupleBlindVO,
+  CoupleBattleVO,
+  CoupleHeartbeatVO,
+  CoupleLoveWeatherVO,
+  CoupleTarotVO,
+  CoupleArtVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -786,4 +795,51 @@ export const coupleApi = {
     http.postJson<CouplePetVO>('/api/couple/secure/pet', { name, kind }),
   /** F129 照料守护兽 */
   carePet: () => http.postJson<CouplePetVO>('/api/couple/secure/pet/care', {}),
+
+  // ============ 趣味游戏（F130-F139） ============
+  /** F130 一百问全景 */
+  survey: () => http.get<CoupleSurveyVO>('/api/couple/play/survey'),
+  /** F130 答一题（答完解锁 TA 同题） */
+  answerSurvey: (qNo: number, answer: string) =>
+    http.postJson<CoupleSurveyVO>('/api/couple/play/survey', { qNo, answer }),
+  /** F131 出题考TA 列表 */
+  quizzes: () => http.get<CoupleQuizVO[]>('/api/couple/play/quizzes'),
+  /** F131 出一道题 */
+  makeQuiz: (question: string) =>
+    http.postJson<CoupleQuizVO[]>('/api/couple/play/quizzes', { question }),
+  /** F131 对方作答 */
+  answerQuiz: (id: string, answer: string) =>
+    http.postJson<CoupleQuizVO[]>(`/api/couple/play/quizzes/${id}/answer`, { answer }),
+  /** F131 出题人判分 */
+  judgeQuiz: (id: string, verdict: 'RIGHT' | 'WRONG') =>
+    http.postJson<CoupleQuizVO[]>(`/api/couple/play/quizzes/${id}/judge`, { verdict }),
+  /** F132 今日心动概率 */
+  heartbeat: () => http.get<CoupleHeartbeatVO>('/api/couple/play/heartbeat'),
+  /** F133 今日塔罗 */
+  tarot: () => http.get<CoupleTarotVO>('/api/couple/play/tarot'),
+  /** F137 今日恋爱天气预报 */
+  loveWeather: () => http.get<CoupleLoveWeatherVO>('/api/couple/play/weather'),
+  /** F134 世界情话课（今日一课 + 收藏夹） */
+  loveLesson: () => http.get<CoupleLessonVO>('/api/couple/play/love-lesson'),
+  /** F134 收藏一句情话 */
+  collectLoveWord: (word: string, meaning?: string) =>
+    http.postJson<CoupleLessonVO>('/api/couple/play/love-words', { word, meaning: meaning ?? null }),
+  /** F135 周末盲选 */
+  blindPick: () => http.get<CoupleBlindVO>('/api/couple/play/blind'),
+  /** F135 提交本周 3 个周末愿望 */
+  submitBlindPick: (picks: string[]) =>
+    http.postJson<CoupleBlindVO>('/api/couple/play/blind', { picks }),
+  /** F136 今日情话 Battle */
+  battle: () => http.get<CoupleBattleVO>('/api/couple/play/battle'),
+  /** F136 参加今日 Battle */
+  joinBattle: (content: string) =>
+    http.postJson<CoupleBattleVO>('/api/couple/play/battle', { content }),
+  /** F136 投票（场上两句任选其一） */
+  voteBattle: (toUser: string) =>
+    http.postJson<CoupleBattleVO>('/api/couple/play/battle/vote', { toUser }),
+  /** F138 抽象画列表 */
+  arts: () => http.get<CoupleArtVO[]>('/api/couple/play/arts'),
+  /** F138 送一幅抽象画进画廊 */
+  createArt: (title: string, seed: number) =>
+    http.postJson<CoupleArtVO[]>('/api/couple/play/arts', { title, seed }),
 }

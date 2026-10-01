@@ -114,6 +114,15 @@ import type {
   CoupleRingBoardVO,
   CoupleContractVO,
   CouplePetVO,
+  CoupleSurveyVO,
+  CoupleQuizVO,
+  CoupleLessonVO,
+  CoupleBlindVO,
+  CoupleBattleVO,
+  CoupleHeartbeatVO,
+  CoupleLoveWeatherVO,
+  CoupleTarotVO,
+  CoupleArtVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -267,6 +276,16 @@ export const useCoupleStore = defineStore('couple', () => {
   const rings = ref<CoupleRingBoardVO | null>(null)
   const contracts = ref<CoupleContractVO[]>([])
   const pet = ref<CouplePetVO | null>(null)
+  // 趣味游戏（F130-F139）
+  const survey = ref<CoupleSurveyVO | null>(null)
+  const quizzes = ref<CoupleQuizVO[]>([])
+  const lesson = ref<CoupleLessonVO | null>(null)
+  const blind = ref<CoupleBlindVO | null>(null)
+  const battle = ref<CoupleBattleVO | null>(null)
+  const heartbeat = ref<CoupleHeartbeatVO | null>(null)
+  const loveWeather = ref<CoupleLoveWeatherVO | null>(null)
+  const tarot = ref<CoupleTarotVO | null>(null)
+  const arts = ref<CoupleArtVO[]>([])
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -297,6 +316,7 @@ export const useCoupleStore = defineStore('couple', () => {
     comm: false,
     distance: false,
     secure: false,
+    play: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -448,6 +468,15 @@ export const useCoupleStore = defineStore('couple', () => {
     rings.value = null
     contracts.value = []
     pet.value = null
+    survey.value = null
+    quizzes.value = []
+    lesson.value = null
+    blind.value = null
+    battle.value = null
+    heartbeat.value = null
+    loveWeather.value = null
+    tarot.value = null
+    arts.value = []
     loadedLists.value = {
       promises: false,
       question: false,
@@ -477,6 +506,7 @@ export const useCoupleStore = defineStore('couple', () => {
       comm: false,
       distance: false,
       secure: false,
+      play: false,
     }
     promiseDraft.value = null
   }
@@ -1679,6 +1709,68 @@ export const useCoupleStore = defineStore('couple', () => {
     pet.value = await coupleApi.carePet()
   }
 
+  // ---------- 趣味游戏（F130-F139） ----------
+
+  async function loadPlay() {
+    const [sv, qz, ls, bd, bt, hb, lw, tr, at] = await Promise.all([
+      coupleApi.survey(),
+      coupleApi.quizzes(),
+      coupleApi.loveLesson(),
+      coupleApi.blindPick(),
+      coupleApi.battle(),
+      coupleApi.heartbeat(),
+      coupleApi.loveWeather(),
+      coupleApi.tarot(),
+      coupleApi.arts(),
+    ])
+    survey.value = sv
+    quizzes.value = qz ?? []
+    lesson.value = ls
+    blind.value = bd
+    battle.value = bt
+    heartbeat.value = hb
+    loveWeather.value = lw
+    tarot.value = tr
+    arts.value = at ?? []
+    loadedLists.value.play = true
+  }
+
+  async function answerSurvey(qNo: number, answer: string) {
+    survey.value = await coupleApi.answerSurvey(qNo, answer)
+  }
+
+  async function makeQuiz(question: string) {
+    quizzes.value = (await coupleApi.makeQuiz(question)) ?? []
+  }
+
+  async function answerQuiz(id: string, answer: string) {
+    quizzes.value = (await coupleApi.answerQuiz(id, answer)) ?? []
+  }
+
+  async function judgeQuiz(id: string, verdict: 'RIGHT' | 'WRONG') {
+    quizzes.value = (await coupleApi.judgeQuiz(id, verdict)) ?? []
+  }
+
+  async function collectLoveWord(word: string, meaning?: string) {
+    lesson.value = await coupleApi.collectLoveWord(word, meaning)
+  }
+
+  async function submitBlindPick(picks: string[]) {
+    blind.value = await coupleApi.submitBlindPick(picks)
+  }
+
+  async function joinBattle(content: string) {
+    battle.value = await coupleApi.joinBattle(content)
+  }
+
+  async function voteBattle(toUser: string) {
+    battle.value = await coupleApi.voteBattle(toUser)
+  }
+
+  async function createArt(title: string, seed: number) {
+    arts.value = (await coupleApi.createArt(title, seed)) ?? []
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -2242,8 +2334,8 @@ export const useCoupleStore = defineStore('couple', () => {
           void coupleApi.routine().then((v) => (routine.value = v))
         }
         break
-      case 'letter-sealed':
-      case 'letter-opened':
+      case 'reunion-letter-sealed':
+      case 'reunion-letter-opened':
         notify('✉️ 下次见面信', msg.detail)
         if (loadedLists.value.distance) {
           void coupleApi.reunionLetters().then((v) => (reunionLetters.value = v ?? []))
@@ -2315,6 +2407,48 @@ export const useCoupleStore = defineStore('couple', () => {
         notify('🐾 守护兽', msg.detail)
         if (loadedLists.value.secure) {
           void coupleApi.pet().then((v) => (pet.value = v))
+        }
+        break
+      case 'survey-answered':
+        notify('📝 一百问', msg.detail)
+        if (loadedLists.value.play) {
+          void coupleApi.survey().then((v) => (survey.value = v))
+        }
+        break
+      case 'quiz-made':
+      case 'quiz-answered':
+      case 'quiz-judged':
+        notify('🎯 出题考TA', msg.detail)
+        if (loadedLists.value.play) {
+          void coupleApi.quizzes().then((v) => (quizzes.value = v ?? []))
+        }
+        break
+      case 'love-word-kept':
+        notify('💘 世界情话课', msg.detail)
+        if (loadedLists.value.play) {
+          void coupleApi.loveLesson().then((v) => (lesson.value = v))
+        }
+        break
+      case 'blind-submitted':
+      case 'blind-settled':
+        notify('🎁 周末盲选', msg.detail)
+        if (loadedLists.value.play) {
+          void coupleApi.blindPick().then((v) => (blind.value = v))
+        }
+        break
+      case 'battle-joined':
+      case 'battle-full':
+      case 'battle-voted':
+      case 'battle-done':
+        notify('💘 情话Battle', msg.detail)
+        if (loadedLists.value.play) {
+          void coupleApi.battle().then((v) => (battle.value = v))
+        }
+        break
+      case 'art-added':
+        notify('🎨 抽象画', msg.detail)
+        if (loadedLists.value.play) {
+          void coupleApi.arts().then((v) => (arts.value = v ?? []))
         }
         break
       case 'notify-ignored':
@@ -2610,6 +2744,15 @@ export const useCoupleStore = defineStore('couple', () => {
     rings,
     contracts,
     pet,
+    survey,
+    quizzes,
+    lesson,
+    blind,
+    battle,
+    heartbeat,
+    loveWeather,
+    tarot,
+    arts,
     loadComm,
     translateText,
     startCoolDown,
@@ -2652,5 +2795,15 @@ export const useCoupleStore = defineStore('couple', () => {
     checkContract,
     adoptPet,
     carePet,
+    loadPlay,
+    answerSurvey,
+    makeQuiz,
+    answerQuiz,
+    judgeQuiz,
+    collectLoveWord,
+    submitBlindPick,
+    joinBattle,
+    voteBattle,
+    createArt,
   }
 })
