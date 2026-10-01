@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
-import { coupleApi, manageApi, museumApi } from '@/api/couple'
+import { coupleApi, manageApi, museumApi, pinApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
@@ -268,7 +268,16 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
-  return { coupleApi: wrapped, manageApi: manageWrapped, museumApi: museumWrapped }
+  return {
+    coupleApi: wrapped,
+    manageApi: manageWrapped,
+    museumApi: museumWrapped,
+    // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
+    pinApi: {
+      list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
+      save: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
+    },
+  }
 })
 
 vi.mock('@/api/im', () => ({
@@ -317,9 +326,10 @@ vi.mock('@/api/auth', () => ({
 }))
 
 const push = vi.fn()
+const routeQuery: Record<string, string> = {}
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push }),
-  useRoute: () => ({ query: {} }),
+  useRoute: () => ({ query: routeQuery }),
 }))
 
 class FakeWebSocket {
@@ -409,6 +419,9 @@ let pinia: ReturnType<typeof createPinia>
 beforeEach(() => {
   vi.clearAllMocks()
   sessionStorage.clear()
+  Object.keys(routeQuery).forEach((k) => delete routeQuery[k])
+  vi.mocked(pinApi.list).mockResolvedValue({ mine: [], partner: [] })
+  vi.mocked(pinApi.save).mockResolvedValue({ mine: [], partner: [] })
   pinia = createPinia()
   setActivePinia(pinia)
   const auth = useAuthStore()
@@ -877,6 +890,9 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     await wrapper.find('#tab-care').trigger('click')
     await flushPromises()
+    // F201：默契仪表盘/同频共振在「✨ 默契亲密」子页签
+    await wrapper.find('#tab-intimate').trigger('click')
+    await flushPromises()
 
     expect(wrapper.find('[data-testid="couple-dash-score"]').text()).toBe('37')
     expect(wrapper.find('[data-testid="couple-stamp-2026-10-01"]').exists()).toBe(true)
@@ -919,6 +935,9 @@ describe('CoupleView 情侣空间', () => {
 
     await wrapper.find('#tab-letters').trigger('click')
     await flushPromises()
+    // F203：语录收藏（CoupleKeepsake）在「🗃️ 收藏册」子页签
+    await wrapper.find('#tab-collect').trigger('click')
+    await flushPromises()
     vi.mocked(coupleApi.saveQuote).mockResolvedValue([
       { id: 'q2', fromUser: 'alice', content: '你今天也很好看', context: null, created: Date.now() },
     ])
@@ -957,6 +976,9 @@ describe('CoupleView 情侣空间', () => {
     const wrapper = mountView()
     await flushPromises()
     await wrapper.find('#tab-care').trigger('click')
+    await flushPromises()
+    // F201：翻译器/道歉三部曲（CoupleSoft）在「✨ 默契亲密」子页签
+    await wrapper.find('#tab-intimate').trigger('click')
     await flushPromises()
 
     await wrapper.find('[data-testid="couple-translator-input"]').setValue('我没事')
@@ -1000,6 +1022,9 @@ describe('CoupleView 情侣空间', () => {
     const wrapper = mountView()
     await flushPromises()
     await wrapper.find('#tab-rituals').trigger('click')
+    await flushPromises()
+    // F202：比划猜（CoupleFunTalk）在「🎲 玩趣时间」子页签
+    await wrapper.find('#tab-fun').trigger('click')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="couple-guess-clue-show"]').text()).toContain('辣辣的')
@@ -1074,6 +1099,9 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     await wrapper.find('#tab-rituals').trigger('click')
     await flushPromises()
+    // F202：抽签/恋爱天气/骰子（CouplePlay）在「🎲 玩趣时间」子页签
+    await wrapper.find('#tab-fun').trigger('click')
+    await flushPromises()
 
     expect(wrapper.find('[data-testid="couple-heartbeat"]').text()).toContain('88%')
     expect(wrapper.find('[data-testid="couple-weather"]').text()).toContain('彩虹')
@@ -1121,6 +1149,9 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     await wrapper.find('#tab-shared').trigger('click')
     await flushPromises()
+    // F200：生活经营（CoupleManage）在「🏪 经营所」子页签
+    await wrapper.find('#tab-manage').trigger('click')
+    await flushPromises()
 
     expect(wrapper.find('[data-testid="couple-host-name"]').text()).toContain('我')
     expect(wrapper.find('[data-testid="couple-host-plan"]').text()).toContain('周五吃火锅')
@@ -1145,6 +1176,9 @@ describe('CoupleView 情侣空间', () => {
     const wrapper = mountView()
     await flushPromises()
     await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+    // F200：策划案/五年计划（CoupleManage）在「🏪 经营所」子页签
+    await wrapper.find('#tab-manage').trigger('click')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="couple-annivplan-ap1"]').text()).toContain('一百天')
@@ -1179,6 +1213,9 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     await wrapper.find('#tab-timeline').trigger('click')
     await flushPromises()
+    // F204：时光博物馆在「🏛️ 博物馆」子页签
+    await wrapper.find('#tab-museum').trigger('click')
+    await flushPromises()
 
     const scene = wrapper.find('[data-testid="couple-museum-scene-ms1"]')
     expect(scene.text()).toContain('秋天在图书馆第一次借你笔记')
@@ -1200,6 +1237,9 @@ describe('CoupleView 情侣空间', () => {
     const wrapper = mountView()
     await flushPromises()
     await wrapper.find('#tab-timeline').trigger('click')
+    await flushPromises()
+    // F204：签字用例同样先进「🏛️ 博物馆」子页签
+    await wrapper.find('#tab-museum').trigger('click')
     await flushPromises()
 
     await wrapper.find('[data-testid="couple-museum-rule-sign-mr2"]').trigger('click')
@@ -1225,6 +1265,9 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     await wrapper.find('#tab-timeline').trigger('click')
     await flushPromises()
+    // F204：静默降级用例同样先进「🏛️ 博物馆」子页签
+    await wrapper.find('#tab-museum').trigger('click')
+    await flushPromises()
 
     expect(wrapper.find('[data-testid="couple-museum"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="couple-museum-scenes"]').text()).toContain('恋爱纪录片')
@@ -1249,5 +1292,100 @@ describe('CoupleView 情侣空间', () => {
     expect(g.exists()).toBe(true)
     expect(g.text()).toContain('在一起 620 天')
     expect(g.text()).toContain('静音时段')
+  })
+
+  it('F200：shared 拆成「过日子/经营所」两个子页签并分别渲染对应组件', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+
+    // 默认子页签「🧾 过日子」：只渲染过日子卡组，经营所卡（lazy）未挂载
+    expect(wrapper.find('#tab-daily').classes()).toContain('is-active')
+    expect(wrapper.find('[data-testid="couple-city-card"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-manage"]').exists()).toBe(false)
+
+    await wrapper.find('#tab-manage').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('#tab-manage').classes()).toContain('is-active')
+    expect(wrapper.find('[data-testid="couple-manage"]').exists()).toBe(true)
+  })
+
+  it('F206：搜索「博物馆」回车跳转时光轴-博物馆子页签并高亮目标卡', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    // jumpToCard 用 document.querySelector 定位滚动目标，需挂载进 document
+    const wrapper = mount(CoupleView, { attachTo: document.body, global: { plugins: [pinia] } })
+    await flushPromises()
+
+    const search = wrapper.find('[data-testid="couple-search"]')
+    await search.setValue('博物馆')
+    await search.trigger('keyup.enter')
+    await flushPromises()
+
+    expect(wrapper.find('#tab-timeline').classes()).toContain('is-active')
+    expect(wrapper.find('#tab-museum').classes()).toContain('is-active')
+    expect(wrapper.find('[data-testid="couple-museum"]').exists()).toBe(true)
+    // 滚动定位 + 高亮 class（60ms 后打闪，1.5s 后自动摘除）
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    expect(wrapper.find('[data-testid="couple-museum"]').classes()).toContain('couple-card-flash')
+    wrapper.unmount()
+  })
+
+  it('F207：pin 列表渲染「我的常用」chip，打开面板勾选保存调用 pinApi.save', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(pinApi.list).mockResolvedValue({ mine: ['couple-museum'], partner: [] })
+    vi.mocked(pinApi.save).mockResolvedValue({ mine: ['couple-museum', 'couple-bond'], partner: [] })
+    const wrapper = mountView()
+    await flushPromises()
+
+    // 默认 promises 页签顶部：我的常用 chip 行
+    expect(wrapper.find('[data-testid="couple-pins"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-pin-chip-couple-museum"]').text()).toBe('时光博物馆')
+
+    await wrapper.find('[data-testid="couple-pin-open"]').trigger('click')
+    await flushPromises()
+    const opt = wrapper.find('[data-testid="couple-pin-opt-couple-bond"]')
+    expect(opt.exists()).toBe(true)
+    const checkbox = opt.element.tagName === 'INPUT' ? opt : opt.find('input')
+    await checkbox.setValue(true)
+    await wrapper.find('[data-testid="couple-pin-save"]').trigger('click')
+    await flushPromises()
+
+    expect(pinApi.save).toHaveBeenCalledOnce()
+    const saved = vi.mocked(pinApi.save).mock.calls[0][0]
+    expect(saved).toHaveLength(2)
+    expect(saved).toContain('couple-museum')
+    expect(saved).toContain('couple-bond')
+    // 保存成功后 chip 行刷新为最新收藏
+    expect(wrapper.find('[data-testid="couple-pin-chip-couple-bond"]').exists()).toBe(true)
+  })
+
+  it('F208 修复回归：?tab=growth 路由直达养成页签', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    routeQuery.tab = 'growth'
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.find('#tab-growth').classes()).toContain('is-active')
+    expect(wrapper.find('[data-testid="couple-challenge"]').exists()).toBe(true)
+  })
+
+  it('F208：首次进入页签出现浅色提示条，点 × 关闭且 localStorage 记住', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    localStorage.removeItem('arechat_couple_tab_tip_bond')
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('#tab-bond').trigger('click')
+    await flushPromises()
+    const tip = wrapper.find('[data-testid="couple-tab-tip"]')
+    expect(tip.exists()).toBe(true)
+    expect(tip.text()).toContain('贴贴区')
+
+    await wrapper.find('[data-testid="couple-tab-tip-close"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-tab-tip"]').exists()).toBe(false)
+    expect(localStorage.getItem('arechat_couple_tab_tip_bond')).toBe('1')
   })
 })
