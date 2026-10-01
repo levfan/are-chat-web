@@ -1,16 +1,16 @@
 ---
 name: are-chat-web-map
-description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Plus）。凡在 are-chat-web 中开发新功能、修复缺陷、评审改动，开工前必须先加载本 skill——它提供目录地图、组件/页签映射、状态管理与 API 惯例、测试与构建命令、开发规范硬性流程（第六节交付门禁，含版本号/发版规则）与产品红线。完成功能后若新增组件/页签/接口，须同步更新本文件。
+description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Plus）。提供目录地图、组件/页签映射、状态管理与 API 惯例、测试与构建命令、交付门禁（第五节，含版本号/发版规则）。凡在 are-chat-web 中开发新功能、修复缺陷、评审改动，开工前必须先加载本 skill，避免重新通读项目。
 ---
 
 # are-chat-web 前端项目地图
 
-> 本文件是给 AI agent 看的项目速查地图。**每次改完代码，若组件/页签/接口有增删，必须同步更新本 skill**（与功能同批提交，commit type 用 `docs`）。
+> 本文件是给 AI agent 看的项目速查地图。维护义务见第五节「收尾」。
 
 ## 一、技术栈与命令
 
 - Vue 3 `<script setup lang="ts">` + Vite 6 + Pinia + Vue Router + Element Plus + TypeScript
-- 测试：Vitest（jsdom），在 `tests/unit/`；构建：`pnpm build`（含 vue-tsc 类型检查，**测试 mock 数据类型必须同步**）；测试：`pnpm test`
+- 测试：Vitest（jsdom），在 `tests/unit/`，命令 `pnpm test`；构建：`pnpm build`（含 vue-tsc 类型检查，何时必跑见第五节）
 - 版本号唯一来源 `package.json` 的 version（alpha → rc → stable 阶梯，升级独立 commit，规范见 `.agents/skills/version-release/SKILL.md`）
 
 ## 二、目录地图（src/）
@@ -86,24 +86,16 @@ WS 事件约定：后端 `ImPushService.pushCoupleEvent(Both)` 推 `{type:'coupl
 - 测试：`tests/unit/couple.spec.ts` 依赖默认页签 `promises`（新增页签不要改默认值）；新组件核心交互应补用例
 - HTTP 封装在 `api/http.ts`：`http.get<T>(url)`、`http.postJson<T>(url, body)`、`http.putJson`、`http.delete`
 
-## 五、给 agent 的快速上手路径
-
-1. 开工先读本 skill；提交规范见 `.agents/skills/git-commit/SKILL.md`
-2. 加一个新功能卡：找一个最像的组件抄结构（如加"XX墙"→ 参考 CoupleCare 里的夸夸墙区块）
-3. 涉及后端新事件：在 `stores/couple.ts` 的 `handleCoupleEvent` 加 case
-4. 提交前：`pnpm build`；改了逻辑跑 `pnpm test`
-5. 对应后端模块地图见 are-chat 仓库的 `are-chat-map` skill
-
-## 六、开发规范硬性流程（交付门禁）
+## 五、交付门禁（硬性流程，给 agent 的快速上手路径）
 
 规范全集在专项 skill（git-commit / version-release）里，本节只做流程串联与红线登记，不复述细节：
 
-1. **开工**：必读本 skill；提交拆分/架构师复审清单 → `.agents/skills/git-commit/SKILL.md`；升版/发版判级 → `.agents/skills/version-release/SKILL.md`
-2. **编码**：走第三节「新功能标准链路」；新 VO 类型加 Couple+域前缀并先 grep 防撞名（见撞名备忘）；不改默认页签 `promises`
-3. **构建**：`pnpm build`（含 vue-tsc）必过；改了 types 同步测试 mock 工厂；涉逻辑改动 `pnpm test` 全绿
+1. **开工**：必读本 skill；提交拆分/架构师复审清单 → `.agents/skills/git-commit/SKILL.md`；升版/发版判级 → `.agents/skills/version-release/SKILL.md`；对应后端模块地图见 are-chat 仓库的 `are-chat-map` skill
+2. **编码**：走第三节「新功能标准链路」；加新卡先找最像的现成组件抄结构（如加"XX墙"→ CoupleCare 的夸夸墙区块）；新 VO 类型加 Couple+域前缀并先 grep 防撞名（见撞名备忘）；后端新事件须在前端 `stores/couple.ts` 的 `handleCoupleEvent` 加 case；不改默认页签 `promises`
+3. **构建**：提交前 `pnpm build`（含 vue-tsc）必过，改了逻辑跑 `pnpm test` 全绿；types 改动同步测试 mock 工厂（红线见第四节）
 4. **提交**：按改动性质分组（依赖/组件页面/样式/文档），一 commit 一性质；信息 `type(scope): 中文描述`
 5. **推送**：commit → `git pull --no-rebase` → push；失败保留本地 commit 并报告，不 force push
 6. **版本**：`package.json` 为唯一版本源，任何代码/文案/测试禁止写死版本号；agent 按 version-release 判级参考自主升版、独立 commit、不建 tag；用户说「发版/发布版本」= 无条件立即完整发版流程
-7. **收尾**：新增/删除组件、页签、接口、WS 事件 → 更新本 skill 对应小节，与功能同批提交
+7. **收尾**：新增/删除组件、页签、接口、WS 事件 → 更新本 skill 对应小节，与功能同批提交（commit type `docs`）
 
-**产品红线（用户长期约束）**：情侣功能注重情绪价值；**不做照片/视频上传类功能**（服务器部署要求高）；文案可爱口语化+emoji（第四节惯例）。
+**产品红线（用户长期约束）**：情侣功能注重情绪价值；**不做照片/视频上传类功能**（服务器部署要求高）。
