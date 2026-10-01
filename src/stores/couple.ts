@@ -142,6 +142,14 @@ import type {
   CouplePraiseBankVO,
   CoupleMorningVO,
   CoupleYearKeywordVO,
+  CouplePoemChainVO,
+  CouplePoem3VO,
+  CoupleMorningBoxVO,
+  CoupleBottleVO,
+  CoupleCipherNoteVO,
+  CoupleSoulVO,
+  CoupleJournalVO,
+  CoupleLetterTemplateVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -326,6 +334,17 @@ export const useCoupleStore = defineStore('couple', () => {
   const praiseBankList = ref<CouplePraiseBankVO[]>([])
   const coachMorning = ref<CoupleMorningVO | null>(null)
   const coachYearKeyword = ref<CoupleYearKeywordVO | null>(null)
+  // 文字浪漫（F160-F169）
+  const poemChain = ref<CouplePoemChainVO | null>(null)
+  const poems3 = ref<CouplePoem3VO[]>([])
+  const morningBox = ref<CoupleMorningBoxVO | null>(null)
+  const bottleList = ref<CoupleBottleVO[]>([])
+  const cipherNoteList = ref<CoupleCipherNoteVO[]>([])
+  const soulQ = ref<CoupleSoulVO | null>(null)
+  const journalList = ref<CoupleJournalVO[]>([])
+  const loveQuote = ref('')
+  const letterTemplates = ref<CoupleLetterTemplateVO[]>([])
+  const stickerList = ref<string[]>([])
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -359,6 +378,7 @@ export const useCoupleStore = defineStore('couple', () => {
     play: false,
     dailyLife: false,
     coach: false,
+    poem: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -538,6 +558,16 @@ export const useCoupleStore = defineStore('couple', () => {
     praiseBankList.value = []
     coachMorning.value = null
     coachYearKeyword.value = null
+    poemChain.value = null
+    poems3.value = []
+    morningBox.value = null
+    bottleList.value = []
+    cipherNoteList.value = []
+    soulQ.value = null
+    journalList.value = []
+    loveQuote.value = ''
+    letterTemplates.value = []
+    stickerList.value = []
     loadedLists.value = {
       promises: false,
       question: false,
@@ -570,6 +600,7 @@ export const useCoupleStore = defineStore('couple', () => {
       play: false,
       dailyLife: false,
       coach: false,
+      poem: false,
     }
     promiseDraft.value = null
   }
@@ -1970,6 +2001,82 @@ export const useCoupleStore = defineStore('couple', () => {
     coachYearKeyword.value = await coupleApi.yearKeyword(year)
   }
 
+  // ---------- 文字浪漫（F160-F169） ----------
+
+  async function loadPoem() {
+    const [pc, p3, mn, bt, cp, sq, jr, qt, lt, sk] = await Promise.all([
+      coupleApi.poemChain(),
+      coupleApi.poems3(),
+      coupleApi.morningNotes(),
+      coupleApi.bottles(),
+      coupleApi.cipherNotes(),
+      coupleApi.soul(),
+      coupleApi.journal(),
+      coupleApi.quote(),
+      coupleApi.letterTemplates(),
+      coupleApi.stickers(),
+    ])
+    poemChain.value = pc
+    poems3.value = p3 ?? []
+    morningBox.value = mn
+    bottleList.value = bt ?? []
+    cipherNoteList.value = cp ?? []
+    soulQ.value = sq
+    journalList.value = jr ?? []
+    loveQuote.value = qt ?? ''
+    letterTemplates.value = lt ?? []
+    stickerList.value = sk ?? []
+    loadedLists.value.poem = true
+  }
+
+  async function addPoemLine(line: string) {
+    poemChain.value = await coupleApi.addPoemLine(line)
+  }
+
+  async function addPoem3(line1: string, line2: string, line3: string) {
+    poems3.value = (await coupleApi.addPoem3(line1, line2, line3)) ?? []
+  }
+
+  async function likePoem3Item(id: string) {
+    poems3.value = (await coupleApi.likePoem3(id)) ?? []
+  }
+
+  async function sealMorningNote(content: string) {
+    morningBox.value = await coupleApi.sealMorningNote(content)
+  }
+
+  async function readMorningNoteItem(id: string) {
+    morningBox.value = await coupleApi.readMorningNote(id)
+  }
+
+  async function tossBottle(mood: string, content: string) {
+    bottleList.value = (await coupleApi.tossBottle(mood, content)) ?? []
+  }
+
+  async function replyBottleItem(id: string, reply: string) {
+    bottleList.value = (await coupleApi.replyBottle(id, reply)) ?? []
+  }
+
+  async function makeCipherNote(cipher: string, hint?: string) {
+    cipherNoteList.value = (await coupleApi.makeCipherNote(cipher, hint)) ?? []
+  }
+
+  async function crackCipherNoteItem(id: string) {
+    cipherNoteList.value = (await coupleApi.crackCipherNote(id)) ?? []
+  }
+
+  async function answerSoul(answer: string) {
+    soulQ.value = await coupleApi.answerSoul(answer)
+  }
+
+  async function saveJournalPage(sticker: string, text: string) {
+    journalList.value = (await coupleApi.saveJournal(sticker, text)) ?? []
+  }
+
+  async function reloadQuote() {
+    loveQuote.value = (await coupleApi.quote()) ?? ''
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -2737,6 +2844,49 @@ export const useCoupleStore = defineStore('couple', () => {
           void coupleApi.praiseBank().then((v) => (praiseBankList.value = v ?? []))
         }
         break
+      case 'poem-line':
+      case 'poem-made':
+      case 'poem-liked':
+        notify('🖋️ 我们的诗', msg.detail)
+        if (loadedLists.value.poem) {
+          void coupleApi.poemChain().then((v) => (poemChain.value = v))
+          void coupleApi.poems3().then((v) => (poems3.value = v ?? []))
+        }
+        break
+      case 'morning-note-sealed':
+      case 'morning-note-read':
+        notify('🌙 醒来第一条', msg.detail)
+        if (loadedLists.value.poem) {
+          void coupleApi.morningNotes().then((v) => (morningBox.value = v))
+        }
+        break
+      case 'bottle-tossed':
+      case 'bottle-replied':
+        notify('🌊 漂流瓶', msg.detail)
+        if (loadedLists.value.poem) {
+          void coupleApi.bottles().then((v) => (bottleList.value = v ?? []))
+        }
+        break
+      case 'cipher-note-made':
+      case 'cipher-note-cracked':
+        notify('🔐 密码情书', msg.detail)
+        if (loadedLists.value.poem) {
+          void coupleApi.cipherNotes().then((v) => (cipherNoteList.value = v ?? []))
+        }
+        break
+      case 'soul-answered':
+      case 'soul-both':
+        notify('🎁 灵魂一问', msg.detail)
+        if (loadedLists.value.poem) {
+          void coupleApi.soul().then((v) => (soulQ.value = v))
+        }
+        break
+      case 'journal-updated':
+        notify('📔 贴纸手账', msg.detail)
+        if (loadedLists.value.poem) {
+          void coupleApi.journal().then((v) => (journalList.value = v ?? []))
+        }
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -3058,6 +3208,16 @@ export const useCoupleStore = defineStore('couple', () => {
     praiseBankList,
     coachMorning,
     coachYearKeyword,
+    poemChain,
+    poems3,
+    morningBox,
+    bottleList,
+    cipherNoteList,
+    soulQ,
+    journalList,
+    loveQuote,
+    letterTemplates,
+    stickerList,
     loadComm,
     translateText,
     startCoolDown,
@@ -3133,5 +3293,18 @@ export const useCoupleStore = defineStore('couple', () => {
     doneDelayTask,
     addPraiseBankItem,
     loadYearKeyword,
+    loadPoem,
+    addPoemLine,
+    addPoem3,
+    likePoem3Item,
+    sealMorningNote,
+    readMorningNoteItem,
+    tossBottle,
+    replyBottleItem,
+    makeCipherNote,
+    crackCipherNoteItem,
+    answerSoul,
+    saveJournalPage,
+    reloadQuote,
   }
 })

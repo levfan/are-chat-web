@@ -2092,3 +2092,104 @@ export interface CoupleYearKeywordVO {
   feelCount: number
   summary: string
 }
+
+// ============ 情侣空间·文字浪漫（F160-F169） ============
+
+export interface CouplePoemLineVO {
+  id: string
+  day: string
+  fromUser: string
+  mine: boolean
+  line: string
+  created: number
+}
+
+export interface CouplePoemChainVO {
+  lines: CouplePoemLineVO[]
+  todayWriter: string
+  myTurn: boolean
+  writtenToday: boolean
+}
+
+export interface CouplePoem3VO {
+  id: string
+  fromUser: string
+  mine: boolean
+  line1: string
+  line2: string
+  line3: string
+  liked: boolean
+  likedAt: number | null
+  created: number
+}
+
+export interface CoupleMorningNoteVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  content: string
+  deliverDay: string
+  arrived: boolean
+  read: boolean
+  created: number
+}
+
+export interface CoupleMorningBoxVO {
+  mine: CoupleMorningNoteVO[]
+  delivered: CoupleMorningNoteVO[]
+}
+
+export interface CoupleBottleVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  mood: string
+  content: string
+  reply: string | null
+  status: 'FLOATING' | 'REPLIED'
+  repliedAt: number | null
+  created: number
+}
+
+export interface CoupleCipherNoteVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  cipher: string
+  hint: string | null
+  decodedBy: string | null
+  decodedAt: number | null
+  created: number
+}
+
+export interface CoupleSoulRowVO {
+  id: string
+  fromUser: string
+  day: string
+  answer: string
+  created: number
+}
+
+export interface CoupleSoulVO {
+  question: string
+  mine: CoupleSoulRowVO | null
+  partner: CoupleSoulRowVO | null
+  bothAnswered: boolean
+}
+
+export interface CoupleJournalVO {
+  id: string
+  day: string
+  fromUser: string
+  mine: boolean
+  sticker: string
+  text: string
+  updatedAt: number
+  created: number
+}
+
+export interface CoupleLetterTemplateVO {
+  title: string
+  scene: string
+  body: string
+}

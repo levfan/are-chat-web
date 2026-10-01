@@ -150,6 +150,15 @@ import type {
   CouplePraiseBankVO,
   CoupleMorningVO,
   CoupleYearKeywordVO,
+  CouplePoemChainVO,
+  CouplePoem3VO,
+  CoupleMorningNoteVO,
+  CoupleMorningBoxVO,
+  CoupleBottleVO,
+  CoupleCipherNoteVO,
+  CoupleSoulVO,
+  CoupleJournalVO,
+  CoupleLetterTemplateVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -986,4 +995,62 @@ export const coupleApi = {
     http.get<CoupleYearKeywordVO>(
       year ? `/api/couple/coach/year-keyword?year=${year}` : '/api/couple/coach/year-keyword',
     ),
+
+  // ============ 文字浪漫（F160-F169） ============
+  /** F160 我们的诗 */
+  poemChain: () => http.get<CouplePoemChainVO>('/api/couple/poem/chain'),
+  /** F160 写今天这一句诗 */
+  addPoemLine: (line: string) =>
+    http.postJson<CouplePoemChainVO>('/api/couple/poem/chain', { line }),
+  /** F161 三行情书列表 */
+  poems3: () => http.get<CouplePoem3VO[]>('/api/couple/poem/3lines'),
+  /** F161 写三行情书 */
+  addPoem3: (line1: string, line2: string, line3: string) =>
+    http.postJson<CouplePoem3VO[]>('/api/couple/poem/3lines', { line1, line2, line3 }),
+  /** F161 点赞三行情书 */
+  likePoem3: (id: string) =>
+    http.postJson<CouplePoem3VO[]>(`/api/couple/poem/3lines/${id}/like`, {}),
+  /** F162 醒来第一条信箱 */
+  morningNotes: () => http.get<CoupleMorningBoxVO>('/api/couple/poem/morning-notes'),
+  /** F162 睡前封一条 */
+  sealMorningNote: (content: string) =>
+    http.postJson<CoupleMorningBoxVO>('/api/couple/poem/morning-notes', { content }),
+  /** F162 已读 */
+  readMorningNote: (id: string) =>
+    http.postJson<CoupleMorningBoxVO>(`/api/couple/poem/morning-notes/${id}/read`, {}),
+  /** F163 漂流瓶列表 */
+  bottles: () => http.get<CoupleBottleVO[]>('/api/couple/poem/bottles'),
+  /** F163 扔漂流瓶 */
+  tossBottle: (mood: string, content: string) =>
+    http.postJson<CoupleBottleVO[]>('/api/couple/poem/bottles', { mood, content }),
+  /** F163 回漂流瓶 */
+  replyBottle: (id: string, reply: string) =>
+    http.postJson<CoupleBottleVO[]>(`/api/couple/poem/bottles/${id}/reply`, { reply }),
+  /** F164 密码情书列表（与暗号小本本 coupleCipher 撞名场景，这里走 cipherNote 前缀） */
+  cipherNotes: () => http.get<CoupleCipherNoteVO[]>('/api/couple/poem/ciphers'),
+  /** F164 写密码情书 */
+  makeCipherNote: (cipher: string, hint?: string) =>
+    http.postJson<CoupleCipherNoteVO[]>('/api/couple/poem/ciphers', {
+      cipher,
+      hint: hint ?? null,
+    }),
+  /** F164 解码上报 */
+  crackCipherNote: (id: string) =>
+    http.postJson<CoupleCipherNoteVO[]>(`/api/couple/poem/ciphers/${id}/crack`, {}),
+  /** F165 今日灵魂一问 */
+  soul: () => http.get<CoupleSoulVO>('/api/couple/poem/soul'),
+  /** F165 回答灵魂一问 */
+  answerSoul: (answer: string) =>
+    http.postJson<CoupleSoulVO>('/api/couple/poem/soul', { answer }),
+  /** F166 贴纸手账 */
+  journal: () => http.get<CoupleJournalVO[]>('/api/couple/poem/journal'),
+  /** F166 写手账 */
+  saveJournal: (sticker: string, text: string) =>
+    http.postJson<CoupleJournalVO[]>('/api/couple/poem/journal', { sticker, text }),
+  /** F167 恋爱语录机 */
+  quote: () => http.get<string>('/api/couple/poem/quote'),
+  /** F168 情书模板库 */
+  letterTemplates: () => http.get<CoupleLetterTemplateVO[]>('/api/couple/poem/letter-templates'),
+  /** F169 手账贴纸库 */
+  stickers: () => http.get<string[]>('/api/couple/poem/stickers'),
 }
