@@ -2743,3 +2743,125 @@ export interface CoupleCozyMonthlyVO {
   cupsTotal: number
   index: number
 }
+
+// ============ 小日子·仪式感（F230-F239） ============
+
+/** F232 过法任务卡条目（markedToday=今天是否已打勾） */
+export interface CoupleCerRitualVO {
+  id: string
+  foundedId: string
+  content: string
+  markedToday: boolean
+}
+
+/** F230 我们的小日子（一次性日子过期后 nextDay/daysLeft/edition 为 null） */
+export interface CoupleCerFoundedVO {
+  id: string
+  name: string
+  startDay: string
+  repeatYear: boolean
+  nextDay: string | null
+  daysLeft: number | null
+  edition: number | null
+  rituals: CoupleCerRitualVO[]
+}
+
+/** F231 老黄历统一倒数条目（kind：小日子/纪念日/倒数日） */
+export interface CoupleCerAlmanacVO {
+  kind: 'founded' | 'anniversary' | 'countdown'
+  title: string
+  day: string
+  daysLeft: number
+}
+
+/** F234 爱情保险柜本月状态（mine/partner=本月双方互夸句，未交为 null） */
+export interface CoupleCerPolicyVO {
+  month: string
+  mine: string | null
+  partner: string | null
+  paidMonths: number
+  paidMilestones: number[]
+  monthsToNext: number | null
+}
+
+/** F235 续约长卷上的一句话 */
+export interface CoupleCerRenewLineVO {
+  anchorDay: string
+  fromUser: string
+  mine: boolean
+  line: string
+}
+
+/** F235 续约仪式状态（dueToday=今天正是续约日，可签字） */
+export interface CoupleCerRenewVO {
+  anchorDay: string
+  dueToday: boolean
+  mineSigned: boolean
+  partnerSigned: boolean
+  daysToNext: number
+  scroll: CoupleCerRenewLineVO[]
+}
+
+/** F236 愿望券（status：OPEN 待核销 / USED 已兑现；ref 非空=保险柜里程碑 payout 券） */
+export interface CoupleCerCouponVO {
+  id: string
+  title: string
+  status: string
+  ref: string
+  issuer: string
+  usedBy: string | null
+  created: number | null
+}
+
+/** F239 当日体感「此刻感觉」一句话 */
+export interface CoupleCerRecapVO {
+  day: string
+  fromUser: string
+  mine: boolean
+  feeling: string
+}
+
+/** F238 年度加冕 top 项（marks=当年打勾数） */
+export interface CoupleCerCrownItemVO {
+  name: string
+  marks: number
+}
+
+/** F238 年度加冕（仅 520/跨年/元旦当天非 null） */
+export interface CoupleCerCrownVO {
+  year: number
+  open: string
+  top: CoupleCerCrownItemVO[]
+}
+
+/** F230-F239 今日仪式总览（所有写接口均返回整份，前端整体替换） */
+export interface CoupleCerOverviewVO {
+  day: string
+  yi: string
+  ji: string
+  founded: CoupleCerFoundedVO[]
+  almanac: CoupleCerAlmanacVO[]
+  nudges: string[]
+  policy: CoupleCerPolicyVO
+  renew: CoupleCerRenewVO
+  couponsOpen: CoupleCerCouponVO[]
+  couponsUsed: CoupleCerCouponVO[]
+  recapsToday: CoupleCerRecapVO[]
+  recapsLastYear: CoupleCerRecapVO[]
+  crown: CoupleCerCrownVO | null
+}
+
+/** F237 小日子史册：一年一页 */
+export interface CoupleCerChroniclePageVO {
+  day: string
+  marked: number
+  ritualTotal: number
+  feelings: CoupleCerRecapVO[]
+}
+
+/** F237 小日子史册整卷 */
+export interface CoupleCerChronicleVO {
+  foundedId: string
+  name: string
+  pages: CoupleCerChroniclePageVO[]
+}

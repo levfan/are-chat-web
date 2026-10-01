@@ -76,6 +76,11 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-heart-moments', label: '心动时刻', tab: 'timeline', sub: 'flow' },
   { key: 'couple-timeline', label: '恋爱时光轴', tab: 'timeline', sub: 'flow' },
   { key: 'couple-chronicle', label: '恋爱编年史', tab: 'timeline', sub: 'flow' },
+  { key: 'couple-cere-almanac', label: '小日子黄历', tab: 'timeline', sub: 'flow' },
+  { key: 'couple-cere-founded', label: '我们的小日子', tab: 'timeline', sub: 'flow' },
+  { key: 'couple-cere-vault', label: '爱情保险柜与续约', tab: 'timeline', sub: 'flow' },
+  { key: 'couple-cere-coupon', label: '愿望券本', tab: 'timeline', sub: 'flow' },
+  { key: 'couple-cere-feel', label: '今日体感与年度加冕', tab: 'timeline', sub: 'flow' },
   { key: 'couple-museum', label: '时光博物馆', tab: 'timeline', sub: 'museum' },
 ]
 

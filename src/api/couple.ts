@@ -202,6 +202,8 @@ import type {
   CoupleDineYearVO,
   CoupleCozyMonthlyVO,
   CoupleCozyTodayVO,
+  CoupleCerChronicleVO,
+  CoupleCerOverviewVO,
   CouplePinVO,
 } from '@/types'
 
@@ -1375,4 +1377,43 @@ export const cozyApi = {
   /** F229 月度安眠小结（month：yyyy-MM，缺省当月；体温同步指数 0-100） */
   cozyMonthly: (month?: string) =>
     http.get<CoupleCozyMonthlyVO>(month ? `/api/couple/cozy/monthly?month=${encodeURIComponent(month)}` : '/api/couple/cozy/monthly'),
+}
+
+// ============ 小日子·仪式感（F230-F239） ============
+export const ceremonyApi = {
+  /** F230-F239 今日仪式总览：黄历宜忌/小日子/催办/保险柜/续约/愿望券/体感/加冕一次拉齐 */
+  cereOverview: () => http.get<CoupleCerOverviewVO>('/api/couple/ceremony/overview'),
+  /** F237 小日子史册：一年一页的庆祝记录与感言（按 foundedId 懒加载） */
+  cereChronicle: (foundedId: string) =>
+    http.get<CoupleCerChronicleVO>(`/api/couple/ceremony/chronicle?foundedId=${encodeURIComponent(foundedId)}`),
+  /** F230 新建小日子（起名+起始日+是否每年重复），返回整份总览 */
+  cereAddFounded: (name: string, startDay: string, repeatYear: boolean) =>
+    http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/founded', { name, startDay, repeatYear }),
+  /** F230 删除小日子（连同过法卡与打卡），返回整份总览 */
+  cereRemoveFounded: (id: string) =>
+    http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/founded/remove', { id }),
+  /** F232 写过法任务卡（每个小日子最多 3 条，超出后端 400），返回整份总览 */
+  cereAddRitual: (foundedId: string, content: string) =>
+    http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/ritual', { foundedId, content }),
+  /** F232 划掉一条过法卡（连同它的打卡记录），返回整份总览 */
+  cereRemoveRitual: (id: string) =>
+    http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/ritual/remove', { id }),
+  /** F233 庆祝打卡：给过法卡打勾（当日幂等），返回整份总览 */
+  cereMark: (id: string) =>
+    http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/mark', { id }),
+  /** F234 交本月保费：夸 TA 一句（一人一月一句，可改写），返回整份总览 */
+  cerePolicy: (quote: string) =>
+    http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/policy', { quote }),
+  /** F235 续约日签字「我还是选你」（非续约日后端 400 带剩余天数），返回整份总览 */
+  cereRenew: (line: string) =>
+    http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/renew', { line }),
+  /** F236 发一张愿望券（券面自拟 ≤80 字），返回整份总览 */
+  cereIssueCoupon: (title: string) =>
+    http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/coupon', { title }),
+  /** F236 核销一张愿望券（OPEN→USED，已核销再核 400），返回整份总览 */
+  cereUseCoupon: (id: string) =>
+    http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/coupon/use', { id }),
+  /** F239 留一句「此刻感觉」（day 空=今天，一人一天一句可改写），返回整份总览 */
+  cereRecap: (feeling: string, day?: string | null) =>
+    http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/recap', { day: day ?? null, feeling }),
 }
