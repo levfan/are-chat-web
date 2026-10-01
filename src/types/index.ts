@@ -2644,3 +2644,102 @@ export interface CoupleDineYearVO {
   ticketCount: number
   plannedCount: number
 }
+
+// ============ 体温同步·作息与健康（F220-F229） ============
+
+/** F220 晚安熄灯：双方今晚是否点灯 + 连续同熄灯天数 */
+export interface CoupleCozyLightoutVO {
+  mine: boolean
+  partner: boolean
+  streak: number
+}
+
+/** F221 昨夜睡眠自评单（stars 1-5，dream 为梦话可空串） */
+export interface CoupleCozySleepVO {
+  fromUser: string
+  mine: boolean
+  stars: number
+  dream: string
+}
+
+/** F222 数羊房：60s 窗口内累计点按，满 10 下成群；elapsed 为成群用时毫秒（未成群为 null） */
+export interface CoupleCozySheepVO {
+  mineTaps: number
+  partnerTaps: number
+  mineDone: boolean
+  partnerDone: boolean
+  mineElapsedMs: number | null
+  partnerElapsedMs: number | null
+}
+
+/** F223 喝水接力：双方今日杯数 + 轻提醒（TA 干了好几杯而我一杯没喝） */
+export interface CoupleCozyWaterVO {
+  mine: number
+  partner: number
+  nudge: boolean
+}
+
+/** F224 冷暖互报条目（advised=TA 是否已叮嘱过添衣） */
+export interface CoupleCozyWeatherVO {
+  fromUser: string
+  mine: boolean
+  city: string
+  feel: string
+  tempText: string
+  advised: boolean
+}
+
+/** F225 熬夜守护：今天是否已递过「早点睡」陪伴卡 + 卡面文案 */
+export interface CoupleCozyLatenightVO {
+  sentToday: boolean
+  card: string
+}
+
+/** F226 本周慢生活小事（doneDay 空串 = 还没打卡） */
+export interface CoupleCozySlowVO {
+  fromUser: string
+  mine: boolean
+  thing: string
+  doneDay: string
+}
+
+/** F227 疼痛对策本条目（每人一本，随时可改） */
+export interface CoupleCozyRemedyVO {
+  forUser: string
+  mine: boolean
+  body: string
+  updatedAt: number
+}
+
+/** F228 抱抱计量器（milestone=已达成的最近里程碑次数，未达成 null） */
+export interface CoupleCozyHugVO {
+  total: number
+  today: number
+  milestone: number | null
+}
+
+/** F220-F228 今日体温总览（所有卡片一次拉齐，写接口均返回整份前端整体替换） */
+export interface CoupleCozyTodayVO {
+  day: string
+  lightout: CoupleCozyLightoutVO
+  sleeps: CoupleCozySleepVO[]
+  sheep: CoupleCozySheepVO
+  water: CoupleCozyWaterVO
+  weathers: CoupleCozyWeatherVO[]
+  latenight: CoupleCozyLatenightVO
+  slows: CoupleCozySlowVO[]
+  remedies: CoupleCozyRemedyVO[]
+  hug: CoupleCozyHugVO
+}
+
+/** F229 月度安眠小结（index 为体温同步指数 0-100） */
+export interface CoupleCozyMonthlyVO {
+  month: string
+  bothLitNights: number
+  bestStreak: number
+  sleepReports: number
+  avgStars: number
+  sheepDone: number
+  cupsTotal: number
+  index: number
+}

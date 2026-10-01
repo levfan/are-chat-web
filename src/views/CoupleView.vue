@@ -253,6 +253,7 @@
                   <CoupleCare />
                   <CoupleComfort />
                   <CoupleMakeup />
+                  <CoupleCozy />
                 </div>
               </el-tab-pane>
               <el-tab-pane label="✨ 默契亲密" name="intimate" lazy>
@@ -440,6 +441,7 @@ import CoupleSurprise from '@/components/couple/CoupleSurprise.vue'
 import CoupleGarden from '@/components/couple/CoupleGarden.vue'
 import CoupleComfort from '@/components/couple/CoupleComfort.vue'
 import CoupleMakeup from '@/components/couple/CoupleMakeup.vue'
+import CoupleCozy from '@/components/couple/CoupleCozy.vue'
 import CoupleTruth from '@/components/couple/CoupleTruth.vue'
 import CoupleWhisperBox from '@/components/couple/CoupleWhisperBox.vue'
 import CoupleChallenge from '@/components/couple/CoupleChallenge.vue'

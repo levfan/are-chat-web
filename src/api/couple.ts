@@ -200,6 +200,8 @@ import type {
   CoupleDineTicketVO,
   CoupleDineTodayVO,
   CoupleDineYearVO,
+  CoupleCozyMonthlyVO,
+  CoupleCozyTodayVO,
   CouplePinVO,
 } from '@/types'
 
@@ -1336,4 +1338,41 @@ export const diningApi = {
 
   /** F217 年度干饭账（year：yyyy） */
   dineYear: (year: string) => http.get<CoupleDineYearVO>(`/api/couple/dining/year?year=${encodeURIComponent(year)}`),
+}
+
+// ============ 体温同步·作息与健康（F220-F229） ============
+export const cozyApi = {
+  /** F220-F228 今日体温总览：熄灯/睡眠单/数羊/喝水/冷暖/熬夜卡/慢生活/对策本/抱抱一次拉齐 */
+  cozyToday: () => http.get<CoupleCozyTodayVO>('/api/couple/cozy/today'),
+  /** F220 道晚安点灯（每人一晚一次，atTime 可空），返回最新今日总览 */
+  cozyLightout: (atTime?: string | null) =>
+    http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/lightout', { atTime: atTime ?? null }),
+  /** F221 报昨夜睡眠自评（stars 后端钳 1-5，dream ≤70 字，本人当日可改），返回最新今日总览 */
+  cozySleep: (day: string, stars: number, dream: string) =>
+    http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/sleep', { day, stars, dream }),
+  /** F222 数一只羊（60s 窗口内累计，满 10 下成群；成群后再点不计数），返回最新今日总览 */
+  cozySheep: () => http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/sheep', {}),
+  /** F223 干一杯水（我的杯数 +1，TA 的杯子亮一格），返回最新今日总览 */
+  cozyWater: () => http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/water', {}),
+  /** F224 互报今日冷暖（city ≤30 字 / feel ≤10 字 / tempText ≤10 字，当日可改），返回最新今日总览 */
+  cozyWeather: (city: string, feel: string, tempText: string) =>
+    http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/weather', { city, feel, tempText }),
+  /** F224 对 TA 今日体感一键叮嘱添衣（同一人一天一次），返回最新今日总览 */
+  cozyAdvise: () => http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/weather/advise', {}),
+  /** F225 递「早点睡」陪伴卡（一天一张，重复递幂等），返回最新今日总览 */
+  cozyLatenight: () => http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/latenight', {}),
+  /** F226 提本周慢生活小事（≤70 字，可改），返回最新今日总览 */
+  cozySlow: (thing: string) => http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/slow', { thing }),
+  /** F226 打卡我的慢生活小事（本周没提小事 400），返回最新今日总览 */
+  cozySlowCheck: () => http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/slow/check', {}),
+  /** F227 登记/更新我的疼痛对策本（≤300 字），返回最新今日总览 */
+  cozyRemedy: (body: string) => http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/remedy', { body }),
+  /** F227 一键按 TA 的对策执行并送达关怀（TA 没写对策本 400），返回最新今日总览 */
+  cozyComfort: () => http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/comfort', {}),
+  /** F228 自报抱抱计数（cnt 后端钳 1-99，note ≤70 字），跨里程碑后端点亮，返回最新今日总览 */
+  cozyHug: (cnt: number, note: string) =>
+    http.postJson<CoupleCozyTodayVO>('/api/couple/cozy/hug', { cnt, note }),
+  /** F229 月度安眠小结（month：yyyy-MM，缺省当月；体温同步指数 0-100） */
+  cozyMonthly: (month?: string) =>
+    http.get<CoupleCozyMonthlyVO>(month ? `/api/couple/cozy/monthly?month=${encodeURIComponent(month)}` : '/api/couple/cozy/monthly'),
 }

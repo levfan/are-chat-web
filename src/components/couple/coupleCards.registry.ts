@@ -48,6 +48,8 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-care', label: '情绪天气与急救箱', tab: 'care', sub: 'rescue' },
   { key: 'couple-comfort', label: '求抱抱', tab: 'care', sub: 'rescue' },
   { key: 'couple-makeup', label: '和好与道歉券', tab: 'care', sub: 'rescue' },
+  { key: 'couple-cozy-today', label: '今日体温同步', tab: 'care', sub: 'rescue' },
+  { key: 'couple-cozy-monthly', label: '月度安眠小结', tab: 'care', sub: 'rescue' },
   { key: 'couple-soft', label: '心动软陪伴', tab: 'care', sub: 'intimate' },
   { key: 'couple-spark', label: '默契亲密仪表盘', tab: 'care', sub: 'intimate' },
   // 🗓️ 共享空间
