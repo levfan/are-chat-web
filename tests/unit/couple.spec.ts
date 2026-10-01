@@ -935,4 +935,21 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="couple-dice-result"]').text()).not.toBe('')
   })
+
+  it('深度陪伴：恋爱仪表盘展示今日待办与近期回忆', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.dashboard).mockResolvedValue({
+      todos: [{ kind: 'three', text: '🌙 今日三问还没答，睡前 3 分钟安排上。' }],
+      memories: [{ kind: 'song', text: '🎵 今日主题曲：《告白气球》', created: Date.now() }],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    const todos = wrapper.find('[data-testid="couple-dashboard-todos"]')
+    const memories = wrapper.find('[data-testid="couple-dashboard-memories"]')
+    expect(todos.exists()).toBe(true)
+    expect(todos.text()).toContain('今日三问')
+    expect(memories.exists()).toBe(true)
+    expect(memories.text()).toContain('告白气球')
+  })
 })
