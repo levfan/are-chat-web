@@ -170,6 +170,16 @@ import type {
   CoupleSyncRankVO,
   CoupleSparkDashboardVO,
   CoupleSparkWeeklyVO,
+  CoupleManageMeetingVO,
+  CoupleManageHostVO,
+  CoupleManageSkillVO,
+  CoupleManageMonthBoardVO,
+  CoupleManageEmergencyCardVO,
+  CoupleManageSnapshotVO,
+  CoupleManagePointAccountVO,
+  CoupleManageFiveYearPlanVO,
+  CoupleManageAnnivPlanVO,
+  CoupleManageWeeklyVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -1105,4 +1115,94 @@ export const coupleApi = {
   syncRank: () => http.get<CoupleSyncRankVO[]>('/api/couple/spark/sync-rank'),
   /** F179 默契周报 */
   sparkWeekly: () => http.get<CoupleSparkWeeklyVO>('/api/couple/spark/weekly'),
+}
+
+// ============ 生活经营（F180-F189） ============
+export const manageApi = {
+  /** F180 家庭会议：议题列表（新→旧） */
+  meetings: () => http.get<CoupleManageMeetingVO[]>('/api/couple/manage/meetings'),
+  /** F180 提出议题（followDay：后续跟进日 yyyy-MM-dd，可空） */
+  createMeeting: (topic: string, followDay?: string | null) =>
+    http.postJson<CoupleManageMeetingVO[]>('/api/couple/manage/meetings', {
+      topic,
+      followDay: followDay ?? null,
+    }),
+  /** F180 给议题记结论（可同时补跟进日） */
+  decideMeeting: (id: string, decision: string, followDay?: string | null) =>
+    http.postJson<CoupleManageMeetingVO[]>(`/api/couple/manage/meetings/${id}/decision`, {
+      decision,
+      followDay: followDay ?? null,
+    }),
+  /** F180 关闭议题 */
+  closeMeeting: (id: string) =>
+    http.postJson<CoupleManageMeetingVO[]>(`/api/couple/manage/meetings/${id}/close`, {}),
+
+  /** F181 本周主理人（轮换当家） */
+  host: () => http.get<CoupleManageHostVO>('/api/couple/manage/host'),
+  /** F181 主理人排本周小计划 */
+  saveHostPlan: (plan: string) =>
+    http.postJson<CoupleManageHostVO>('/api/couple/manage/host/plan', { plan }),
+
+  /** F182 技能交换所列表 */
+  skills: () => http.get<CoupleManageSkillVO[]>('/api/couple/manage/skills'),
+  /** F182 挂一个交换（我会 teach，想学 learn） */
+  createSkill: (teach: string, learn: string) =>
+    http.postJson<CoupleManageSkillVO[]>('/api/couple/manage/skills', { teach, learn }),
+  /** F182 接单TA的交换 */
+  takeSkill: (id: string) =>
+    http.postJson<CoupleManageSkillVO[]>(`/api/couple/manage/skills/${id}/take`, {}),
+  /** F182 标记交换完成 */
+  doneSkill: (id: string) =>
+    http.postJson<CoupleManageSkillVO[]>(`/api/couple/manage/skills/${id}/done`, {}),
+
+  /** F183 月度互评看板（我/TA 两份评审 + 是否互评完成） */
+  monthReviews: () => http.get<CoupleManageMonthBoardVO>('/api/couple/manage/month-reviews'),
+  /** F183 提交/修改我的月度评审（stars 1-5） */
+  saveMonthReview: (stars: number, advice: string) =>
+    http.postJson<CoupleManageMonthBoardVO>('/api/couple/manage/month-reviews', { stars, advice }),
+
+  /** F184 家庭应急卡列表 */
+  emergencyCards: () => http.get<CoupleManageEmergencyCardVO[]>('/api/couple/manage/emergency-cards'),
+  /** F184 保存我的应急卡（三字段至少填一项） */
+  saveEmergencyCard: (body: { contacts: string; keysPlace: string; medicine: string }) =>
+    http.postJson<CoupleManageEmergencyCardVO[]>('/api/couple/manage/emergency-card', body),
+
+  /** F185 情侣存档点列表 */
+  snapshots: () => http.get<CoupleManageSnapshotVO[]>('/api/couple/manage/snapshots'),
+  /** F185 存一个档（loveTemp 0-100） */
+  saveSnapshot: (body: { loveTemp: number; work: string; health: string }) =>
+    http.postJson<CoupleManageSnapshotVO[]>('/api/couple/manage/snapshots', body),
+
+  /** F186 家务积分账户（余额/奖励/流水） */
+  points: () => http.get<CoupleManagePointAccountVO>('/api/couple/manage/points'),
+  /** F186 赚积分（记一笔事项） */
+  earnPoints: (item: string, points: number) =>
+    http.postJson<CoupleManagePointAccountVO>('/api/couple/manage/points/earn', { item, points }),
+  /** F186 兑换奖励 */
+  redeemPoints: (rewardCode: string) =>
+    http.postJson<CoupleManagePointAccountVO>('/api/couple/manage/points/redeem', { rewardCode }),
+
+  /** F187 五年计划双轨列表 */
+  fiveYearPlans: () => http.get<CoupleManageFiveYearPlanVO[]>('/api/couple/manage/five-year-plans'),
+  /** F187 立一条计划（track：MINE 我的一半 / OURS 我们的一半） */
+  createFiveYearPlan: (track: CoupleManageFiveYearPlanVO['track'], content: string) =>
+    http.postJson<CoupleManageFiveYearPlanVO[]>('/api/couple/manage/five-year-plans', { track, content }),
+  /** F187 认领 OURS 计划的我这一半 */
+  claimFiveYearPlan: (id: string) =>
+    http.postJson<CoupleManageFiveYearPlanVO[]>(`/api/couple/manage/five-year-plans/${id}/claim`, {}),
+  /** F187 标记计划达成 */
+  finishFiveYearPlan: (id: string) =>
+    http.postJson<CoupleManageFiveYearPlanVO[]>(`/api/couple/manage/five-year-plans/${id}/finish`, {}),
+
+  /** F188 纪念日策划案列表 */
+  annivPlans: () => http.get<CoupleManageAnnivPlanVO[]>('/api/couple/manage/anniv-plans'),
+  /** F188 提交策划案（day：yyyy-MM-dd） */
+  createAnnivPlan: (body: { day: string; title: string; idea: string }) =>
+    http.postJson<CoupleManageAnnivPlanVO[]>('/api/couple/manage/anniv-plans', body),
+  /** F188 推进状态：IDEA→LOCKED→DONE */
+  advanceAnnivPlan: (id: string) =>
+    http.postJson<CoupleManageAnnivPlanVO[]>(`/api/couple/manage/anniv-plans/${id}/advance`, {}),
+
+  /** F189 经营周报 */
+  weekly: () => http.get<CoupleManageWeeklyVO>('/api/couple/manage/weekly'),
 }

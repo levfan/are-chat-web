@@ -198,6 +198,7 @@
               <CoupleCountdown />
               <CoupleLife />
               <CoupleShared />
+              <CoupleManage />
               <CoupleDailyLife />
               <CoupleFund />
             </div>
@@ -349,6 +350,7 @@ import CoupleDict from '@/components/couple/CoupleDict.vue'
 import CoupleCoach from '@/components/couple/CoupleCoach.vue'
 import CouplePoem from '@/components/couple/CouplePoem.vue'
 import CoupleSpark from '@/components/couple/CoupleSpark.vue'
+import CoupleManage from '@/components/couple/CoupleManage.vue'
 import CoupleSoft from '@/components/couple/CoupleSoft.vue'
 import CoupleDistance from '@/components/couple/CoupleDistance.vue'
 import CoupleSecure from '@/components/couple/CoupleSecure.vue'

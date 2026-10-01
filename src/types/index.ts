@@ -2297,3 +2297,135 @@ export interface CoupleSparkWeeklyVO {
   syncAttempts: number
   summary: string
 }
+
+// ============ 情侣空间·生活经营（F180-F189） ============
+
+export interface CoupleManageMeetingVO {
+  id: string
+  week: string
+  topic: string
+  decision: string
+  followDay: string | null
+  raisedBy: string
+  mine: boolean
+  closed: boolean
+  created: number
+}
+
+export interface CoupleManageHostVO {
+  week: string
+  host: string
+  mine: boolean
+  plan: string
+}
+
+export type CoupleManageSkillStatus = 'OPEN' | 'TAKEN' | 'DONE'
+
+export interface CoupleManageSkillVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  teach: string
+  learn: string
+  status: CoupleManageSkillStatus
+  created: number
+}
+
+export interface CoupleManageMonthReviewVO {
+  id: string
+  month: string
+  fromUser: string
+  mine: boolean
+  stars: number
+  advice: string
+  updatedAt: number
+}
+
+export interface CoupleManageMonthBoardVO {
+  month: string
+  mine: CoupleManageMonthReviewVO | null
+  partner: CoupleManageMonthReviewVO | null
+  bothDone: boolean
+}
+
+export interface CoupleManageEmergencyCardVO {
+  fromUser: string
+  mine: boolean
+  contacts: string
+  keysPlace: string
+  medicine: string
+  updatedAt: number
+}
+
+export interface CoupleManageSnapshotVO {
+  id: string
+  month: string
+  fromUser: string
+  mine: boolean
+  work: string
+  health: string
+  loveTemp: number
+  updatedAt: number
+}
+
+export interface CoupleManageRewardVO {
+  code: string
+  name: string
+  emoji: string
+  points: number
+  affordable: boolean
+}
+
+export type CoupleManagePointType = 'EARN' | 'SPEND'
+
+export interface CoupleManagePointHistoryVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  type: CoupleManagePointType
+  item: string
+  points: number
+  created: number
+}
+
+export interface CoupleManagePointAccountVO {
+  balance: number
+  totalEarned: number
+  rewards: CoupleManageRewardVO[]
+  history: CoupleManagePointHistoryVO[]
+}
+
+export type CoupleManagePlanTrack = 'MINE' | 'OURS'
+
+export interface CoupleManageFiveYearPlanVO {
+  id: string
+  track: CoupleManagePlanTrack
+  fromUser: string
+  mine: boolean
+  content: string
+  ownerUser: string | null
+  done: boolean
+  created: number
+}
+
+export type CoupleManageAnnivStatus = 'IDEA' | 'LOCKED' | 'DONE'
+
+export interface CoupleManageAnnivPlanVO {
+  id: string
+  day: string
+  title: string
+  planner: string
+  mine: boolean
+  idea: string
+  status: CoupleManageAnnivStatus
+  updatedAt: number
+}
+
+export interface CoupleManageWeeklyVO {
+  meetings: CoupleManageMeetingVO[]
+  closedMeetings: CoupleManageMeetingVO[]
+  earned: number
+  spent: number
+  host: CoupleManageHostVO | null
+  summary: string
+}
