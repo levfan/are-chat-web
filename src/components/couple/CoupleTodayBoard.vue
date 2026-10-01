@@ -70,15 +70,31 @@
         <span class="todo-state">{{ couple.todayBoard.capsuleDaysLeft === 0 ? '今天开启！' : `${couple.todayBoard.capsuleDaysLeft} 天后开启` }}</span>
       </button>
     </div>
+
+    <!-- F149 恋爱仪表盘：今日甜蜜待办 + 近期回忆 -->
+    <div class="dash" data-testid="couple-dashboard">
+      <template v-if="dash">
+        <div v-if="dash.todos.length" class="dash-section" data-testid="couple-dashboard-todos">
+          <p class="dash-title">⚡ 今日甜蜜待办</p>
+          <p v-for="(t, i) in dash.todos" :key="i" class="dash-line">{{ t.text }}</p>
+        </div>
+        <div v-if="dash.memories.length" class="dash-section" data-testid="couple-dashboard-memories">
+          <p class="dash-title">🎞️ 近期回忆一览</p>
+          <p v-for="(m, i) in dash.memories" :key="i" class="dash-line">{{ m.text }}</p>
+        </div>
+        <p v-if="!dash.todos.length && !dash.memories.length" class="dash-line">今天没有待办，好好享受两人时光 ☁️</p>
+      </template>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useCoupleStore } from '@/stores/couple'
 
 const emit = defineEmits<{ (e: 'goto', tab: string): void }>()
 const couple = useCoupleStore()
+const dash = computed(() => couple.dashboard)
 
 function go(tab: string) {
   emit('goto', tab)
@@ -86,6 +102,9 @@ function go(tab: string) {
 
 onMounted(() => {
   void couple.loadTodayBoard()
+  void couple.loadDashboard().catch(() => {
+    // 未建立空间等场景：静默
+  })
 })
 </script>
 
@@ -140,5 +159,28 @@ onMounted(() => {
 .todo-state {
   font-size: 11px;
   color: var(--im-muted, #8f959e);
+}
+.dash {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dash-section {
+  background: var(--el-fill-color-lighter, #fafafa);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.dash-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--im-text, #303133);
+}
+.dash-line {
+  margin: 2px 0;
+  font-size: 12px;
+  color: var(--im-muted, #8f959e);
+  line-height: 1.6;
 }
 </style>

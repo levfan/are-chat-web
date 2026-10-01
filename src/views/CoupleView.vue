@@ -195,6 +195,7 @@
               <CoupleCountdown />
               <CoupleLife />
               <CoupleShared />
+              <CoupleDailyLife />
               <CoupleFund />
             </div>
           </el-tab-pane>
@@ -346,6 +347,7 @@ import CoupleSoft from '@/components/couple/CoupleSoft.vue'
 import CoupleDistance from '@/components/couple/CoupleDistance.vue'
 import CoupleSecure from '@/components/couple/CoupleSecure.vue'
 import CouplePlay from '@/components/couple/CouplePlay.vue'
+import CoupleDailyLife from '@/components/couple/CoupleDailyLife.vue'
 import CoupleMoodRelay from '@/components/couple/CoupleMoodRelay.vue'
 import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
 

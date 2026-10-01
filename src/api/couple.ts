@@ -131,6 +131,15 @@ import type {
   CoupleLoveWeatherVO,
   CoupleTarotVO,
   CoupleArtVO,
+  CoupleThemeSongVO,
+  CoupleDreamVO,
+  CoupleFoodNoteVO,
+  CouplePartnerFactVO,
+  CoupleSosVO,
+  CoupleThreeVO,
+  CoupleDailyPraiseVO,
+  CoupleCustomBadgeVO,
+  CoupleDashboardVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -842,4 +851,61 @@ export const coupleApi = {
   /** F138 送一幅抽象画进画廊 */
   createArt: (title: string, seed: number) =>
     http.postJson<CoupleArtVO[]>('/api/couple/play/arts', { title, seed }),
+
+  // ============ 深度陪伴（F140-F149） ============
+  /** F140 今日主题曲 */
+  themeSong: () => http.get<CoupleThemeSongVO>('/api/couple/daily-life/theme-song'),
+  /** F141 梦境手账 */
+  dreams: () => http.get<CoupleDreamVO[]>('/api/couple/daily-life/dreams'),
+  /** F141 写下一个梦 */
+  writeDream: (content: string) =>
+    http.postJson<CoupleDreamVO[]>('/api/couple/daily-life/dreams', { content }),
+  /** F142 美食地图 */
+  foods: () => http.get<CoupleFoodNoteVO[]>('/api/couple/daily-life/foods'),
+  /** F142 添加想吃的店 */
+  addFood: (shop: string, dish: string) =>
+    http.postJson<CoupleFoodNoteVO[]>('/api/couple/daily-life/foods', { shop, dish }),
+  /** F142 打卡：吃过啦 */
+  checkinFood: (id: string, rating?: number, comment?: string) =>
+    http.postJson<CoupleFoodNoteVO[]>(`/api/couple/daily-life/foods/${id}/checkin`, {
+      rating: rating ?? 5,
+      comment: comment ?? null,
+    }),
+  /** F143 TA 使用手册 */
+  facts: () => http.get<CouplePartnerFactVO[]>('/api/couple/daily-life/facts'),
+  /** F143 补一页说明书 */
+  addFact: (kind: string, content: string) =>
+    http.postJson<CouplePartnerFactVO[]>('/api/couple/daily-life/facts', { kind, content }),
+  /** F144 情绪 SOS 列表 */
+  soses: () => http.get<CoupleSosVO[]>('/api/couple/daily-life/soses'),
+  /** F144 一键求抱抱 */
+  pingSos: (message?: string) =>
+    http.postJson<CoupleSosVO[]>('/api/couple/daily-life/soses', { message: message ?? null }),
+  /** F144 抱住：接住对方的 SOS */
+  holdSos: (id: string) =>
+    http.postJson<CoupleSosVO[]>(`/api/couple/daily-life/soses/${id}/hold`, {}),
+  /** F145 每日三问 */
+  dailyThree: () => http.get<CoupleThreeVO>('/api/couple/daily-life/three'),
+  /** F145 提交/修改今日三问 */
+  saveDailyThree: (joy?: string, touched?: string, wantToSay?: string) =>
+    http.postJson<CoupleThreeVO>('/api/couple/daily-life/three', {
+      joy: joy ?? null,
+      touched: touched ?? null,
+      wantToSay: wantToSay ?? null,
+    }),
+  /** F146 夸夸生成器 + F147 接头暗号 */
+  dailyPraise: () => http.get<CoupleDailyPraiseVO>('/api/couple/daily-life/praise'),
+  /** F148 自定义成就（与既有徽章墙 badges 撞名，改名 customBadges） */
+  customBadges: () => http.get<CoupleCustomBadgeVO[]>('/api/couple/daily-life/badges'),
+  /** F148 立一个成就 */
+  addBadge: (title: string, condition?: string) =>
+    http.postJson<CoupleCustomBadgeVO[]>('/api/couple/daily-life/badges', {
+      title,
+      condition: condition ?? null,
+    }),
+  /** F148 达成颁发双人证书 */
+  issueBadge: (id: string) =>
+    http.postJson<CoupleCustomBadgeVO[]>(`/api/couple/daily-life/badges/${id}/issue`, {}),
+  /** F149 恋爱仪表盘 */
+  dashboard: () => http.get<CoupleDashboardVO>('/api/couple/daily-life/dashboard'),
 }

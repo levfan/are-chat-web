@@ -1900,3 +1900,99 @@ export interface CoupleArtVO {
   seed: number
   created: number
 }
+
+// ============ 情侣空间·深度陪伴（F140-F149） ============
+
+export interface CoupleThemeSongVO {
+  title: string
+  artist: string
+  reason: string
+}
+
+export interface CoupleDreamVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  content: string
+  created: number
+}
+
+export interface CoupleFoodNoteVO {
+  id: string
+  fromUser: string
+  shop: string
+  dish: string
+  status: 'WANT' | 'EATEN'
+  rating: number | null
+  comment: string | null
+  created: number
+}
+
+export interface CouplePartnerFactVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  kind: 'TASTE' | 'NOGO' | 'FAV' | 'QUIRK'
+  content: string
+  created: number
+}
+
+export interface CoupleSosVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  message: string | null
+  status: 'SENT' | 'HELD'
+  heldAt: number | null
+  created: number
+}
+
+export interface CoupleDailyThreeRowVO {
+  id: string
+  fromUser: string
+  day: string
+  joy: string | null
+  touched: string | null
+  wantToSay: string | null
+  updatedAt: number
+  created: number
+}
+
+export interface CoupleThreeVO {
+  day: string
+  mine: CoupleDailyThreeRowVO | null
+  partner: CoupleDailyThreeRowVO | null
+}
+
+/** F146/F147：今日三条夸法 + 接头暗号（无表按日抽取） */
+export interface CoupleDailyPraiseVO {
+  praises: string[]
+  codeword: string
+}
+
+export interface CoupleCustomBadgeVO {
+  id: string
+  fromUser: string
+  title: string
+  condition: string | null
+  status: 'OPEN' | 'ISSUED'
+  issuedAt: number | null
+  created: number
+}
+
+export interface CoupleDashboardTodoVO {
+  kind: string
+  text: string
+}
+
+export interface CoupleDashboardMemoryVO {
+  kind: string
+  text: string
+  created: number
+}
+
+/** F149 恋爱仪表盘：今日甜蜜待办 + 近期回忆 */
+export interface CoupleDashboardVO {
+  todos: CoupleDashboardTodoVO[]
+  memories: CoupleDashboardMemoryVO[]
+}

@@ -123,6 +123,15 @@ import type {
   CoupleLoveWeatherVO,
   CoupleTarotVO,
   CoupleArtVO,
+  CoupleThemeSongVO,
+  CoupleDreamVO,
+  CoupleFoodNoteVO,
+  CouplePartnerFactVO,
+  CoupleSosVO,
+  CoupleThreeVO,
+  CoupleDailyPraiseVO,
+  CoupleCustomBadgeVO,
+  CoupleDashboardVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -286,6 +295,16 @@ export const useCoupleStore = defineStore('couple', () => {
   const loveWeather = ref<CoupleLoveWeatherVO | null>(null)
   const tarot = ref<CoupleTarotVO | null>(null)
   const arts = ref<CoupleArtVO[]>([])
+  // 深度陪伴（F140-F149）
+  const themeSong = ref<CoupleThemeSongVO | null>(null)
+  const dreams = ref<CoupleDreamVO[]>([])
+  const foods = ref<CoupleFoodNoteVO[]>([])
+  const facts = ref<CouplePartnerFactVO[]>([])
+  const soses = ref<CoupleSosVO[]>([])
+  const three = ref<CoupleThreeVO | null>(null)
+  const dailyPraise = ref<CoupleDailyPraiseVO | null>(null)
+  const customBadges = ref<CoupleCustomBadgeVO[]>([])
+  const dashboard = ref<CoupleDashboardVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -317,6 +336,7 @@ export const useCoupleStore = defineStore('couple', () => {
     distance: false,
     secure: false,
     play: false,
+    dailyLife: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -477,6 +497,15 @@ export const useCoupleStore = defineStore('couple', () => {
     loveWeather.value = null
     tarot.value = null
     arts.value = []
+    themeSong.value = null
+    dreams.value = []
+    foods.value = []
+    facts.value = []
+    soses.value = []
+    three.value = null
+    dailyPraise.value = null
+    customBadges.value = []
+    dashboard.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -507,6 +536,7 @@ export const useCoupleStore = defineStore('couple', () => {
       distance: false,
       secure: false,
       play: false,
+      dailyLife: false,
     }
     promiseDraft.value = null
   }
@@ -1771,6 +1801,72 @@ export const useCoupleStore = defineStore('couple', () => {
     arts.value = (await coupleApi.createArt(title, seed)) ?? []
   }
 
+  // ---------- 深度陪伴（F140-F149） ----------
+
+  async function loadDailyLife() {
+    const [ts, dm, fd, ft, sos, th, pr, bd, db] = await Promise.all([
+      coupleApi.themeSong(),
+      coupleApi.dreams(),
+      coupleApi.foods(),
+      coupleApi.facts(),
+      coupleApi.soses(),
+      coupleApi.dailyThree(),
+      coupleApi.dailyPraise(),
+      coupleApi.customBadges(),
+      coupleApi.dashboard(),
+    ])
+    themeSong.value = ts
+    dreams.value = dm ?? []
+    foods.value = fd ?? []
+    facts.value = ft ?? []
+    soses.value = sos ?? []
+    three.value = th
+    dailyPraise.value = pr
+    customBadges.value = bd ?? []
+    dashboard.value = db
+    loadedLists.value.dailyLife = true
+  }
+
+  async function writeDream(content: string) {
+    dreams.value = (await coupleApi.writeDream(content)) ?? []
+  }
+
+  async function addFood(shop: string, dish: string) {
+    foods.value = (await coupleApi.addFood(shop, dish)) ?? []
+  }
+
+  async function checkinFood(id: string, rating?: number, comment?: string) {
+    foods.value = (await coupleApi.checkinFood(id, rating, comment)) ?? []
+  }
+
+  async function addFact(kind: string, content: string) {
+    facts.value = (await coupleApi.addFact(kind, content)) ?? []
+  }
+
+  async function pingSos(message?: string) {
+    soses.value = (await coupleApi.pingSos(message)) ?? []
+  }
+
+  async function holdSos(id: string) {
+    soses.value = (await coupleApi.holdSos(id)) ?? []
+  }
+
+  async function saveDailyThree(joy?: string, touched?: string, wantToSay?: string) {
+    three.value = await coupleApi.saveDailyThree(joy, touched, wantToSay)
+  }
+
+  async function addBadge(title: string, condition?: string) {
+    customBadges.value = (await coupleApi.addBadge(title, condition)) ?? []
+  }
+
+  async function issueBadge(id: string) {
+    customBadges.value = (await coupleApi.issueBadge(id)) ?? []
+  }
+
+  async function loadDashboard() {
+    dashboard.value = await coupleApi.dashboard()
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -2451,6 +2547,46 @@ export const useCoupleStore = defineStore('couple', () => {
           void coupleApi.arts().then((v) => (arts.value = v ?? []))
         }
         break
+      case 'dream-written':
+        notify('🌙 梦境手账', msg.detail)
+        if (loadedLists.value.dailyLife) {
+          void coupleApi.dreams().then((v) => (dreams.value = v ?? []))
+        }
+        break
+      case 'food-added':
+      case 'food-checkin':
+        notify('🍜 美食地图', msg.detail)
+        if (loadedLists.value.dailyLife) {
+          void coupleApi.foods().then((v) => (foods.value = v ?? []))
+        }
+        break
+      case 'fact-added':
+        notify('📖 TA 使用手册', msg.detail)
+        if (loadedLists.value.dailyLife) {
+          void coupleApi.facts().then((v) => (facts.value = v ?? []))
+        }
+        break
+      case 'sos-ping':
+      case 'sos-held':
+        notify('🆘 情绪 SOS', msg.detail)
+        if (loadedLists.value.dailyLife) {
+          void coupleApi.soses().then((v) => (soses.value = v ?? []))
+        }
+        break
+      case 'three-saved':
+      case 'three-both':
+        notify('🌙 每日三问', msg.detail)
+        if (loadedLists.value.dailyLife) {
+          void coupleApi.dailyThree().then((v) => (three.value = v))
+        }
+        break
+      case 'badge-added':
+      case 'badge-issued':
+        notify('🏅 自定义成就', msg.detail)
+        if (loadedLists.value.dailyLife) {
+          void coupleApi.customBadges().then((v) => (customBadges.value = v ?? []))
+        }
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -2753,6 +2889,15 @@ export const useCoupleStore = defineStore('couple', () => {
     loveWeather,
     tarot,
     arts,
+    themeSong,
+    dreams,
+    foods,
+    facts,
+    soses,
+    three,
+    dailyPraise,
+    customBadges,
+    dashboard,
     loadComm,
     translateText,
     startCoolDown,
@@ -2805,5 +2950,16 @@ export const useCoupleStore = defineStore('couple', () => {
     joinBattle,
     voteBattle,
     createArt,
+    loadDailyLife,
+    writeDream,
+    addFood,
+    checkinFood,
+    addFact,
+    pingSos,
+    holdSos,
+    saveDailyThree,
+    addBadge,
+    issueBadge,
+    loadDashboard,
   }
 })
