@@ -807,6 +807,42 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.find('[data-testid="couple-morning-mine"]').exists()).toBe(true)
   })
 
+  it('关怀页签：同频共振按键与心动日历邮戳', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.myLoveLang).mockRejectedValue(new Error('未测评'))
+    vi.mocked(coupleApi.loveLangPair).mockRejectedValue(new Error('未测评'))
+    vi.mocked(coupleApi.flashes).mockResolvedValue([])
+    vi.mocked(coupleApi.whatIf).mockResolvedValue({ day: '2026-10-01', question: '如果中了五百万？', mine: null, partner: null, bothAnswered: false, firstStar: null })
+    vi.mocked(coupleApi.signals).mockResolvedValue([])
+    vi.mocked(coupleApi.tapToday).mockResolvedValue({ diffMs: null, hit: false, bestMs: 120, attempts: 1, hits: 1 })
+    vi.mocked(coupleApi.sparkDashboard).mockResolvedValue({ score: 37, label: '培养中', bestMs: 120, whatIfBothDays: 1, heartDays: 1, signals: 1 })
+    vi.mocked(coupleApi.heartDays).mockResolvedValue([
+      { id: 'hd1', day: '2026-10-01', fromUser: 'alice', mine: true, level: 3, updatedAt: Date.now() },
+    ])
+    vi.mocked(coupleApi.syncRank).mockResolvedValue([{ day: '2026-10-01', bestMs: 120, attempts: 1, hits: 1 }])
+    vi.mocked(coupleApi.sparkWeekly).mockResolvedValue({ whatIfBoth: 1, heartMarks: 1, syncAttempts: 1, summary: '本周你们一起答了 1 天「如果」' })
+    vi.mocked(coupleApi.tap).mockResolvedValue({ diffMs: 90, hit: true, bestMs: 90, attempts: 2, hits: 2 })
+    vi.mocked(coupleApi.markHeartDay).mockResolvedValue([
+      { id: 'hd1', day: '2026-10-01', fromUser: 'alice', mine: true, level: 2, updatedAt: Date.now() },
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-care').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-dash-score"]').text()).toBe('37')
+    expect(wrapper.find('[data-testid="couple-stamp-2026-10-01"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-tap-press"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.tap).toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="couple-tap-result"]').text()).toContain('90ms')
+
+    await wrapper.find('[data-testid="couple-heartday-2"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.markHeartDay).toHaveBeenCalledWith(2)
+  })
+
   it('时光轴页签：考古卡能挖出旧记录，编年史按年展示事件', async () => {
     mockedOverview.mockResolvedValue(establishedOverview)
     const wrapper = mountView()
