@@ -861,4 +861,36 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     expect(coupleApi.doGuess).toHaveBeenCalledWith('g1', '吃火锅')
   })
+
+  it('异地恋：隔空牵手展示双方状态，想念计量所点亮今天想你了', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.handhold).mockResolvedValue({
+      todayMine: false, todayPartner: true, todayBoth: false, totalDays: 5, milestone: null,
+      recent: [{ id: 'h1', day: '2026-09-30', holdA: 1, holdB: 1 }],
+    })
+    vi.mocked(coupleApi.miss).mockResolvedValue({
+      todayMine: false, todayPartner: false, todayBoth: false, bothTimes: 3, milestone: null, recent: [],
+    })
+    vi.mocked(coupleApi.routine).mockResolvedValue({ mine: null, partner: null, overlaps: [] })
+    vi.mocked(coupleApi.energy).mockResolvedValue({ daysSince: null, energy: 100, line: '还没有见面记录 🫙' })
+    vi.mocked(coupleApi.distanceReport).mockResolvedValue({
+      totalDays: 12, meetCount: 0, avgIntervalDays: null, missBothDays: 3,
+      handholdDays: 5, cloudDoneCount: 0, sealedLetters: 0, summary: '在一起 12 天',
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-handhold"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-handhold-total"]').text()).toContain('5')
+
+    await wrapper.find('[data-testid="couple-handhold-hold"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.holdHand).toHaveBeenCalledOnce()
+
+    await wrapper.find('[data-testid="couple-miss-light"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.lightMiss).toHaveBeenCalledOnce()
+  })
 })
