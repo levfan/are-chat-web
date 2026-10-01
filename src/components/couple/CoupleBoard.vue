@@ -1,8 +1,8 @@
 <template>
   <div class="couple-board" data-testid="couple-board">
     <!-- F240 部门与任命：给 TA 封官 + 本人盖章上任 -->
-    <div class="card" data-testid="couple-bd-org">
-      <h4 class="title">🖋️ 部门与任命 <span class="sub">「我们公司」今日就职：把偏爱写成任命书</span></h4>
+    <CoupleCollapsible testid="couple-bd-org" :empty="!!o && !o.roles.length">
+      <template #title>🖋️ 部门与任命 <span class="sub">「我们公司」今日就职：把偏爱写成任命书</span></template>
       <template v-if="o">
         <p v-if="!o.roles.length" class="empty-line">编制还空着，先给 TA 封一个在家的职位？🖋️</p>
         <div class="role-list">
@@ -24,11 +24,11 @@
         </div>
       </template>
       <p v-else class="empty-line">人事部还在建档…</p>
-    </div>
+    </CoupleCollapsible>
 
     <!-- F241 董事会：议案表决 + 新议案 + 已决留痕 -->
-    <div class="card" data-testid="couple-bd-board">
-      <h4 class="title">🏛️ 董事会 <span class="sub">大事不开口吵，开庭审议、全票通过</span></h4>
+    <CoupleCollapsible testid="couple-bd-board" :empty="!!o && !o.votes.length">
+      <template #title>🏛️ 董事会 <span class="sub">大事不开口吵，开庭审议、全票通过</span></template>
       <template v-if="o">
         <p class="section-head">📌 在议议案</p>
         <p v-if="!pendingVotes.length" class="empty-line">董事会暂无议事，提交一件大事提案试试 🏛️</p>
@@ -60,11 +60,11 @@
         </div>
       </template>
       <p v-else class="empty-line">董事会还在开箱…</p>
-    </div>
+    </CoupleCollapsible>
 
     <!-- F242 年度述职：本人提交/改写 + 双份互见 -->
-    <div class="card" data-testid="couple-bd-report">
-      <h4 class="title">📑 {{ o?.report.year ?? '今年' }} 年度述职 <span class="sub">像模像样地总结这一年，再立一个小目标</span></h4>
+    <CoupleCollapsible testid="couple-bd-report">
+      <template #title>📑 {{ o?.report.year ?? '今年' }} 年度述职 <span class="sub">像模像样地总结这一年，再立一个小目标</span></template>
       <template v-if="o">
         <div class="report-mine" data-testid="couple-bd-report-mine">
           <p class="section-head">🙋 我的述职{{ o.report.mineReview ? '（写了还能改）' : '' }}</p>
@@ -101,11 +101,11 @@
         </div>
       </template>
       <p v-else class="empty-line">述职模板还在打印…</p>
-    </div>
+    </CoupleCollapsible>
 
     <!-- F244+F243 发薪日：感谢工资 + 当月记录 + 职级公示 -->
-    <div class="card" data-testid="couple-bd-pay">
-      <h4 class="title">💰 发薪日 <span class="sub">本月工资是「一句谢谢 + 5 积分」，一月一发</span></h4>
+    <CoupleCollapsible testid="couple-bd-pay">
+      <template #title>💰 发薪日 <span class="sub">本月工资是「一句谢谢 + 5 积分」，一月一发</span></template>
       <template v-if="o">
         <div v-if="o.salary.mineThanks" class="paid-box" data-testid="couple-bd-salary-paid">
           <p class="paid-line">🙋 我本月已发放：「{{ o.salary.mineThanks }}」</p>
@@ -136,11 +136,11 @@
         </div>
       </template>
       <p v-else class="empty-line">财务室还在点钞…</p>
-    </div>
+    </CoupleCollapsible>
 
     <!-- F247+F245+F249+F248 例会与周报：签到双签 + 金点子 + 公司周报 + 名片 -->
-    <div class="card" data-testid="couple-bd-weekly">
-      <h4 class="title">⏰ 例会与周报 <span class="sub">每天 10 秒双签到开会，点子采纳转决议</span></h4>
+    <CoupleCollapsible testid="couple-bd-weekly">
+      <template #title>⏰ 例会与周报 <span class="sub">每天 10 秒双签到开会，点子采纳转决议</span></template>
       <template v-if="o">
         <div class="attend-row" data-testid="couple-bd-attend">
           <el-button
@@ -193,7 +193,7 @@
         </div>
       </template>
       <p v-else class="empty-line">例会还在等人…</p>
-    </div>
+    </CoupleCollapsible>
   </div>
 </template>
 
@@ -203,6 +203,7 @@ import { ElMessage } from 'element-plus'
 import { boardApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import type { CoupleBdIdeaVO, CoupleBdOverviewVO, CoupleBdRoleVO, CoupleBdVoteVO } from '@/types'
+import CoupleCollapsible from './CoupleCollapsible.vue'
 
 const auth = useAuthStore()
 const authMe = computed(() => auth.username)
@@ -368,10 +369,9 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.couple-board { display: flex; flex-direction: column; gap: 14px; }
+/* 主色：公司蓝（区别于粉红/#e6a23c/金红）；折叠卡标题色经 CSS 变量级联给 CoupleCollapsible */
+.couple-board { display: flex; flex-direction: column; gap: 14px; --collapse-title-color: #409eff; }
 .card { background: var(--im-panel-bg, #fff); border-radius: 10px; padding: 14px 16px; border: 1px solid var(--im-border, #ebeef5); }
-/* 主色：公司蓝（区别于粉红/#e6a23c/金红） */
-.title { margin: 0 0 10px; font-size: 15px; color: #409eff; }
 .sub { font-size: 12px; color: var(--im-muted, #909399); font-weight: normal; margin-left: 6px; }
 .section-head { margin: 8px 0 4px; font-size: 13px; font-weight: bold; color: var(--im-text, #303133); }
 .inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }

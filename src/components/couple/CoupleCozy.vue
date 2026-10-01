@@ -1,8 +1,8 @@
 <template>
   <div class="couple-cozy" data-testid="couple-cozy">
     <!-- F220-F228 今日体温总览：十项小动作一屏照顾我们的作息 -->
-    <div class="card" data-testid="couple-cozy-today">
-      <h4 class="title">🌡️ 今日体温同步 <span class="sub">「你睡了吗/冷不冷/喝水没」，都在这张小小的检查表里</span></h4>
+    <CoupleCollapsible testid="couple-cozy-today">
+      <template #title>🌡️ 今日体温同步 <span class="sub">「你睡了吗/冷不冷/喝水没」，都在这张小小的检查表里</span></template>
 
       <template v-if="today">
         <!-- F220 晚安同熄灯 -->
@@ -175,11 +175,11 @@
         </div>
       </template>
       <p v-else class="empty-line">体温计还没夹好…</p>
-    </div>
+    </CoupleCollapsible>
 
     <!-- F229 月度安眠小结 -->
-    <div class="card" data-testid="couple-cozy-monthly">
-      <h4 class="title">🌛 月度安眠小结 <span class="sub">这个月我们把日子过得安稳吗，指数说了算</span></h4>
+    <CoupleCollapsible testid="couple-cozy-monthly" :empty="!!monthly && monthly.index === 0">
+      <template #title>🌛 月度安眠小结 <span class="sub">这个月我们把日子过得安稳吗，指数说了算</span></template>
       <div class="inline-form">
         <span class="field-label">看哪月：</span>
         <el-date-picker
@@ -215,7 +215,7 @@
         <p v-if="monthly.index >= 80" class="index-comment" data-testid="couple-cozy-month-comment">这个月我们把彼此的日子照顾得很好，晚安都没落下 🥰</p>
       </template>
       <p v-else class="empty-line">小结还在汇总…</p>
-    </div>
+    </CoupleCollapsible>
   </div>
 </template>
 
@@ -224,6 +224,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { cozyApi } from '@/api/couple'
 import type { CoupleCozyMonthlyVO, CoupleCozyTodayVO } from '@/types'
+import CoupleCollapsible from './CoupleCollapsible.vue'
 
 const today = ref<CoupleCozyTodayVO | null>(null)
 const monthly = ref<CoupleCozyMonthlyVO | null>(null)
@@ -446,9 +447,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.couple-cozy { display: flex; flex-direction: column; gap: 14px; }
+.couple-cozy { display: flex; flex-direction: column; gap: 14px; --collapse-title-color: var(--im-text, #303133); }
 .card { background: var(--im-panel-bg, #fff); border-radius: 10px; padding: 14px 16px; border: 1px solid var(--im-border, #ebeef5); }
-.title { margin: 0 0 10px; font-size: 15px; color: var(--im-text, #303133); }
 .sub { font-size: 12px; color: var(--im-muted, #909399); font-weight: normal; margin-left: 6px; }
 .section-head { margin: 0 0 4px; font-size: 13px; font-weight: bold; color: var(--im-text, #303133); }
 .sec { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--im-border, #ebeef5); }

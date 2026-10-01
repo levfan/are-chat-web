@@ -1,8 +1,8 @@
 <template>
   <div class="couple-ceremony" data-testid="couple-ceremony">
     <!-- F231 黄历头牌卡：今日宜忌 + 统一倒数列表 + 催办条 -->
-    <div class="card" data-testid="couple-cere-almanac">
-      <h4 class="title">🧧 今日老黄历 <span class="sub">「我们的日子」值得郑重对待</span></h4>
+    <CoupleCollapsible testid="couple-cere-almanac">
+      <template #title>🧧 今日老黄历 <span class="sub">「我们的日子」值得郑重对待</span></template>
       <template v-if="o">
         <div class="yi-ji">
           <p class="yi-line" data-testid="couple-cere-yi">宜 · {{ o.yi || '把小日子过得热气腾腾' }}</p>
@@ -27,11 +27,11 @@
         </div>
       </template>
       <p v-else class="empty-line">黄历还在印…</p>
-    </div>
+    </CoupleCollapsible>
 
     <!-- F230/F232/F233/F237 小日子卡：建国纪念日 + 过法卡打勾 + 史册 -->
-    <div class="card" data-testid="couple-cere-founded">
-      <h4 class="title">🎂 我们的小日子 <span class="sub">给属于我们的日子起个名，写怎么过、勾掉它</span></h4>
+    <CoupleCollapsible testid="couple-cere-founded" :empty="!!o && !o.founded.length">
+      <template #title>🎂 我们的小日子 <span class="sub">给属于我们的日子起个名，写怎么过、勾掉它</span></template>
       <template v-if="o">
         <p v-if="!o.founded.length" class="empty-line">还没有小日子，从今天起建国 🎂</p>
         <div v-for="f in o.founded" :key="f.id" class="founded-item" :data-testid="`couple-cere-founded-${f.id}`">
@@ -113,11 +113,11 @@
         </div>
       </template>
       <p v-else class="empty-line">小日子还在册…</p>
-    </div>
+    </CoupleCollapsible>
 
     <!-- F234/F235 保险柜 + 续约卡 -->
-    <div class="card" data-testid="couple-cere-vault">
-      <h4 class="title">🔐 爱情保险柜 <span class="sub">每月互夸一句当保费，交齐了才生效</span></h4>
+    <CoupleCollapsible testid="couple-cere-vault">
+      <template #title>🔐 爱情保险柜 <span class="sub">每月互夸一句当保费，交齐了才生效</span></template>
       <template v-if="o">
         <div class="policy-quote">
           <p class="quote-line" data-testid="couple-cere-policy-mine">🙋 我交的保费：{{ o.policy.mine || '还没夸，TA 的好要大声说出来 💝' }}</p>
@@ -161,11 +161,11 @@
         </div>
       </template>
       <p v-else class="empty-line">保险柜还在上锁…</p>
-    </div>
+    </CoupleCollapsible>
 
     <!-- F236 愿望券本卡 -->
-    <div class="card" data-testid="couple-cere-coupon">
-      <h4 class="title">🎫 愿望券本 <span class="sub">券面自拟，兑现一次撕一张</span></h4>
+    <CoupleCollapsible testid="couple-cere-coupon" :empty="!!o && !o.couponsOpen.length && !o.couponsUsed.length">
+      <template #title>🎫 愿望券本 <span class="sub">券面自拟，兑现一次撕一张</span></template>
       <template v-if="o">
         <div class="inline-form">
           <el-input v-model="couponDraft" maxlength="80" placeholder="写一张愿望券（如：无理由换我背你走一段）" data-testid="couple-cere-coupon-title" />
@@ -193,11 +193,11 @@
         </div>
       </template>
       <p v-else class="empty-line">券本还在装订…</p>
-    </div>
+    </CoupleCollapsible>
 
     <!-- F239/F238 体感 + 加冕卡 -->
-    <div class="card" data-testid="couple-cere-feel">
-      <h4 class="title">🫧 今日体感 <span class="sub">这一天的滋味，一人留一句</span></h4>
+    <CoupleCollapsible testid="couple-cere-feel">
+      <template #title>🫧 今日体感 <span class="sub">这一天的滋味，一人留一句</span></template>
       <template v-if="o">
         <div class="feel-quote">
           <p class="feel-line" data-testid="couple-cere-feel-mine">🙋 我的此刻：{{ mineRecap?.feeling || '还没写，此刻是什么滋味？' }}</p>
@@ -222,7 +222,7 @@
         </div>
       </template>
       <p v-else class="empty-line">体感还在收集…</p>
-    </div>
+    </CoupleCollapsible>
   </div>
 </template>
 
@@ -231,6 +231,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ceremonyApi } from '@/api/couple'
 import type { CoupleCerAlmanacVO, CoupleCerChronicleVO, CoupleCerFoundedVO, CoupleCerOverviewVO } from '@/types'
+import CoupleCollapsible from './CoupleCollapsible.vue'
 
 const o = ref<CoupleCerOverviewVO | null>(null)
 
@@ -461,9 +462,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.couple-ceremony { display: flex; flex-direction: column; gap: 14px; }
+.couple-ceremony { display: flex; flex-direction: column; gap: 14px; --collapse-title-color: #c0392b; }
 .card { background: var(--im-panel-bg, #fff); border-radius: 10px; padding: 14px 16px; border: 1px solid var(--im-border, #ebeef5); }
-.title { margin: 0 0 10px; font-size: 15px; color: #c0392b; }
 .sub { font-size: 12px; color: var(--im-muted, #909399); font-weight: normal; margin-left: 6px; }
 .section-head { margin: 0 0 4px; font-size: 13px; font-weight: bold; color: var(--im-text, #303133); }
 .inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
