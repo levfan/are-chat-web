@@ -12,20 +12,39 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 - Vue 3 `<script setup lang="ts">` + Vite 6 + Pinia + Vue Router + Element Plus + TypeScript
 - 测试：Vitest（jsdom），在 `tests/unit/`，命令 `pnpm test`；构建：`pnpm build`（含 vue-tsc 类型检查，何时必跑见第五节）
 - 版本号唯一来源 `package.json` 的 version（alpha → rc → stable 阶梯，升级独立 commit，规范见 `.agents/skills/version-release/SKILL.md`）
+- 规模快照（v5 交付、v6 批次二十一后）：5 个主页面 / CoupleView 11 页签（部分含子页签）/ 情侣组件 57 个 / registry 卡 68 张 / 单测基线 118 用例；后端配套见 are-chat-map（8080/508 端点/187 表）
 
-## 二、目录地图（src/）
+## 二、目录地图与关键文件
 
-| 目录 | 职责 |
-|---|---|
-| `api/` | 接口层：`http.ts`（get/postJson/putJson/delete 封装）+ 各域 api 文件（couple.ts / im.ts / ...） |
-| `stores/` | Pinia：`couple.ts`（情侣空间，含 WS 事件分发）、`im.ts`、`auth.ts` 等 |
-| `views/` | 页面：ChatView / ContactsView / CoupleView / AdminView / LoginView |
-| `components/couple/` | 情侣空间全部组件（见下） |
-| `components/im/` | 聊天相关组件（消息流、输入框、头像等） |
-| `types/index.ts` | 全部 TS 类型（按域分节，情侣空间在 `// ============ 情侣空间` 区块） |
-| `layouts/` | MainLayout（登录后壳，调用 couple store 的 init 绑定 WS） |
-| `router/` | 路由表 |
-| `utils/` | coupleTheme.ts（早晚安解锁主题/贴纸）等 |
+```
+are-chat-web/
+├── index.html  vite.config.ts        # dev 5173；proxy：/api→8080、/ws→8080(ws:true)；alias @→src；AutoImport(vue/router/pinia)+unplugin-vue-components(ElementPlus，自动维护 src/components.d.ts)
+├── vitest.config.ts                  # jsdom 单测入口，tests/unit/*.spec.ts
+├── package.json                      # ★ 版本号唯一来源（禁止在代码/文案/测试写死版本）
+├── .env.*                            # 多环境变量（API 目标等）
+├── src/
+│   ├── main.ts / App.vue / style.css # 挂载、全局壳、全局样式（暗色变量 --im-* 定义处）
+│   ├── router/index.ts               # 路由表（/login、/、/chat、/contacts、/couple、/admin）
+│   ├── layouts/MainLayout.vue        # 登录后壳：侧栏 + 绑定 couple store init 的 WS 事件
+│   ├── views/                        # 5 页：LoginView / ChatView / ContactsView / CoupleView / AdminView
+│   ├── components/
+│   │   ├── couple/                   # ★ 情侣空间 57 个组件（CoupleView 页签树见第三节）
+│   │   │   ├── CoupleCollapsible.vue # F205 折叠包装组件（新分区卡必须使用）
+│   │   │   └── coupleCards.registry.ts # 卡注册表：key=分区卡根 data-testid，F206 搜索/F207 收藏依赖
+│   │   └── im/                       # 聊天组件 8 个（消息流/输入框/头像等）
+│   ├── api/                          # auth.ts / couple.ts(≈1.5k 行) / im.ts / files.ts / system.ts / http.ts(封装层)
+│   ├── stores/                       # auth / im(WS 宿主) / couple(≈3.5k 行，情侣域 store)
+│   ├── types/index.ts                # 全部 TS 类型按域分节（情侣空间区块末尾追加，≈3k 行）
+│   ├── utils/                        # coupleTheme.ts(早晚安主题/贴纸)、effects.ts(彩蛋指令) 等
+│   └── constants.ts                  # 全局常量
+├── tests/unit/                       # couple.spec.ts 等 7 个文件（当前基线 118 用例）
+├── AGENTS.md / docs/ / wiki/         # 仓库约束与文档（后端配套地图见 are-chat 仓库 are-chat-map skill）
+```
+
+- **API 分组对象**（`src/api/couple.ts` 内，按批次划分，方法名防撞前缀见第三节备忘）：`coupleApi`(基础+各早期域) / `diningApi`(F210-219) / `cozyApi`(F220-229) / `ceremonyApi`(F230-239) / `boardApi`(F240-249) / `almanacApi`(F250-259) / 后续批次新增域一律 `export const xxxApi` 分组。
+- **端口与联调**：前端 dev 5173 → 代理转发后端 8080；登录态走 Cookie(HttpSession)，`http.ts` 统一 `withCredentials`；WS 会话 `/ws/chat/{name}` 由 im store 维护，情侣事件经 `arechat:couple` 自定义事件转发。
+- **数据流（情侣空间两条路）**：① store 域——CoupleView/头部/通知铃铛读 `stores/couple.ts`（WS 只刷新 loadedLists 里已加载的键）；② 组件自持域——批次十七以后新功能（Dining/Cozy/Ceremony/Board/Almanac…）不进 store，组件 onMounted safeLoad + 写接口整份聚合 VO 替换（照抄即可）。
+- **命令**：开发 `pnpm dev`；测试 `pnpm test`（vitest run）；构建门禁 `pnpm build`（vite build + vue-tsc --noEmit，提交前必过）。
 
 ## 三、情侣空间前端全景
 
