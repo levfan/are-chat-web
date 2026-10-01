@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
-import { coupleApi, cozyApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
+import { coupleApi, ceremonyApi, cozyApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleCozyTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
+import type { CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -338,12 +338,41 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F230-F239 小日子仪式感 ceremonyApi：默认空数据但形状完整的 Overview，用例内按需覆盖
+  const ceremonyBase: Record<string, ReturnType<typeof vi.fn>> = {
+    cereOverview: vi.fn().mockResolvedValue({
+      day: '2026-10-02',
+      yi: '',
+      ji: '',
+      founded: [],
+      almanac: [],
+      nudges: [],
+      policy: { month: '2026-10', mine: null, partner: null, paidMonths: 0, paidMilestones: [], monthsToNext: null },
+      renew: { anchorDay: '2026-10-02', dueToday: false, mineSigned: false, partnerSigned: false, daysToNext: 0, scroll: [] },
+      couponsOpen: [],
+      couponsUsed: [],
+      recapsToday: [],
+      recapsLastYear: [],
+      crown: null,
+    }),
+    cereChronicle: vi.fn().mockResolvedValue({ foundedId: '', name: '', pages: [] }),
+  }
+  const ceremonyWrapped = new Proxy(ceremonyBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(undefined)
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
     museumApi: museumWrapped,
     diningApi: diningWrapped,
     cozyApi: cozyWrapped,
+    ceremonyApi: ceremonyWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -1702,5 +1731,145 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.find('[data-testid="couple-cozy-month-avgstars"]').text()).toContain('4.2')
     expect(wrapper.find('[data-testid="couple-cozy-month-index"]').text()).toBe('86')
     expect(wrapper.find('[data-testid="couple-cozy-month-comment"]').exists()).toBe(true)
+  })
+
+  // ============ 批次十九：小日子·仪式感（F230-F239，timeline 页签「⏳ 时光流」子页签 CoupleCeremony） ============
+
+  /** 今日仪式总览空态基底（用例内按分区覆盖） */
+  function cerOverview(partial: Partial<CoupleCerOverviewVO> = {}): CoupleCerOverviewVO {
+    return {
+      day: '2026-10-02',
+      yi: '',
+      ji: '',
+      founded: [],
+      almanac: [],
+      nudges: [],
+      policy: { month: '2026-10', mine: null, partner: null, paidMonths: 0, paidMilestones: [], monthsToNext: null },
+      renew: { anchorDay: '2026-10-02', dueToday: false, mineSigned: false, partnerSigned: false, daysToNext: 0, scroll: [] },
+      couponsOpen: [],
+      couponsUsed: [],
+      recapsToday: [],
+      recapsLastYear: [],
+      crown: null,
+      ...partial,
+    }
+  }
+
+  /** 挂载并切到时光轴页签（默认子页签「⏳ 时光流」即 CoupleCeremony 所在区） */
+  async function mountOnTimeline() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-timeline').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('小日子仪式感：黄历头牌卡渲染宜忌、kind 徽标统一倒数列表与催办条', async () => {
+    vi.mocked(ceremonyApi.cereOverview).mockResolvedValue(cerOverview({
+      yi: '下班路上买一束花',
+      ji: '不道晚安就睡着',
+      almanac: [
+        { kind: 'founded', title: '搬家纪念日', day: '2026-10-08', daysLeft: 6 },
+        { kind: 'countdown', title: '演唱会见面', day: '2026-11-02', daysLeft: 31 },
+        { kind: 'anniversary', title: '在一起', day: '2026-12-24', daysLeft: 83 },
+      ],
+      nudges: ['「搬家纪念日」前两天还没过齐呢，今晚补上？'],
+    }))
+    const wrapper = await mountOnTimeline()
+    expect(wrapper.find('[data-testid="couple-ceremony"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-cere-yi"]').text()).toContain('下班路上买一束花')
+    expect(wrapper.find('[data-testid="couple-cere-ji"]').text()).toContain('不道晚安就睡着')
+
+    const foundedItem = wrapper.find('[data-testid="couple-cere-almanac-item-founded-0"]')
+    expect(foundedItem.text()).toContain('小日子')
+    expect(foundedItem.text()).toContain('搬家纪念日')
+    expect(foundedItem.text()).toContain('还有 6 天')
+    expect(wrapper.find('[data-testid="couple-cere-almanac-item-countdown-1"]').text()).toContain('倒数日')
+    expect(wrapper.find('[data-testid="couple-cere-almanac-item-anniversary-2"]').text()).toContain('纪念日')
+    expect(wrapper.find('[data-testid="couple-cere-nudge-0"]').text()).toContain('今晚补上')
+  })
+
+  it('小日子仪式感：展开过法卡点打勾调 cereMark，返回整份 Overview 后整卡刷新', async () => {
+    const foundedVo = (marked: boolean) => [{
+      id: 'f1', name: '搬家纪念日', startDay: '2025-10-08', repeatYear: true,
+      nextDay: '2026-10-08', daysLeft: 6, edition: 2,
+      rituals: [{ id: 'r1', foundedId: 'f1', content: '买一支花', markedToday: marked }],
+    }]
+    vi.mocked(ceremonyApi.cereOverview).mockResolvedValue(cerOverview({ founded: foundedVo(false) }))
+    vi.mocked(ceremonyApi.cereMark).mockResolvedValue(cerOverview({ founded: foundedVo(true) }))
+    const wrapper = await mountOnTimeline()
+
+    expect(wrapper.find('[data-testid="couple-cere-ritual-r1"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="couple-cere-founded-open-f1"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-cere-ritual-r1"]').text()).toContain('买一支花')
+    expect(wrapper.find('[data-testid="couple-cere-founded-next-f1"]').text()).toContain('还有 6 天')
+    expect(wrapper.find('[data-testid="couple-cere-founded-next-f1"]').text()).toContain('第 2 届')
+
+    await wrapper.find('[data-testid="couple-cere-mark-r1"]').trigger('click')
+    await flushPromises()
+    expect(ceremonyApi.cereMark).toHaveBeenCalledWith('r1')
+    expect(wrapper.find('[data-testid="couple-cere-mark-r1"]').text()).toContain('勾啦')
+    expect(wrapper.find('[data-testid="couple-cere-founded-open-f1"]').text()).toContain('1/1')
+  })
+
+  it('小日子仪式感：非续约日隐藏签字表单，续约日显示且提交调 cereRenew', async () => {
+    vi.mocked(ceremonyApi.cereOverview).mockResolvedValue(cerOverview({
+      renew: { anchorDay: '2026-11-10', dueToday: false, mineSigned: false, partnerSigned: false, daysToNext: 39, scroll: [] },
+    }))
+    const wrapper = await mountOnTimeline()
+    expect(wrapper.find('[data-testid="couple-cere-renew-line"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-cere-renew-countdown"]').text()).toContain('还有 39 天')
+
+    vi.mocked(ceremonyApi.cereOverview).mockResolvedValue(cerOverview({
+      renew: { anchorDay: '2026-10-02', dueToday: true, mineSigned: false, partnerSigned: false, daysToNext: 0, scroll: [] },
+    }))
+    vi.mocked(ceremonyApi.cereRenew).mockResolvedValue(cerOverview({
+      renew: {
+        anchorDay: '2026-10-02', dueToday: true, mineSigned: true, partnerSigned: false, daysToNext: 0,
+        scroll: [{ anchorDay: '2026-10-02', fromUser: 'alice', mine: true, line: '我还是选你' }],
+      },
+    }))
+    const wrapper2 = await mountOnTimeline()
+    expect(wrapper2.find('[data-testid="couple-cere-renew-due"]').exists()).toBe(true)
+    await wrapper2.find('[data-testid="couple-cere-renew-line"]').setValue('我还是选你')
+    await wrapper2.find('[data-testid="couple-cere-renew-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(ceremonyApi.cereRenew).toHaveBeenCalledWith('我还是选你')
+    expect(wrapper2.find('[data-testid="couple-cere-renew-mine"]').text()).toContain('我签了')
+    expect(wrapper2.find('[data-testid="couple-cere-renew-scroll"]').text()).toContain('我还是选你')
+  })
+
+  it('小日子仪式感：发愿望券进 OPEN 列表，核销后移入 USED 折叠区', async () => {
+    const coupon = (id: string, title: string, status: 'OPEN' | 'USED' = 'OPEN') => ({
+      id, title, status, ref: '', issuer: 'alice', usedBy: status === 'USED' ? 'bob' : null, created: 1,
+    })
+    vi.mocked(ceremonyApi.cereOverview).mockResolvedValue(cerOverview())
+    vi.mocked(ceremonyApi.cereIssueCoupon).mockResolvedValue(cerOverview({
+      couponsOpen: [coupon('c1', '背我绕小区一圈')],
+    }))
+    vi.mocked(ceremonyApi.cereUseCoupon).mockResolvedValue(cerOverview({
+      couponsOpen: [],
+      couponsUsed: [coupon('c1', '背我绕小区一圈', 'USED')],
+    }))
+    const wrapper = await mountOnTimeline()
+    expect(wrapper.find('[data-testid="couple-cere-coupon-c1"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="couple-cere-coupon-title"]').setValue('背我绕小区一圈')
+    await wrapper.find('[data-testid="couple-cere-coupon-submit"]').trigger('click')
+    await flushPromises()
+    expect(ceremonyApi.cereIssueCoupon).toHaveBeenCalledWith('背我绕小区一圈')
+    expect(wrapper.find('[data-testid="couple-cere-coupon-c1"]').text()).toContain('背我绕小区一圈')
+
+    await wrapper.find('[data-testid="couple-cere-coupon-use-c1"]').trigger('click')
+    await flushPromises()
+    expect(ceremonyApi.cereUseCoupon).toHaveBeenCalledWith('c1')
+    expect(wrapper.find('[data-testid="couple-cere-coupon-c1"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="couple-cere-coupon-used-toggle"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-cere-coupon-used-c1"]').text()).toContain('背我绕小区一圈')
   })
 })
