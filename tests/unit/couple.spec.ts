@@ -773,6 +773,40 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.find('[data-testid="couple-thanks-tn1"]').text()).toContain('带伞')
   })
 
+  it('信笺页签：情诗接龙写一句，醒来第一条封存', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const chain = {
+      lines: [
+        { id: 'pl1', day: '2026-10-01', fromUser: 'alice', mine: true, line: '你是我窗前的月光', created: Date.now() },
+      ],
+      todayWriter: 'alice',
+      myTurn: true,
+      writtenToday: false,
+    }
+    vi.mocked(coupleApi.poemChain).mockResolvedValue(chain)
+    vi.mocked(coupleApi.addPoemLine).mockResolvedValue({ ...chain, lines: [...chain.lines], writtenToday: true })
+    vi.mocked(coupleApi.morningNotes).mockResolvedValue({ mine: [], delivered: [] })
+    vi.mocked(coupleApi.sealMorningNote).mockResolvedValue({
+      mine: [{ id: 'mn1', fromUser: 'alice', mine: true, content: '明早要开心呀', deliverDay: '2026-10-02', arrived: false, read: false, created: Date.now() }],
+      delivered: [],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-letters').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-chain-input"]').setValue('你是我窗前的月光')
+    await wrapper.find('[data-testid="couple-chain-add"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.addPoemLine).toHaveBeenCalledWith('你是我窗前的月光')
+
+    await wrapper.find('[data-testid="couple-morning-input"]').setValue('明早要开心呀')
+    await wrapper.find('[data-testid="couple-morning-seal"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.sealMorningNote).toHaveBeenCalledWith('明早要开心呀')
+    expect(wrapper.find('[data-testid="couple-morning-mine"]').exists()).toBe(true)
+  })
+
   it('时光轴页签：考古卡能挖出旧记录，编年史按年展示事件', async () => {
     mockedOverview.mockResolvedValue(establishedOverview)
     const wrapper = mountView()
