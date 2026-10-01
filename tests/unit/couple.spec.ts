@@ -3,11 +3,11 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { boardApi, coupleApi, ceremonyApi, cozyApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
+import { almanacApi, boardApi, coupleApi, ceremonyApi, cozyApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -392,6 +392,53 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F250-F259 夫妻老黄历 almanacApi：默认空数据但形状完整的 TodayVO，用例内按需覆盖
+  const almEmptyToday = () => ({
+    day: '2026-10-02',
+    year: '2026',
+    term: { term: null, nextTerm: '霜降', nextDays: 6, todayChecks: [] },
+    rituals: [],
+    lucky: [],
+    festivals: [{ key: 'VALENTINE', label: '情人节', day: '2027-02-14', mine: '', partner: '' }],
+    notes: [],
+    holiday: { key: 'SPRING', name: '春节', day: '2027-02-06', daysLeft: 127, wish: '', wishedBy: '', appendedBy: '' },
+    normal: { today: false, days: [] },
+    lunar: [],
+  })
+  const almanacBase: Record<string, ReturnType<typeof vi.fn>> = {
+    almToday: vi.fn().mockResolvedValue(almEmptyToday()),
+    almCheck: vi.fn().mockResolvedValue(almEmptyToday()),
+    almRitualAdd: vi.fn().mockResolvedValue(almEmptyToday()),
+    almRitualRemove: vi.fn().mockResolvedValue(almEmptyToday()),
+    almRitualMark: vi.fn().mockResolvedValue(almEmptyToday()),
+    almLucky: vi.fn().mockResolvedValue(almEmptyToday()),
+    almLuckyConfirm: vi.fn().mockResolvedValue(almEmptyToday()),
+    almFestival: vi.fn().mockResolvedValue(almEmptyToday()),
+    almNote: vi.fn().mockResolvedValue(almEmptyToday()),
+    almWish: vi.fn().mockResolvedValue(almEmptyToday()),
+    almNormal: vi.fn().mockResolvedValue(almEmptyToday()),
+    almZodiac: vi.fn().mockResolvedValue({ zodiacMine: '龙', zodiacPartner: '兔', fortune: '今年最适合一起把小事做成日常' }),
+    almYearly: vi.fn().mockResolvedValue({
+      year: '2026',
+      checksDone: 0,
+      notesDone: 0,
+      ritualsTotal: 0,
+      ritualsDone: 0,
+      luckyCount: 0,
+      festivalPlans: 0,
+      normalDays: 0,
+      scroll: [],
+    }),
+  }
+  const almanacWrapped = new Proxy(almanacBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(almEmptyToday())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -400,6 +447,7 @@ vi.mock('@/api/couple', () => {
     cozyApi: cozyWrapped,
     ceremonyApi: ceremonyWrapped,
     boardApi: boardWrapped,
+    almanacApi: almanacWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -2001,6 +2049,160 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.find('[data-testid="couple-bd-attend-partner"]').text()).toContain('TA 还没来')
     expect(wrapper.find('[data-testid="couple-bd-attend-wait"]').text()).toContain('等你一起敲钟')
     expect(wrapper.find('[data-testid="couple-bd-attend-btn"]').text()).toContain('已签到')
+  })
+
+  // ============ 批次二十一：夫妻老黄历（F250-F259，shared 页签「🧾 过日子」子页签 CoupleAlmanac） ============
+
+  /** 今日老黄历空态基底（用例内按分区覆盖） */
+  function almToday(partial: Partial<CoupleAlmTodayVO> = {}): CoupleAlmTodayVO {
+    return {
+      day: '2026-10-02',
+      year: '2026',
+      term: { term: null, nextTerm: '霜降', nextDays: 6, todayChecks: [] },
+      rituals: [],
+      lucky: [],
+      festivals: [{ key: 'VALENTINE', label: '情人节', day: '2027-02-14', mine: '', partner: '' }],
+      notes: [],
+      holiday: { key: 'SPRING', name: '春节', day: '2027-02-06', daysLeft: 127, wish: '', wishedBy: '', appendedBy: '' },
+      normal: { today: false, days: [] },
+      lunar: [],
+      ...partial,
+    }
+  }
+
+  /** 挂载并切到共享空间「🧾 过日子」子页签（CoupleAlmanac 所在区） */
+  async function mountOnSharedDaily() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('#tab-daily').classes()).toContain('is-active')
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 黄历卡折叠态落库键清理，避免污染后续用例
+    localStorage.removeItem(collapseKey('couple-alm-lucky'))
+    localStorage.removeItem(collapseKey('couple-alm-festival'))
+  })
+
+  it('夫妻老黄历：非节气日头牌显示下个节气倒数', async () => {
+    vi.mocked(almanacApi.almToday).mockResolvedValue(almToday({
+      term: { term: null, nextTerm: '霜降', nextDays: 6, todayChecks: [] },
+    }))
+    const wrapper = await mountOnSharedDaily()
+    expect(wrapper.find('[data-testid="couple-almanac"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-alm-term"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-alm-next"]').text()).toContain('霜降')
+    expect(wrapper.find('[data-testid="couple-alm-next-days"]').text()).toContain('还有 6 天')
+    // 非节气日没有跟风入口
+    expect(wrapper.find('[data-testid="couple-alm-check-btn"]').exists()).toBe(false)
+  })
+
+  it('夫妻老黄历：节气日点「跟上」调 almCheck，返回整份 TodayVO 后整卡刷新', async () => {
+    vi.mocked(almanacApi.almToday).mockResolvedValue(almToday({
+      term: { term: '寒露', nextTerm: '霜降', nextDays: 6, todayChecks: [] },
+    }))
+    vi.mocked(almanacApi.almCheck).mockResolvedValue(almToday({
+      term: {
+        term: '寒露',
+        nextTerm: '霜降',
+        nextDays: 6,
+        todayChecks: [{ fromUser: 'alice', note: '跟着煮了柿子茶', mine: true }],
+      },
+    }))
+    const wrapper = await mountOnSharedDaily()
+    expect(wrapper.find('[data-testid="couple-alm-term"]').text()).toBe('寒露')
+    expect(wrapper.find('[data-testid="couple-alm-check-mine"]').text()).toContain('我还没跟风')
+
+    await wrapper.find('[data-testid="couple-alm-check-note"]').setValue('跟着煮了柿子茶')
+    await wrapper.find('[data-testid="couple-alm-check-btn"]').trigger('click')
+    await flushPromises()
+    expect(almanacApi.almCheck).toHaveBeenCalledWith('跟着煮了柿子茶')
+    expect(wrapper.find('[data-testid="couple-alm-check-mine"]').text()).toContain('我跟风了')
+    expect(wrapper.find('[data-testid="couple-alm-check-note-alice"]').text()).toContain('跟着煮了柿子茶')
+    // 已跟风后表单收起，等下一个节气
+    expect(wrapper.find('[data-testid="couple-alm-check-btn"]').exists()).toBe(false)
+  })
+
+  it('夫妻老黄历：TA 发起的吉日出现盖章按钮，点盖章调 almLuckyConfirm 后双盖章', async () => {
+    const luckyVo = (confirmed: boolean) => [{
+      id: 'al1', day: '2026-11-11', matter: '搬家', comment: '宜入宅，忌拖延', mine: false, confirmed,
+    }]
+    vi.mocked(almanacApi.almToday).mockResolvedValue(almToday({ lucky: luckyVo(false) }))
+    vi.mocked(almanacApi.almLuckyConfirm).mockResolvedValue(almToday({ lucky: luckyVo(true) }))
+    const wrapper = await mountOnSharedDaily()
+    expect(wrapper.find('[data-testid="couple-alm-lucky-al1"]').text()).toContain('搬家')
+    expect(wrapper.find('[data-testid="couple-alm-lucky-comment-al1"]').text()).toContain('宜入宅')
+
+    await wrapper.find('[data-testid="couple-alm-lucky-confirm-al1"]').trigger('click')
+    await flushPromises()
+    expect(almanacApi.almLuckyConfirm).toHaveBeenCalledWith('al1')
+    expect(wrapper.find('[data-testid="couple-alm-lucky-confirm-al1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-alm-lucky-ok-al1"]').text()).toContain('双盖章')
+  })
+
+  it('夫妻老黄历：节日家档交卷调 almFestival，返回整份 TodayVO 后 mine 回填', async () => {
+    const fesVo = (mine: string) => [{ key: 'VALENTINE', label: '情人节', day: '2027-02-14', mine, partner: '烛光晚餐' }]
+    vi.mocked(almanacApi.almToday).mockResolvedValue(almToday({ festivals: fesVo('') }))
+    vi.mocked(almanacApi.almFestival).mockResolvedValue(almToday({ festivals: fesVo('一起包饺子') }))
+    const wrapper = await mountOnSharedDaily()
+    expect(wrapper.find('[data-testid="couple-alm-festival-mine-VALENTINE"]').text()).toContain('还没交卷')
+
+    await wrapper.find('[data-testid="couple-alm-festival-pick-VALENTINE"]').trigger('click')
+    await wrapper.find('[data-testid="couple-alm-festival-plan"]').setValue('一起包饺子')
+    await wrapper.find('[data-testid="couple-alm-festival-submit"]').trigger('click')
+    await flushPromises()
+    expect(almanacApi.almFestival).toHaveBeenCalledWith('VALENTINE', '2026', '一起包饺子')
+    expect(wrapper.find('[data-testid="couple-alm-festival-mine-VALENTINE"]').text()).toContain('一起包饺子')
+    expect(wrapper.find('[data-testid="couple-alm-festival-partner-VALENTINE"]').text()).toContain('烛光晚餐')
+  })
+
+  it('夫妻老黄历：放空日今日态挡住跟风与打勾，长假愿望提交调 almWish', async () => {
+    vi.mocked(almanacApi.almToday).mockResolvedValue(almToday({
+      term: { term: '寒露', nextTerm: '霜降', nextDays: 6, todayChecks: [] },
+      rituals: [{ id: 'ar1', term: '寒露', content: '吃柿子', mine: true, lastDoneYear: '' }],
+      normal: { today: true, days: ['2026-10-02'] },
+    }))
+    const wrapper = await mountOnSharedDaily()
+    expect(wrapper.find('[data-testid="couple-alm-normal-today"]').text()).toContain('今日什么都不做')
+    expect(wrapper.find('[data-testid="couple-alm-check-btn"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-alm-mark-ar1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-alm-ritual-del-ar1"]').exists()).toBe(true)
+
+    vi.mocked(almanacApi.almWish).mockResolvedValue(almToday({
+      holiday: { key: 'SPRING', name: '春节', day: '2027-02-06', daysLeft: 127, wish: '回老家赶集', wishedBy: 'alice', appendedBy: '' },
+    }))
+    await wrapper.find('[data-testid="couple-alm-holiday-wish-input"]').setValue('回老家赶集')
+    await wrapper.find('[data-testid="couple-alm-holiday-submit"]').trigger('click')
+    await flushPromises()
+    expect(almanacApi.almWish).toHaveBeenCalledWith('回老家赶集')
+    expect(wrapper.find('[data-testid="couple-alm-holiday-wish-first"]').text()).toContain('回老家赶集')
+    // 已有首写无补写时按钮文案转为补写
+    expect(wrapper.find('[data-testid="couple-alm-holiday-submit"]').text()).toContain('补写一段')
+  })
+
+  it('夫妻老黄历：生肖年运与一年小结按需领取，长卷逐条渲染', async () => {
+    vi.mocked(almanacApi.almZodiac).mockResolvedValue({ zodiacMine: '龙', zodiacPartner: '兔', fortune: '今年适合一起把小事做成日常' })
+    vi.mocked(almanacApi.almYearly).mockResolvedValue({
+      year: '2026', checksDone: 12, notesDone: 5, ritualsTotal: 6, ritualsDone: 4,
+      luckyCount: 2, festivalPlans: 3, normalDays: 1,
+      scroll: ['「寒露」跟风双人组 ✅ 我：吃了柿子', '「霜降」手账差 TA 一笔'],
+    })
+    const wrapper = await mountOnSharedDaily()
+    expect(wrapper.find('[data-testid="couple-alm-zodiac-fortune"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="couple-alm-zodiac-btn"]').trigger('click')
+    await flushPromises()
+    expect(almanacApi.almZodiac).toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="couple-alm-zodiac-fortune"]').text()).toContain('把小事做成日常')
+
+    await wrapper.find('[data-testid="couple-alm-yearly-btn"]').trigger('click')
+    await flushPromises()
+    expect(almanacApi.almYearly).toHaveBeenCalledWith('2026')
+    expect(wrapper.find('[data-testid="couple-alm-checks-done"]').text()).toBe('12')
+    expect(wrapper.find('[data-testid="couple-alm-scroll-0"]').text()).toContain('寒露')
   })
 
   // ============ F205 卡片折叠（CoupleCollapsible） ============
