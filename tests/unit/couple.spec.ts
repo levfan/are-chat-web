@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
-import { coupleApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
+import { coupleApi, cozyApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
+import type { CoupleCozyTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -304,11 +304,46 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F220-F229 体温同步 cozyApi：默认空数据（数值字段给 number），用例内按需覆盖
+  const cozyBase: Record<string, ReturnType<typeof vi.fn>> = {
+    cozyToday: vi.fn().mockResolvedValue({
+      day: '2026-10-02',
+      lightout: { mine: false, partner: false, streak: 0 },
+      sleeps: [],
+      sheep: { mineTaps: 0, partnerTaps: 0, mineDone: false, partnerDone: false, mineElapsedMs: null, partnerElapsedMs: null },
+      water: { mine: 0, partner: 0, nudge: false },
+      weathers: [],
+      latenight: { sentToday: false, card: '' },
+      slows: [],
+      remedies: [],
+      hug: { total: 0, today: 0, milestone: 0 },
+    }),
+    cozyMonthly: vi.fn().mockResolvedValue({
+      month: '2026-10',
+      bothLitNights: 0,
+      bestStreak: 0,
+      sleepReports: 0,
+      avgStars: 0,
+      sheepDone: 0,
+      cupsTotal: 0,
+      index: 0,
+    }),
+  }
+  const cozyWrapped = new Proxy(cozyBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(undefined)
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
     museumApi: museumWrapped,
     diningApi: diningWrapped,
+    cozyApi: cozyWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -1551,5 +1586,121 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="couple-tab-tip"]').exists()).toBe(false)
     expect(localStorage.getItem('arechat_couple_tab_tip_bond')).toBe('1')
+  })
+
+  // ============ 批次十八：体温同步（F220-F229，care 页签「🚑 情绪急救」子页签 CoupleCozy） ============
+
+  /** 今日体温总览空态基底（用例内按分区覆盖） */
+  function cozyVo(partial: Partial<CoupleCozyTodayVO> = {}): CoupleCozyTodayVO {
+    return {
+      day: '2026-10-02',
+      lightout: { mine: false, partner: false, streak: 0 },
+      sleeps: [],
+      sheep: { mineTaps: 0, partnerTaps: 0, mineDone: false, partnerDone: false, mineElapsedMs: null, partnerElapsedMs: null },
+      water: { mine: 0, partner: 0, nudge: false },
+      weathers: [],
+      latenight: { sentToday: false, card: '' },
+      slows: [],
+      remedies: [],
+      hug: { total: 0, today: 0, milestone: null },
+      ...partial,
+    }
+  }
+
+  /** 挂载并切到 care 页签（默认子页签「🚑 情绪急救」即 CoupleCozy 所在区） */
+  async function mountOnCare() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-care').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('体温同步：点「道晚安点灯」调 cozyLightout，返回整份 TodayVO 后双灯与连击刷新', async () => {
+    vi.mocked(cozyApi.cozyToday).mockResolvedValue(cozyVo({
+      lightout: { mine: false, partner: true, streak: 2 },
+    }))
+    vi.mocked(cozyApi.cozyLightout).mockResolvedValue(cozyVo({
+      lightout: { mine: true, partner: true, streak: 3 },
+    }))
+    const wrapper = await mountOnCare()
+    expect(wrapper.find('[data-testid="couple-cozy"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-cozy-lightout-btn"]').trigger('click')
+    await flushPromises()
+
+    expect(cozyApi.cozyLightout).toHaveBeenCalledOnce()
+    expect(wrapper.find('[data-testid="couple-cozy-lightout-mine"]').text()).toContain('熄灯')
+    expect(wrapper.find('[data-testid="couple-cozy-lightout-partner"]').text()).toContain('熄灯')
+    expect(wrapper.find('[data-testid="couple-cozy-lightout-streak"]').text()).toContain('3')
+  })
+
+  it('体温同步：点一只羊调 cozySheep，返回后我的羊群 taps +1 渲染', async () => {
+    vi.mocked(cozyApi.cozyToday).mockResolvedValue(cozyVo({
+      sheep: { mineTaps: 3, partnerTaps: 5, mineDone: false, partnerDone: false, mineElapsedMs: null, partnerElapsedMs: null },
+    }))
+    vi.mocked(cozyApi.cozySheep).mockResolvedValue(cozyVo({
+      sheep: { mineTaps: 4, partnerTaps: 5, mineDone: false, partnerDone: false, mineElapsedMs: null, partnerElapsedMs: null },
+    }))
+    const wrapper = await mountOnCare()
+
+    await wrapper.find('[data-testid="couple-cozy-sheep-btn"]').trigger('click')
+    await flushPromises()
+
+    expect(cozyApi.cozySheep).toHaveBeenCalledOnce()
+    expect(wrapper.find('[data-testid="couple-cozy-sheep-mine"]').text()).toContain('4')
+    expect(wrapper.find('[data-testid="couple-cozy-sheep-partner"]').text()).toContain('5')
+  })
+
+  it('体温同步：TA 干了好几杯而我没喝时，喝水接力显示 nudge 轻提醒', async () => {
+    vi.mocked(cozyApi.cozyToday).mockResolvedValue(cozyVo({
+      water: { mine: 0, partner: 3, nudge: true },
+    }))
+    const wrapper = await mountOnCare()
+
+    const nudge = wrapper.find('[data-testid="couple-cozy-water-nudge"]')
+    expect(nudge.exists()).toBe(true)
+    expect(nudge.text()).toContain('起来喝一口')
+    expect(wrapper.find('[data-testid="couple-cozy-water-partner"]').text()).toContain('3')
+  })
+
+  it('体温同步：记抱抱调 cozyHug，返回 milestone 后成就徽标高亮', async () => {
+    vi.mocked(cozyApi.cozyToday).mockResolvedValue(cozyVo({
+      hug: { total: 8, today: 0, milestone: null },
+    }))
+    vi.mocked(cozyApi.cozyHug).mockResolvedValue(cozyVo({
+      hug: { total: 50, today: 3, milestone: 50 },
+    }))
+    const wrapper = await mountOnCare()
+    expect(wrapper.find('[data-testid="couple-cozy-hug-milestone"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="couple-cozy-hug-btn"]').trigger('click')
+    await flushPromises()
+
+    expect(cozyApi.cozyHug).toHaveBeenCalledWith(1, '')
+    const badge = wrapper.find('[data-testid="couple-cozy-hug-milestone"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.text()).toContain('50')
+    expect(wrapper.find('[data-testid="couple-cozy-hug-total"]').text()).toContain('50')
+  })
+
+  it('体温同步：月度安眠小结渲染指数进度条与高分文案', async () => {
+    vi.mocked(cozyApi.cozyMonthly).mockResolvedValue({
+      month: '2026-10',
+      bothLitNights: 12,
+      bestStreak: 7,
+      sleepReports: 9,
+      avgStars: 4.2,
+      sheepDone: 5,
+      cupsTotal: 30,
+      index: 86,
+    })
+    const wrapper = await mountOnCare()
+
+    expect(wrapper.find('[data-testid="couple-cozy-month-lit"]').text()).toContain('12')
+    expect(wrapper.find('[data-testid="couple-cozy-month-avgstars"]').text()).toContain('4.2')
+    expect(wrapper.find('[data-testid="couple-cozy-month-index"]').text()).toBe('86')
+    expect(wrapper.find('[data-testid="couple-cozy-month-comment"]').exists()).toBe(true)
   })
 })
