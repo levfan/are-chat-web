@@ -132,6 +132,16 @@ import type {
   CoupleDailyPraiseVO,
   CoupleCustomBadgeVO,
   CoupleDashboardVO,
+  CoupleHabitStreakVO,
+  CoupleThanksVO,
+  CoupleFeelFamilyVO,
+  CoupleFeelVO,
+  CoupleWeekStarVO,
+  CoupleReadMinuteVO,
+  CoupleDelayVO,
+  CouplePraiseBankVO,
+  CoupleMorningVO,
+  CoupleYearKeywordVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -305,6 +315,17 @@ export const useCoupleStore = defineStore('couple', () => {
   const dailyPraise = ref<CoupleDailyPraiseVO | null>(null)
   const customBadges = ref<CoupleCustomBadgeVO[]>([])
   const dashboard = ref<CoupleDashboardVO | null>(null)
+  // 成长系（F150-F159）
+  const streaks = ref<CoupleHabitStreakVO[]>([])
+  const thanksNotes = ref<CoupleThanksVO[]>([])
+  const coachFeelFamilies = ref<CoupleFeelFamilyVO[]>([])
+  const coachFeelToday = ref<CoupleFeelVO | null>(null)
+  const coachWeekStar = ref<CoupleWeekStarVO | null>(null)
+  const coachRead = ref<CoupleReadMinuteVO | null>(null)
+  const delayTasks = ref<CoupleDelayVO[]>([])
+  const praiseBankList = ref<CouplePraiseBankVO[]>([])
+  const coachMorning = ref<CoupleMorningVO | null>(null)
+  const coachYearKeyword = ref<CoupleYearKeywordVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -337,6 +358,7 @@ export const useCoupleStore = defineStore('couple', () => {
     secure: false,
     play: false,
     dailyLife: false,
+    coach: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -506,6 +528,16 @@ export const useCoupleStore = defineStore('couple', () => {
     dailyPraise.value = null
     customBadges.value = []
     dashboard.value = null
+    streaks.value = []
+    thanksNotes.value = []
+    coachFeelFamilies.value = []
+    coachFeelToday.value = null
+    coachWeekStar.value = null
+    coachRead.value = null
+    delayTasks.value = []
+    praiseBankList.value = []
+    coachMorning.value = null
+    coachYearKeyword.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -537,6 +569,7 @@ export const useCoupleStore = defineStore('couple', () => {
       secure: false,
       play: false,
       dailyLife: false,
+      coach: false,
     }
     promiseDraft.value = null
   }
@@ -1867,6 +1900,76 @@ export const useCoupleStore = defineStore('couple', () => {
     dashboard.value = await coupleApi.dashboard()
   }
 
+  // ---------- 成长系（F150-F159） ----------
+
+  async function loadCoach() {
+    const [st, th, ff, ft, ws, rd, dl, pb, mo] = await Promise.all([
+      coupleApi.coachHabits(),
+      coupleApi.thanks(),
+      coupleApi.feelFamilies(),
+      coupleApi.feelToday(),
+      coupleApi.weekStar(),
+      coupleApi.readMinute(),
+      coupleApi.delays(),
+      coupleApi.praiseBank(),
+      coupleApi.morning(),
+    ])
+    streaks.value = st ?? []
+    thanksNotes.value = th ?? []
+    coachFeelFamilies.value = ff ?? []
+    coachFeelToday.value = ft
+    coachWeekStar.value = ws
+    coachRead.value = rd
+    delayTasks.value = dl ?? []
+    praiseBankList.value = pb ?? []
+    coachMorning.value = mo
+    loadedLists.value.coach = true
+  }
+
+  async function createStreak(title: string, targetDays?: number) {
+    streaks.value = (await coupleApi.coachCreateHabit(title, targetDays)) ?? []
+  }
+
+  async function checkinStreak(id: string) {
+    streaks.value = (await coupleApi.coachCheckinHabit(id)) ?? []
+  }
+
+  async function addThanksNote(content: string) {
+    thanksNotes.value = (await coupleApi.addThanks(content)) ?? []
+  }
+
+  async function saveCoachFeel(word: string, intensity?: number, note?: string) {
+    coachFeelToday.value = await coupleApi.saveFeel(word, intensity, note)
+  }
+
+  async function saveCoachWeekStar(highlight: string) {
+    coachWeekStar.value = await coupleApi.saveWeekStar(highlight)
+  }
+
+  async function saveCoachRead(thought: string) {
+    coachRead.value = await coupleApi.saveReadMinute(thought)
+  }
+
+  async function addDelayTask(title: string, deadlineDay?: string) {
+    delayTasks.value = (await coupleApi.addDelay(title, deadlineDay)) ?? []
+  }
+
+  async function nagDelayTask(id: string) {
+    delayTasks.value = (await coupleApi.nagDelay(id)) ?? []
+  }
+
+  async function doneDelayTask(id: string) {
+    delayTasks.value = (await coupleApi.doneDelay(id)) ?? []
+  }
+
+  async function addPraiseBankItem(content: string, scene?: string) {
+    praiseBankList.value = (await coupleApi.addPraiseBank(content, scene)) ?? []
+  }
+
+  async function loadYearKeyword(year?: number) {
+    coachYearKeyword.value = await coupleApi.yearKeyword(year)
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -2587,6 +2690,53 @@ export const useCoupleStore = defineStore('couple', () => {
           void coupleApi.customBadges().then((v) => (customBadges.value = v ?? []))
         }
         break
+      case 'streak-started':
+      case 'streak-checkin':
+      case 'streak-done':
+        notify('🌱 习惯搭子', msg.detail)
+        if (loadedLists.value.coach) {
+          void coupleApi.coachHabits().then((v) => (streaks.value = v ?? []))
+        }
+        break
+      case 'thanks-note':
+        notify('💌 感恩便签', msg.detail)
+        if (loadedLists.value.coach) {
+          void coupleApi.thanks().then((v) => (thanksNotes.value = v ?? []))
+        }
+        break
+      case 'feel-logged':
+        notify('🌤️ 情绪日记', msg.detail)
+        if (loadedLists.value.coach) {
+          void coupleApi.feelToday().then((v) => (coachFeelToday.value = v))
+        }
+        break
+      case 'week-star-saved':
+      case 'week-star-both':
+        notify('⭐ 每周高光', msg.detail)
+        if (loadedLists.value.coach) {
+          void coupleApi.weekStar().then((v) => (coachWeekStar.value = v))
+        }
+        break
+      case 'read-thought':
+        notify('📖 共读一分钟', msg.detail)
+        if (loadedLists.value.coach) {
+          void coupleApi.readMinute().then((v) => (coachRead.value = v))
+        }
+        break
+      case 'delay-added':
+      case 'delay-nagged':
+      case 'delay-done':
+        notify('🙈 拖延互助所', msg.detail)
+        if (loadedLists.value.coach) {
+          void coupleApi.delays().then((v) => (delayTasks.value = v ?? []))
+        }
+        break
+      case 'praise-bank-added':
+        notify('🏦 优点存折', msg.detail)
+        if (loadedLists.value.coach) {
+          void coupleApi.praiseBank().then((v) => (praiseBankList.value = v ?? []))
+        }
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -2898,6 +3048,16 @@ export const useCoupleStore = defineStore('couple', () => {
     dailyPraise,
     customBadges,
     dashboard,
+    streaks,
+    thanksNotes,
+    coachFeelFamilies,
+    coachFeelToday,
+    coachWeekStar,
+    coachRead,
+    delayTasks,
+    praiseBankList,
+    coachMorning,
+    coachYearKeyword,
     loadComm,
     translateText,
     startCoolDown,
@@ -2961,5 +3121,17 @@ export const useCoupleStore = defineStore('couple', () => {
     addBadge,
     issueBadge,
     loadDashboard,
+    loadCoach,
+    createStreak,
+    checkinStreak,
+    addThanksNote,
+    saveCoachFeel,
+    saveCoachWeekStar,
+    saveCoachRead,
+    addDelayTask,
+    nagDelayTask,
+    doneDelayTask,
+    addPraiseBankItem,
+    loadYearKeyword,
   }
 })

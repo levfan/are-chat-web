@@ -140,6 +140,16 @@ import type {
   CoupleDailyPraiseVO,
   CoupleCustomBadgeVO,
   CoupleDashboardVO,
+  CoupleHabitStreakVO,
+  CoupleThanksVO,
+  CoupleFeelFamilyVO,
+  CoupleFeelVO,
+  CoupleWeekStarVO,
+  CoupleReadMinuteVO,
+  CoupleDelayVO,
+  CouplePraiseBankVO,
+  CoupleMorningVO,
+  CoupleYearKeywordVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -908,4 +918,72 @@ export const coupleApi = {
     http.postJson<CoupleCustomBadgeVO[]>(`/api/couple/daily-life/badges/${id}/issue`, {}),
   /** F149 恋爱仪表盘 */
   dashboard: () => http.get<CoupleDashboardVO>('/api/couple/daily-life/dashboard'),
+
+  // ============ 成长系（F150-F159） ============
+  /** F150 习惯搭子列表（与双人习惯 habits 撞名，改 coachHabits） */
+  coachHabits: () => http.get<CoupleHabitStreakVO[]>('/api/couple/coach/habits'),
+  /** F150 立一个习惯 */
+  coachCreateHabit: (title: string, targetDays?: number) =>
+    http.postJson<CoupleHabitStreakVO[]>('/api/couple/coach/habits', {
+      title,
+      targetDays: targetDays ?? 21,
+    }),
+  /** F150 习惯打卡 */
+  coachCheckinHabit: (id: string) =>
+    http.postJson<CoupleHabitStreakVO[]>(`/api/couple/coach/habits/${id}/checkin`, {}),
+  /** F151 感恩便签墙 */
+  thanks: () => http.get<CoupleThanksVO[]>('/api/couple/coach/thanks'),
+  /** F151 写感恩便签 */
+  addThanks: (content: string) =>
+    http.postJson<CoupleThanksVO[]>('/api/couple/coach/thanks', { content }),
+  /** F152 情绪词表 */
+  feelFamilies: () => http.get<CoupleFeelFamilyVO[]>('/api/couple/coach/feel-families'),
+  /** F152 今日情绪日记 */
+  feelToday: () => http.get<CoupleFeelVO>('/api/couple/coach/feel'),
+  /** F152 记录今日情绪 */
+  saveFeel: (word: string, intensity?: number, note?: string) =>
+    http.postJson<CoupleFeelVO>('/api/couple/coach/feel', {
+      word,
+      intensity: intensity ?? 3,
+      note: note ?? null,
+    }),
+  /** F153 本周高光互评 */
+  weekStar: () => http.get<CoupleWeekStarVO>('/api/couple/coach/week-star'),
+  /** F153 提名对方本周高光 */
+  saveWeekStar: (highlight: string) =>
+    http.postJson<CoupleWeekStarVO>('/api/couple/coach/week-star', { highlight }),
+  /** F154 今日共读一分钟 */
+  readMinute: () => http.get<CoupleReadMinuteVO>('/api/couple/coach/read-minute'),
+  /** F154 写共读感想 */
+  saveReadMinute: (thought: string) =>
+    http.postJson<CoupleReadMinuteVO>('/api/couple/coach/read-minute', { thought }),
+  /** F155 拖延互助所 */
+  delays: () => http.get<CoupleDelayVO[]>('/api/couple/coach/delays'),
+  /** F155 登记拖延的事 */
+  addDelay: (title: string, deadlineDay?: string) =>
+    http.postJson<CoupleDelayVO[]>('/api/couple/coach/delays', {
+      title,
+      deadlineDay: deadlineDay ?? null,
+    }),
+  /** F155 催办 */
+  nagDelay: (id: string) =>
+    http.postJson<CoupleDelayVO[]>(`/api/couple/coach/delays/${id}/nag`, {}),
+  /** F155 宣布完成 */
+  doneDelay: (id: string) =>
+    http.postJson<CoupleDelayVO[]>(`/api/couple/coach/delays/${id}/done`, {}),
+  /** F156 早安能量站 */
+  morning: () => http.get<CoupleMorningVO>('/api/couple/coach/morning'),
+  /** F158 优点存折 */
+  praiseBank: () => http.get<CouplePraiseBankVO[]>('/api/couple/coach/praise-bank'),
+  /** F158 存一条优点 */
+  addPraiseBank: (content: string, scene?: string) =>
+    http.postJson<CouplePraiseBankVO[]>('/api/couple/coach/praise-bank', {
+      content,
+      scene: scene ?? null,
+    }),
+  /** F159 成长年度关键词 */
+  yearKeyword: (year?: number) =>
+    http.get<CoupleYearKeywordVO>(
+      year ? `/api/couple/coach/year-keyword?year=${year}` : '/api/couple/coach/year-keyword',
+    ),
 }

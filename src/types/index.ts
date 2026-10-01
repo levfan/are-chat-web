@@ -1996,3 +1996,99 @@ export interface CoupleDashboardVO {
   todos: CoupleDashboardTodoVO[]
   memories: CoupleDashboardMemoryVO[]
 }
+
+// ============ 情侣空间·成长系（F150-F159） ============
+
+export interface CoupleHabitStreakVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  title: string
+  targetDays: number
+  doneDays: number
+  doneToday: boolean
+  status: 'OPEN' | 'DONE'
+  doneAt: number | null
+  created: number
+}
+
+export interface CoupleThanksVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  content: string
+  created: number
+}
+
+export interface CoupleFeelFamilyVO {
+  family: string
+  emoji: string
+  words: string[]
+}
+
+export interface CoupleFeelRowVO {
+  id: string
+  fromUser: string
+  day: string
+  word: string
+  intensity: number
+  note: string | null
+  updatedAt: number
+  created: number
+}
+
+export interface CoupleFeelVO {
+  day: string
+  mine: CoupleFeelRowVO | null
+  partner: CoupleFeelRowVO | null
+}
+
+export interface CoupleWeekStarVO {
+  week: string
+  mine: { id: string; highlight: string; created: number } | null
+  partner: { id: string; highlight: string; created: number } | null
+}
+
+export interface CoupleReadMinuteVO {
+  day: string
+  passage: string
+  mine: { id: string; thought: string; created: number } | null
+  partner: { id: string; thought: string; created: number } | null
+}
+
+export interface CoupleDelayVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  title: string
+  deadlineDay: string | null
+  nagCount: number
+  status: 'OPEN' | 'DONE'
+  lastNagAt: number | null
+  doneAt: number | null
+  created: number
+}
+
+export interface CouplePraiseBankVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  content: string
+  scene: string | null
+  created: number
+}
+
+export interface CoupleMorningVO {
+  greeting: string
+  luckyThing: string
+  luckyColor: string
+}
+
+export interface CoupleYearKeywordVO {
+  year: string
+  keyword: string
+  habitDays: number
+  thanksCount: number
+  feelCount: number
+  summary: string
+}
