@@ -3,11 +3,11 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi } from '@/api/couple'
+import { almanacApi, boardApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -544,6 +544,58 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F280-F289 我们百科 codexApi：默认全空但形状完整的 OverviewVO（tops 给齐八个类目行），用例内按需覆盖
+  const cxEmptyOverview = () => ({
+    day: '2026-10-02',
+    entries: [],
+    todayQuiz: null,
+    history: [],
+    tops: [
+      { category: 'FOOD', label: '爱吃 Top10' },
+      { category: 'MOVIE', label: '爱看影片 Top10' },
+      { category: 'SONG', label: '循环歌单 Top10' },
+      { category: 'COLOR', label: '心动颜色 Top10' },
+      { category: 'PLACE_EAT', label: '想约的店 Top10' },
+      { category: 'SHOW', label: '爱看的剧 Top10' },
+      { category: 'SEAT', label: '家里最爱待的角落 Top10' },
+      { category: 'SNACK', label: '冰箱常客 Top10' },
+    ].map((c) => ({ ...c, mine: [], partner: [], myGuess: [], revealed: false, rematch: [] })),
+    stories: [],
+    exams: [],
+    places: [],
+    firstLook: { mine: '', partner: '', revealed: false, waiting: false },
+    habits: [],
+    tastes: [],
+    type: null,
+    entryCount: 0,
+  })
+  const codexBase: Record<string, ReturnType<typeof vi.fn>> = {
+    cxOverview: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxEntrySave: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxEntryRemove: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxQuizStart: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxQuizAnswer: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxTopList: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxTopGuess: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxStory: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxExamAsk: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxExamTry: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxPlace: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxFirstLook: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxHabitAdd: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxHabitVerdict: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxTaste: vi.fn().mockResolvedValue(cxEmptyOverview()),
+    cxType: vi.fn().mockResolvedValue(cxEmptyOverview()),
+  }
+  const codexWrapped = new Proxy(codexBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(cxEmptyOverview())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -555,6 +607,7 @@ vi.mock('@/api/couple', () => {
     almanacApi: almanacWrapped,
     listenApi: listenWrapped,
     factoryApi: factoryWrapped,
+    codexApi: codexWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -2851,6 +2904,338 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.find('[data-testid="couple-fy-check-mine"]').text()).toContain('6/6 项')
     expect(wrapper.find('[data-testid="couple-fy-check-both"]').text()).toContain('双签齐了')
     expect(wrapper.find('[data-testid="couple-fy-check-miss-0"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  // ============ 批次二十四：我们百科（F280-F289，timeline 页签「⏳ 时光流」子页签 CoupleCodex） ============
+
+  /** 八个榜单类目键与展示名（与后端 CoupleCodexBank.TOP_CATEGORIES/TOP_LABELS 对齐） */
+  const CX_TOP_CATEGORIES: Array<[string, string]> = [
+    ['FOOD', '爱吃 Top10'],
+    ['MOVIE', '爱看影片 Top10'],
+    ['SONG', '循环歌单 Top10'],
+    ['COLOR', '心动颜色 Top10'],
+    ['PLACE_EAT', '想约的店 Top10'],
+    ['SHOW', '爱看的剧 Top10'],
+    ['SEAT', '家里最爱待的角落 Top10'],
+    ['SNACK', '冰箱常客 Top10'],
+  ]
+
+  /** 类目行空态（后端 overview 恒定下发八行，用例按类目键覆盖） */
+  function cxTopVo(category: string, label: string, partial: Partial<CoupleCxTopBoardVO> = {}): CoupleCxTopBoardVO {
+    return { category, label, mine: [], partner: [], myGuess: [], revealed: false, rematch: [], ...partial }
+  }
+
+  function cxTopsVo(partial: Record<string, Partial<CoupleCxTopBoardVO>> = {}): CoupleCxTopBoardVO[] {
+    return CX_TOP_CATEGORIES.map(([category, label]) => cxTopVo(category, label, partial[category] ?? {}))
+  }
+
+  /** 百科总览空态基底（用例内按分区覆盖） */
+  function cxOverviewVo(partial: Partial<CoupleCxOverviewVO> = {}): CoupleCxOverviewVO {
+    return {
+      day: '2026-10-02',
+      entries: [],
+      todayQuiz: null,
+      history: [],
+      tops: cxTopsVo(),
+      stories: [],
+      exams: [],
+      places: [],
+      firstLook: { mine: '', partner: '', revealed: false, waiting: false },
+      habits: [],
+      tastes: [],
+      type: null,
+      entryCount: 0,
+      ...partial,
+    }
+  }
+
+  afterEach(() => {
+    // 百科折叠态落库键清理，避免污染后续用例
+    localStorage.removeItem('arechat_couple_collapse_couple-cx-quiz')
+    localStorage.removeItem('arechat_couple_collapse_couple-cx-top')
+  })
+
+  it('我们百科：新建词条提交调 cxEntrySave 并回填书架，TA 首建的词条不给删除钮', async () => {
+    const myEntry = {
+      id: 'ce1', term: '二次晚安', definition: '说了晚安之后还要补的那一句',
+      origin: '2025 年那趟夜班', usageNote: '今天累坏了，要二次晚安', mine: true, updatedBy: '',
+    }
+    const taEntry = {
+      id: 'ce2', term: '小猪开关', definition: '一按就犯困的那个开关',
+      origin: '', usageNote: '', mine: false, updatedBy: 'alice',
+    }
+    vi.mocked(codexApi.cxOverview).mockResolvedValue(cxOverviewVo())
+    vi.mocked(codexApi.cxEntrySave).mockResolvedValue(cxOverviewVo({ entries: [myEntry, taEntry], entryCount: 2 }))
+    const wrapper = await mountOnTimeline()
+    expect(wrapper.find('[data-testid="couple-cx-entry-count"]').text()).toContain('0 条词条')
+    await wrapper.find('[data-testid="couple-cx-entry-term"]').setValue('二次晚安')
+    await wrapper.find('[data-testid="couple-cx-entry-definition"]').setValue('说了晚安之后还要补的那一句')
+    await wrapper.find('[data-testid="couple-cx-entry-origin"]').setValue('2025 年那趟夜班')
+    await wrapper.find('[data-testid="couple-cx-entry-usage"]').setValue('今天累坏了，要二次晚安')
+    await wrapper.find('[data-testid="couple-cx-entry-submit"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxEntrySave).toHaveBeenCalledWith('二次晚安', '说了晚安之后还要补的那一句', '2025 年那趟夜班', '今天累坏了，要二次晚安')
+    // 整份替换后书架回填
+    expect(wrapper.find('[data-testid="couple-cx-entry-count"]').text()).toContain('2 条词条')
+    expect(wrapper.find('[data-testid="couple-cx-entry-term-text-ce1"]').text()).toContain('二次晚安')
+    expect(wrapper.find('[data-testid="couple-cx-entry-def-ce1"]').text()).toContain('还要补的那一句')
+    expect(wrapper.find('[data-testid="couple-cx-entry-origin-ce1"]').text()).toContain('2025 年那趟夜班')
+    expect(wrapper.find('[data-testid="couple-cx-entry-usage-ce1"]').text()).toContain('累坏了')
+    // 首建人能撤；TA 首建的没有删除钮，只给锁与修订人
+    expect(wrapper.find('[data-testid="couple-cx-entry-del-ce1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-cx-entry-del-ce2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-cx-entry-lock-ce2"]').text()).toContain('让 TA 自己撤')
+    expect(wrapper.find('[data-testid="couple-cx-entry-by-ce2"]').text()).toContain('alice 修订过')
+    // 修订表单把原内容灌回去（同名保存即改写）
+    await wrapper.find('[data-testid="couple-cx-entry-edit-ce2"]').trigger('click')
+    expect(wrapper.find('[data-testid="couple-cx-entry-editing"]').text()).toContain('小猪开关')
+    expect((wrapper.find('[data-testid="couple-cx-entry-term"]').element as HTMLInputElement).value).toBe('小猪开关')
+    expect(wrapper.find('[data-testid="couple-cx-entry-submit"]').text()).toContain('修订这条词条')
+    wrapper.unmount()
+  })
+
+  it('我们百科：词条不足 5 条不许开场，攒够后开一期出五题，交卷调 cxQuizAnswer 整卡刷新出默契分与历届', async () => {
+    const terms = ['二次晚安', '小猪开关', '顺路', '老地方', '五分钟']
+    const opened = { day: '2026-10-02', terms, myAnswer: '', partnerAnswer: '补那句晚安,一按就犯困,绕路也要一起走,老地方那家店,再等五分钟', bothIn: false, match: null, comment: '' }
+    const settled = {
+      ...opened,
+      myAnswer: '补那句晚安,一按就犯困,绕路也要一起走,老地方那家店,再等五分钟',
+      partnerAnswer: '补那句晚安,一按就犯困,不顺路也行,老地方那家店,再等五分钟',
+      bothIn: true, match: 4, comment: '差一点点，但差的那点也很可爱。',
+    }
+    const histRow = {
+      day: '2026-10-01', terms, myAnswer: 'a,b,c,d,e', partnerAnswer: 'a,b,c,d,e',
+      bothIn: true, match: 5, comment: '同刻命中！',
+    }
+    const fiveEntries = terms.map((term, i) => ({
+      id: `ce${i + 1}`, term, definition: `${term} 的释义`, origin: '', usageNote: '', mine: i % 2 === 0, updatedBy: '',
+    }))
+    vi.mocked(codexApi.cxOverview).mockResolvedValue(cxOverviewVo({ entryCount: 2 }))
+    vi.mocked(codexApi.cxEntrySave).mockResolvedValue(cxOverviewVo({ entries: fiveEntries, entryCount: 5 }))
+    vi.mocked(codexApi.cxQuizStart).mockResolvedValue(cxOverviewVo({ entries: fiveEntries, entryCount: 5, todayQuiz: opened }))
+    vi.mocked(codexApi.cxQuizAnswer).mockResolvedValue(cxOverviewVo({ entries: fiveEntries, entryCount: 5, todayQuiz: settled, history: [histRow] }))
+    const wrapper = await mountOnTimeline()
+    // 词条不够：开场钮禁用并提示先去攒词
+    expect(wrapper.find('[data-testid="couple-cx-quiz-start"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="couple-cx-quiz-need"]').text()).toContain('还不到 5 条')
+    // 走词条表单攒到 5 条（整份刷新后按钮解锁）
+    await wrapper.find('[data-testid="couple-cx-entry-term"]').setValue('顺路')
+    await wrapper.find('[data-testid="couple-cx-entry-definition"]').setValue('其实是专门绕的路')
+    await wrapper.find('[data-testid="couple-cx-entry-submit"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-cx-quiz-start"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[data-testid="couple-cx-quiz-need"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="couple-cx-quiz-start"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxQuizStart).toHaveBeenCalled()
+    // 开场后五题逐条作答
+    expect(wrapper.find('[data-testid="couple-cx-quiz-term-0"]').text()).toContain('二次晚安')
+    for (let i = 0; i < 5; i++) {
+      expect(wrapper.find(`[data-testid="couple-cx-quiz-answer-${i}"]`).exists()).toBe(true)
+    }
+    expect(wrapper.find('[data-testid="couple-cx-quiz-partner-in"]').text()).toContain('TA 已交卷')
+    const answers = ['补那句晚安', '一按就犯困', '绕路也要一起走', '老地方那家店', '再等五分钟']
+    for (let i = 0; i < 5; i++) {
+      await wrapper.find(`[data-testid="couple-cx-quiz-answer-${i}"]`).setValue(answers[i])
+    }
+    await wrapper.find('[data-testid="couple-cx-quiz-submit"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxQuizAnswer).toHaveBeenCalledWith('补那句晚安,一按就犯困,绕路也要一起走,老地方那家店,再等五分钟')
+    // 双交后：分数徽标 + 评语 + 逐条对照，输入框收起
+    expect(wrapper.find('[data-testid="couple-cx-quiz-answer-0"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-cx-quiz-match"]').text()).toContain('4/5')
+    expect(wrapper.find('[data-testid="couple-cx-quiz-comment"]').text()).toContain('差的那点也很可爱')
+    expect(wrapper.find('[data-testid="couple-cx-quiz-mine-2"]').text()).toContain('绕路也要一起走')
+    expect(wrapper.find('[data-testid="couple-cx-quiz-partner-2"]').text()).toContain('不顺路也行')
+    expect(wrapper.find('[data-testid="couple-cx-quiz-hit-2"]').text()).toContain('擦肩')
+    expect(wrapper.find('[data-testid="couple-cx-quiz-hit-0"]').text()).toContain('同答')
+    // 历届列表
+    expect(wrapper.find('[data-testid="couple-cx-quiz-hist-0"]').text()).toContain('2026-10-01')
+    expect(wrapper.find('[data-testid="couple-cx-quiz-hist-score-0"]').text()).toContain('5/5')
+    wrapper.unmount()
+  })
+
+  it('我们百科：八个类目行齐，我的榜提交调 cxTopList，猜榜调 cxTopGuess，揭榜后才显示 TA 的榜与重新认识清单', async () => {
+    const foodRevealed = {
+      mine: ['毛肚', '番茄鸡蛋'],
+      partner: ['毛肚', '奶茶', '小龙虾'],
+      myGuess: ['毛肚', '番茄鸡蛋'],
+      revealed: true,
+      rematch: ['爱吃 Top10：「奶茶」——原来 TA 现在喜欢这个', '爱吃 Top10：「小龙虾」——原来 TA 现在喜欢这个'],
+    }
+    const movieSaved = { mine: ['名字游戏', '爱在黎明破晓前'] }
+    vi.mocked(codexApi.cxOverview).mockResolvedValue(cxOverviewVo({ tops: cxTopsVo({ FOOD: foodRevealed }) }))
+    vi.mocked(codexApi.cxTopList).mockResolvedValue(cxOverviewVo({ tops: cxTopsVo({ FOOD: foodRevealed, MOVIE: movieSaved }) }))
+    vi.mocked(codexApi.cxTopGuess).mockResolvedValue(cxOverviewVo({
+      tops: cxTopsVo({ FOOD: { ...foodRevealed, myGuess: ['毛肚', '奶茶'] } }),
+    }))
+    const wrapper = await mountOnTimeline()
+    expect(wrapper.findAll('[data-testid^="couple-cx-top-row-"]')).toHaveLength(8)
+    expect(wrapper.find('[data-testid="couple-cx-top-label-SNACK"]').text()).toContain('冰箱常客')
+    expect(wrapper.find('[data-testid="couple-cx-top-mine-list-MOVIE"]').text()).toContain('还没上榜')
+    // 揭榜行：TA 的榜 + 重新认识清单逐条
+    expect(wrapper.find('[data-testid="couple-cx-top-revealed-FOOD"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-cx-top-wait-MOVIE"]').text()).toContain('才揭')
+    expect(wrapper.find('[data-testid="couple-cx-top-partner-FOOD"]').text()).toContain('小龙虾')
+    expect(wrapper.find('[data-testid="couple-cx-top-partner-MOVIE"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-cx-top-rematch-FOOD"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-cx-top-rematch-FOOD-0"]').text()).toContain('原来 TA 现在喜欢这个')
+    expect(wrapper.find('[data-testid="couple-cx-top-rematch-FOOD-1"]').text()).toContain('小龙虾')
+    expect(wrapper.find('[data-testid="couple-cx-top-rematch-MOVIE"]').exists()).toBe(false)
+    // 我的榜（逗号分隔 textarea）提交 → 整份替换回填
+    await wrapper.find('[data-testid="couple-cx-top-mine-MOVIE"]').setValue('名字游戏，爱在黎明破晓前')
+    await wrapper.find('[data-testid="couple-cx-top-mine-btn-MOVIE"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxTopList).toHaveBeenCalledWith('MOVIE', '名字游戏，爱在黎明破晓前')
+    expect(wrapper.find('[data-testid="couple-cx-top-mine-list-MOVIE"]').text()).toContain('名字游戏')
+    // 猜 TA 的榜
+    await wrapper.find('[data-testid="couple-cx-top-guess-FOOD"]').setValue('毛肚，奶茶')
+    await wrapper.find('[data-testid="couple-cx-top-guess-btn-FOOD"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxTopGuess).toHaveBeenCalledWith('FOOD', '毛肚，奶茶')
+    expect(wrapper.find('[data-testid="couple-cx-top-guess-list-FOOD"]').text()).toContain('毛肚')
+    wrapper.unmount()
+  })
+
+  it('我们百科：TA 记我的习惯出「确实/冤枉」两按钮并调 cxHabitVerdict，我记的那条不给判案钮', async () => {
+    const aboutMe = { id: 'ch1', habit: '进门先把鞋摆齐', tag: '可爱', observerUser: 'bob', mine: false, verdict: '' }
+    const aboutTa = { id: 'ch2', habit: '睡觉要打呼', tag: '', observerUser: 'alice', mine: true, verdict: '' }
+    vi.mocked(codexApi.cxOverview).mockResolvedValue(cxOverviewVo({ habits: [aboutMe, aboutTa] }))
+    vi.mocked(codexApi.cxHabitVerdict).mockResolvedValue(cxOverviewVo({ habits: [{ ...aboutMe, verdict: 'REAL' }, aboutTa] }))
+    vi.mocked(codexApi.cxHabitAdd).mockResolvedValue(cxOverviewVo({ habits: [{ ...aboutMe, verdict: 'REAL' }, aboutTa, { id: 'ch3', habit: '喝水要用两只手捧着', tag: '萌', observerUser: 'alice', mine: true, verdict: '' }] }))
+    const wrapper = await mountOnTimeline()
+    // 判案按钮只在「TA 记我」那几条
+    expect(wrapper.find('[data-testid="couple-cx-habit-real-ch1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-cx-habit-wrong-ch1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-cx-habit-real-ch2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-cx-habit-wrong-ch2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-cx-habit-verdict-ch1"]').text()).toContain('等你判案')
+    expect(wrapper.find('[data-testid="couple-cx-habit-wait-ch2"]').text()).toContain('等 TA 亲自判')
+    expect(wrapper.find('[data-testid="couple-cx-habit-tag-ch1"]').text()).toContain('可爱')
+
+    await wrapper.find('[data-testid="couple-cx-habit-real-ch1"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxHabitVerdict).toHaveBeenCalledWith('ch1', 'REAL')
+    expect(wrapper.find('[data-testid="couple-cx-habit-verdict-ch1"]').text()).toContain('确实')
+    expect(wrapper.find('[data-testid="couple-cx-habit-real-ch1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-cx-habit-ch1"]').classes()).toContain('is-real')
+    // 记一条 TA 的新习惯
+    await wrapper.find('[data-testid="couple-cx-habit-input"]').setValue('喝水要用两只手捧着')
+    await wrapper.find('[data-testid="couple-cx-habit-tag"]').setValue('萌')
+    await wrapper.find('[data-testid="couple-cx-habit-submit"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxHabitAdd).toHaveBeenCalledWith('喝水要用两只手捧着', '萌')
+    expect(wrapper.find('[data-testid="couple-cx-habit-text-ch3"]').text()).toContain('两只手')
+    wrapper.unmount()
+  })
+
+  it('我们百科：人格八题全选后提交调 cxType，类型码/差异解读/年份按后端渲染', async () => {
+    vi.mocked(codexApi.cxOverview).mockResolvedValue(cxOverviewVo())
+    vi.mocked(codexApi.cxType).mockResolvedValue(cxOverviewVo({
+      type: {
+        year: '2026', myKey: 'INFP', partnerKey: 'ISFJ',
+        diffLine: '四维里 3/4 轴相同：一个负责冲，一个负责稳，刚好互补', answers: '2,2,2,2,2,2,2,2',
+      },
+    }))
+    const wrapper = await mountOnTimeline()
+    expect(wrapper.find('[data-testid="couple-cx-type-none"]').text()).toContain('还没报过人格')
+    expect(wrapper.find('[data-testid="couple-cx-type-q-4"]').text()).toContain('能量恢复靠')
+    // 八题全选第二列（el-radio 走原生 input 的 change 才写回 v-model）
+    for (let i = 0; i < 8; i++) {
+      await wrapper.find(`[data-testid="couple-cx-type-opt-${i}-2"]`).find('input').setValue(true)
+    }
+    expect(wrapper.find('[data-testid="couple-cx-type-missing"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="couple-cx-type-submit"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxType).toHaveBeenCalledWith('2,2,2,2,2,2,2,2')
+    expect(wrapper.find('[data-testid="couple-cx-type-none"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-cx-type-year"]').text()).toContain('2026')
+    expect(wrapper.find('[data-testid="couple-cx-type-mine"]').text()).toContain('INFP')
+    expect(wrapper.find('[data-testid="couple-cx-type-partner"]').text()).toContain('ISFJ')
+    expect(wrapper.find('[data-testid="couple-cx-type-diff"]').text()).toContain('3/4 轴相同')
+    wrapper.unmount()
+  })
+
+  it('我们百科：第一眼盲交卷调 cxFirstLook，外号小传/足迹/口味/出题考据各调对应写接口', async () => {
+    const storyRow = { id: 'cs1', nickname: '小猪', givenBy: '我妈', occasion: '第一次来家里吃饭', story: '指着盘子说这孩子属猪的', firstUsedDay: '2024-10-01', mine: true }
+    const placeRow = { id: 'cp1', name: '看海的那段堤', year: '2025', happened: '风很大但很暖', rating: 5, mine: true }
+    const tasteRow = { id: 'ct1', thing: '香菜', beforeText: '碰都不碰', nowText: '真香', shiftedDay: '2026-08-08', mine: false }
+    const examToMe = { id: 'cx1', question: '我第一句跟你说了什么', quizzedUser: 'alice', mine: false, toMe: true, verdict: '', lastTryDay: '' }
+    vi.mocked(codexApi.cxOverview).mockResolvedValue(cxOverviewVo({ exams: [examToMe] }))
+    vi.mocked(codexApi.cxFirstLook).mockResolvedValue(cxOverviewVo({
+      firstLook: { mine: '你把伞倒着拿那天', partner: '', revealed: false, waiting: true },
+      exams: [examToMe],
+    }))
+    vi.mocked(codexApi.cxStory).mockResolvedValue(cxOverviewVo({ stories: [storyRow], exams: [examToMe] }))
+    vi.mocked(codexApi.cxPlace).mockResolvedValue(cxOverviewVo({ stories: [storyRow], places: [placeRow], exams: [examToMe] }))
+    vi.mocked(codexApi.cxTaste).mockResolvedValue(cxOverviewVo({ stories: [storyRow], places: [placeRow], tastes: [tasteRow], exams: [examToMe] }))
+    vi.mocked(codexApi.cxExamAsk).mockResolvedValue(cxOverviewVo({
+      stories: [storyRow], places: [placeRow], tastes: [tasteRow],
+      exams: [examToMe, { id: 'cx2', question: '我们的歌是哪首', quizzedUser: 'bob', mine: true, toMe: false, verdict: '', lastTryDay: '' }],
+    }))
+    vi.mocked(codexApi.cxExamTry).mockResolvedValue(cxOverviewVo({
+      stories: [storyRow], places: [placeRow], tastes: [tasteRow],
+      exams: [{ ...examToMe, verdict: 'RIGHT', lastTryDay: '2026-10-02' }, { id: 'cx2', question: '我们的歌是哪首', quizzedUser: 'bob', mine: true, toMe: false, verdict: '', lastTryDay: '' }],
+    }))
+    const wrapper = await mountOnTimeline()
+    // 第一眼：未交卷时没有双方版本，交一份后进入等待态
+    expect(wrapper.find('[data-testid="couple-cx-first-mine"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-cx-first-tries"]').text()).toContain('0/3')
+    await wrapper.find('[data-testid="couple-cx-first-moment"]').setValue('你把伞倒着拿那天')
+    await wrapper.find('[data-testid="couple-cx-first-submit"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxFirstLook).toHaveBeenCalledWith('你把伞倒着拿那天')
+    expect(wrapper.find('[data-testid="couple-cx-first-mine"]').text()).toContain('你把伞倒着拿那天')
+    expect(wrapper.find('[data-testid="couple-cx-first-tries"]').text()).toContain('1/3')
+    expect(wrapper.find('[data-testid="couple-cx-first-wait"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-cx-first-partner"]').exists()).toBe(false)
+
+    // 外号小传
+    await wrapper.find('[data-testid="couple-cx-story-nick"]').setValue('小猪')
+    await wrapper.find('[data-testid="couple-cx-story-given"]').setValue('我妈')
+    await wrapper.find('[data-testid="couple-cx-story-text"]').setValue('指着盘子说这孩子属猪的')
+    await wrapper.find('[data-testid="couple-cx-story-submit"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxStory).toHaveBeenCalledWith('小猪', '我妈', '', '指着盘子说这孩子属猪的', '')
+    expect(wrapper.find('[data-testid="couple-cx-story-nick-text-cs1"]').text()).toContain('小猪')
+    expect(wrapper.find('[data-testid="couple-cx-story-meta-cs1"]').text()).toContain('我妈')
+    expect(wrapper.find('[data-testid="couple-cx-story-first-cs1"]').text()).toContain('2024-10-01')
+    // 足迹（年份分组成年表）
+    await wrapper.find('[data-testid="couple-cx-place-name"]').setValue('看海的那段堤')
+    await wrapper.find('[data-testid="couple-cx-place-year"]').setValue('2025')
+    await wrapper.find('[data-testid="couple-cx-place-happened"]').setValue('风很大但很暖')
+    await wrapper.find('[data-testid="couple-cx-place-submit"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxPlace).toHaveBeenCalledWith('看海的那段堤', '2025', '风很大但很暖', 5)
+    expect(wrapper.find('[data-testid="couple-cx-place-group-2025"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-cx-place-yearhead-2025"]').text()).toContain('2025 年 · 1 处')
+    expect(wrapper.find('[data-testid="couple-cx-place-stars-cp1"]').text()).toContain('★★★★★')
+    expect(wrapper.find('[data-testid="couple-cx-place-happened-cp1"]').text()).toContain('风很大')
+    // 口味变迁
+    await wrapper.find('[data-testid="couple-cx-taste-thing"]').setValue('香菜')
+    await wrapper.find('[data-testid="couple-cx-taste-before"]').setValue('碰都不碰')
+    await wrapper.find('[data-testid="couple-cx-taste-now"]').setValue('真香')
+    await wrapper.find('[data-testid="couple-cx-taste-submit"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxTaste).toHaveBeenCalledWith('香菜', '碰都不碰', '真香', '')
+    expect(wrapper.find('[data-testid="couple-cx-taste-thing-ct1"]').text()).toContain('香菜')
+    expect(wrapper.find('[data-testid="couple-cx-taste-day-ct1"]').text()).toContain('2026-08-08')
+    // 出题考 TA + 被考的那位作答
+    await wrapper.find('[data-testid="couple-cx-exam-question"]').setValue('我们的歌是哪首')
+    await wrapper.find('[data-testid="couple-cx-exam-key"]').setValue('《慢慢喜欢你》')
+    await wrapper.find('[data-testid="couple-cx-exam-submit"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxExamAsk).toHaveBeenCalledWith('我们的歌是哪首', '《慢慢喜欢你》')
+    expect(wrapper.find('[data-testid="couple-cx-exam-who-cx2"]').text()).toContain('我出的题')
+    expect(wrapper.find(`[data-testid="couple-cx-exam-answer-cx2"]`).exists()).toBe(false)
+    await wrapper.find('[data-testid="couple-cx-exam-answer-cx1"]').setValue('慢慢喜欢你')
+    await wrapper.find('[data-testid="couple-cx-exam-try-cx1"]').trigger('click')
+    await flushPromises()
+    expect(codexApi.cxExamTry).toHaveBeenCalledWith('cx1', '慢慢喜欢你')
+    expect(wrapper.find('[data-testid="couple-cx-exam-verdict-cx1"]').text()).toContain('答对了')
+    expect(wrapper.find('[data-testid="couple-cx-exam-answer-cx1"]').exists()).toBe(false)
     wrapper.unmount()
   })
 
