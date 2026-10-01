@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { ElNotification } from 'element-plus'
-import { coupleApi } from '@/api/couple'
+import { coupleApi, museumApi } from '@/api/couple'
 import type {
   CoupleActionVO,
   CoupleAnniversaryVO,
@@ -434,6 +434,9 @@ export const useCoupleStore = defineStore('couple', () => {
     loading = true
     try {
       await loadOverview()
+      if (space.value) {
+        void refreshDnd()
+      }
     } catch {
       // 静默：未登录/网络异常不阻塞布局
     } finally {
@@ -2169,7 +2172,36 @@ export const useCoupleStore = defineStore('couple', () => {
 
   // ---------- WS 推送消费 ----------
 
+  // ---------- F197 免打扰时段：静音窗口内不弹窗，消息照常留在原处 ----------
+
+  const myDnd = ref<{ startTime: string; endTime: string; enabled: boolean } | null>(null)
+
+  async function refreshDnd() {
+    try {
+      const list = await museumApi.getDnd()
+      const mine = list?.find((d) => d.mine)
+      myDnd.value = mine ? { startTime: mine.startTime, endTime: mine.endTime, enabled: mine.enabled } : null
+    } catch {
+      // 静默：未建空间/网络异常不影响提醒链路
+    }
+  }
+
+  function inQuietHours(): boolean {
+    const d = myDnd.value
+    if (!d?.enabled) {
+      return false
+    }
+    const now = new Date()
+    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    return d.startTime <= d.endTime
+      ? hhmm >= d.startTime && hhmm < d.endTime
+      : hhmm >= d.startTime || hhmm < d.endTime
+  }
+
   function notify(title: string, message: string) {
+    if (inQuietHours()) {
+      return
+    }
     ElNotification({ title, message, duration: 8000, position: 'top-right' })
   }
 
@@ -3445,5 +3477,7 @@ export const useCoupleStore = defineStore('couple', () => {
     addSignal,
     tap,
     markHeartDay,
+    myDnd,
+    refreshDnd,
   }
 })
