@@ -104,6 +104,15 @@ import type {
   CoupleApologyVO,
   CoupleFeelingVO,
   CoupleRadioVO,
+  CoupleHandholdVO,
+  CoupleMissDailyVO,
+  CoupleRoutineVO,
+  CoupleReunionLetterVO,
+  CoupleCloudDateVO,
+  CoupleSafetyVO,
+  CoupleReunionLogVO,
+  CoupleEnergyVO,
+  CoupleDistanceReportVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -670,4 +679,50 @@ export const coupleApi = {
     http.postJson<CoupleFeelingVO[]>('/api/couple/comm/feelings', { word, note: note ?? null }),
   /** F109 晚安电台 */
   goodnightRadio: () => http.get<CoupleRadioVO>('/api/couple/comm/goodnight-radio'),
+
+  // ============ 异地恋·时空同步（F110-F119） ============
+  /** F110 隔空牵手看板 */
+  handhold: () => http.get<CoupleHandholdVO>('/api/couple/distance/handhold'),
+  /** F110 点亮今天的手 */
+  holdHand: () => http.postJson<CoupleHandholdVO>('/api/couple/distance/handhold', {}),
+  /** F112 想念计量所看板 */
+  miss: () => http.get<CoupleMissDailyVO>('/api/couple/distance/miss'),
+  /** F112 点亮「今天想你了」 */
+  lightMiss: () => http.postJson<CoupleMissDailyVO>('/api/couple/distance/miss', {}),
+  /** F114 作息表（含重叠时段） */
+  routine: () => http.get<CoupleRoutineVO>('/api/couple/distance/routine'),
+  /** F114 保存我的作息 */
+  saveRoutine: (wakeTime: string, workStart: string, workEnd: string, sleepTime: string) =>
+    http.postJson<CoupleRoutineVO>('/api/couple/distance/routine',
+      { wakeTime, workStart, workEnd, sleepTime }),
+  /** F115 见面信列表 */
+  reunionLetters: () => http.get<CoupleReunionLetterVO[]>('/api/couple/distance/letters'),
+  /** F115 写见面信 */
+  writeLetter: (content: string) =>
+    http.postJson<CoupleReunionLetterVO[]>('/api/couple/distance/letters', { content }),
+  /** F115 拆信（见面后） */
+  openReunionLetter: (id: string) =>
+    http.postJson<CoupleReunionLetterVO[]>(`/api/couple/distance/letters/${id}/open`, {}),
+  /** F116 云约会列表 */
+  cloudDates: () => http.get<CoupleCloudDateVO[]>('/api/couple/distance/cloud-dates'),
+  /** F116 加云约会（item 空则随机灵感） */
+  addCloudDate: (item?: string) =>
+    http.postJson<CoupleCloudDateVO[]>('/api/couple/distance/cloud-dates', { item: item ?? null }),
+  /** F116 完成云约会 */
+  doneCloudDate: (id: string, note?: string) =>
+    http.postJson<CoupleCloudDateVO[]>(`/api/couple/distance/cloud-dates/${id}/done`, { note: note ?? null }),
+  /** F117 平安卡列表 */
+  safeties: () => http.get<CoupleSafetyVO[]>('/api/couple/distance/safeties'),
+  /** F117 报平安（GO_OUT 出发 / ARRIVE 到家） */
+  pingSafety: (kind: string, note?: string) =>
+    http.postJson<CoupleSafetyVO[]>('/api/couple/distance/safeties', { kind, note: note ?? null }),
+  /** F118 见面日记 */
+  reunions: () => http.get<CoupleReunionLogVO[]>('/api/couple/distance/reunions'),
+  /** F118 记一笔见面 */
+  logReunion: (meetDay: string, note?: string) =>
+    http.postJson<CoupleReunionLogVO[]>('/api/couple/distance/reunions', { meetDay, note: note ?? null }),
+  /** F113 见面能量瓶 */
+  energy: () => http.get<CoupleEnergyVO>('/api/couple/distance/energy'),
+  /** F119 异地恋报告 */
+  distanceReport: () => http.get<CoupleDistanceReportVO>('/api/couple/distance/report'),
 }

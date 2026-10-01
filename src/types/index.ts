@@ -1612,3 +1612,89 @@ export interface CoupleRadioVO {
   line: string
   hasSong: boolean
 }
+
+// ============ 情侣空间·异地恋（F110-F119） ============
+
+export interface CoupleHandholdVO {
+  todayMine: boolean
+  todayPartner: boolean
+  todayBoth: boolean
+  totalDays: number
+  milestone: string | null
+  recent: { id: string; day: string; holdA: number; holdB: number }[]
+}
+
+export interface CoupleMissDailyVO {
+  todayMine: boolean
+  todayPartner: boolean
+  todayBoth: boolean
+  bothTimes: number
+  milestone: string | null
+  recent: { id: string; day: string; missA: number; missB: number; bothAt: number | null }[]
+}
+
+export interface CoupleRoutineOverlapVO {
+  start: string
+  end: string
+}
+
+export interface CoupleRoutineVO {
+  mine: { wakeTime: string; workStart: string; workEnd: string; sleepTime: string } | null
+  partner: { wakeTime: string; workStart: string; workEnd: string; sleepTime: string } | null
+  overlaps: CoupleRoutineOverlapVO[]
+}
+
+export interface CoupleReunionLetterVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  status: 'SEELED' | 'OPENED'
+  content: string | null
+  openedAt: number | null
+  canOpen: boolean
+  created: number
+}
+
+export interface CoupleCloudDateVO {
+  id: string
+  fromUser: string
+  item: string
+  status: 'OPEN' | 'DONE'
+  doneNote: string | null
+  doneAt: number | null
+  created: number
+}
+
+export interface CoupleSafetyVO {
+  id: string
+  fromUser: string
+  kind: 'GO_OUT' | 'ARRIVE'
+  note: string | null
+  created: number
+}
+
+export interface CoupleReunionLogVO {
+  id: string
+  meetDay: string
+  note: string | null
+  byUser: string
+  intervalDays: number | null
+  created: number
+}
+
+export interface CoupleEnergyVO {
+  daysSince: number | null
+  energy: number
+  line: string
+}
+
+export interface CoupleDistanceReportVO {
+  totalDays: number
+  meetCount: number
+  avgIntervalDays: number | null
+  missBothDays: number
+  handholdDays: number
+  cloudDoneCount: number
+  sealedLetters: number
+  summary: string
+}

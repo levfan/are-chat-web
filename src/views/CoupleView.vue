@@ -189,6 +189,7 @@
           <el-tab-pane label="🗓️ 共享空间" name="shared" lazy>
             <div class="tab-stack">
               <CoupleCityCard />
+              <CoupleDistance />
               <CoupleCountdown />
               <CoupleLife />
               <CoupleShared />
@@ -340,6 +341,7 @@ import CoupleReadWatch from '@/components/couple/CoupleReadWatch.vue'
 import CoupleWishBoard from '@/components/couple/CoupleWishBoard.vue'
 import CoupleDict from '@/components/couple/CoupleDict.vue'
 import CoupleSoft from '@/components/couple/CoupleSoft.vue'
+import CoupleDistance from '@/components/couple/CoupleDistance.vue'
 import CoupleMoodRelay from '@/components/couple/CoupleMoodRelay.vue'
 import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
 

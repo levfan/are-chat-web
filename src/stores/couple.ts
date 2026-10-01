@@ -96,6 +96,15 @@ import type {
   CoupleApologyVO,
   CoupleFeelingVO,
   CoupleRadioVO,
+  CoupleHandholdVO,
+  CoupleMissDailyVO,
+  CoupleRoutineVO,
+  CoupleReunionLetterVO,
+  CoupleCloudDateVO,
+  CoupleSafetyVO,
+  CoupleReunionLogVO,
+  CoupleEnergyVO,
+  CoupleDistanceReportVO,
 } from '@/types'
 
 /** 全局监听只绑一次：处理时动态解析当前活跃 pinia 的 store（多实例/测试场景安全） */
@@ -229,6 +238,16 @@ export const useCoupleStore = defineStore('couple', () => {
   const apologies = ref<CoupleApologyVO[]>([])
   const feelings = ref<CoupleFeelingVO[]>([])
   const goodnightRadio = ref<CoupleRadioVO | null>(null)
+  // 异地恋（F110-F119）
+  const handhold = ref<CoupleHandholdVO | null>(null)
+  const missDaily = ref<CoupleMissDailyVO | null>(null)
+  const routine = ref<CoupleRoutineVO | null>(null)
+  const reunionLetters = ref<CoupleReunionLetterVO[]>([])
+  const cloudDates = ref<CoupleCloudDateVO[]>([])
+  const safeties = ref<CoupleSafetyVO[]>([])
+  const reunionLogs = ref<CoupleReunionLogVO[]>([])
+  const energy = ref<CoupleEnergyVO | null>(null)
+  const distanceReport = ref<CoupleDistanceReportVO | null>(null)
   /** 各分页数据是否已加载过：WS 事件只刷新已加载过的，避免无谓请求 */
   const loadedLists = ref({
     promises: false,
@@ -257,6 +276,7 @@ export const useCoupleStore = defineStore('couple', () => {
     chronicle: false,
     keepsake: false,
     comm: false,
+    distance: false,
   })
   /** 聊天「记入约定」带入的草稿：CoupleView 打开承诺弹窗后清空 */
   const promiseDraft = ref<{ content: string; side: 'me' | 'partner' } | null>(null)
@@ -390,6 +410,15 @@ export const useCoupleStore = defineStore('couple', () => {
     apologies.value = []
     feelings.value = []
     goodnightRadio.value = null
+    handhold.value = null
+    missDaily.value = null
+    routine.value = null
+    reunionLetters.value = []
+    cloudDates.value = []
+    safeties.value = []
+    reunionLogs.value = []
+    energy.value = null
+    distanceReport.value = null
     loadedLists.value = {
       promises: false,
       question: false,
@@ -417,6 +446,7 @@ export const useCoupleStore = defineStore('couple', () => {
       chronicle: false,
       keepsake: false,
       comm: false,
+      distance: false,
     }
     promiseDraft.value = null
   }
@@ -1477,6 +1507,70 @@ export const useCoupleStore = defineStore('couple', () => {
     return goodnightRadio.value
   }
 
+  // ---------- 异地恋（F110-F119） ----------
+
+  async function loadDistance() {
+    const [hh, ms, rt, lt, cd, sf, rl, en, rp] = await Promise.all([
+      coupleApi.handhold(),
+      coupleApi.miss(),
+      coupleApi.routine(),
+      coupleApi.reunionLetters(),
+      coupleApi.cloudDates(),
+      coupleApi.safeties(),
+      coupleApi.reunions(),
+      coupleApi.energy(),
+      coupleApi.distanceReport(),
+    ])
+    handhold.value = hh
+    missDaily.value = ms
+    routine.value = rt
+    reunionLetters.value = lt ?? []
+    cloudDates.value = cd ?? []
+    safeties.value = sf ?? []
+    reunionLogs.value = rl ?? []
+    energy.value = en
+    distanceReport.value = rp
+    loadedLists.value.distance = true
+  }
+
+  async function holdHand() {
+    handhold.value = await coupleApi.holdHand()
+  }
+
+  async function lightMiss() {
+    missDaily.value = await coupleApi.lightMiss()
+  }
+
+  async function saveRoutine(wakeTime: string, workStart: string, workEnd: string, sleepTime: string) {
+    routine.value = await coupleApi.saveRoutine(wakeTime, workStart, workEnd, sleepTime)
+  }
+
+  async function writeLetter(content: string) {
+    reunionLetters.value = (await coupleApi.writeLetter(content)) ?? []
+  }
+
+  async function openReunionLetter(id: string) {
+    reunionLetters.value = (await coupleApi.openReunionLetter(id)) ?? []
+  }
+
+  async function addCloudDate(item?: string) {
+    cloudDates.value = (await coupleApi.addCloudDate(item)) ?? []
+  }
+
+  async function doneCloudDate(id: string, note?: string) {
+    cloudDates.value = (await coupleApi.doneCloudDate(id, note)) ?? []
+  }
+
+  async function pingSafety(kind: string, note?: string) {
+    safeties.value = (await coupleApi.pingSafety(kind, note)) ?? []
+  }
+
+  async function logReunion(meetDay: string, note?: string) {
+    reunionLogs.value = (await coupleApi.logReunion(meetDay, note)) ?? []
+    energy.value = await coupleApi.energy()
+    distanceReport.value = await coupleApi.distanceReport()
+  }
+
   // ---------- WS 推送消费 ----------
 
   function notify(title: string, message: string) {
@@ -2020,6 +2114,52 @@ export const useCoupleStore = defineStore('couple', () => {
           void coupleApi.feelings().then((v) => (feelings.value = v ?? []))
         }
         break
+      case 'handhold-lit':
+      case 'handhold-both':
+        notify('🤝 隔空牵手', msg.detail)
+        if (loadedLists.value.distance) {
+          void coupleApi.handhold().then((v) => (handhold.value = v))
+        }
+        break
+      case 'miss-lit':
+      case 'miss-both':
+        notify('💞 想念计量所', msg.detail)
+        if (loadedLists.value.distance) {
+          void coupleApi.miss().then((v) => (missDaily.value = v))
+        }
+        break
+      case 'routine-updated':
+        notify('⏰ 作息表', msg.detail)
+        if (loadedLists.value.distance) {
+          void coupleApi.routine().then((v) => (routine.value = v))
+        }
+        break
+      case 'letter-sealed':
+      case 'letter-opened':
+        notify('✉️ 下次见面信', msg.detail)
+        if (loadedLists.value.distance) {
+          void coupleApi.reunionLetters().then((v) => (reunionLetters.value = v ?? []))
+        }
+        break
+      case 'cloud-added':
+      case 'cloud-done':
+        notify('☁️ 云约会清单', msg.detail)
+        if (loadedLists.value.distance) {
+          void coupleApi.cloudDates().then((v) => (cloudDates.value = v ?? []))
+        }
+        break
+      case 'safety-ping':
+        notify('🛡️ 平安卡', msg.detail)
+        if (loadedLists.value.distance) {
+          void coupleApi.safeties().then((v) => (safeties.value = v ?? []))
+        }
+        break
+      case 'reunion-logged':
+        notify('📅 见面日记', msg.detail)
+        if (loadedLists.value.distance) {
+          void loadDistance()
+        }
+        break
       case 'notify-ignored':
         // 占位事件：仅计入通知未读
         break
@@ -2295,6 +2435,15 @@ export const useCoupleStore = defineStore('couple', () => {
     apologies,
     feelings,
     goodnightRadio,
+    handhold,
+    missDaily,
+    routine,
+    reunionLetters,
+    cloudDates,
+    safeties,
+    reunionLogs,
+    energy,
+    distanceReport,
     loadComm,
     translateText,
     startCoolDown,
@@ -2313,5 +2462,15 @@ export const useCoupleStore = defineStore('couple', () => {
     acceptApology,
     saveFeeling,
     loadGoodnightRadio,
+    loadDistance,
+    holdHand,
+    lightMiss,
+    saveRoutine,
+    writeLetter,
+    openReunionLetter,
+    addCloudDate,
+    doneCloudDate,
+    pingSafety,
+    logReunion,
   }
 })
