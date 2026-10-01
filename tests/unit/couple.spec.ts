@@ -893,4 +893,29 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     expect(coupleApi.lightMiss).toHaveBeenCalledOnce()
   })
+
+  it('确定感：安全感账户展示余额并可存入安心话', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.security).mockResolvedValue({
+      balance: 2,
+      recent: [
+        { id: 'sc1', fromUser: 'bob', content: '有我在，别怕', status: 'DEPOSITED', mine: false, created: Date.now() },
+      ],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-promises').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-security-balance"]').text()).toContain('2')
+
+    await wrapper.find('[data-testid="couple-security-accept-sc1"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.acceptSecurity).toHaveBeenCalledWith('sc1')
+
+    await wrapper.find('[data-testid="couple-security-input"]').setValue('别担心，钱我来想办法')
+    await wrapper.find('[data-testid="couple-security-deposit"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.depositSecurity).toHaveBeenCalledWith('别担心，钱我来想办法')
+  })
 })
