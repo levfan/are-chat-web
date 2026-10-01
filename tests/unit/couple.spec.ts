@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
+import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
 import { boardApi, coupleApi, ceremonyApi, cozyApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
@@ -2000,5 +2001,65 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.find('[data-testid="couple-bd-attend-partner"]').text()).toContain('TA 还没来')
     expect(wrapper.find('[data-testid="couple-bd-attend-wait"]').text()).toContain('等你一起敲钟')
     expect(wrapper.find('[data-testid="couple-bd-attend-btn"]').text()).toContain('已签到')
+  })
+
+  // ============ F205 卡片折叠（CoupleCollapsible） ============
+
+  /** 折叠态 localStorage 键（与 CoupleCollapsible 内 STORAGE_KEY 对齐） */
+  const collapseKey = (testid: string) => `arechat_couple_collapse_${testid}`
+
+  describe('F205 卡片折叠', () => {
+    afterEach(() => {
+      localStorage.removeItem(collapseKey('demo-card'))
+      localStorage.removeItem(collapseKey('couple-bd-org'))
+    })
+
+    it('折叠卡：默认展开，点折叠钮收起并写入 localStorage，再点恢复展开', async () => {
+      const wrapper = mount(CoupleCollapsible, {
+        props: { testid: 'demo-card', empty: false },
+        slots: { title: '🌡️ 演示卡', default: '<p data-testid="demo-body">内容在</p>' },
+      })
+      expect(wrapper.find('[data-testid="demo-card"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="demo-body"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="couple-collapse-demo-card"]').text()).toBe('收起 ▴')
+
+      await wrapper.find('[data-testid="couple-collapse-demo-card"]').trigger('click')
+      expect(wrapper.find('[data-testid="demo-card"]').classes()).toContain('is-collapsed')
+      expect(wrapper.find('[data-testid="couple-collapse-demo-card"]').text()).toBe('展开 ▾')
+      expect(localStorage.getItem(collapseKey('demo-card'))).toBe('1')
+
+      await wrapper.find('[data-testid="couple-collapse-demo-card"]').trigger('click')
+      expect(wrapper.find('[data-testid="demo-card"]').classes()).not.toContain('is-collapsed')
+      expect(wrapper.find('[data-testid="couple-collapse-demo-card"]').text()).toBe('收起 ▴')
+    })
+
+    it('折叠卡：empty 为真时初始收起，empty 转 false 自动展开且不落 localStorage', async () => {
+      const wrapper = mount(CoupleCollapsible, {
+        props: { testid: 'demo-card', empty: true },
+        slots: { title: '🌡️ 演示卡', default: '<p>内容在</p>' },
+      })
+      expect(wrapper.find('[data-testid="demo-card"]').classes()).toContain('is-collapsed')
+
+      await wrapper.setProps({ empty: false })
+      expect(wrapper.find('[data-testid="demo-card"]').classes()).not.toContain('is-collapsed')
+      expect(localStorage.getItem(collapseKey('demo-card'))).toBeNull()
+    })
+
+    it('折叠卡集成：CoupleBoard 组织卡点收起后卸载重挂仍是折叠态（状态恢复）', async () => {
+      vi.mocked(boardApi.bdOverview).mockResolvedValue(bdOverview({
+        roles: [{ id: 'br1', fromUser: 'bob', toUser: 'alice', mine: false, title: '财政部长', appointed: true }],
+      }))
+      const wrapper = await mountOnSharedManage()
+      expect(wrapper.find('[data-testid=couple-bd-org]').classes()).not.toContain('is-collapsed')
+
+      await wrapper.find('[data-testid=couple-collapse-couple-bd-org]').trigger('click')
+      expect(wrapper.find('[data-testid=couple-bd-org]').classes()).toContain('is-collapsed')
+      wrapper.unmount()
+
+      const wrapper2 = await mountOnSharedManage()
+      expect(wrapper2.find('[data-testid=couple-bd-org]').classes()).toContain('is-collapsed')
+      localStorage.removeItem(collapseKey('couple-bd-org'))
+      wrapper2.unmount()
+    })
   })
 })
