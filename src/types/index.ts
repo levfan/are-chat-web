@@ -2429,3 +2429,103 @@ export interface CoupleManageWeeklyVO {
   host: CoupleManageHostVO | null
   summary: string
 }
+
+// ============ 情侣空间·时光博物馆（F190-F199） ============
+
+export interface CoupleMuseumDocSceneVO {
+  id: string
+  title: string
+  actOne: string
+  actTwo: string
+  actThree: string
+  fromUser: string
+  mine: boolean
+  created: number
+}
+
+export interface CoupleMuseumExhibitVO {
+  id: string
+  name: string
+  story: string
+  obtainedDay: string | null
+  fromUser: string
+  mine: boolean
+  created: number
+}
+
+export interface CoupleMuseumAchievementVO {
+  code: string
+  name: string
+  emoji: string
+  desc: string
+  unlocked: boolean
+  unlockedBy: string | null
+  unlockedAt: number | null
+}
+
+export interface CoupleMuseumYearCounterVO {
+  thanks: number
+  journal: number
+  flash: number
+}
+
+export interface CoupleMuseumMirrorVO {
+  lastYearDay: string
+  thisYearDay: string
+  lastYear: CoupleMuseumYearCounterVO
+  thisYear: CoupleMuseumYearCounterVO
+  summary: string
+}
+
+export interface CoupleMuseumSilverLineVO {
+  day: string
+  line: string
+}
+
+export interface CoupleMuseumWordVO {
+  word: string
+  count: number
+}
+
+export type CoupleMuseumRuleKind = 'RULE' | 'AMENDMENT'
+
+export interface CoupleMuseumRuleVO {
+  id: string
+  kind: CoupleMuseumRuleKind
+  refId: string | null
+  content: string
+  proposedBy: string
+  mine: boolean
+  signed: boolean
+  signedBy: string | null
+  created: number
+}
+
+export interface CoupleMuseumDndVO {
+  fromUser: string
+  mine: boolean
+  startTime: string
+  endTime: string
+  enabled: boolean
+  updatedAt: number | null
+}
+
+export interface CoupleMuseumChapterVO {
+  month: string
+  title: string
+  line: string
+}
+
+export interface CoupleMuseumBookVO {
+  year: string
+  chapters: CoupleMuseumChapterVO[]
+}
+
+/** F197 今日问候条（含静音时段标识） */
+export interface CoupleMuseumGreetingVO {
+  period?: string
+  icon: string
+  text: string
+  daysTogether?: number
+  quietNow: boolean
+}

@@ -1,6 +1,6 @@
 ---
 name: are-chat-web-map
-description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Plus）。凡在 are-chat-web 中开发新功能、修复缺陷、评审改动，开工前必须先加载本 skill——它提供目录地图、组件/页签映射、状态管理与 API 惯例、测试与构建命令，避免重新通读项目。完成功能后若新增组件/页签/接口，须同步更新本文件。
+description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Plus）。凡在 are-chat-web 中开发新功能、修复缺陷、评审改动，开工前必须先加载本 skill——它提供目录地图、组件/页签映射、状态管理与 API 惯例、测试与构建命令、开发规范硬性流程（第六节交付门禁，含版本号/发版规则）与产品红线。完成功能后若新增组件/页签/接口，须同步更新本文件。
 ---
 
 # are-chat-web 前端项目地图
@@ -43,7 +43,7 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 | care | CoupleCare + CoupleComfort + CoupleMakeup + CoupleSoft + CoupleSpark | 情绪天气/急救箱/和好卡/夸夸墙/生理期关怀 + 求抱抱(F60 感受按钮/话术卡回应)/陪聊话题卡(F63)/情绪同步率(F64) + 矛盾复盘(F61 和好锦囊)/道歉券(F62) + 默契亲密(F170-F179)：默契仪表盘/同频共振按键(10s 窗口)/爱语测评 12 题+对照卡/「如果」问答/心动闪光/动作暗语/心动日历邮戳/默契周报 |
 | shared | CoupleCityCard + CoupleDistance + CoupleCountdown + CoupleLife + CoupleShared + CoupleManage + CoupleDailyLife + CoupleFund | 异地恋(对方时区/见面倒数/隔空牵手/想念计量/作息/见面信/云约会/平安卡/见面日记/能量) + 倒数日/生活共享(记账/家务/约会/习惯/暗号)/共享清单 + 生活经营(F180-F189：家庭会议/本周主理人/技能交换所/月度互评/家庭应急卡/情侣存档点/家务积分市场/五年计划双轨/纪念日策划案/经营周报) + 深度陪伴(F140-F149：今日主题曲/接头暗号/夸夸复制/情绪SOS抱抱/每日三问/梦境手账/美食地图/TA使用手册/自定义成就) + 心愿基金 |
 | badges | CoupleBadges + CoupleReport + CoupleAnniversaryReport + CoupleHeatmap | 里程碑徽章 + 行为成就墙 + 恋爱月报/数据总览 + 回忆资产报告系(F85-F86)：周年报告/生日回顾 + 年度热力日历(F96，store 键 `yearHeatmap` 避免与游戏化 heatmap 撞名) |
-| timeline | CoupleOnThisDay + CoupleFirsts + CoupleHeartMoments + CoupleTimeline + CoupleChronicle | 那年今天 + 我们的第一次(F46) + 心动时刻(F36) + 恋爱时光轴 + 回忆资产聚合系(F80-F82)：恋爱编年史/记忆考古卡/恋爱问答机 |
+| timeline | CoupleOnThisDay + CoupleFirsts + CoupleHeartMoments + CoupleTimeline + CoupleMuseum + CoupleChronicle | 那年今天 + 我们的第一次(F46) + 心动时刻(F36) + 恋爱时光轴 + 时光博物馆(F190-F199) + 回忆资产聚合系(F80-F82)：恋爱编年史/记忆考古卡/恋爱问答机 |
 
 头部区：双人头像 + 在一起天数 + 连续晚安 + 心动值 + 纪念日弹窗 + 专属爱称弹窗（`couple-pet-*`）+ 通知铃铛（F41 `couple-notify-*`）+ 里程碑/周年庆横幅（F43/F43+F47）+ 空间个性化 CoupleProfile（宣言/主题/贴纸）。
 
@@ -64,6 +64,8 @@ WS 事件约定：后端 `ImPushService.pushCoupleEvent(Both)` 推 `{type:'coupl
 
 批次十四（F180-F189 生活经营）：api 层新增独立分组对象 `manageApi`（`src/api/couple.ts`，与 coupleApi 并列导出）；类型统一 `CoupleManage*VO` 前缀（Meeting/Host/Skill/MonthReview+MonthBoard/EmergencyCard/Snapshot/Reward+PointHistory+PointAccount/FiveYearPlan/AnnivPlan/Weekly）；组件 `CoupleManage.vue` 挂 shared 页签 CoupleShared 之后，**组件内自持数据**（onMounted 并发拉取 manageApi，不进 store、无 WS 事件），testid 前缀 `couple-meeting-*`/`couple-host-*`/`couple-skill-*`/`couple-month-*`/`couple-emergency-*`/`couple-snapshot-*`/`couple-point-*`/`couple-plan-*`/`couple-annivplan-*`/`couple-manage-weekly-*`；测试 mock 需在 `vi.mock('@/api/couple')` 工厂里同时返回 `manageApi`（已带默认空数据 Proxy）。
 
+批次十五（F190-F199 时光博物馆）：api 层新增独立分组对象 `museumApi`（`src/api/couple.ts`，基址 `/api/couple/museum`，写接口均返回最新全量列表）；类型统一 `CoupleMuseum*VO` 前缀（DocScene/Exhibit/Achievement/YearCounter/Mirror/SilverLine/Word/Rule/Dnd/Chapter/Book）；组件 `CoupleMuseum.vue` 挂 timeline 页签 CoupleTimeline 之后，同样**组件内自持数据**（onMounted 并发拉取 museumApi，未建空间时静默降级），testid 前缀 `couple-museum-*`（scenes/exhibits/mirror/silver/words/achievements/rules/dnd/book）；测试 mock 工厂需同时返回 `museumApi`（默认空数据 Proxy）。
+
 批次五体验项（F90-F99）落点：F90/F91 在 `ChatView.vue`（工具条贴贴 popover `data-testid="sticker-*"` 走 `im.sendPoke`；彩蛋指令 `utils/effects.ts` 的 `detectEggCommand`，onSend 命中即换彩蛋文案+playEffect）；F93 在 `LoginView.vue`（`FESTIVAL_LINES` 按 MM-dd 命中显示 `data-testid="login-festival"`）；F94 通知分类筛选在 CoupleView 通知弹窗（`NOTIFY_FILTERS` + `filteredNotifies`）；F95 `CoupleTodayBoard` 挂 CoupleProfile 之下全局区（`@goto` 切页签）；F98 新手引导 dialog（localStorage `arechat_couple_guide_seen` 只弹一次）。
 
 ## 四、惯例与红线
@@ -81,3 +83,17 @@ WS 事件约定：后端 `ImPushService.pushCoupleEvent(Both)` 推 `{type:'coupl
 3. 涉及后端新事件：在 `stores/couple.ts` 的 `handleCoupleEvent` 加 case
 4. 提交前：`pnpm build`；改了逻辑跑 `pnpm test`
 5. 对应后端模块地图见 are-chat 仓库的 `are-chat-map` skill
+
+## 六、开发规范硬性流程（交付门禁）
+
+规范全集在专项 skill（git-commit / version-release）里，本节只做流程串联与红线登记，不复述细节：
+
+1. **开工**：必读本 skill；提交拆分/架构师复审清单 → `.agents/skills/git-commit/SKILL.md`；升版/发版判级 → `.agents/skills/version-release/SKILL.md`
+2. **编码**：走第三节「新功能标准链路」；新 VO 类型加 Couple+域前缀并先 grep 防撞名（见撞名备忘）；不改默认页签 `promises`
+3. **构建**：`pnpm build`（含 vue-tsc）必过；改了 types 同步测试 mock 工厂；涉逻辑改动 `pnpm test` 全绿
+4. **提交**：按改动性质分组（依赖/组件页面/样式/文档），一 commit 一性质；信息 `type(scope): 中文描述`
+5. **推送**：commit → `git pull --no-rebase` → push；失败保留本地 commit 并报告，不 force push
+6. **版本**：`package.json` 为唯一版本源，任何代码/文案/测试禁止写死版本号；agent 按 version-release 判级参考自主升版、独立 commit、不建 tag；用户说「发版/发布版本」= 无条件立即完整发版流程
+7. **收尾**：新增/删除组件、页签、接口、WS 事件 → 更新本 skill 对应小节，与功能同批提交
+
+**产品红线（用户长期约束）**：情侣功能注重情绪价值；**不做照片/视频上传类功能**（服务器部署要求高）；文案可爱口语化+emoji（第四节惯例）。

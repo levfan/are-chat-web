@@ -217,6 +217,7 @@
               <CoupleFirsts />
               <CoupleHeartMoments />
               <CoupleTimeline />
+              <CoupleMuseum />
               <CoupleChronicle />
             </div>
           </el-tab-pane>
@@ -332,6 +333,7 @@ import CouplePact from '@/components/couple/CouplePact.vue'
 import CoupleCityCard from '@/components/couple/CoupleCityCard.vue'
 import CoupleFund from '@/components/couple/CoupleFund.vue'
 import CoupleTimeline from '@/components/couple/CoupleTimeline.vue'
+import CoupleMuseum from '@/components/couple/CoupleMuseum.vue'
 import CoupleChronicle from '@/components/couple/CoupleChronicle.vue'
 import CoupleAnniversaryReport from '@/components/couple/CoupleAnniversaryReport.vue'
 import CoupleKeepsake from '@/components/couple/CoupleKeepsake.vue'

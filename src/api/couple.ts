@@ -180,6 +180,16 @@ import type {
   CoupleManageFiveYearPlanVO,
   CoupleManageAnnivPlanVO,
   CoupleManageWeeklyVO,
+  CoupleMuseumAchievementVO,
+  CoupleMuseumDndVO,
+  CoupleMuseumDocSceneVO,
+  CoupleMuseumExhibitVO,
+  CoupleMuseumBookVO,
+  CoupleMuseumGreetingVO,
+  CoupleMuseumMirrorVO,
+  CoupleMuseumRuleVO,
+  CoupleMuseumSilverLineVO,
+  CoupleMuseumWordVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -1205,4 +1215,59 @@ export const manageApi = {
 
   /** F189 经营周报 */
   weekly: () => http.get<CoupleManageWeeklyVO>('/api/couple/manage/weekly'),
+}
+
+// ============ 时光博物馆（F190-F199） ============
+export const museumApi = {
+  /** F190 恋爱纪录片：场景列表（新→旧） */
+  listScenes: () => http.get<CoupleMuseumDocSceneVO[]>('/api/couple/museum/scenes'),
+  /** F190 提交一部三幕纪录片，返回最新全量列表 */
+  createScene: (body: { title: string; actOne: string; actTwo: string; actThree: string }) =>
+    http.postJson<CoupleMuseumDocSceneVO[]>('/api/couple/museum/scenes', body),
+
+  /** F191 博物馆展品列表 */
+  listExhibits: () => http.get<CoupleMuseumExhibitVO[]>('/api/couple/museum/exhibits'),
+  /** F191 捐一件展品（obtainedDay：入手日期 yyyy-MM-dd，可空），返回最新全量列表 */
+  createExhibit: (body: { name: string; story: string; obtainedDay?: string | null }) =>
+    http.postJson<CoupleMuseumExhibitVO[]>('/api/couple/museum/exhibits', {
+      name: body.name,
+      story: body.story,
+      obtainedDay: body.obtainedDay ?? null,
+    }),
+
+  /** F192 去年今日对比镜 */
+  getLastYear: () => http.get<CoupleMuseumMirrorVO>('/api/couple/museum/last-year'),
+
+  /** F193 银发情话机（今日一句） */
+  getSilverLine: () => http.get<CoupleMuseumSilverLineVO>('/api/couple/museum/silver-line'),
+
+  /** F194 恋爱高频词 */
+  getWords: () => http.get<CoupleMuseumWordVO[]>('/api/couple/museum/words'),
+
+  /** F195 隐藏成就墙（GET 自动解锁） */
+  getAchievements: () => http.get<CoupleMuseumAchievementVO[]>('/api/couple/museum/achievements'),
+
+  /** F196 家规宪法列表 */
+  getRules: () => http.get<CoupleMuseumRuleVO[]>('/api/couple/museum/rules'),
+  /** F196 立条款/修正案（kind=AMENDMENT 时 refId 指向被修正的已签字条款），返回最新全量列表 */
+  createRule: (body: { kind: CoupleMuseumRuleVO['kind']; refId?: string | null; content: string }) =>
+    http.postJson<CoupleMuseumRuleVO[]>('/api/couple/museum/rules', {
+      kind: body.kind,
+      refId: body.refId ?? null,
+      content: body.content,
+    }),
+  /** F196 签字确认 TA 提出的条款，返回最新全量列表 */
+  signRule: (id: string) => http.postJson<CoupleMuseumRuleVO[]>(`/api/couple/museum/rules/${id}/sign`, {}),
+
+  /** F197 免打扰时段：双方当前设置 */
+  getDnd: () => http.get<CoupleMuseumDndVO[]>('/api/couple/museum/dnd'),
+  /** F197 保存我的免打扰时段（startTime/endTime 为 HH:mm），返回最新全量列表 */
+  saveDnd: (body: { startTime: string; endTime: string; enabled: boolean }) =>
+    http.postJson<CoupleMuseumDndVO[]>('/api/couple/museum/dnd', body),
+
+  /** F199 年度记忆书 */
+  getAnnualBook: () => http.get<CoupleMuseumBookVO>('/api/couple/museum/annual-book'),
+
+  /** F197 今日问候条（叠加免打扰状态） */
+  getGreeting: () => http.get<CoupleMuseumGreetingVO>('/api/couple/museum/greeting'),
 }
