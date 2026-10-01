@@ -50,6 +50,12 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-makeup', label: '和好与道歉券', tab: 'care', sub: 'rescue' },
   { key: 'couple-cozy-today', label: '今日体温同步', tab: 'care', sub: 'rescue' },
   { key: 'couple-cozy-monthly', label: '月度安眠小结', tab: 'care', sub: 'rescue' },
+  // 🎧 倾听与发声（F260-F269，care/rescue 子页签）
+  { key: 'couple-ls-slot', label: '倾听时段', tab: 'care', sub: 'rescue' },
+  { key: 'couple-ls-voice', label: '发声与语气', tab: 'care', sub: 'rescue' },
+  { key: 'couple-ls-misrewind', label: '误会倒带', tab: 'care', sub: 'rescue' },
+  { key: 'couple-ls-letter', label: '换位信与早想说', tab: 'care', sub: 'rescue' },
+  { key: 'couple-ls-care', label: '呵护台', tab: 'care', sub: 'rescue' },
   { key: 'couple-soft', label: '心动软陪伴', tab: 'care', sub: 'intimate' },
   { key: 'couple-spark', label: '默契亲密仪表盘', tab: 'care', sub: 'intimate' },
   // 🗓️ 共享空间

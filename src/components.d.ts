@@ -42,6 +42,7 @@ declare module 'vue' {
     CoupleKeepsake: typeof import('./components/couple/CoupleKeepsake.vue')['default']
     CoupleLetter: typeof import('./components/couple/CoupleLetter.vue')['default']
     CoupleLife: typeof import('./components/couple/CoupleLife.vue')['default']
+    CoupleListen: typeof import('./components/couple/CoupleListen.vue')['default']
     CoupleMakeup: typeof import('./components/couple/CoupleMakeup.vue')['default']
     CoupleManage: typeof import('./components/couple/CoupleManage.vue')['default']
     CoupleMood: typeof import('./components/couple/CoupleMood.vue')['default']

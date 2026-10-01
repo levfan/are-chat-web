@@ -3078,3 +3078,145 @@ export interface CoupleAlmYearVO {
   normalDays: number
   scroll: string[]
 }
+
+// ============ 倾听与发声（F260-F269） ============
+
+/** F260 想被听时段状态（OPEN 待 TA 确认 / CONFIRMED 已开麦 / DONE 聊完待互评 / CANCELLED 撤了） */
+export type CoupleLsSlotStatus = 'OPEN' | 'CONFIRMED' | 'DONE' | 'CANCELLED'
+
+/** F261 替我说的状态（DRAFT 在途草稿 / ADOPTED 已定稿） */
+export type CoupleLsProxyStatus = 'DRAFT' | 'ADOPTED'
+
+/** F264 换位信状态（SEALED 封存中 / OPENED 已拆开） */
+export type CoupleLsLetterStatus = 'SEALED' | 'OPENED'
+
+/** F265 早想说状态（HELD 还在队列里封存 / SENT 已放行说出） */
+export type CoupleLsHoldStatus = 'HELD' | 'SENT'
+
+/** F267 今日语气四种（后端只有这四个 key，其它值 400） */
+export type CoupleLsToneKey = 'TIRED' | 'BUSY' | 'SAD' | 'OKAY'
+
+/** F260 倾听时段（mine=我是说的人；confirmed=TA 已确认开麦；rateMine=说的人给的分、ratePartner=听的人给的分，未评为 null；note=本场话） */
+export interface CoupleLsSlotVO {
+  id: string
+  day: string
+  topic: string
+  status: CoupleLsSlotStatus
+  mine: boolean
+  confirmed: boolean
+  rateMine: number | null
+  ratePartner: number | null
+  note: string
+}
+
+/** F261 替我说（mine=我代笔的；status DRAFT 在途可覆盖；finalText/adoptedBy 仅定稿后非 null） */
+export interface CoupleLsProxyVO {
+  id: string
+  content: string
+  fromUser: string
+  mine: boolean
+  status: CoupleLsProxyStatus
+  finalText: string | null
+  adoptedBy: string | null
+}
+
+/** F262 误会倒带（同一天的同一主题双栏并排，mine* 是我那一份，partner* 是 TA 那一份，空串=那边还没写；both=两份齐了） */
+export interface CoupleLsMisVO {
+  day: string
+  topic: string
+  mineThought: string
+  mineGuess: string
+  partnerThought: string
+  partnerGuess: string
+  both: boolean
+}
+
+/** F263 本周卡壳一问（mine=我出的题；answer 未答为 null） */
+export interface CoupleLsStuckVO {
+  id: string
+  question: string
+  answer: string | null
+  mine: boolean
+  answered: boolean
+}
+
+/** F264 换位信（mine=我写的底稿可自阅；due=TA 写我的且已到开放日可拆；TA 未到期时 content 为「封存中，x 可见」提示语） */
+export interface CoupleLsLetterVO {
+  id: string
+  day: string
+  openDay: string
+  status: CoupleLsLetterStatus
+  mine: boolean
+  due: boolean
+  content: string
+}
+
+/** F265 早想说队列（mine=我封的；status SENT 时 sentAt 为放行时刻，HELD 时为 null） */
+export interface CoupleLsHoldVO {
+  id: string
+  content: string
+  fromUser: string
+  mine: boolean
+  status: CoupleLsHoldStatus
+  openDay: string
+  sentAt: number | null
+}
+
+/** F266 今日三行（morning/thanks/praise 是我今天写的三行，空串=没写；streak* 连续天数；badgeDays=纪念门槛 21） */
+export interface CoupleLsThreeVO {
+  morning: string
+  thanks: string
+  praise: string
+  streakMine: number | null
+  streakPartner: number | null
+  badgeDays: number | null
+}
+
+/** F267 今日语气（label=中文语气名；line=给对方的翻译条，自己报的那条 line 为空串） */
+export interface CoupleLsToneVO {
+  fromUser: string
+  tone: CoupleLsToneKey
+  label: string
+  line: string
+  mine: boolean
+}
+
+/** F268 休战旗（raiser=举旗人；untilAt=解冻时刻毫秒；expired=已到期可表态；decideA/decideB=空间两位成员的表态 1 继续 / 0 算了 / null 没说，后端按 userA、userB 位下发故不区分我与 TA；ended=已收旗） */
+export interface CoupleLsTruceVO {
+  id: string
+  raiser: string
+  untilAt: number | null
+  expired: boolean
+  mine: boolean
+  decideA: number | null
+  decideB: number | null
+  ended: boolean
+}
+
+/** F269 今日称呼日（usedMine/usedPartner=各喊过一次；done=双用过达成） */
+export interface CoupleLsNameDayVO {
+  day: string
+  name: string
+  usedMine: boolean
+  usedPartner: boolean
+  done: boolean
+}
+
+/** F260-F269 今日倾听台总览（slot/proxyDraft/truce/nameDay 可为 null；除 today 外全部写接口均返回整份，前端整体替换） */
+export interface CoupleLsTodayVO {
+  day: string
+  week: string
+  slot: CoupleLsSlotVO | null
+  recentSlots: CoupleLsSlotVO[]
+  proxyDraft: CoupleLsProxyVO | null
+  adopted: CoupleLsProxyVO[]
+  misrewinds: CoupleLsMisVO[]
+  stuck: CoupleLsStuckVO[]
+  letters: CoupleLsLetterVO[]
+  holds: CoupleLsHoldVO[]
+  nextHoldDay: string | null
+  three: CoupleLsThreeVO
+  tones: CoupleLsToneVO[]
+  truce: CoupleLsTruceVO | null
+  nameDay: CoupleLsNameDayVO | null
+}

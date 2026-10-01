@@ -208,6 +208,8 @@ import type {
   CoupleAlmTodayVO,
   CoupleAlmYearVO,
   CoupleAlmZodiacVO,
+  CoupleLsTodayVO,
+  CoupleLsToneKey,
   CouplePinVO,
 } from '@/types'
 
@@ -1494,4 +1496,66 @@ export const almanacApi = {
   /** F259 一年日子小结（year：yyyy，缺省今年；返回计数与节气长卷） */
   almYearly: (year?: string) =>
     http.get<CoupleAlmYearVO>(year ? `/api/couple/almanac/yearly?year=${encodeURIComponent(year)}` : '/api/couple/almanac/yearly'),
+}
+
+/**
+ * F260-F269 倾听与发声（listenApi，基址 /api/couple/listen）
+ * 除 lsToday 为读接口外，17 个 POST 写接口全部返回整份 TodayVO，前端整体替换即全卡刷新。
+ * 业务规则由后端 400 中文 message 直透 ElMessage（在途时段唯一、说的人不能自确认、聊完才能打分、
+ * 自己代笔不能自己定稿、本周只能出一题、自己的题不能自己答、开放日要在写信日之后、一天一封信、
+ * 三行至少写一行、语气只有四种、休战旗在途仅一面且未到点不许表态等）。
+ */
+export const listenApi = {
+  /** F260-F269 今日倾听台总览（含早想说惰性放行、休战到期结算；未建空间 404 前端静默降级） */
+  lsToday: () => http.get<CoupleLsTodayVO>('/api/couple/listen/today'),
+  /** F260 申请一个「只听我说」时段（topic ≤140 字；已有在途时段后端 400），返回整份总览 */
+  lsRequestSlot: (topic: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/slot', { topic }),
+  /** F260 倾听人确认开麦（说的人自己确认后端 400：耳朵是 TA 的），返回整份总览 */
+  lsConfirmSlot: (id: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/slot/confirm', { id }),
+  /** F260 聊完收场（任意一方点；TA 未确认开麦时后端 400），返回整份总览 */
+  lsDoneSlot: (id: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/slot/done', { id }),
+  /** F260 互评被听感 1-5 分（后端钳 1-5，说的人填 rateMine、听的人填 ratePartner，各打一次；note 仅说的人那份生效 ≤140 字；未聊完打分后端 400） */
+  lsRateSlot: (id: string, score: number, note?: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/slot/rate', { id, score, note: note ?? '' }),
+  /** F261 替 TA 写一句心里话（一人一份在途草稿，重复提交即覆盖，≤200 字），返回整份总览 */
+  lsProxy: (content: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/proxy', { content }),
+  /** F261 被代笔的人定稿（finalText 空=照念原句；自己代笔的自己定稿后端 400），返回整份总览 */
+  lsProxyAdopt: (id: string, finalText: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/proxy/adopt', { id, finalText }),
+  /** F262 误会倒带（topic ≤60 字，我当时以为/我猜你其实想 各 ≤200 字，两边至少写一边否则 400；同日同主题本人可改写），返回整份总览 */
+  lsMisrewind: (topic: string, mine: string, theirs: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/misrewind', { topic, mine, theirs }),
+  /** F263 本周抛出难住我的问题（≤140 字，一周只能一题，重复后端 400），返回整份总览 */
+  lsStuck: (question: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/stuck', { question }),
+  /** F263 答 TA 的题（≤200 字；自己的题自己答后端 400，答过再答幂等），返回整份总览 */
+  lsStuckAnswer: (id: string, answer: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/stuck/answer', { id, answer }),
+  /** F264 写换位信（以对方口吻写，≤500 字；openDay 空=默认 7 天后开放，须在写信日之后；一天一封信 400），返回整份总览 */
+  lsLetter: (content: string, openDay: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/letter', { content, openDay: openDay || null }),
+  /** F264 拆 TA 写给我的换位信（未到开放日/拆自己写的后端 400），返回整份总览 */
+  lsLetterOpen: (id: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/letter/open', { id }),
+  /** F265 封存一句早想说（≤200 字，队列按每 7 天自动放行一句），返回整份总览 */
+  lsHold: (content: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/hold', { content }),
+  /** F266 今日三行打卡（印象/谢/夸 各 ≤80 字，三行至少写一行否则 400；当日重复提交改写，连续 21 天后端解锁纪念），返回整份总览 */
+  lsThree: (morning: string, thanks: string, praise: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/three', { morning, thanks, praise }),
+  /** F267 自报今日语气（tone 仅 TIRED/BUSY/SAD/OKAY 四种，其它后端 400；note 补一句 ≤60 字；当日可改），返回整份总览 */
+  lsTone: (tone: CoupleLsToneKey, note?: string) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/tone', { tone, note: note ?? '' }),
+  /** F268 举休战旗（minutes 缺省 30，后端钳 10-120；在途已有一面时后端 400），返回整份总览 */
+  lsTruce: (minutes?: number) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/truce', { minutes: minutes ?? null }),
+  /** F268 到点表态：goOn=true 继续（各退一步再聊）/ false 算了（翻篇）；未到解冻时刻或没有在途旗后端 400，双人才收旗，返回整份总览 */
+  lsTruceDecide: (goOn: boolean) =>
+    http.postJson<CoupleLsTodayVO>('/api/couple/listen/truce/decide', { goOn }),
+  /** F269 今日称呼「用过了」（一人一次幂等，双用过当日达成），返回整份总览 */
+  lsNameUse: () => http.postJson<CoupleLsTodayVO>('/api/couple/listen/name/use', {}),
 }
