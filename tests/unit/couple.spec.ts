@@ -8,8 +8,8 @@ import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
 import type { CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
 
-vi.mock('@/api/couple', () => ({
-  coupleApi: {
+vi.mock('@/api/couple', () => {
+  const base = {
     overview: vi.fn(),
     invite: vi.fn(),
     acceptInvite: vi.fn(),
@@ -198,8 +198,30 @@ vi.mock('@/api/couple', () => ({
       days: [{ day: '2026-06-01', count: 4, level: 2 }],
       totalActive: 1,
     }),
-  },
-}))
+    // F100-F109 沟通增强
+    coolDowns: vi.fn().mockResolvedValue([]),
+    relays: vi.fn().mockResolvedValue([]),
+    guesses: vi.fn().mockResolvedValue([]),
+    stories: vi.fn().mockResolvedValue([]),
+    apologies: vi.fn().mockResolvedValue([]),
+    feelings: vi.fn().mockResolvedValue([]),
+    dictQuiz: vi.fn().mockResolvedValue(null),
+    synthSweet: vi.fn().mockResolvedValue(''),
+    goodnightRadio: vi.fn().mockResolvedValue(null),
+  }
+  // 兜底：mock 未覆盖的接口方法自动返回 resolved(undefined)，
+  // 避免组件 onMounted 里新调用的接口炸出未处理错误污染测试输出
+  const wrapped = new Proxy(base as unknown as Record<string, ReturnType<typeof vi.fn>>, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(undefined)
+      return target[prop]
+    },
+  })
+  return { coupleApi: wrapped }
+})
 
 vi.mock('@/api/im', () => ({
   friendApi: {
@@ -213,7 +235,13 @@ vi.mock('@/api/im', () => ({
     update: vi.fn(),
     remove: vi.fn(),
   },
-  messageApi: { history: vi.fn().mockResolvedValue([]), currentPin: vi.fn().mockResolvedValue(null) },
+  messageApi: {
+    history: vi.fn().mockResolvedValue([]),
+    currentPin: vi.fn().mockResolvedValue(null),
+    // F36 心动时刻（CoupleHeartMoments onMounted 调用，避免未处理错误）
+    heartMoments: vi.fn().mockResolvedValue([]),
+    markHeart: vi.fn().mockResolvedValue(undefined),
+  },
   profileApi: {
     me: vi.fn().mockResolvedValue({ username: 'alice', nickname: 'alice', signature: '', avatar: 'c1', presenceStatus: 'online' }),
     update: vi.fn(),
@@ -770,5 +798,67 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="couple-heatmap-grid"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="couple-heatmap-total"]').text()).toContain('1')
+  })
+
+  it('沟通增强：翻译器出潜台词，道歉三部曲可送出', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.translate).mockResolvedValue({
+      phrase: '我没事',
+      subtext: '有事，而且想让你再问一次',
+      reply: '「我听着呢，你想说的时候我都在 🌙」',
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-care').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="couple-translator-input"]').setValue('我没事')
+    await wrapper.find('[data-testid="couple-translator-go"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.translate).toHaveBeenCalledWith('我没事')
+    expect(wrapper.find('[data-testid="couple-translator-result"]').text()).toContain('真实含义')
+
+    await wrapper.find('[data-testid="couple-apology-what"]').setValue('忘了纪念日')
+    await wrapper.find('[data-testid="couple-apology-why"]').setValue('让你等了很久')
+    await wrapper.find('[data-testid="couple-apology-will"]').setValue('日历里加好提醒')
+    await wrapper.find('[data-testid="couple-apology-send"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.sendApology).toHaveBeenCalledWith('忘了纪念日', '让你等了很久', '日历里加好提醒')
+  })
+
+  it('沟通增强：情绪接力棒可抛出并展示在路上状态', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.relays).mockResolvedValue([
+      { id: 'r1', fromUser: 'bob', moodWord: '有点累', moodEmoji: '😫', note: null,
+        status: 'PENDING', catchNote: null, caughtAt: null, created: Date.now() },
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-mood').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-relay-pending"]').text()).toContain('有点累')
+    await wrapper.find('[data-testid="couple-relay-catch-note"]').setValue('抱抱，我在呢')
+    await wrapper.find('[data-testid="couple-relay-catch"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.catchRelay).toHaveBeenCalledWith('r1', '抱抱，我在呢', undefined, undefined, undefined)
+  })
+
+  it('沟通增强：比划猜轮到对方出提示时展示猜词入口', async () => {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    vi.mocked(coupleApi.guesses).mockResolvedValue([
+      { id: 'g1', day: '2026-09-30', fromUser: 'bob', word: null, clue: '辣辣的涮着吃',
+        guess: null, attempts: 0, status: 'CLUED', settledAt: null, created: Date.now() },
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-rituals').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-guess-clue-show"]').text()).toContain('辣辣的')
+    await wrapper.find('[data-testid="couple-guess-input"]').setValue('吃火锅')
+    await wrapper.find('[data-testid="couple-guess-submit"]').trigger('click')
+    await flushPromises()
+    expect(coupleApi.doGuess).toHaveBeenCalledWith('g1', '吃火锅')
   })
 })
