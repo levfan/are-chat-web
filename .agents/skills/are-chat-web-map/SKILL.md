@@ -34,14 +34,14 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 | 页签 name | 组件 | 内容 |
 |---|---|---|
 | bond | CoupleBond + CoupleGame | 贴贴动作宫格/贴贴里程碑/累计统计/动作流 + 恋爱加成清单/互动热力图/心情曲线/恋爱红绿灯 |
-| promises（默认） | CouplePromises + CouplePact | 双向约定卡 + 恋爱条约 |
-| rituals | CoupleRituals + CoupleDaily + CoupleTruth | 早晚安/今日一问(含 F48 互评表情)/晚安故事 + 甜蜜任务/恋爱运势/默契考验 + 今日真心话(F66 双方同题必答+存档)/心灵感应(F68 每天三轮选题作答自动结算) |
+| promises（默认） | CouplePromises + CoupleSecure + CouplePact | 双向约定卡 + 确定感与安全感(F120-F129：安全感账户/恋爱体检/十年之约/愿景板/承诺博物馆/信任存折/恋爱年轮/双人契约/守护兽) + 恋爱条约 |
+| rituals | CoupleRituals + CoupleDaily + CoupleTruth + CoupleFunTalk + CouplePlay | 早晚安/今日一问(含 F48 互评表情)/晚安故事 + 甜蜜任务/恋爱运势/默契考验 + 今日真心话(F66 双方同题必答+存档)/心灵感应(F68 每天三轮选题作答自动结算) + 趣味游戏(F130-F139：今日抽签区心动概率/恋爱天气/塔罗、家务骰子纯前端、一百问答一题解锁、出题考TA、世界情话课、周末盲选、情话Battle、抽象画 seed SVG) |
 | growth | CoupleChallenge + CoupleReadWatch + CoupleWishBoard + CoupleDict | 共同养成(F70-F79)：双人挑战赛/恋爱存折/百日之约 + 共读计划/追剧清单 + 心愿互换/旅行心愿地图/下次一定清单 + 恋爱词典/星座配对 |
 | surprise | CoupleSurprise + CoupleGarden | 惊喜与期待(F50-F59)：刮刮乐/恋爱盲盒/心动闹钟/思念速递/藏宝图/告白重现 + 爱情花园浇水养成/每日玫瑰/幸运签 |
 | letters | CoupleLetter + CoupleWhisperBox + CoupleCapsule + CoupleKeepsake | 悄悄话信箱（情话抽卡/情书模板）+ 匿名树洞(F67)/情话储蓄罐(F69 21 点利息送达) + 时光胶囊(F84 远期预设 1/3/5/10 年) + 回忆资产收藏系(F83/F88/F89)：甜蜜语录册/电影票根墙/我们的歌单 |
 | mood | CoupleMood | 心情日记 + 心情回应（回应按钮在本组件内） |
 | care | CoupleCare + CoupleComfort + CoupleMakeup | 情绪天气/急救箱/和好卡/夸夸墙/生理期关怀 + 求抱抱(F60 感受按钮/话术卡回应)/陪聊话题卡(F63)/情绪同步率(F64) + 矛盾复盘(F61 和好锦囊)/道歉券(F62) |
-| shared | CoupleCityCard + CoupleCountdown + CoupleLife + CoupleShared + CoupleFund | 异地恋(对方时区/见面倒数)/倒数日/生活共享(记账/家务/约会/习惯/暗号)/共享清单/心愿基金 |
+| shared | CoupleCityCard + CoupleDistance + CoupleCountdown + CoupleLife + CoupleShared + CoupleDailyLife + CoupleFund | 异地恋(对方时区/见面倒数/隔空牵手/想念计量/作息/见面信/云约会/平安卡/见面日记/能量) + 倒数日/生活共享(记账/家务/约会/习惯/暗号)/共享清单 + 深度陪伴(F140-F149：今日主题曲/接头暗号/夸夸复制/情绪SOS抱抱/每日三问/梦境手账/美食地图/TA使用手册/自定义成就) + 心愿基金 |
 | badges | CoupleBadges + CoupleReport + CoupleAnniversaryReport + CoupleHeatmap | 里程碑徽章 + 行为成就墙 + 恋爱月报/数据总览 + 回忆资产报告系(F85-F86)：周年报告/生日回顾 + 年度热力日历(F96，store 键 `yearHeatmap` 避免与游戏化 heatmap 撞名) |
 | timeline | CoupleOnThisDay + CoupleFirsts + CoupleHeartMoments + CoupleTimeline + CoupleChronicle | 那年今天 + 我们的第一次(F46) + 心动时刻(F36) + 恋爱时光轴 + 回忆资产聚合系(F80-F82)：恋爱编年史/记忆考古卡/恋爱问答机 |
 
@@ -55,6 +55,10 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 5. CoupleView 挂到对应页签（页签加 `lazy`）
 
 WS 事件约定：后端 `ImPushService.pushCoupleEvent(Both)` 推 `{type:'couple', event, detail}`，im store 转发为 `arechat:couple` 自定义事件，couple store `handleCoupleEvent` 按 event 名分发。现有 event 清单见后端各 Service（如 bond-action、task-done、tacit-settled、reconcile-accepted、capsule-sealed、countdown-reminder、scratch-scratched、box-opened、garden-watered、comfort-sent、comfort-given、night-care、peace-review-done、sorry-used、truth-answered、whisper-answered、telepathy-matched、love-bank-interest、challenge-done、passbook-deposit、hundred-done、wish-accepted、travel-visited、nexttime-done、read-finished、watch-finished、dict-added、quote-kept、ticket-added、song-added、capsule-due、birthday-eve 等）。
+
+批次六~十（F100-F149）新增事件（`stores/couple.ts` `handleCoupleEvent` 均有 case）：沟通区 whisper-*→（F36 旧名）/room-*/relay-*/story-*/sorry-*/vocab-*（F100-F109）；异地恋 handhold-*/miss-*/routine-updated/reunion-letter-sealed|opened（注意与悄悄话信箱 letter-opened 已改名区分）/cloud-*/safety-ping/reunion-logged/energy-*（F110-F119）；确定感 security-*/decade-*/vision-*/oath-*/trust-deposit/contract-*/pet-*（F120-F129）；游戏 survey-answered/quiz-*/love-word-kept/blind-*/battle-*/art-added（F130-F139）；陪伴 dream-written/food-added|checkin/fact-added/sos-ping|held/three-saved|both/badge-added|issued（F140-F149）。
+
+撞名备忘（新增类型/方法前先 grep types 与 api）：CoupleLetterVO/CoupleMissVO/CouplePraiseVO/CoupleBadgeVO/CoupleWeatherVO 均已被占用（批次十改用 CoupleReunionLetterVO/CoupleMissDailyVO/CoupleDailyPraiseVO/CoupleCustomBadgeVO/CoupleLoveWeatherVO）；api `openLetter`/`badges` 已占用（拆信用 openReunionLetter、自定义成就用 customBadges）；store `missBoard`/`weather` 已占用（思念计量用 missDaily、恋爱天气用 loveWeather）。F149 恋爱仪表盘改版在 `CoupleTodayBoard.vue`（couple.dashboard + `couple-dashboard-*` testid）。
 
 批次五体验项（F90-F99）落点：F90/F91 在 `ChatView.vue`（工具条贴贴 popover `data-testid="sticker-*"` 走 `im.sendPoke`；彩蛋指令 `utils/effects.ts` 的 `detectEggCommand`，onSend 命中即换彩蛋文案+playEffect）；F93 在 `LoginView.vue`（`FESTIVAL_LINES` 按 MM-dd 命中显示 `data-testid="login-festival"`）；F94 通知分类筛选在 CoupleView 通知弹窗（`NOTIFY_FILTERS` + `filteredNotifies`）；F95 `CoupleTodayBoard` 挂 CoupleProfile 之下全局区（`@goto` 切页签）；F98 新手引导 dialog（localStorage `arechat_couple_guide_seen` 只弹一次）。
 
