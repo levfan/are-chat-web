@@ -312,6 +312,7 @@
                   <CoupleTimeline />
                   <CoupleChronicle />
                   <CoupleCeremony />
+                  <CoupleCodex />
                 </div>
               </el-tab-pane>
               <el-tab-pane label="🏛️ 博物馆" name="museum" lazy>
@@ -462,6 +463,7 @@ import CoupleDining from '@/components/couple/CoupleDining.vue'
 import CoupleAlmanac from '@/components/couple/CoupleAlmanac.vue'
 import CoupleFactory from '@/components/couple/CoupleFactory.vue'
 import CoupleCeremony from '@/components/couple/CoupleCeremony.vue'
+import CoupleCodex from '@/components/couple/CoupleCodex.vue'
 import CoupleBoard from '@/components/couple/CoupleBoard.vue'
 import CoupleSoft from '@/components/couple/CoupleSoft.vue'
 import CoupleDistance from '@/components/couple/CoupleDistance.vue'

@@ -3352,3 +3352,134 @@ export interface CoupleFyBoardVO {
   check: CoupleFyCheckVO
   checkMiss: string[]
 }
+
+// ============ 我们百科（F280-F289） ============
+
+/** F280 百科词条一条（mine=我首建的，只有首建人可删；updatedBy 空串=没人改过，非空=那位修订过） */
+export interface CoupleCxEntryVO {
+  id: string
+  term: string
+  definition: string
+  origin: string
+  usageNote: string
+  mine: boolean
+  updatedBy: string
+}
+
+/**
+ * F281 默契综艺一期（day=期号即日期；terms=本期五道填空题的题面）。
+ * myAnswer/partnerAnswer 为逗号分隔的五答（空串=没交卷）；match 仅双交齐后非 null（x/5 命中数）。
+ */
+export interface CoupleCxQuizVO {
+  day: string
+  terms: string[]
+  myAnswer: string
+  partnerAnswer: string
+  bothIn: boolean
+  match: number | null
+  comment: string
+}
+
+/**
+ * F282 TOP10 互猜的一个类目行（八个类目恒定各一行，空数组=那位还没上榜）。
+ * revealed=对方榜与我的猜测都齐了才揭榜；rematch=揭榜后我没猜中的「重新认识清单」话术行。
+ */
+export interface CoupleCxTopBoardVO {
+  category: string
+  label: string
+  mine: string[]
+  partner: string[]
+  myGuess: string[]
+  revealed: boolean
+  rematch: string[]
+}
+
+/** F283 外号小传一条（givenBy/occasion/firstUsedDay 空串=没考据到） */
+export interface CoupleCxStoryVO {
+  id: string
+  nickname: string
+  givenBy: string
+  occasion: string
+  story: string
+  firstUsedDay: string
+  mine: boolean
+}
+
+/** F284 友情测验一道（mine=我出的题；toMe=考我的题，只有我能作答；verdict 空串=没答过，RIGHT|WRONG） */
+export interface CoupleCxExamVO {
+  id: string
+  question: string
+  quizzedUser: string
+  mine: boolean
+  toMe: boolean
+  verdict: string
+  lastTryDay: string
+}
+
+/** F285 足迹一处（year 空串=没写年份；rating 1-5，后端缺省给 5） */
+export interface CoupleCxPlaceVO {
+  id: string
+  name: string
+  year: string
+  happened: string
+  rating: number
+  mine: boolean
+}
+
+/** F286 第一眼对视双盲（mine=我那份，partner=对方那份，互见或双方各满 3 次才下发；waiting=两份都交了但还没到互见条件） */
+export interface CoupleCxFirstLookVO {
+  mine: string
+  partner: string
+  revealed: boolean
+  waiting: boolean
+}
+
+/** F287 习惯图鉴一条（mine=我记的 TA；observerUser=观察者；verdict 空串=被观察的那位还没判案，REAL=确实 / WRONG=冤枉） */
+export interface CoupleCxHabitVO {
+  id: string
+  habit: string
+  tag: string
+  observerUser: string
+  mine: boolean
+  verdict: string
+}
+
+/** F288 口味变迁一笔（beforeText/nowText 空串=没写；shiftedDay=转折日 yyyy-MM-dd） */
+export interface CoupleCxTasteVO {
+  id: string
+  thing: string
+  beforeText: string
+  nowText: string
+  shiftedDay: string
+  mine: boolean
+}
+
+/** F289 人格双报（year=年份；myKey/partnerKey 四位类型码，空串=那位今年还没报；diffLine=相同轴数解读；answers=我的八答原文） */
+export interface CoupleCxTypeVO {
+  year: string
+  myKey: string
+  partnerKey: string
+  diffLine: string
+  answers: string
+}
+
+/**
+ * F280-F289 我们百科总览（十个板块一次拉齐）。
+ * 除 overview 读接口外，全部 POST 写接口都返回整份 OverviewVO，前端整体替换即五卡刷新；
+ * todayQuiz=null 表示今天还没开场，type=null 表示今年两人都没报过人格。
+ */
+export interface CoupleCxOverviewVO {
+  day: string
+  entries: CoupleCxEntryVO[]
+  todayQuiz: CoupleCxQuizVO | null
+  history: CoupleCxQuizVO[]
+  tops: CoupleCxTopBoardVO[]
+  stories: CoupleCxStoryVO[]
+  exams: CoupleCxExamVO[]
+  places: CoupleCxPlaceVO[]
+  firstLook: CoupleCxFirstLookVO
+  habits: CoupleCxHabitVO[]
+  tastes: CoupleCxTasteVO[]
+  type: CoupleCxTypeVO | null
+  entryCount: number
+}

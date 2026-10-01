@@ -105,6 +105,12 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-cere-vault', label: '爱情保险柜与续约', tab: 'timeline', sub: 'flow' },
   { key: 'couple-cere-coupon', label: '愿望券本', tab: 'timeline', sub: 'flow' },
   { key: 'couple-cere-feel', label: '今日体感与年度加冕', tab: 'timeline', sub: 'flow' },
+  // 📚 我们百科（F280-F289，timeline/flow 子页签）
+  { key: 'couple-cx-codex', label: '百科词条', tab: 'timeline', sub: 'flow' },
+  { key: 'couple-cx-quiz', label: '默契综艺', tab: 'timeline', sub: 'flow' },
+  { key: 'couple-cx-top', label: 'TOP10 互猜', tab: 'timeline', sub: 'flow' },
+  { key: 'couple-cx-dossier', label: '考据卷宗', tab: 'timeline', sub: 'flow' },
+  { key: 'couple-cx-soul', label: '灵魂与人格', tab: 'timeline', sub: 'flow' },
   { key: 'couple-museum', label: '时光博物馆', tab: 'timeline', sub: 'museum' },
 ]
 

@@ -211,6 +211,7 @@ import type {
   CoupleLsTodayVO,
   CoupleLsToneKey,
   CoupleFyBoardVO,
+  CoupleCxOverviewVO,
   CouplePinVO,
 } from '@/types'
 
@@ -1644,4 +1645,66 @@ export const factoryApi = {
   /** F279 提交本月家安月检（六项齐全：GAS/WATER/ELEC/WINDOW/LOCK/FIRSTAID，逗号分隔；缺项后端 400，本月可改写），返回整份总览 */
   fyHomeCheck: (items: string) =>
     http.postJson<CoupleFyBoardVO>('/api/couple/factory/homecheck', { items }),
+}
+
+/**
+ * F280-F289 我们百科（codexApi，基址 /api/couple/codex）
+ * cxOverview 为唯一读接口；其余 15 个 POST 写接口全部返回整份 OverviewVO，前端整体替换即五卡刷新。
+ * 业务规则由后端 400 中文 message 直透 ElMessage（词条名 ≤40 字且同名即修订、释义 ≤200 字、
+ * 词条只有首建人能撤、默契综艺一天一期且词条不足 5 条不能开场、五答交过就不能再交、
+ * 榜单类目须八个 key 之一且每类 ≤10 项每条 ≤60 字、猜测可改写但只有下注那次推 TA、
+ * 外号 ≤40 字故事 ≤300 字同名即改写、出题题面 ≤140 字答案 ≤60 字且不可重复、
+ * 只有被考人能作答且答错缓 7 天、足迹地名 ≤60 字年份须 yyyy 同名覆盖、
+ * 第一眼 ≤200 字已互见或自己交满 3 次就不能再交、习惯 ≤60 字同人同习惯不重复登记、
+ * 判案只能由被观察那位亲自判且只能「确实/冤枉」、口味对象 ≤60 字同人同对象可改写、
+ * 人格八题每题只能选 1 或 2 且一年一报覆盖当年等）。
+ */
+export const codexApi = {
+  /** F280-F289 我们百科总览（十个板块一次拉齐；未建空间 404 前端静默降级） */
+  cxOverview: () => http.get<CoupleCxOverviewVO>('/api/couple/codex/overview'),
+  /** F280 新建/修订词条（term ≤40 字、definition ≤200 字必填；同名即改释义并记修订人），返回整份总览 */
+  cxEntrySave: (term: string, definition: string, origin: string, usageNote: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/entry', { term, definition, origin, usageNote }),
+  /** F280 撤掉一个词条（只有首建人能撤，撤 TA 首建的后端 400），返回整份总览 */
+  cxEntryRemove: (id: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/entry/remove', { id }),
+  /** F281 开一期默契综艺（词条不足 5 条 / 今天已开过后端 400，无请求体），返回整份总览 */
+  cxQuizStart: () =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/quiz/start', {}),
+  /** F281 交本期五答（逗号分隔 5 条、每条 ≤40 字；没开场或已交过后端 400），返回整份总览 */
+  cxQuizAnswer: (answers: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/quiz/answer', { answers }),
+  /** F282 更新本人的类目榜（category 须八个类目键之一，items 逗号分隔 ≤10 条每条 ≤60 字；首次上榜才推 TA 来猜），返回整份总览 */
+  cxTopList: (category: string, items: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/top/list', { category, items }),
+  /** F282 猜 TA 的类目榜（可反复改写；只有第一次下注推 TA，双方榜与猜测齐了即揭榜），返回整份总览 */
+  cxTopGuess: (category: string, items: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/top/guess', { category, items }),
+  /** F283 收录/修订外号小传（nickname ≤40 字、story ≤300 字必填，givenBy/occasion/firstUsedDay 可空；同名即改写），返回整份总览 */
+  cxStory: (nickname: string, givenBy: string, occasion: string, story: string, firstUsedDay: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/story', { nickname, givenBy, occasion, story, firstUsedDay }),
+  /** F284 给 TA 出一道「你记得吗」（question ≤140 字、answer ≤60 字必填；同题出过后端 400），返回整份总览 */
+  cxExamAsk: (question: string, answer: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/exam', { question, answer }),
+  /** F284 被考人作答（别人的题后端 400；答对即记档不可重答；答错缓 7 天才能补考），返回整份总览 */
+  cxExamTry: (id: string, answer: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/exam/try', { id, answer }),
+  /** F285 登记/修订足迹（name ≤60 字必填，year 空串或 yyyy，happened 可空，rating 1-5 后端钳制缺省 5；同名即改写），返回整份总览 */
+  cxPlace: (name: string, year: string, happened: string, rating: number) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/place', { name, year, happened, rating }),
+  /** F286 盲提交「我注意到你的那一刻」（moment ≤200 字必填；已互见或自己已交满 3 次后端 400），返回整份总览 */
+  cxFirstLook: (moment: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/firstlook', { moment }),
+  /** F287 记下 TA 的一个小习惯（habit ≤60 字必填，tag 可空；同一人重复记同一条后端 400），返回整份总览 */
+  cxHabitAdd: (habit: string, tag: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/habit', { habit, tag }),
+  /** F287 判案：确实/冤枉（verdict 仅 REAL|WRONG，其它后端 400；只能被观察的那位亲自判，已判过幂等返回），返回整份总览 */
+  cxHabitVerdict: (id: string, verdict: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/habit/verdict', { id, verdict }),
+  /** F288 记一笔口味变迁（thing ≤60 字必填，beforeText/nowText 可空，shiftedDay 空串=今天且格式须 yyyy-MM-dd；同人同对象可改写），返回整份总览 */
+  cxTaste: (thing: string, beforeText: string, nowText: string, shiftedDay: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/taste', { thing, beforeText, nowText, shiftedDay }),
+  /** F289 提交八题四维人格速测（answers=8 个 1/2 逗号分隔，缺一题或出现别的值后端 400；当年重测覆盖），返回整份总览 */
+  cxType: (answers: string) =>
+    http.postJson<CoupleCxOverviewVO>('/api/couple/codex/type', { answers }),
 }
