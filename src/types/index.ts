@@ -3220,3 +3220,135 @@ export interface CoupleLsTodayVO {
   truce: CoupleLsTruceVO | null
   nameDay: CoupleLsNameDayVO | null
 }
+
+// ============ 二人制造厂（F270-F279） ============
+
+/** F273 快递单状态（SENT 待领养 / GRABBED 有接单侠了 / DONE 已送达销单） */
+export type CoupleFyParcelStatus = 'SENT' | 'GRABBED' | 'DONE'
+
+/** F270 家务轮盘的一格任务（mine=这活派给我；confirmed=对方已认账；done=干完划线） */
+export interface CoupleFySpinVO {
+  id: string
+  week: string
+  item: string
+  assignedUser: string
+  mine: boolean
+  confirmed: boolean
+  done: boolean
+}
+
+/** F271 采买清单一项（qty 是「两板鸡蛋」这类口语数量，空串=没写；doneBy 空串=还没人买回来） */
+export interface CoupleFyShopVO {
+  id: string
+  name: string
+  qty: string
+  fromUser: string
+  mine: boolean
+  doneBy: string
+}
+
+/** F272 冰箱库存一件（expireDay 空串=没写赏味期；expiring=3 天内到期，行高亮提醒） */
+export interface CoupleFyStockVO {
+  id: string
+  item: string
+  qty: string
+  expireDay: string
+  mine: boolean
+  expiring: boolean
+}
+
+/** F273 代拿快递一单（note 空串=没描述；grabber 空串=还没人领养） */
+export interface CoupleFyParcelVO {
+  id: string
+  note: string
+  fromUser: string
+  mine: boolean
+  status: CoupleFyParcelStatus
+  grabber: string
+}
+
+/** F274 本周叫醒词一条（givenToday=今天这张卡已经递过了，一天一张） */
+export interface CoupleFyWakeVO {
+  fromUser: string
+  content: string
+  mine: boolean
+  givenToday: boolean
+}
+
+/** F275 在服药物一条（remindedToday/takenToday=今天这一格是否已打；streak=连续链天数） */
+export interface CoupleFyMedVO {
+  id: string
+  name: string
+  times: string
+  fromUser: string
+  mine: boolean
+  remindedToday: boolean
+  takenToday: boolean
+  streak: number
+}
+
+/** F276 久坐互拍状态（mineToday/partnerToday=今天各自拍过没；pairedToday=今日常规同起；weekPairedDays=本周同起天数） */
+export interface CoupleFyStandVO {
+  mineToday: boolean
+  partnerToday: boolean
+  pairedToday: boolean
+  weekPairedDays: number
+}
+
+/** F277 垫付本一笔（mine=我垫的，欠款方是 TA；amountCents 单位分；daysOpen=挂了几天） */
+export interface CoupleFyAdvanceVO {
+  id: string
+  item: string
+  payerUser: string
+  amountCents: number
+  note: string
+  mine: boolean
+  daysOpen: number
+}
+
+/** F278 本周战利品一单（guess/guessBy 空串=TA 还没猜；score=null=我还没打分） */
+export interface CoupleFyGroceryVO {
+  id: string
+  week: string
+  fromUser: string
+  mine: boolean
+  items: string
+  guess: string
+  guessBy: string
+  score: number | null
+}
+
+/** F279 家安月检本月双签（mine/partner 空串=那份没交，内容为逗号分隔的六项编码） */
+export interface CoupleFyCheckVO {
+  month: string
+  mine: string
+  partner: string
+  bothIn: boolean
+}
+
+/**
+ * F270-F279 本周车间总览（十卡一次拉齐）。
+ * 除 board 读接口外，24 个 POST 写接口全部返回整份 BoardVO，前端整体替换即五卡刷新；
+ * shopChampion 空串=本月还没有生活委员，owed/expiring/checkMiss 为空数组=没有欠账/临期/漏检。
+ */
+export interface CoupleFyBoardVO {
+  day: string
+  week: string
+  month: string
+  spins: CoupleFySpinVO[]
+  owed: string[]
+  spinLine: string
+  shop: CoupleFyShopVO[]
+  shopChampion: string
+  stock: CoupleFyStockVO[]
+  expiring: string[]
+  parcels: CoupleFyParcelVO[]
+  wake: CoupleFyWakeVO[]
+  meds: CoupleFyMedVO[]
+  stand: CoupleFyStandVO
+  advances: CoupleFyAdvanceVO[]
+  openTotalCents: number
+  groceries: CoupleFyGroceryVO[]
+  check: CoupleFyCheckVO
+  checkMiss: string[]
+}

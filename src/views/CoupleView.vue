@@ -280,6 +280,7 @@
                   <CoupleFund />
                   <CoupleDining />
                   <CoupleAlmanac />
+                  <CoupleFactory />
                 </div>
               </el-tab-pane>
               <el-tab-pane label="🏪 经营所" name="manage" lazy>
@@ -459,6 +460,7 @@ import CoupleSpark from '@/components/couple/CoupleSpark.vue'
 import CoupleManage from '@/components/couple/CoupleManage.vue'
 import CoupleDining from '@/components/couple/CoupleDining.vue'
 import CoupleAlmanac from '@/components/couple/CoupleAlmanac.vue'
+import CoupleFactory from '@/components/couple/CoupleFactory.vue'
 import CoupleCeremony from '@/components/couple/CoupleCeremony.vue'
 import CoupleBoard from '@/components/couple/CoupleBoard.vue'
 import CoupleSoft from '@/components/couple/CoupleSoft.vue'

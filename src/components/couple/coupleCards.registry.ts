@@ -76,6 +76,12 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-alm-festival', label: '节日家档', tab: 'shared', sub: 'daily' },
   { key: 'couple-alm-holiday', label: '长假愿望', tab: 'shared', sub: 'daily' },
   { key: 'couple-alm-year', label: '年运与小结', tab: 'shared', sub: 'daily' },
+  // 🏭 二人制造厂（F270-F279，shared/daily 子页签）
+  { key: 'couple-fy-spin', label: '家务轮盘', tab: 'shared', sub: 'daily' },
+  { key: 'couple-fy-shop', label: '采买与冰箱', tab: 'shared', sub: 'daily' },
+  { key: 'couple-fy-errand', label: '跑腿与叫醒', tab: 'shared', sub: 'daily' },
+  { key: 'couple-fy-care', label: '服药与久坐', tab: 'shared', sub: 'daily' },
+  { key: 'couple-fy-books', label: '账本与月检', tab: 'shared', sub: 'daily' },
   { key: 'couple-manage', label: '生活经营所', tab: 'shared', sub: 'manage' },
   // 🏪 我们公司（F240-F249，shared/manage 子页签）
   { key: 'couple-bd-org', label: '组织架构', tab: 'shared', sub: 'manage' },

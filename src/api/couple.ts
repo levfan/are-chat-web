@@ -210,6 +210,7 @@ import type {
   CoupleAlmZodiacVO,
   CoupleLsTodayVO,
   CoupleLsToneKey,
+  CoupleFyBoardVO,
   CouplePinVO,
 } from '@/types'
 
@@ -1558,4 +1559,89 @@ export const listenApi = {
     http.postJson<CoupleLsTodayVO>('/api/couple/listen/truce/decide', { goOn }),
   /** F269 今日称呼「用过了」（一人一次幂等，双用过当日达成），返回整份总览 */
   lsNameUse: () => http.postJson<CoupleLsTodayVO>('/api/couple/listen/name/use', {}),
+}
+
+/**
+ * F270-F279 二人制造厂（factoryApi，基址 /api/couple/factory）
+ * 除 fyBoard 为读接口外，24 个 POST 写接口全部返回整份 BoardVO，前端整体替换即五卡刷新。
+ * 业务规则由后端 400 中文 message 直透 ElMessage（一周一转、至少两项、自己的活自己认、没认账干完无效、
+ * 清单谁登记谁划、快递不能自己接自己的单且谁领谁销单、叫醒词只能递 TA 定的且一天一张、
+ * 提醒是对方做的事、吃没吃本人来报、一天只拍一次久坐、垫付金额须正的整数分、还钱的一方才按确认键、
+ * 自己买的东西不用猜、猜心只有一次机会、只有买家能打分、TA 没猜不能打、家安六项必须勾齐等）。
+ */
+export const factoryApi = {
+  /** F270-F279 本周车间总览（十卡一次拉齐；未建空间 404 前端静默降级） */
+  fyBoard: () => http.get<CoupleFyBoardVO>('/api/couple/factory/board'),
+  /** F270 一转定分工（逗号/顿号分隔事项，2-8 条、每条 ≤40 字且不可重复；本周已转过后端 400），返回整份总览 */
+  fySpin: (items: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/spin', { items }),
+  /** F270 给天选之人的任务认账（双签生效；自己行点自己后端 400「自己的活自己认」），返回整份总览 */
+  fySpinConfirm: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/spin/confirm', { id }),
+  /** F270 天选之人干完打勾（非本人行/对方还没认账时后端 400），返回整份总览 */
+  fySpinDone: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/spin/done', { id }),
+  /** F271 往超市清单加一项（name ≤60 字，qty ≤30 字可为空），返回整份总览 */
+  fyShopAdd: (name: string, qty: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/shop', { name, qty }),
+  /** F271 划掉清单一项（谁登记谁划，划 TA 点的后端 400），返回整份总览 */
+  fyShopRemove: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/shop/remove', { id }),
+  /** F271 我买回来了（幂等；非登记人买回会推 TA 一条感谢），返回整份总览 */
+  fyShopDone: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/shop/done', { id }),
+  /** F272 冰箱入库/补货（同名覆盖复活；item ≤60 字，expireDay 空串=不写赏味期，格式须 yyyy-MM-dd），返回整份总览 */
+  fyStockAdd: (item: string, qty: string, expireDay: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/stock', { item, qty, expireDay }),
+  /** F272 用完清掉（幂等；冰箱里没有这件后端 400），返回整份总览 */
+  fyStockOut: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/stock/out', { id }),
+  /** F273 下一单求代拿（note 可空、≤60 字），返回整份总览 */
+  fyParcelNew: (note: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/parcel', { note }),
+  /** F273 接单侠认领（只能接 TA 的单，自己下自己接/已被认领后端 400），返回整份总览 */
+  fyParcelGrab: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/parcel/grab', { id }),
+  /** F273 送达销单（谁领的单谁销单；成功自动进 2 积分感谢章），返回整份总览 */
+  fyParcelDone: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/parcel/done', { id }),
+  /** F274 定本周叫醒词（≤60 字，同一人可改写覆盖），返回整份总览 */
+  fyWakeSet: (content: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/wake', { content }),
+  /** F274 递今日叫醒卡（只能递 TA 定的词；TA 没定词/今天已递过后端 400，无请求体），返回整份总览 */
+  fyWakeGive: () =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/wake/give', {}),
+  /** F275 登记在服药物（name ≤40 字、times ≤60 字必填；同名在服中后端 400，停过则复活重置链），返回整份总览 */
+  fyMedAdd: (name: string, times: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/med', { name, times }),
+  /** F275 停服（本人说了算，给对方药点停后端 400），返回整份总览 */
+  fyMedStop: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/med/stop', { id }),
+  /** F275 TA 点「提醒了」（一天一次幂等；自己的药自己提醒后端 400），返回整份总览 */
+  fyMedRemind: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/med/remind', { id }),
+  /** F275 本人点「吃了」（一天一次幂等，连续日链 +1、断日重开；非本人报后端 400），返回整份总览 */
+  fyMedTaken: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/med/taken', { id }),
+  /** F276 站起来拍一下（与 TA 间隔 ≤1 小时记同起；今天已拍过再拍后端 400，无请求体），返回整份总览 */
+  fyStandup: () =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/standup', {}),
+  /** F277 记一笔垫付（item ≤60 字，amountCents 为正整数分且 ≤1 亿元，note ≤140 字可空），返回整份总览 */
+  fyAdvanceAdd: (item: string, amountCents: number, note: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/advance', { item, amountCents, note }),
+  /** F277 清账（欠款的一方按确认键，垫付人自己点后端 400；已还清幂等），返回整份总览 */
+  fyAdvanceSettle: (id: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/advance/settle', { id }),
+  /** F278 本周战利品上报（≤300 字，同一人可改写覆盖），返回整份总览 */
+  fyGrocery: (items: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/grocery', { items }),
+  /** F278 猜 TA 的采购动机（≤300 字；自己的单不用猜、猜过一次落子无悔，均后端 400），返回整份总览 */
+  fyGroceryGuess: (id: string, guess: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/grocery/guess', { id, guess }),
+  /** F279 采购方给 TA 的猜测打分 0-5（后端钳 0-5，打过一次幂等；不是买家/TA 还没猜后端 400），返回整份总览 */
+  fyGroceryRate: (id: string, score: number) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/grocery/rate', { id, score }),
+  /** F279 提交本月家安月检（六项齐全：GAS/WATER/ELEC/WINDOW/LOCK/FIRSTAID，逗号分隔；缺项后端 400，本月可改写），返回整份总览 */
+  fyHomeCheck: (items: string) =>
+    http.postJson<CoupleFyBoardVO>('/api/couple/factory/homecheck', { items }),
 }
