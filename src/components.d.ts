@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     CoupleAnniversaryReport: typeof import('./components/couple/CoupleAnniversaryReport.vue')['default']
     CoupleBadges: typeof import('./components/couple/CoupleBadges.vue')['default']
+    CoupleBoard: typeof import('./components/couple/CoupleBoard.vue')['default']
     CoupleBond: typeof import('./components/couple/CoupleBond.vue')['default']
     CoupleCapsule: typeof import('./components/couple/CoupleCapsule.vue')['default']
     CoupleCare: typeof import('./components/couple/CoupleCare.vue')['default']

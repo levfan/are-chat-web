@@ -2865,3 +2865,105 @@ export interface CoupleCerChronicleVO {
   name: string
   pages: CoupleCerChroniclePageVO[]
 }
+
+// ============ 我们公司（F240-F249） ============
+
+/** F240 头衔任命单（mine=我发起的封官；appointed=被任命者已盖章生效） */
+export interface CoupleBdRoleVO {
+  id: string
+  fromUser: string
+  toUser: string
+  mine: boolean
+  title: string
+  appointed: boolean
+}
+
+/** F241 董事会议案（status：PENDING 在议 / PASSED 通过 / VETOED 否决；canVote=待表决且非提案人） */
+export interface CoupleBdVoteVO {
+  id: string
+  title: string
+  proposer: string
+  mine: boolean
+  status: 'PENDING' | 'PASSED' | 'VETOED' | string
+  vetoBy: string | null
+  created: number | null
+  decidedAt: number | null
+  canVote: boolean
+}
+
+/** F242 年度述职（对方一份仅双提交后可见，未交/不可见为 null） */
+export interface CoupleBdReportVO {
+  year: string
+  mineReview: string | null
+  mineGoal: string | null
+  partnerReview: string | null
+  partnerGoal: string | null
+  bothIn: boolean
+}
+
+/** F244 发薪日本月状态（payDay=本月最早发薪日号，未发为 null；monthsPaid=累计发薪月数） */
+export interface CoupleBdSalaryVO {
+  month: string
+  mineThanks: string | null
+  partnerThanks: string | null
+  bothPaid: boolean
+  payDay: number | null
+  monthsPaid: number
+}
+
+/** F245 金点子（adopted=已被采纳并转成 voteId 对应的董事会决议） */
+export interface CoupleBdIdeaVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  content: string
+  adopted: boolean
+  voteId: string | null
+  created: number | null
+}
+
+/** F247 例会签到（convened=10 秒窗口内双签到、本次会议已召开） */
+export interface CoupleBdAttendVO {
+  day: string
+  mineAttended: boolean
+  partnerAttended: boolean
+  convened: boolean
+}
+
+/** F243 成员职级档案（按积分台账累计赚分定档；已是最高职级时 nextRank/pointsToNext 为 null） */
+export interface CoupleBdMemberVO {
+  user: string
+  titles: string[]
+  earned: number
+  rank: string
+  nextRank: string | null
+  pointsToNext: number | null
+}
+
+/** F248 公司名片（后端拼好的文字行） */
+export interface CoupleBdCardVO {
+  lines: string[]
+}
+
+/** F249 公司版经营周报（本周决议/点子/赚分） */
+export interface CoupleBdWeeklyVO {
+  week: string
+  votes: number
+  ideas: number
+  pointsEarned: number
+}
+
+/** F240-F249 我们公司总览（所有写接口均返回整份，前端整体替换） */
+export interface CoupleBdOverviewVO {
+  day: string
+  week: string
+  roles: CoupleBdRoleVO[]
+  votes: CoupleBdVoteVO[]
+  report: CoupleBdReportVO
+  salary: CoupleBdSalaryVO
+  ideas: CoupleBdIdeaVO[]
+  attend: CoupleBdAttendVO
+  members: CoupleBdMemberVO[]
+  card: CoupleBdCardVO
+  weekly: CoupleBdWeeklyVO
+}

@@ -65,6 +65,12 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-dine-restaurant', label: '我们的餐厅', tab: 'shared', sub: 'daily' },
   { key: 'couple-dine-year', label: '年度干饭账', tab: 'shared', sub: 'daily' },
   { key: 'couple-manage', label: '生活经营所', tab: 'shared', sub: 'manage' },
+  // 🏪 我们公司（F240-F249，shared/manage 子页签）
+  { key: 'couple-bd-org', label: '组织架构', tab: 'shared', sub: 'manage' },
+  { key: 'couple-bd-board', label: '董事会', tab: 'shared', sub: 'manage' },
+  { key: 'couple-bd-report', label: '年度述职', tab: 'shared', sub: 'manage' },
+  { key: 'couple-bd-pay', label: '发薪日', tab: 'shared', sub: 'manage' },
+  { key: 'couple-bd-weekly', label: '例会与周报', tab: 'shared', sub: 'manage' },
   // 🏅 徽章
   { key: 'couple-badges', label: '里程碑徽章墙', tab: 'badges' },
   { key: 'couple-report', label: '恋爱月报', tab: 'badges' },

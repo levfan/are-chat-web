@@ -283,6 +283,7 @@
               <el-tab-pane label="🏪 经营所" name="manage" lazy>
                 <div class="tab-stack">
                   <CoupleManage />
+                  <CoupleBoard />
                 </div>
               </el-tab-pane>
             </el-tabs>
@@ -455,6 +456,7 @@ import CoupleSpark from '@/components/couple/CoupleSpark.vue'
 import CoupleManage from '@/components/couple/CoupleManage.vue'
 import CoupleDining from '@/components/couple/CoupleDining.vue'
 import CoupleCeremony from '@/components/couple/CoupleCeremony.vue'
+import CoupleBoard from '@/components/couple/CoupleBoard.vue'
 import CoupleSoft from '@/components/couple/CoupleSoft.vue'
 import CoupleDistance from '@/components/couple/CoupleDistance.vue'
 import CoupleSecure from '@/components/couple/CoupleSecure.vue'

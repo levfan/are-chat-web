@@ -204,6 +204,7 @@ import type {
   CoupleCozyTodayVO,
   CoupleCerChronicleVO,
   CoupleCerOverviewVO,
+  CoupleBdOverviewVO,
   CouplePinVO,
 } from '@/types'
 
@@ -1416,4 +1417,37 @@ export const ceremonyApi = {
   /** F239 留一句「此刻感觉」（day 空=今天，一人一天一句可改写），返回整份总览 */
   cereRecap: (feeling: string, day?: string | null) =>
     http.postJson<CoupleCerOverviewVO>('/api/couple/ceremony/recap', { day: day ?? null, feeling }),
+}
+
+/** F240-F249 我们公司：头衔任命/董事会决议/年度述职/发薪日/金点子/例会签到/职级公示（方法统一 bd 前缀防撞名） */
+export const boardApi = {
+  /** F240-F249 我们公司总览：任命/议案/述职/发薪/点子/签到/职级/名片/周报一次拉齐 */
+  bdOverview: () => http.get<CoupleBdOverviewVO>('/api/couple/board/overview'),
+  /** F240 给 TA 封一个职位（每人待任命最多 2 个，超出后端 400），返回整份总览 */
+  bdProposeRole: (title: string) =>
+    http.postJson<CoupleBdOverviewVO>('/api/couple/board/role', { title }),
+  /** F240 被任命者盖章上任（限本人，已生效再点后端 400），返回整份总览 */
+  bdAppoint: (id: string) =>
+    http.postJson<CoupleBdOverviewVO>('/api/couple/board/role/appoint', { id }),
+  /** F241 提交一件董事会大事议案（待对方表决），返回整份总览 */
+  bdProposeVote: (title: string) =>
+    http.postJson<CoupleBdOverviewVO>('/api/couple/board/vote', { title }),
+  /** F241 表决：agree=附议通过 / false=一票否决（提案人不能裁自己的案，后端 400），返回整份总览 */
+  bdDecide: (id: string, agree: boolean) =>
+    http.postJson<CoupleBdOverviewVO>('/api/couple/board/vote/decide', { id, agree }),
+  /** F242 交年度述职+明年小目标（同年可改写；year 空=今年），返回整份总览 */
+  bdReport: (year: string, review: string, goal: string) =>
+    http.postJson<CoupleBdOverviewVO>('/api/couple/board/report', { year, review, goal }),
+  /** F244 发本月感谢工资（一句感谢+5 积分入账，一月一次，重复后端 400），返回整份总览 */
+  bdSalary: (thanks: string) =>
+    http.postJson<CoupleBdOverviewVO>('/api/couple/board/salary', { thanks }),
+  /** F245 往金点子箱投一条一句话经营提案，返回整份总览 */
+  bdIdea: (content: string) =>
+    http.postJson<CoupleBdOverviewVO>('/api/couple/board/idea', { content }),
+  /** F245 采纳 TA 的金点子（自动生成决议走表决流程；自己的点子须对方采纳，后端 400），返回整份总览 */
+  bdAdoptIdea: (id: string) =>
+    http.postJson<CoupleBdOverviewVO>('/api/couple/board/idea/adopt', { id }),
+  /** F247 例会一键签到（10 秒窗口内双签到=会议召开，每天一次），返回整份总览 */
+  bdAttend: () =>
+    http.postJson<CoupleBdOverviewVO>('/api/couple/board/attend', {}),
 }
