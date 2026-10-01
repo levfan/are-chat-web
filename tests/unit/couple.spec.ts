@@ -3,11 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi } from '@/api/couple'
+import { almanacApi, boardApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi, postApi } from '@/api/couple'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -596,6 +597,56 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F290-F299 明日邮局 postApi：默认全空但形状完整的 PostVO，用例内按需覆盖
+  const postEmptyBox = () => ({
+    day: '2026-10-02',
+    week: '2026-09-28',
+    year: '2026',
+    oaths: [],
+    buckets: [],
+    somedays: [],
+    homes: [],
+    retires: [],
+    well: { week: '2026-09-28', question: '如果我们无所不能，这周先去做什么？', myAnswer: '', partnerAnswer: '', bothIn: false },
+    wellYear: [],
+    relays: [],
+    dreams: [],
+    wishes: [],
+    credits: [],
+    creditLine: { tier: '', kept: 0, broken: 0, open: 0 },
+  })
+  const postBase: Record<string, ReturnType<typeof vi.fn>> = {
+    postBox: vi.fn().mockResolvedValue(postEmptyBox()),
+    postOath: vi.fn().mockResolvedValue(postEmptyBox()),
+    postBucketAdd: vi.fn().mockResolvedValue(postEmptyBox()),
+    postBucketAbandon: vi.fn().mockResolvedValue(postEmptyBox()),
+    postStepAdd: vi.fn().mockResolvedValue(postEmptyBox()),
+    postStepDone: vi.fn().mockResolvedValue(postEmptyBox()),
+    postShelf: vi.fn().mockResolvedValue(postEmptyBox()),
+    postShelfTake: vi.fn().mockResolvedValue(postEmptyBox()),
+    postShelfDone: vi.fn().mockResolvedValue(postEmptyBox()),
+    postHome: vi.fn().mockResolvedValue(postEmptyBox()),
+    postRetire: vi.fn().mockResolvedValue(postEmptyBox()),
+    postWell: vi.fn().mockResolvedValue(postEmptyBox()),
+    postRelay: vi.fn().mockResolvedValue(postEmptyBox()),
+    postRelayOpen: vi.fn().mockResolvedValue(postEmptyBox()),
+    postDream: vi.fn().mockResolvedValue(postEmptyBox()),
+    postDreamRead: vi.fn().mockResolvedValue(postEmptyBox()),
+    postDreamJudge: vi.fn().mockResolvedValue(postEmptyBox()),
+    postWish: vi.fn().mockResolvedValue(postEmptyBox()),
+    postWishVerdict: vi.fn().mockResolvedValue(postEmptyBox()),
+    postPromise: vi.fn().mockResolvedValue(postEmptyBox()),
+    postPromiseKeep: vi.fn().mockResolvedValue(postEmptyBox()),
+  }
+  const postWrapped = new Proxy(postBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(postEmptyBox())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -608,6 +659,7 @@ vi.mock('@/api/couple', () => {
     listenApi: listenWrapped,
     factoryApi: factoryWrapped,
     codexApi: codexWrapped,
+    postApi: postWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -3236,6 +3288,401 @@ describe('CoupleView 情侣空间', () => {
     expect(codexApi.cxExamTry).toHaveBeenCalledWith('cx1', '慢慢喜欢你')
     expect(wrapper.find('[data-testid="couple-cx-exam-verdict-cx1"]').text()).toContain('答对了')
     expect(wrapper.find('[data-testid="couple-cx-exam-answer-cx1"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  // ============ F290-F299 明日邮局（CouplePost） ============
+
+  /** 明日邮局空态基底（用例内按分区覆盖，字段与后端 CouplePostService.PostVO 逐一对齐） */
+  function postBoxVo(partial: Partial<CouplePostVO> = {}): CouplePostVO {
+    return {
+      day: '2026-10-02',
+      week: '2026-09-28',
+      year: '2026',
+      oaths: [],
+      buckets: [],
+      somedays: [],
+      homes: [],
+      retires: [],
+      well: { week: '2026-09-28', question: '如果我们无所不能，这周先去做什么？', myAnswer: '', partnerAnswer: '', bothIn: false },
+      wellYear: [],
+      relays: [],
+      dreams: [],
+      wishes: [],
+      credits: [],
+      creditLine: { tier: '', kept: 0, broken: 0, open: 0 },
+      ...partial,
+    }
+  }
+
+  /** 进「💌 寄给你」子页签（CouplePost 挂在 CouplePoem 之后） */
+  async function mountOnLettersSend() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-letters').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 明日邮局折叠态落库键清理，避免污染后续用例
+    localStorage.removeItem('arechat_couple_collapse_couple-post-oath')
+    localStorage.removeItem('arechat_couple_collapse_couple-post-bucket')
+    localStorage.removeItem('arechat_couple_collapse_couple-post-ledger')
+  })
+
+  it('明日邮局：新年卡当年已写回填可改写，已寄出时输入框禁用且硬提交直透后端 400 文案', async () => {
+    const myOath = {
+      id: 'po1', year: '2026', content: '希望 2031 年的第一场雪我们还一起看',
+      deliverDay: '2031-01-01', mine: true, sent: false, partnerContent: '',
+    }
+    const pastOath = {
+      id: 'po0', year: '2025', content: '去年写的那句：别再熬夜了',
+      deliverDay: '2030-01-01', mine: true, sent: false, partnerContent: '',
+    }
+    vi.mocked(postApi.postBox).mockResolvedValue(postBoxVo({ oaths: [myOath, pastOath] }))
+    vi.mocked(postApi.postOath).mockResolvedValue(postBoxVo({ oaths: [{ ...myOath, content: '希望 2031 年的第一场雪我们还一起看，还养了只猫' }, pastOath] }))
+    const wrapper = await mountOnLettersSend()
+    expect(wrapper.find('[data-testid="couple-post"]').exists()).toBe(true)
+    // 已写过的内容回填进表单，按钮文案转成改写
+    const contentEl = wrapper.find('[data-testid="couple-post-oath-content"]').element as HTMLTextAreaElement
+    expect(contentEl.value).toContain('希望 2031 年的第一场雪')
+    expect(contentEl.disabled).toBe(false)
+    expect(wrapper.find('[data-testid="couple-post-oath-submit"]').text()).toContain('改写今年这张')
+    expect(wrapper.find('[data-testid="couple-post-oath-deliver-po1"]').text()).toContain('2031-01-01 寄出')
+    expect(wrapper.find('[data-testid="couple-post-oath-partner-wait"]').text()).toContain('还没到期')
+    // 往年卡只读陈列
+    expect(wrapper.find('[data-testid="couple-post-oath-text-po0"]').text()).toContain('别再熬夜')
+
+    await wrapper.find('[data-testid="couple-post-oath-content"]').setValue('希望 2031 年的第一场雪我们还一起看，还养了只猫')
+    await wrapper.find('[data-testid="couple-post-oath-submit"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postOath).toHaveBeenCalledWith('希望 2031 年的第一场雪我们还一起看，还养了只猫')
+    expect((wrapper.find('[data-testid="couple-post-oath-content"]').element as HTMLTextAreaElement).value).toContain('还养了只猫')
+    expect(wrapper.find('[data-testid="couple-post-oath-sent"]').exists()).toBe(false)
+    wrapper.unmount()
+
+    // 到期放行（SENT）后：编辑被挡死，硬点提交由后端 400 文案直透
+    vi.mocked(postApi.postBox).mockResolvedValue(postBoxVo({ oaths: [{ ...myOath, sent: true, content: '已经寄出去的那句' }] }))
+    vi.mocked(postApi.postOath).mockRejectedValue(new Error('这张已经寄出去了，收不进笔了'))
+    const wrapper2 = await mountOnLettersSend()
+    expect((wrapper2.find('[data-testid="couple-post-oath-content"]').element as HTMLTextAreaElement).disabled).toBe(true)
+    expect(wrapper2.find('[data-testid="couple-post-oath-sent"]').text()).toContain('收不进笔')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    await wrapper2.find('[data-testid="couple-post-oath-submit"]').trigger('click')
+    await flushPromises()
+    expect(errorSpy).toHaveBeenCalledWith('这张已经寄出去了，收不进笔了')
+    errorSpy.mockRestore()
+    // 恢复默认实现，避免污染后续用例
+    vi.mocked(postApi.postOath).mockResolvedValue(postBoxVo())
+    wrapper2.unmount()
+  })
+
+  it('明日邮局：大事拆步调 postStepAdd，未完成步骤才出打勾钮且 TA 立的事文案是「帮 TA 补个进展章」，放弃钮仅发起人可见', async () => {
+    const myBucket: CouplePostBucketVO = {
+      id: 'pb1', name: '去看一次极光', targetDay: '2027-02-28', note: '想在雪地里站一晚',
+      mine: true, status: 'OPEN', doneSteps: 1, totalSteps: 2,
+      steps: [
+        { id: 'pbs1', seq: 1, text: '查好能看到极光的月份', done: true, doneBy: 'alice' },
+        { id: 'pbs2', seq: 2, text: '订下机票', done: false, doneBy: '' },
+      ],
+    }
+    const taBucket: CouplePostBucketVO = {
+      id: 'pb2', name: '把阳台改成小花园', targetDay: '', note: '',
+      mine: false, status: 'OPEN', doneSteps: 0, totalSteps: 1,
+      steps: [{ id: 'pbs3', seq: 1, text: '量一下阳台尺寸', done: false, doneBy: '' }],
+    }
+    vi.mocked(postApi.postBox).mockResolvedValue(postBoxVo({ buckets: [myBucket, taBucket] }))
+    vi.mocked(postApi.postStepAdd).mockResolvedValue(postBoxVo({
+      buckets: [{ ...myBucket, totalSteps: 3, steps: [...myBucket.steps!, { id: 'pbs9', seq: 3, text: '办签证', done: false, doneBy: '' }] }, taBucket],
+    }))
+    vi.mocked(postApi.postStepDone).mockResolvedValue(postBoxVo({
+      buckets: [myBucket, { ...taBucket, doneSteps: 1, steps: [{ ...taBucket.steps![0], done: true, doneBy: 'alice' }] }],
+    }))
+    vi.mocked(postApi.postBucketAdd).mockResolvedValue(postBoxVo({ buckets: [myBucket, taBucket] }))
+    vi.mocked(postApi.postBucketAbandon).mockResolvedValue(postBoxVo({ buckets: [taBucket] }))
+    const wrapper = await mountOnLettersSend()
+    expect(wrapper.find('[data-testid="couple-post-bucket-count"]').text()).toContain('2 件大事')
+    expect(wrapper.find('[data-testid="couple-post-bucket-progress-pb1"]').text()).toContain('1/2')
+    // 已走完的步骤只出徽标，没走完的才出打勾钮；文案按大事归属分人
+    expect(wrapper.find('[data-testid="couple-post-step-stamped-pb1-1"]').text()).toContain('alice')
+    expect(wrapper.find('[data-testid="couple-post-step-done-btn-pb1-1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-post-step-done-btn-pb1-2"]').text()).toContain('这步我做完了')
+    expect(wrapper.find('[data-testid="couple-post-step-done-btn-pb2-1"]').text()).toContain('帮 TA 补个进展章')
+    // 谁立的大事谁才有资格鸽
+    expect(wrapper.find('[data-testid="couple-post-bucket-giveup-pb1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-post-bucket-giveup-pb2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-post-bucket-lock-pb2"]').text()).toContain('让 TA 自己决定')
+
+    // 立一件新大事（目标日/备注可为空）
+    await wrapper.find('[data-testid="couple-post-bucket-name"]').setValue('学做一顿完整的年夜饭')
+    await wrapper.find('[data-testid="couple-post-bucket-submit"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postBucketAdd).toHaveBeenCalledWith('学做一顿完整的年夜饭', '', '')
+
+    // 拆一步 → 整份替换后新步骤出现
+    await wrapper.find('[data-testid="couple-post-step-input-pb1"]').setValue('办签证')
+    await wrapper.find('[data-testid="couple-post-step-add-pb1"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postStepAdd).toHaveBeenCalledWith('pb1', '办签证')
+    expect(wrapper.find('[data-testid="couple-post-step-text-pb1-3"]').text()).toContain('办签证')
+
+    // 给 TA 立的大事补进展章
+    await wrapper.find('[data-testid="couple-post-step-done-btn-pb2-1"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postStepDone).toHaveBeenCalledWith('pbs3')
+    expect(wrapper.find('[data-testid="couple-post-bucket-progress-pb2"]').text()).toContain('1/1')
+    expect(wrapper.find('[data-testid="couple-post-step-done-btn-pb2-1"]').exists()).toBe(false)
+
+    // 放弃只对自己立的那件生效（后端记 GONE，总览 findOpen 不再下发）
+    await wrapper.find('[data-testid="couple-post-bucket-giveup-pb1"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postBucketAbandon).toHaveBeenCalledWith('pb1')
+    expect(wrapper.find('[data-testid="couple-post-bucket-pb1"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('明日邮局：拍卖在架倒计时 / 落灰边缘 / 已接排期三态渲染，认领调 postShelfTake 并携带排期日', async () => {
+    const taShelf: CouplePostSomedayVO = { id: 'ps1', thing: '带她去那家山顶书店', mine: false, status: 'SHELF', takenBy: '', scheduledDay: '', daysLeft: 5 }
+    const mineStale: CouplePostSomedayVO = { id: 'ps2', thing: '修好那盏走廊灯', mine: true, status: 'SHELF', takenBy: '', scheduledDay: '', daysLeft: 0 }
+    const taken: CouplePostSomedayVO = { id: 'ps3', thing: '吃那家要排队的火锅', mine: false, status: 'TAKEN', takenBy: 'alice', scheduledDay: '2026-11-05', daysLeft: 12 }
+    const shelfOf = (rows: CouplePostSomedayVO[]) => postBoxVo({ somedays: rows })
+    vi.mocked(postApi.postBox).mockResolvedValue(shelfOf([taShelf, mineStale, taken]))
+    vi.mocked(postApi.postShelf).mockResolvedValue(shelfOf([taShelf, mineStale, taken]))
+    vi.mocked(postApi.postShelfTake).mockResolvedValue(shelfOf([
+      { ...taShelf, status: 'TAKEN', takenBy: 'alice', scheduledDay: '2026-11-05', daysLeft: 34 },
+      mineStale,
+      taken,
+    ]))
+    vi.mocked(postApi.postShelfDone).mockResolvedValue(shelfOf([
+      { ...taShelf, status: 'TAKEN', takenBy: 'alice', scheduledDay: '2026-11-05', daysLeft: 34 },
+      mineStale,
+    ]))
+    const wrapper = await mountOnLettersSend()
+    // 在架且是 TA 的：给认领表单；自己的架只给等待话术（后端禁止自接自）
+    expect(wrapper.find('[data-testid="couple-post-shelf-status-ps1"]').text()).toContain('还剩 5 天')
+    expect(wrapper.find('[data-testid="couple-post-take-btn-ps1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-post-take-btn-ps2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-post-shelf-wait-ps2"]').text()).toContain('没人接就落灰')
+    expect(wrapper.find('[data-testid="couple-post-shelf-status-ps2"]').text()).toContain('今天没人接')
+    // 已接：显示接单侠 + 排期日 + 剩余天数，并给销单钮
+    expect(wrapper.find('[data-testid="couple-post-shelf-taken-ps3"]').text()).toContain('alice 接了')
+    expect(wrapper.find('[data-testid="couple-post-shelf-taken-ps3"]').text()).toContain('2026-11-05')
+    expect(wrapper.find('[data-testid="couple-post-shelf-done-ps3"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-post-shelf-ps3"]').classes()).toContain('is-taken')
+
+    // 上一件新的「改天一定」
+    await wrapper.find('[data-testid="couple-post-shelf-thing"]').setValue('把储藏室收拾干净')
+    await wrapper.find('[data-testid="couple-post-shelf-submit"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postShelf).toHaveBeenCalledWith('把储藏室收拾干净')
+
+    // 认领并排期 → 整份替换后变成已接态
+    await wrapper.find('[data-testid="couple-post-take-day-ps1"]').setValue('2026-11-05')
+    await wrapper.find('[data-testid="couple-post-take-btn-ps1"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postShelfTake).toHaveBeenCalledWith('ps1', '2026-11-05')
+    expect(wrapper.find('[data-testid="couple-post-shelf-taken-ps1"]').text()).toContain('排到 2026-11-05')
+    expect(wrapper.find('[data-testid="couple-post-take-btn-ps1"]').exists()).toBe(false)
+
+    // 做完销单 → 该单离开总览（后端只下发 SHELF/TAKEN）
+    await wrapper.find('[data-testid="couple-post-shelf-done-ps3"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postShelfDone).toHaveBeenCalledWith('ps3')
+    expect(wrapper.find('[data-testid="couple-post-shelf-ps3"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('明日邮局：想象中的家按年 upsert 调 postHome（同年回填改写），退休 30/40/50 三档双写行按后端渲染', async () => {
+    const home26: CouplePostHomeVO = { year: '2026', rooms: '两室一厅带个小书房', windowView: '看得见江', smell: '刚煮的咖啡', corner: '靠窗那张懒人沙发', mine: true, partnerIn: true }
+    const home24: CouplePostHomeVO = { year: '2024', rooms: '一居室就够', windowView: '窗外一棵树', smell: '', corner: '', mine: true, partnerIn: false }
+    const retire30 = { ageBand: '30', mine: '先把房贷还完，周末去爬山', partner: '想开个小小的面包房', bothIn: true }
+    const retire40 = { ageBand: '40', mine: '孩子大了，把旅行清单走完', partner: '', bothIn: false }
+    vi.mocked(postApi.postBox).mockResolvedValue(postBoxVo({ homes: [home26, home24], retires: [retire30, retire40] }))
+    vi.mocked(postApi.postHome).mockResolvedValue(postBoxVo({ homes: [{ ...home24, rooms: '一居室，但要个大阳台' }, home26], retires: [retire30, retire40] }))
+    vi.mocked(postApi.postRetire).mockResolvedValue(postBoxVo({
+      homes: [home26, home24],
+      retires: [retire30, retire40, { ageBand: '50', mine: '找个有海的小城住半年', partner: '', bothIn: false }],
+    }))
+    const wrapper = await mountOnLettersSend()
+    // 版本按年份倒序，TA 是否也交了这版要标出来
+    const rows = wrapper.findAll('[data-testid^="couple-post-home-2"]')
+    expect(rows).toHaveLength(2)
+    expect(wrapper.find('[data-testid="couple-post-home-partner-2026"]').text()).toContain('TA 也交了这版')
+    expect(wrapper.find('[data-testid="couple-post-home-partner-2024"]').text()).toContain('TA 还没交这版')
+    expect(wrapper.find('[data-testid="couple-post-home-smell-2026"]').text()).toContain('咖啡')
+    expect(wrapper.find('[data-testid="couple-post-home-smell-2024"]').text()).toContain('（没写）')
+    // 三档常驻：没写过的 50 岁也占位
+    expect(wrapper.findAll('[data-testid^="couple-post-retire-band-"]')).toHaveLength(3)
+    expect(wrapper.find('[data-testid="couple-post-retire-both-30"]').text()).toContain('双写完成')
+    expect(wrapper.find('[data-testid="couple-post-retire-mine-40"]').text()).toContain('旅行清单')
+    expect(wrapper.find('[data-testid="couple-post-retire-partner-40"]').text()).toContain('TA 还没写')
+    expect(wrapper.find('[data-testid="couple-post-retire-mine-50"]').text()).toContain('我还没写')
+
+    // 改旧版本：点「改这版」把四字段灌回表单，同年保存即 upsert
+    await wrapper.find('[data-testid="couple-post-home-edit-2024"]').trigger('click')
+    expect((wrapper.find('[data-testid="couple-post-home-year"]').element as HTMLInputElement).value).toBe('2024')
+    expect(wrapper.find('[data-testid="couple-post-home-editing"]').text()).toContain('正在改写 2024 版')
+    await wrapper.find('[data-testid="couple-post-home-rooms"]').setValue('一居室，但要个大阳台')
+    await wrapper.find('[data-testid="couple-post-home-submit"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postHome).toHaveBeenCalledWith('2024', '一居室，但要个大阳台', '窗外一棵树', '', '')
+    expect(wrapper.find('[data-testid="couple-post-home-rooms-2024"]').text()).toContain('大阳台')
+
+    // 换档位写 50 岁那一份（el-radio 要点原生 input）
+    await wrapper.find('[data-testid="couple-post-retire-opt-50"]').find('input').setValue(true)
+    await wrapper.find('[data-testid="couple-post-retire-text"]').setValue('找个有海的小城住半年')
+    await wrapper.find('[data-testid="couple-post-retire-submit"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postRetire).toHaveBeenCalledWith('50', '找个有海的小城住半年')
+    expect(wrapper.find('[data-testid="couple-post-retire-mine-50"]').text()).toContain('有海的小城')
+    wrapper.unmount()
+  })
+
+  it('明日邮局：井题双答后显示 TA 的答案，胶囊在途 3/3 挡封存钮、到点那笔才给拆封钮', async () => {
+    const dueTa: CouplePostRelayVO = { id: 'pr1', mine: false, openDay: '2026-10-01', status: 'SEALED', due: true }
+    const futureTa: CouplePostRelayVO = { id: 'pr2', mine: false, openDay: '2029-10-01', status: 'SEALED', due: false }
+    const mineA: CouplePostRelayVO = { id: 'pr3', mine: true, openDay: '2027-10-01', status: 'SEALED', due: false }
+    const mineB: CouplePostRelayVO = { id: 'pr4', mine: true, openDay: '2028-10-01', status: 'SEALED', due: false }
+    const relaysOf = (rows: CouplePostRelayVO[], wellOver: Partial<CouplePostVO['well']> = {}) => postBoxVo({
+      relays: rows,
+      well: { week: '2026-09-28', question: '如果我们无所不能，这周先去做什么？', myAnswer: '', partnerAnswer: '', bothIn: false, ...wellOver },
+    })
+    vi.mocked(postApi.postBox).mockResolvedValue(relaysOf([dueTa, futureTa, mineA, mineB]))
+    vi.mocked(postApi.postWell).mockResolvedValue(relaysOf([dueTa, futureTa, mineA, mineB], {
+      myAnswer: '先把周末还给厨房，做一顿慢饭',
+      partnerAnswer: '想把这周的雨天留给一张长桌',
+      bothIn: true,
+    }))
+    vi.mocked(postApi.postRelay).mockResolvedValue(relaysOf([dueTa, futureTa, mineA, mineB, { id: 'pr5', mine: true, openDay: '2029-10-02', status: 'SEALED', due: false }]))
+    vi.mocked(postApi.postRelayOpen).mockResolvedValue(relaysOf([
+      { ...dueTa, status: 'OPENED', due: false },
+      futureTa,
+      mineA,
+      mineB,
+    ], { myAnswer: '先把周末还给厨房，做一顿慢饭', partnerAnswer: '想把这周的雨天留给一张长桌', bothIn: true }))
+    const wrapper = await mountOnLettersSend()
+    // 井题：没答之前自己的答案是占位话术
+    expect(wrapper.find('[data-testid="couple-post-well-question"]').text()).toContain('无所不能')
+    expect(wrapper.find('[data-testid="couple-post-well-mine"]').text()).toContain('还没投')
+    expect(wrapper.find('[data-testid="couple-post-well-partner-wait"]').exists()).toBe(true)
+    // 胶囊：到点的 TA 笔给拆封钮，没到点的给等待，我写的只给自己上锁
+    expect(wrapper.find('[data-testid="couple-post-relay-inflight"]').text()).toContain('2/3')
+    expect(wrapper.find('[data-testid="couple-post-relay-open-pr1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-post-relay-wait-pr2"]').text()).toContain('2029-10-01')
+    expect(wrapper.find('[data-testid="couple-post-relay-mine-pr3"]').text()).toContain('不归我拆')
+
+    // 答井题 → 整份替换后显示 TA 的答案与双答徽标
+    await wrapper.find('[data-testid="couple-post-well-answer"]').setValue('先把周末还给厨房，做一顿慢饭')
+    await wrapper.find('[data-testid="couple-post-well-submit"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postWell).toHaveBeenCalledWith('先把周末还给厨房，做一顿慢饭')
+    expect(wrapper.find('[data-testid="couple-post-well-partner"]').text()).toContain('雨天留给一张长桌')
+    expect(wrapper.find('[data-testid="couple-post-well-both"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-post-well-partner-wait"]').exists()).toBe(false)
+
+    // 拆 TA 到期那笔
+    await wrapper.find('[data-testid="couple-post-relay-open-pr1"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postRelayOpen).toHaveBeenCalledWith('pr1')
+    expect(wrapper.find('[data-testid="couple-post-relay-status-pr1"]').text()).toContain('已拆开')
+    expect(wrapper.find('[data-testid="couple-post-relay-open-pr1"]').exists()).toBe(false)
+
+    // 封存一笔三年后的（在途封顶 3 笔后按钮 disable）
+    await wrapper.find('[data-testid="couple-post-relay-content"]').setValue('三年后的今天，我们是不是已经把那次旅行走完了')
+    await wrapper.find('[data-testid="couple-post-relay-year-3"]').find('input').setValue(true)
+    await wrapper.find('[data-testid="couple-post-relay-seal"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postRelay).toHaveBeenCalledWith('三年后的今天，我们是不是已经把那次旅行走完了', 3)
+    expect(wrapper.find('[data-testid="couple-post-relay-inflight"]').text()).toContain('3/3')
+    expect(wrapper.find('[data-testid="couple-post-relay-seal"]').attributes('disabled')).toBeDefined()
+    wrapper.unmount()
+  })
+
+  it('明日邮局：解梦局双视角出钮、未来信用卡额度条与兑现钮、愿望台账往年才可盖章', async () => {
+    const myDream: CouplePostDreamVO = { id: 'pd1', day: '2026-10-02', dream: '梦见咱们在超市找那只走丢的猫', mine: true, reading: '猫代表你自己', readBy: 'bob', good: null }
+    const taDream: CouplePostDreamVO = { id: 'pd2', day: '2026-10-01', dream: '梦见我变成一壶开水', mine: false, reading: '', readBy: '', good: null }
+    const pastWish = { id: 'pw1', year: '2025', wish: '一起把东边的城市走一遍', mine: true, verdict: '' }
+    const thisWish = { id: 'pw2', year: '2026', wish: '今年要学会做四道硬菜', mine: true, verdict: '' }
+    const taWish = { id: 'pw3', year: '2024', wish: '带她去看了海', mine: false, verdict: '' }
+    const myFlag: CouplePostCreditVO = { id: 'pc1', promise: '每月陪她看一部老片', dueDay: '2026-11-20', mine: true, status: 'OPEN', daysLeft: 49 }
+    const taFlag: CouplePostCreditVO = { id: 'pc2', promise: '把阳台的灯换成暖的', dueDay: '2026-10-05', mine: false, status: 'OPEN', daysLeft: 3 }
+    const lineGood = { tier: '优质信用：承诺兑现率跑赢多数人 💳', kept: 6, broken: 1, open: 2 }
+    const lineKept = { tier: '未来银行 VIP：说出口的事基本等于已经发生 🏦', kept: 7, broken: 1, open: 1 }
+    vi.mocked(postApi.postBox).mockResolvedValue(postBoxVo({
+      dreams: [myDream, taDream],
+      wishes: [pastWish, thisWish, taWish],
+      credits: [myFlag, taFlag],
+      creditLine: lineGood,
+    }))
+    vi.mocked(postApi.postDream).mockResolvedValue(postBoxVo({ dreams: [myDream, taDream], wishes: [pastWish, thisWish, taWish], credits: [myFlag, taFlag], creditLine: lineGood }))
+    vi.mocked(postApi.postDreamRead).mockResolvedValue(postBoxVo({
+      dreams: [{ ...myDream, good: 1 }, { ...taDream, reading: '说明你最近被人烧水泡着', readBy: 'alice' }],
+      wishes: [pastWish, thisWish, taWish], credits: [myFlag, taFlag], creditLine: lineGood,
+    }))
+    vi.mocked(postApi.postWishVerdict).mockResolvedValue(postBoxVo({
+      dreams: [myDream, taDream],
+      wishes: [{ ...pastWish, verdict: 'KEPT' }, thisWish, taWish],
+      credits: [myFlag, taFlag], creditLine: lineGood,
+    }))
+    vi.mocked(postApi.postPromise).mockResolvedValue(postBoxVo({ dreams: [myDream, taDream], wishes: [pastWish, thisWish, taWish], credits: [myFlag, taFlag], creditLine: lineGood }))
+    vi.mocked(postApi.postPromiseKeep).mockResolvedValue(postBoxVo({
+      dreams: [myDream, taDream],
+      wishes: [{ ...pastWish, verdict: 'KEPT' }, thisWish, taWish],
+      credits: [taFlag],
+      creditLine: lineKept,
+    }))
+    const wrapper = await mountOnLettersSend()
+    // 额度条：档位文案 + 兑现比例 + 三项计数
+    expect(wrapper.find('[data-testid="couple-post-credit-tier"]').text()).toContain('优质信用')
+    expect(wrapper.find('[data-testid="couple-post-credit-stats"]').text()).toContain('兑现 6 面')
+    expect(wrapper.find('[data-testid="couple-post-credit-stats"]').text()).toContain('还立着 2 面')
+    expect(wrapper.find('[data-testid="couple-post-credit-bar"]').attributes('style')).toContain('width: 86%')
+    // 解梦局：TA 的梦归我出解读，我的梦出盖章钮（读点才能盖）
+    expect(wrapper.find('[data-testid="couple-post-dream-read-btn-pd2"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-post-dream-read-btn-pd1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-post-dream-good-pd1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-post-dream-verdict-pd1"]').text()).toContain('等做梦的人盖章')
+    // 愿望台账：往年本人的才给章，今年的和 TA 的都不给
+    expect(wrapper.find('[data-testid="couple-post-wish-kept-pw1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-post-wish-kept-pw2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-post-wish-wait-pw2"]').text()).toContain('还没到期')
+    expect(wrapper.find('[data-testid="couple-post-wish-kept-pw3"]').exists()).toBe(false)
+    // 旗：只有立的人能销
+    expect(wrapper.find('[data-testid="couple-post-credit-keep-pc1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-post-credit-wait-pc2"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-post-dream-input"]').setValue('梦见咱们的猫会开电视')
+    await wrapper.find('[data-testid="couple-post-dream-submit"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postDream).toHaveBeenCalledWith('梦见咱们的猫会开电视')
+
+    // 往年代上「圆上了」章
+    await wrapper.find('[data-testid="couple-post-wish-kept-pw1"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postWishVerdict).toHaveBeenCalledWith('pw1', true)
+    expect(wrapper.find('[data-testid="couple-post-wish-verdict-pw1"]').text()).toContain('圆上了')
+    expect(wrapper.find('[data-testid="couple-post-wish-kept-pw1"]').exists()).toBe(false)
+
+    // 立一面旗并兑现，额度条整条刷新
+    await wrapper.find('[data-testid="couple-post-promise-text"]').setValue('带她去一次海边日出')
+    await wrapper.find('[data-testid="couple-post-promise-due"]').setValue('2026-12-31')
+    await wrapper.find('[data-testid="couple-post-promise-submit"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postPromise).toHaveBeenCalledWith('带她去一次海边日出', '2026-12-31')
+    await wrapper.find('[data-testid="couple-post-credit-keep-pc1"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postPromiseKeep).toHaveBeenCalledWith('pc1')
+    expect(wrapper.find('[data-testid="couple-post-credit-tier"]').text()).toContain('VIP')
+    expect(wrapper.find('[data-testid="couple-post-credit-pc1"]').exists()).toBe(false)
+
+    // 给 TA 的梦出解读后，章归我盖（解读交完转盖章态）
+    await wrapper.find('[data-testid="couple-post-dream-read-input-pd2"]').setValue('说明你最近被人烧水泡着')
+    await wrapper.find('[data-testid="couple-post-dream-read-btn-pd2"]').trigger('click')
+    await flushPromises()
+    expect(postApi.postDreamRead).toHaveBeenCalledWith('pd2', '说明你最近被人烧水泡着')
+    expect(wrapper.find('[data-testid="couple-post-dream-reading-pd2"]').text()).toContain('烧水泡着')
     wrapper.unmount()
   })
 
