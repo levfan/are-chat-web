@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
-import { coupleApi, ceremonyApi, cozyApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
+import { boardApi, coupleApi, ceremonyApi, cozyApi, diningApi, manageApi, museumApi, pinApi } from '@/api/couple'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
+import type { CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleOverview, CouplePromiseVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -366,6 +366,31 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F240-F249 我们公司 boardApi：默认空数据但形状完整的 Overview，用例内按需覆盖
+  const boardBase: Record<string, ReturnType<typeof vi.fn>> = {
+    bdOverview: vi.fn().mockResolvedValue({
+      day: '2026-10-02',
+      week: '2026-09-28',
+      roles: [],
+      votes: [],
+      report: { year: '2026', mineReview: null, mineGoal: null, partnerReview: null, partnerGoal: null, bothIn: false },
+      salary: { month: '2026-10', mineThanks: null, partnerThanks: null, bothPaid: false, payDay: null, monthsPaid: 0 },
+      ideas: [],
+      attend: { day: '2026-10-02', mineAttended: false, partnerAttended: false, convened: false },
+      members: [],
+      card: { lines: [] },
+      weekly: { week: '2026-09-28', votes: 0, ideas: 0, pointsEarned: 0 },
+    }),
+  }
+  const boardWrapped = new Proxy(boardBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(undefined)
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -373,6 +398,7 @@ vi.mock('@/api/couple', () => {
     diningApi: diningWrapped,
     cozyApi: cozyWrapped,
     ceremonyApi: ceremonyWrapped,
+    boardApi: boardWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -1871,5 +1897,108 @@ describe('CoupleView 情侣空间', () => {
     await wrapper.find('[data-testid="couple-cere-coupon-used-toggle"]').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="couple-cere-coupon-used-c1"]').text()).toContain('背我绕小区一圈')
+  })
+
+  // ============ 批次二十：我们公司（F240-F249，shared 页签「🏪 经营所」子页签 CoupleBoard） ============
+
+  /** 我们公司总览空态基底（用例内按分区覆盖） */
+  function bdOverview(partial: Partial<CoupleBdOverviewVO> = {}): CoupleBdOverviewVO {
+    return {
+      day: '2026-10-02',
+      week: '2026-09-28',
+      roles: [],
+      votes: [],
+      report: { year: '2026', mineReview: null, mineGoal: null, partnerReview: null, partnerGoal: null, bothIn: false },
+      salary: { month: '2026-10', mineThanks: null, partnerThanks: null, bothPaid: false, payDay: null, monthsPaid: 0 },
+      ideas: [],
+      attend: { day: '2026-10-02', mineAttended: false, partnerAttended: false, convened: false },
+      members: [],
+      card: { lines: [] },
+      weekly: { week: '2026-09-28', votes: 0, ideas: 0, pointsEarned: 0 },
+      ...partial,
+    }
+  }
+
+  /** 挂载并切到共享空间「🏪 经营所」子页签（CoupleBoard 所在区） */
+  async function mountOnSharedManage() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+    await wrapper.find('#tab-manage').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('我们公司：头衔提案列表渲染，被任命者点盖章上任调 bdAppoint 后整卡刷新', async () => {
+    const roleVo = (appointed: boolean) => [{
+      id: 'br1', fromUser: 'bob', toUser: 'alice', mine: false, title: '财政部长', appointed,
+    }]
+    vi.mocked(boardApi.bdOverview).mockResolvedValue(bdOverview({ roles: roleVo(false) }))
+    vi.mocked(boardApi.bdAppoint).mockResolvedValue(bdOverview({ roles: roleVo(true) }))
+    const wrapper = await mountOnSharedManage()
+    expect(wrapper.find('[data-testid="couple-board"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-bd-role-br1"]').text()).toContain('财政部长')
+
+    await wrapper.find('[data-testid="couple-bd-appoint-br1"]').trigger('click')
+    await flushPromises()
+    expect(boardApi.bdAppoint).toHaveBeenCalledWith('br1')
+    expect(wrapper.find('[data-testid="couple-bd-appoint-br1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-bd-role-done-br1"]').text()).toContain('已上任')
+  })
+
+  it('我们公司：在议议案可表决，点附议调 bdDecide 并返回整份 Overview 整卡移入已决留痕', async () => {
+    const voteVo = (status: 'PENDING' | 'PASSED') => [{
+      id: 'bv1', title: '下周末去看海', proposer: 'bob', mine: false, status,
+      vetoBy: null, created: 1, decidedAt: status === 'PASSED' ? 2 : null, canVote: status === 'PENDING',
+    }]
+    vi.mocked(boardApi.bdOverview).mockResolvedValue(bdOverview({ votes: voteVo('PENDING') }))
+    vi.mocked(boardApi.bdDecide).mockResolvedValue(bdOverview({ votes: voteVo('PASSED') }))
+    const wrapper = await mountOnSharedManage()
+    expect(wrapper.find('[data-testid="couple-bd-pending-bv1"]').text()).toContain('下周末去看海')
+
+    await wrapper.find('[data-testid="couple-bd-vote-pass-bv1"]').trigger('click')
+    await flushPromises()
+    expect(boardApi.bdDecide).toHaveBeenCalledWith('bv1', true)
+    expect(wrapper.find('[data-testid="couple-bd-pending-bv1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-bd-vote-bv1"]').text()).toContain('全票通过')
+  })
+
+  it('我们公司：发薪按钮调 bdSalary，成功后切换为本月已发态并展示职级公示', async () => {
+    vi.mocked(boardApi.bdOverview).mockResolvedValue(bdOverview({
+      members: [{ user: 'alice', titles: ['财政部长'], earned: 25, rank: '正式职员', nextRank: '小组主管', pointsToNext: 35 }],
+    }))
+    vi.mocked(boardApi.bdSalary).mockResolvedValue(bdOverview({
+      salary: { month: '2026-10', mineThanks: '谢谢你每天倒垃圾', partnerThanks: null, bothPaid: false, payDay: 2, monthsPaid: 1 },
+      members: [{ user: 'alice', titles: ['财政部长'], earned: 30, rank: '正式职员', nextRank: '小组主管', pointsToNext: 30 }],
+    }))
+    const wrapper = await mountOnSharedManage()
+    expect(wrapper.find('[data-testid="couple-bd-salary-paid"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="couple-bd-salary-thanks"]').setValue('谢谢你每天倒垃圾')
+    await wrapper.find('[data-testid="couple-bd-salary-submit"]').trigger('click')
+    await flushPromises()
+    expect(boardApi.bdSalary).toHaveBeenCalledWith('谢谢你每天倒垃圾')
+    expect(wrapper.find('[data-testid="couple-bd-salary-paid"]').text()).toContain('谢谢你每天倒垃圾')
+    expect(wrapper.find('[data-testid="couple-bd-salary-thanks"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-bd-member-alice"]').text()).toContain('正式职员')
+    expect(wrapper.find('[data-testid="couple-bd-member-next-alice"]').text()).toContain('还差 30 分升「小组主管」')
+  })
+
+  it('我们公司：例会签到调 bdAttend，TA 未到显示双签等待提示', async () => {
+    vi.mocked(boardApi.bdOverview).mockResolvedValue(bdOverview())
+    vi.mocked(boardApi.bdAttend).mockResolvedValue(bdOverview({
+      attend: { day: '2026-10-02', mineAttended: true, partnerAttended: false, convened: false },
+    }))
+    const wrapper = await mountOnSharedManage()
+    expect(wrapper.find('[data-testid="couple-bd-attend-wait"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="couple-bd-attend-btn"]').trigger('click')
+    await flushPromises()
+    expect(boardApi.bdAttend).toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="couple-bd-attend-partner"]').text()).toContain('TA 还没来')
+    expect(wrapper.find('[data-testid="couple-bd-attend-wait"]').text()).toContain('等你一起敲钟')
+    expect(wrapper.find('[data-testid="couple-bd-attend-btn"]').text()).toContain('已签到')
   })
 })
