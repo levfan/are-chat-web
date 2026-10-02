@@ -19,6 +19,7 @@ declare module 'vue' {
     CoupleBond: typeof import('./components/couple/CoupleBond.vue')['default']
     CoupleCapsule: typeof import('./components/couple/CoupleCapsule.vue')['default']
     CoupleCare: typeof import('./components/couple/CoupleCare.vue')['default']
+    CoupleCatch: typeof import('./components/couple/CoupleCatch.vue')['default']
     CoupleCeremony: typeof import('./components/couple/CoupleCeremony.vue')['default']
     CoupleChallenge: typeof import('./components/couple/CoupleChallenge.vue')['default']
     CoupleChronicle: typeof import('./components/couple/CoupleChronicle.vue')['default']
