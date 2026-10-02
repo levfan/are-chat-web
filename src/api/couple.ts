@@ -228,6 +228,10 @@ import type {
   CoupleEchoVO,
   CoupleEchoCalendarDayVO,
   CoupleEchoYearlyVO,
+  CoupleFocusTodayVO,
+  CoupleFocusWeeklyVO,
+  CoupleFocusYearlyVO,
+  CoupleFocusDetoxKind,
   CouplePinVO,
 } from '@/types'
 
@@ -2246,4 +2250,75 @@ export const echoApi = {
    *  后端 Bank 组好的 summary。⚠️ 这份是「另拉一个年份」用的懒读接口，当年的年报恒随总览 yearly 下发） */
   echoYear: (year?: string) =>
     http.get<CoupleEchoYearlyVO>(year ? `/api/couple/echo/year?year=${year}` : '/api/couple/echo/year'),
+}
+
+/**
+ * F360-F369 注意力保护区（focusApi，基址 /api/couple/focus）
+ * 13 个映射 = 3 个 GET（/today /weekly /year）+ 10 个 POST（/night /slot/propose /slot/confirm
+ * /queue /queue/read /meal /gaze /unplug /nudge /detox）。
+ * GET /today 返回聚合 TodayVO，10 个 POST 写接口全部原样返回整份 TodayVO（后端 CoupleFocusService.TodayVO），
+ * 前端整体替换即十卡刷新；/weekly（F367）与 /year（F369）是两个「点了按钮才懒读」的独立接口，不在这份聚合里。
+ * 限流与错误码全部抄自后端 Service/实体常量（业务规则归后端，400 中文 message 直透 ElMessage）：
+ * · F360 /night：minutes 后端 0-180 静默钳制（CoupleFocusNight.MINUTES_MIN/MAX，null 按 0），
+ *   note ≤40 字（NOTE_MAX），超 40 字 400「一句话最多 40 字」；自己那列可改写（upsert），
+ *   两列都非空才算点亮（bothLit 读时算）；只有一方报时后端把 Bank「还有一个人没报」挂在 night.hint 上。
+ * · F361 /slot/propose：title 必填否则 400「总得写点什么，这段时间做什么」、≤60 字（TITLE_MAX）超了 400
+ *   「「做什么」最多 60 字」；day 须 yyyy-MM-dd 否则 400「哪天写成 yyyy-MM-dd」，且必须落在本周
+ *   （周一~周日，后端按服务端今天算）否则 400「时段要落在本周（… ~ …）」；hours 后端 1-6 静默钳制
+ *   （HOURS_MIN/MAX，null 按 HOURS_DEFAULT=2）；一周只有一段，重新提议即改写并把确认清空。
+ *   /slot/confirm：没人预约 400「这周还没有人预约专属时段」、提议人自己确认 400「自己写的时段不能自己确认，
+ *   等 TA 点头」、已生效再点是幂等（直接返回整份 VO 不报错）。
+ * · F362 /queue：content 必填否则 400「想说的那句话说一句」、≤80 字（CONTENT_MAX）超了 400「一句话最多 80 字」、
+ *   我在途 ≥5 句（IN_FLIGHT_MAX）400「攒了 5 句了，等 TA 收一下吧」。
+ *   ⚠️ GET /today 自己就会把 to_user=我 的留言批量置已读（Service.settleRead），所以 /queue/read 常常签收 0 条、
+ *   不推 focus-queue-read；下发口径只有「TA 攒给我的」那一份队列。
+ * · F363 /meal、F364 /gaze、F365 /unplug：无请求体、无业务错误——点自己那一格，后端只在 0→1 真的翻转时更新并
+ *   在双点凑齐那一次推 focus-meal-both / focus-gaze-both / focus-unplug-both；重复点幂等（不 update 不推送）。
+ * · F366 /nudge：note ≤40 字（NOTE_MAX）可空，超了 400「哨子上的话最多 40 字」；每人每天 2 张
+ *   （DAILY_MAX），用完 400「今天的 2 张哨卡都用完了，再吹就唠叨了」；只推收卡人。
+ * · F368 /detox：kind 只能是 AM 或 PM（KIND_AM/KIND_PM），否则 400「只能选 AM 或 PM」；一天一格，
+ *   半天代号由先挂的人定，后应战的人传什么都不改写它；双报才推 focus-detox-done（否则首个应战推 started）。
+ * · F369 /year：year 空串=当年且须 yyyy，否则 400「年份写成 yyyy」。
+ * 未建空间一律 404「还没有建立情侣空间，先邀请一位好友吧」，组件侧 safeLoad 静默降级。
+ */
+export const focusApi = {
+  /** F360-F369 今日注意力总览（GET /today：night 恒有值对象、slot/detoxKind 可 null、queue 只给 TA 攒给我的那些；
+   *  ⚠️ 读时顺带把 to_user=我 的留言批量置已读（不推事件），所以 queueUnread 基本恒为 0；未建空间 404 前端静默降级） */
+  focusToday: () => http.get<CoupleFocusTodayVO>('/api/couple/focus/today'),
+  /** F360 报今晚放下手机陪 TA 的分钟数（minutes 后端 0-180 钳制、null 按 0；note ≤40 字超了 400；
+   *  本人那列可反复改写，两人都报过当夜才点亮），返回整份总览 */
+  focusNight: (minutes: number | null, note: string) =>
+    http.postJson<CoupleFocusTodayVO>('/api/couple/focus/night', { minutes, note }),
+  /** F361 预约本周的专属时段（title ≤60 字且必填、hours 后端 1-6 钳制缺省 2、day 须落在本周内否则 400；
+   *  一周只有一段——已有行会被改写并把对方的确认清空），返回整份总览 */
+  focusSlotPropose: (title: string, hours: number, day: string) =>
+    http.postJson<CoupleFocusTodayVO>('/api/couple/focus/slot/propose', { title, hours, day }),
+  /** F361 对方点头确认（无请求体；⚠️ 提议人自己确认 400「自己写的时段不能自己确认，等 TA 点头」、
+   *  没人预约 400「这周还没有人预约专属时段」；已生效再点是幂等），返回整份总览 */
+  focusSlotConfirm: () => http.postJson<CoupleFocusTodayVO>('/api/couple/focus/slot/confirm', {}),
+  /** F362 把一句话攒进 TA 的队列（content ≤80 字必填「想说的那句话说一句」，超 80 字 400；
+   *  我在途 ≤5 句，满了 400「攒了 5 句了，等 TA 收一下吧」；只推收件人），返回整份总览 */
+  focusQueue: (content: string) => http.postJson<CoupleFocusTodayVO>('/api/couple/focus/queue', { content }),
+  /** F362 一键收全部并回执已读（无请求体；本次真签收 0 条时后端不推 focus-queue-read——
+   *  GET /today 早就读时结算过了，这条按钮更多是「补签 + 给 TA 一个回执」），返回整份总览 */
+  focusQueueRead: () => http.postJson<CoupleFocusTodayVO>('/api/couple/focus/queue/read', {}),
+  /** F363 饭桌手机倒扣打卡（无请求体；点自己那一格，双点=同桌成功推双方，重复点后端幂等不报错），返回整份总览 */
+  focusMeal: () => http.postJson<CoupleFocusTodayVO>('/api/couple/focus/meal', {}),
+  /** F364 对视十秒打卡（无请求体；双点点亮推双方，重复点幂等），返回整份总览 */
+  focusGaze: () => http.postJson<CoupleFocusTodayVO>('/api/couple/focus/gaze', {}),
+  /** F365 不插电半小时打卡（无请求体；双点算这晚成了，周连击由后端读时算，重复点幂等），返回整份总览 */
+  focusUnplug: () => http.postJson<CoupleFocusTodayVO>('/api/couple/focus/unplug', {}),
+  /** F366 递一张「回来啦」卡（note ≤40 字可空，超了 400「哨子上的话最多 40 字」；
+   *  ⚠️ 每人每天 2 张，用完 400「今天的 2 张哨卡都用完了，再吹就唠叨了」；只推 TA），返回整份总览 */
+  focusNudge: (note: string) => http.postJson<CoupleFocusTodayVO>('/api/couple/focus/nudge', { note }),
+  /** F368 发起/应战半日无手机挑战（kind 只能 'AM' | 'PM'，否则 400「只能选 AM 或 PM」；一天一格，
+   *  先挂的人定半天，后应战的人不改写它；双报才达成「清净半天」），返回整份总览 */
+  focusDetox: (kind: CoupleFocusDetoxKind) => http.postJson<CoupleFocusTodayVO>('/api/couple/focus/detox', { kind }),
+  /** F367 专注周报（GET：无参，周一锚聚合本周真实数字 + 后端 Bank 组好的 summary；
+   *  ⚠️ 不在总览里，点按钮才懒读，失败直透 ElMessage.error，首次加载不自动拉） */
+  focusWeekly: () => http.get<CoupleFocusWeeklyVO>('/api/couple/focus/weekly'),
+  /** F369 注意力年报（GET：year 空串=当年且须 yyyy 否则 400「年份写成 yyyy」；
+   *  hours 是后端 %.1f 换算的小时数字符串，topDay 空串=今年还没有最专注的一天） */
+  focusYear: (year?: string) =>
+    http.get<CoupleFocusYearlyVO>(year ? `/api/couple/focus/year?year=${year}` : '/api/couple/focus/year'),
 }

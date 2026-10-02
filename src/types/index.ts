@@ -4682,3 +4682,135 @@ export interface CoupleEchoVO {
   selfLetter: CoupleEchoSelfLetterVO | null
   yearly: CoupleEchoYearlyVO
 }
+
+// ============ 批次三十二：注意力保护区（F360-F369，focusApi / CoupleFocus.vue） ============
+// 字段与后端 CoupleFocusService 的 6 个 record 逐一对齐（record 参数顺序 = wire 字段顺序）。
+// 可空性按 Service 实际：
+// · TodayVO.night 恒有值——没打卡行时 toNight() 给 NightVO(false,false,null,null,"","",false,0,"")，不是 null；
+// · TodayVO.slot / TodayVO.detoxKind 才是真可空（这周没人预约 / 今天没挂排毒半天 → 后端给 null）；
+// · NightVO.mineMinutes / partnerMinutes 是 Java Integer，没报的那一方给 null（报过 0 分钟也是 0 不是 null）；
+// · 其余字符串一律经 nz() 下发空串，数字/布尔恒有值（created 为 null 时后端给 0）；
+// · ⚠️ YearlyVO.year 是 Java int → number，WeeklyVO.week 是字符串 yyyy-MM-dd（周一锚），别抄错。
+// ⚠️ 后端只下发「合计与双点态」，不下发 meal/gaze/detox 的「我这一格点没点」标志（只有 unplug 有 unplugMine），
+//    组件用本地回执位兜住，重复点是后端幂等不报错的。
+
+/**
+ * F360 当夜专注打卡（双人列口径：_a 属 couple_space.userA、_b 属 userB，读哪一列由后端按 mine 算好）。
+ * mineReported/partnerReported=那一方报没报（minutes 为 null 即没报）；bothLit=两列都非空才点亮（读时算）；
+ * totalMinutes=两人报的分钟相加（没报的那方按 0 计）；
+ * hint=没点亮时后端挂上来的 Bank「还有一个人没报，今晚的灯先留着一半 🕯️」，点亮或没人报时是空串。
+ */
+export interface CoupleFocusNightVO {
+  mineReported: boolean
+  partnerReported: boolean
+  mineMinutes: number | null
+  partnerMinutes: number | null
+  mineNote: string
+  partnerNote: string
+  bothLit: boolean
+  totalMinutes: number
+  hint: string
+}
+
+/**
+ * F362 攒下来的一句话。⚠️ TodayVO.queue 只下发 to_user=我 的留言（TA 攒给我的），
+ * 所以我自己的那一份永远算不出 mine=true（后端 q.getFromUser().equals(me) 恒 false），也看不到我攒出去的几句。
+ * read=TA 收过没有（read_at 非空）；created=毫秒，未下发时后端给 0。
+ */
+export interface CoupleFocusQueueVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  content: string
+  read: boolean
+  created: number
+}
+
+/**
+ * F361 本周专属时段（uk(space,week)，week=那周周一 yyyy-MM-dd；一周只有一段，重新提议即改写并清空确认）。
+ * mine=我是提议人；confirmed=对方点过头（生效）。hours 后端 hoursOrDefault() 恒有值（缺省 2）。
+ */
+export interface CoupleFocusSlotVO {
+  id: string
+  week: string
+  day: string
+  title: string
+  hours: number
+  proposedBy: string
+  mine: boolean
+  confirmed: boolean
+  created: number
+}
+
+/**
+ * F367 专注周报（GET /weekly，周一锚聚合，数字全部来自真实表）。
+ * minutes=本周两人合计放下手机分钟；litNights=双报点亮的夜数；meals/gazes/unplugs=各自「双点」成功的天数；
+ * slots=本周已确认的专属时段数；nudges=本周哨卡张数（两人合计）；unplugStreak=读时算的周连击；summary=后端 Bank 整句。
+ */
+export interface CoupleFocusWeeklyVO {
+  week: string
+  fromDay: string
+  toDay: string
+  minutes: number
+  litNights: number
+  meals: number
+  gazes: number
+  unplugs: number
+  slots: number
+  nudges: number
+  unplugStreak: number
+  summary: string
+}
+
+/**
+ * F369 注意力年报（GET /year?year=，year 缺省当年）。
+ * hours=把分钟换算成「为彼此放下的手机小时数」的字符串（后端 %.1f，如 "3.5"，不是数字）；
+ * topDay=最专注的一天（没数据时后端给空串，Bank 那句「今年还长着呢」已经写进 summary 里）。
+ */
+export interface CoupleFocusYearlyVO {
+  year: number
+  minutes: number
+  hours: string
+  litNights: number
+  meals: number
+  gazes: number
+  unplugs: number
+  detox: number
+  topDay: string
+  topMinutes: number
+  summary: string
+}
+
+/**
+ * F360-F369 今日注意力总览（GET /api/couple/focus/today 一次拉齐；10 个 POST 写接口全部返回整份 TodayVO，
+ * 前端整体替换即十卡刷新）。
+ * meals/gazes 是「今天有几个人点了」的 0/1/2 计数（mealBoth/gazeBoth 才是双点成功）；
+ * unplugMine=我今晚点没点、unplugBoth=两人都点了；unplugStreak=周连击（读时算）；
+ * nudgesToday=今天两人一共递了几张哨卡、nudgeQuotaLeft=我今天还剩几张（每天 2 张）；
+ * detoxBoth=今天这半天双报达成、detoxKind=今天挂的是 AM/PM（没挂为 null，先挂的人定，后应战的人不改写它）。
+ * day=服务端今天 yyyy-MM-dd（组件里所有「本周/今天」判定与倒数一律吃它，不吃本地时钟）。
+ */
+export interface CoupleFocusTodayVO {
+  day: string
+  night: CoupleFocusNightVO
+  queueUnread: number
+  queue: CoupleFocusQueueVO[]
+  slot: CoupleFocusSlotVO | null
+  meals: number
+  mealMine: boolean
+  mealBoth: boolean
+  gazes: number
+  gazeMine: boolean
+  gazeBoth: boolean
+  unplugMine: boolean
+  unplugBoth: boolean
+  unplugStreak: number
+  nudgesToday: number
+  nudgeQuotaLeft: number
+  detoxMine: boolean
+  detoxBoth: boolean
+  detoxKind: string | null
+}
+
+/** F368 半日无手机挑战的半天代号（后端 CoupleFocusDetox.KIND_AM/KIND_PM，只能这两个） */
+export type CoupleFocusDetoxKind = 'AM' | 'PM'
