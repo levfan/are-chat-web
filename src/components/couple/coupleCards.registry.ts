@@ -38,6 +38,17 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-read-watch', label: '共读追剧', tab: 'growth' },
   { key: 'couple-wish-board', label: '心愿互换板', tab: 'growth' },
   { key: 'couple-dict', label: '恋爱词典', tab: 'growth' },
+  // 🌙 注意力保护区（F360-F369，growth 页签末尾）
+  { key: 'couple-focus-night', label: '专注打卡', tab: 'growth' },
+  { key: 'couple-focus-slot', label: '专属时段', tab: 'growth' },
+  { key: 'couple-focus-queue', label: '攒一句话', tab: 'growth' },
+  { key: 'couple-focus-meal', label: '饭桌不低头', tab: 'growth' },
+  { key: 'couple-focus-gaze', label: '对视十秒', tab: 'growth' },
+  { key: 'couple-focus-unplug', label: '不插电半小时', tab: 'growth' },
+  { key: 'couple-focus-nudge', label: '走神温柔哨', tab: 'growth' },
+  { key: 'couple-focus-weekly', label: '专注周报', tab: 'growth' },
+  { key: 'couple-focus-detox', label: '数字排毒半天', tab: 'growth' },
+  { key: 'couple-focus-year', label: '注意力年报', tab: 'growth' },
   // 🎁 惊喜
   { key: 'couple-surprise', label: '刮刮乐与盲盒', tab: 'surprise' },
   { key: 'couple-garden', label: '爱情花园', tab: 'surprise' },

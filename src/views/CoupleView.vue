@@ -210,6 +210,7 @@
               <CoupleReadWatch />
               <CoupleWishBoard />
               <CoupleDict />
+              <CoupleFocus />
             </div>
           </el-tab-pane>
           <el-tab-pane label="🎁 惊喜" name="surprise" lazy>
@@ -496,6 +497,7 @@ import CoupleBody from '@/components/couple/CoupleBody.vue'
 import CoupleRepair from '@/components/couple/CoupleRepair.vue'
 import CoupleLegacy from '@/components/couple/CoupleLegacy.vue'
 import CoupleEcho from '@/components/couple/CoupleEcho.vue'
+import CoupleFocus from '@/components/couple/CoupleFocus.vue'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()
