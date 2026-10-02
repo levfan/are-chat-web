@@ -253,7 +253,10 @@ const moodLabel = computed(() => {
 })
 
 async function onDepositSecurity() {
-  if (!securityDraft.value.trim()) return
+  if (!securityDraft.value.trim()) {
+    ElMessage.warning('安心话先写一句再存 🫙')
+    return
+  }
   try {
     await couple.depositSecurity(securityDraft.value)
     securityDraft.value = ''
@@ -281,7 +284,10 @@ async function onCheckup() {
 }
 
 async function onSaveDecade() {
-  if (!decadeDraft.value.trim()) return
+  if (!decadeDraft.value.trim()) {
+    ElMessage.warning('十年之约先写一句 ⏳')
+    return
+  }
   try {
     await couple.saveDecade(decadeDraft.value)
     decadeDraft.value = ''
@@ -292,7 +298,10 @@ async function onSaveDecade() {
 }
 
 async function onAddVision() {
-  if (!visionWord.value.trim()) return
+  if (!visionWord.value.trim()) {
+    ElMessage.warning('愿景板要写一个词 ✨')
+    return
+  }
   try {
     await couple.addVision(visionWord.value, visionNote.value.trim() || undefined)
     visionWord.value = ''
@@ -304,7 +313,10 @@ async function onAddVision() {
 }
 
 async function onMakeOath() {
-  if (!oathDraft.value.trim()) return
+  if (!oathDraft.value.trim()) {
+    ElMessage.warning('承诺要写具体内容才能展出 🖋️')
+    return
+  }
   try {
     await couple.makeOath(oathDraft.value)
     oathDraft.value = ''
@@ -342,7 +354,10 @@ async function onLoadRings() {
 }
 
 async function onMakeContract() {
-  if (!contractTitle.value.trim()) return
+  if (!contractTitle.value.trim()) {
+    ElMessage.warning('条约标题先写一句 📜')
+    return
+  }
   try {
     await couple.makeContract(contractTitle.value, contractContent.value.trim() || undefined)
     contractTitle.value = ''
@@ -363,7 +378,10 @@ async function onCheckContract(id: string) {
 }
 
 async function onAdoptPet() {
-  if (!petName.value.trim()) return
+  if (!petName.value.trim()) {
+    ElMessage.warning('给守护兽起个名字吧 🐾')
+    return
+  }
   try {
     await couple.adoptPet(petName.value, petKind.value)
     ElMessage.success('守护兽已加入家庭 🐾')

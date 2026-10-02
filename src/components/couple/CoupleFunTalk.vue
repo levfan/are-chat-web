@@ -204,7 +204,11 @@ async function onStartGuess() {
 
 async function onClue() {
   const g = myDrawn.value
-  if (!g || !clueDraft.value.trim()) return
+  if (!g) return
+  if (!clueDraft.value.trim()) {
+    ElMessage.warning('先给一条线索 🧩')
+    return
+  }
   try {
     await couple.clueGuess(g.id, clueDraft.value)
     clueDraft.value = ''
@@ -216,7 +220,11 @@ async function onClue() {
 
 async function onGuess() {
   const g = partnerClued.value
-  if (!g || !guessDraft.value.trim()) return
+  if (!g) return
+  if (!guessDraft.value.trim()) {
+    ElMessage.warning('猜词先写下你猜的 🎯')
+    return
+  }
   try {
     await couple.doGuess(g.id, guessDraft.value)
     guessDraft.value = ''
@@ -226,7 +234,10 @@ async function onGuess() {
 }
 
 async function onStartStory() {
-  if (!storyStartDraft.value.trim()) return
+  if (!storyStartDraft.value.trim()) {
+    ElMessage.warning('故事开头先写一句 🌟')
+    return
+  }
   try {
     await couple.startStory(storyStartDraft.value)
     storyStartDraft.value = ''
@@ -237,7 +248,10 @@ async function onStartStory() {
 }
 
 async function onAddLine(chainId: string) {
-  if (!storyDraft.value.trim()) return
+  if (!storyDraft.value.trim()) {
+    ElMessage.warning('故事接龙先写一句 📖')
+    return
+  }
   try {
     await couple.addStoryLine(chainId, storyDraft.value)
     storyDraft.value = ''

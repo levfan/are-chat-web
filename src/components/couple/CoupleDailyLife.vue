@@ -248,7 +248,10 @@ async function onSaveThree() {
 }
 
 async function onWriteDream() {
-  if (!dreamDraft.value.trim()) return
+  if (!dreamDraft.value.trim()) {
+    ElMessage.warning('梦先讲一句我才能接住 🌙')
+    return
+  }
   try {
     await couple.writeDream(dreamDraft.value)
     dreamDraft.value = ''
@@ -284,7 +287,10 @@ async function onCheckinFood(id: string) {
 }
 
 async function onAddFact() {
-  if (!factContent.value.trim()) return
+  if (!factContent.value.trim()) {
+    ElMessage.warning('TA 手册先写一条 📓')
+    return
+  }
   try {
     await couple.addFact(factKind.value, factContent.value)
     factContent.value = ''
@@ -295,7 +301,10 @@ async function onAddFact() {
 }
 
 async function onAddBadge() {
-  if (!badgeTitle.value.trim()) return
+  if (!badgeTitle.value.trim()) {
+    ElMessage.warning('成就名先写一句 🏅')
+    return
+  }
   try {
     await couple.addBadge(badgeTitle.value, badgeCondition.value.trim() || undefined)
     badgeTitle.value = ''

@@ -389,7 +389,10 @@ async function onSaveRoutine() {
 }
 
 async function onWriteLetter() {
-  if (!letterDraft.value.trim()) return
+  if (!letterDraft.value.trim()) {
+    ElMessage.warning('想念的信先写一句 💌')
+    return
+  }
   try {
     await couple.writeLetter(letterDraft.value)
     letterDraft.value = ''

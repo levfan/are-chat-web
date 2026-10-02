@@ -184,7 +184,10 @@ async function onTap() {
 }
 
 async function onAnswerWhatIf() {
-  if (!whatIfDraft.value.trim()) return
+  if (!whatIfDraft.value.trim()) {
+    ElMessage.warning('先写下你的「如果…」 🌈')
+    return
+  }
   try {
     await couple.answerWhatIf(whatIfDraft.value)
     whatIfDraft.value = ''
@@ -195,7 +198,10 @@ async function onAnswerWhatIf() {
 }
 
 async function onAddFlash() {
-  if (!flashDraft.value.trim()) return
+  if (!flashDraft.value.trim()) {
+    ElMessage.warning('先想一句闪光的话再记下 ✨')
+    return
+  }
   try {
     await couple.addFlash(flashDraft.value)
     flashDraft.value = ''

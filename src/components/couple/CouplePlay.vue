@@ -307,7 +307,10 @@ async function onAnswerSurvey(qNo: number) {
 }
 
 async function onMakeQuiz() {
-  if (!quizDraft.value.trim()) return
+  if (!quizDraft.value.trim()) {
+    ElMessage.warning('出题先写题干 🎓')
+    return
+  }
   try {
     await couple.makeQuiz(quizDraft.value)
     quizDraft.value = ''
@@ -339,7 +342,10 @@ async function onJudgeQuiz(id: string, verdict: 'RIGHT' | 'WRONG') {
 }
 
 async function onCollectLoveWord() {
-  if (!loveWord.value.trim()) return
+  if (!loveWord.value.trim()) {
+    ElMessage.warning('情话课先写一句 📖')
+    return
+  }
   try {
     await couple.collectLoveWord(loveWord.value, loveMeaning.value.trim() || undefined)
     loveWord.value = ''
@@ -362,7 +368,10 @@ async function onSubmitBlind() {
 }
 
 async function onJoinBattle() {
-  if (!battleDraft.value.trim()) return
+  if (!battleDraft.value.trim()) {
+    ElMessage.warning('情话 Battle 先出一句 ⚔️')
+    return
+  }
   try {
     await couple.joinBattle(battleDraft.value)
     battleDraft.value = ''

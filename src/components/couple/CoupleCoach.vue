@@ -267,7 +267,10 @@ async function onCheckinStreak(id: string) {
 }
 
 async function onAddThanks() {
-  if (!thanksDraft.value.trim()) return
+  if (!thanksDraft.value.trim()) {
+    ElMessage.warning('感谢先写一句 🙏')
+    return
+  }
   try {
     await couple.addThanksNote(thanksDraft.value)
     thanksDraft.value = ''
@@ -288,7 +291,10 @@ async function onPickFeelWord(word: string) {
 }
 
 async function onSaveWeekStar() {
-  if (!weekStarDraft.value.trim()) return
+  if (!weekStarDraft.value.trim()) {
+    ElMessage.warning('本周高光先写一句 🌟')
+    return
+  }
   try {
     await couple.saveCoachWeekStar(weekStarDraft.value)
     weekStarDraft.value = ''
@@ -299,7 +305,10 @@ async function onSaveWeekStar() {
 }
 
 async function onSaveRead() {
-  if (!readDraft.value.trim()) return
+  if (!readDraft.value.trim()) {
+    ElMessage.warning('共读先写一句 📚')
+    return
+  }
   try {
     await couple.saveCoachRead(readDraft.value)
     readDraft.value = ''
@@ -310,7 +319,10 @@ async function onSaveRead() {
 }
 
 async function onAddDelay() {
-  if (!delayTitle.value.trim()) return
+  if (!delayTitle.value.trim()) {
+    ElMessage.warning('拖延的事先写一件 ⏰')
+    return
+  }
   try {
     await couple.addDelayTask(delayTitle.value)
     delayTitle.value = ''
@@ -339,7 +351,10 @@ async function onDoneDelay(id: string) {
 }
 
 async function onAddPraise() {
-  if (!praiseDraft.value.trim()) return
+  if (!praiseDraft.value.trim()) {
+    ElMessage.warning('优点存折先写一条 🌟')
+    return
+  }
   try {
     await couple.addPraiseBankItem(praiseDraft.value, praiseScene.value.trim() || undefined)
     praiseDraft.value = ''

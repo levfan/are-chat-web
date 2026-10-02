@@ -354,7 +354,10 @@ async function onCloseMeeting(m: CoupleManageMeetingVO) {
 
 // ---- F181 本周主理人 ----
 async function onSaveHostPlan() {
-  if (!planDraft.value.trim()) return
+  if (!planDraft.value.trim()) {
+    ElMessage.warning('计划先写一句 🗓️')
+    return
+  }
   try {
     host.value = (await manageApi.saveHostPlan(planDraft.value.trim())) ?? host.value
     planDraft.value = ''
@@ -483,7 +486,10 @@ async function onRedeem(r: CoupleManagePointAccountVO['rewards'][number]) {
 
 // ---- F187 五年计划双轨 ----
 async function onAddPlan() {
-  if (!planContentDraft.value.trim()) return
+  if (!planContentDraft.value.trim()) {
+    ElMessage.warning('策划案先写内容 📋')
+    return
+  }
   try {
     plans.value = (await manageApi.createFiveYearPlan(planTrackDraft.value, planContentDraft.value.trim())) ?? []
     planContentDraft.value = ''

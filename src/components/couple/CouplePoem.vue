@@ -233,7 +233,10 @@ function decodeText(cipher: string): string {
 }
 
 async function onAddLine() {
-  if (!lineDraft.value.trim()) return
+  if (!lineDraft.value.trim()) {
+    ElMessage.warning('接龙先写一句 🖋️')
+    return
+  }
   try {
     await couple.addPoemLine(lineDraft.value)
     lineDraft.value = ''
@@ -244,7 +247,10 @@ async function onAddLine() {
 }
 
 async function onSealMorning() {
-  if (!morningDraft.value.trim()) return
+  if (!morningDraft.value.trim()) {
+    ElMessage.warning('醒来第一条先写一句 ☀️')
+    return
+  }
   try {
     await couple.sealMorningNote(morningDraft.value)
     morningDraft.value = ''
@@ -291,7 +297,10 @@ async function onReplyBottle(id: string) {
 }
 
 async function onMakeCipher() {
-  if (!cipherDraft.value.trim()) return
+  if (!cipherDraft.value.trim()) {
+    ElMessage.warning('密码情书先写正文 🔐')
+    return
+  }
   try {
     await couple.makeCipherNote(cipherDraft.value, cipherHint.value.trim() || undefined)
     cipherDraft.value = ''
@@ -318,7 +327,10 @@ function decodeCipher(c: CoupleCipherNoteVO) {
 }
 
 async function onAnswerSoul() {
-  if (!soulDraft.value.trim()) return
+  if (!soulDraft.value.trim()) {
+    ElMessage.warning('灵魂提问先写一句 💭')
+    return
+  }
   try {
     await couple.answerSoul(soulDraft.value)
     soulDraft.value = ''
@@ -354,7 +366,10 @@ async function onLikePoem3(id: string) {
 }
 
 async function onSaveJournal() {
-  if (!journalDraft.value.trim()) return
+  if (!journalDraft.value.trim()) {
+    ElMessage.warning('手账先写今天的几句 📔')
+    return
+  }
   try {
     await couple.saveJournalPage(journalSticker.value, journalDraft.value)
     journalDraft.value = ''

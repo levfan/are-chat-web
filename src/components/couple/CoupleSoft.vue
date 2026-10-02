@@ -156,7 +156,10 @@ const partnerSoft = computed(() => {
 })
 
 async function onTranslate() {
-  if (!translateText.value.trim()) return
+  if (!translateText.value.trim()) {
+    ElMessage.warning('先写一句想翻译的话 🪄')
+    return
+  }
   try {
     result.value = await couple.translateText(translateText.value)
   } catch (e) {
@@ -186,7 +189,11 @@ async function onStartCool() {
 
 async function onSoften() {
   const c = activeCool.value
-  if (!c || !softDraft.value.trim()) return
+  if (!c) return
+  if (!softDraft.value.trim()) {
+    ElMessage.warning('先选一句想说的话 🫧')
+    return
+  }
   try {
     await couple.softenCool(c.id, softDraft.value)
     softDraft.value = ''
