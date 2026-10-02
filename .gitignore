@@ -12,3 +12,6 @@ test-results/
 .idea/
 *.iml
 .vscode/
+
+# 实时巡检产物（登录态 Cookie、命中账本、json 报告），见 e2e-live/README.md
+.audit-live/
