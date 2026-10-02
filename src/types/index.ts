@@ -4378,3 +4378,158 @@ export interface CoupleWorldVO {
   group: CoupleWorldGroupVO
   apologies: CoupleWorldApologyVO[]
 }
+
+// ============ 批次三十：传世系统（F340-F349，legacyApi / CoupleLegacy.vue） ============
+// 字段与后端 CoupleLegacyService 的 11 个 record 逐一对齐；可空性按 Service 实际：
+// 只有 SpeechVO.score 是 Java Integer 可为 null（没打分的发言），其余字符串后端一律给空串、
+// 数字恒有值（MilestoneVO.estimateDays 用 -1 表示「近 30 天没有速率」）。
+
+/** F347 传世条目类型（后端 CoupleLegacyItem.KINDS 四键，其它值后端 400） */
+export type CoupleLegacyItemKind = 'PLACE' | 'PASSWORD' | 'THING' | 'WORD'
+
+/** F347 传世条目状态（后端 CoupleLegacyItem.STATUS_OPEN/STATUS_SEALED：本人登记 OPEN，对方加签才 SEALED） */
+export type CoupleLegacyItemStatus = 'OPEN' | 'SEALED'
+
+/**
+ * F340 年度十问的一期（后端恒定下发「今年 + 去年」两期供跨年对照）。
+ * mine 字段后端写死 true（每期都是「我这一侧的视角」，TA 的答案在 partnerAnswers 里）；
+ * myAnswers/partnerAnswers 恒 10 格、空串=那格没答；⚠️ partnerAnswers 由后端逐题钳制：
+ * 我自己那一格没答之前，那一格的 TA 答案下发为空串（年度十问不是抄答案）。
+ * bothDone=两人都答满 10 题（跨年 diff 视图的闸门）。
+ */
+export interface CoupleLegacyTenVO {
+  year: string
+  mine: boolean
+  myAnswersJoined: string
+  partnerAnswersJoined: string
+  questions: string[]
+  myAnswers: string[]
+  partnerAnswers: string[]
+  answeredCount: number
+  bothDone: boolean
+}
+
+/** F341 记忆库年审的一份意见（keepThree/deleteThree 后端按逗号拆成数组，各 ≤3 条各 ≤60 字；
+ *  submitted=这一年两人已交份数（1=还差 TA，2=双人都交齐）） */
+export interface CoupleLegacyAuditVO {
+  year: string
+  mine: boolean
+  keepThree: string[]
+  deleteThree: string[]
+  note: string
+  submitted: number
+}
+
+/**
+ * F342 年度发言稿的一条（score 为 null=对方还没打分；scoreNote=评语、ratedBy=打分人（空串=没人打）；
+ *  ⚠️ canRate 由后端算好：只有对方发的那篇且还没打过分才 true，自己那篇永远评不了分）
+ */
+export interface CoupleLegacySpeechVO {
+  year: string
+  mine: boolean
+  text: string
+  score: number | null
+  scoreNote: string
+  ratedBy: string
+  canRate: boolean
+}
+
+/**
+ * F344 一人一条恋爱汇率（fromUser=报价的人，前端按 auth.username 比对谁是「我」；
+ *  settledYear 空串=这年还没年末结算；settleLine 由后端 Bank 生成，settledYear 空时恒空串）
+ */
+export interface CoupleLegacyFxVO {
+  fromUser: string
+  kissToHug: number
+  hugToWord: number
+  settledYear: string
+  settleLine: string
+}
+
+/** F345 情侣品牌（后端 uk(space) 单行，未建时 LegacyVO.brand 给全空串对象而非 null；
+ *  mine=我是拟定人；published=对方确认过才 true；line=发布话术（Bank 生成，未发布为空串）） */
+export interface CoupleLegacyBrandVO {
+  name: string
+  slogan: string
+  intro: string
+  published: boolean
+  mine: boolean
+  line: string
+}
+
+/** F346 我们的一年（一年一份、本人可重生覆盖；content 是后端用真数字组文的年度盘点正文） */
+export interface CoupleLegacyReviewVO {
+  year: string
+  mine: boolean
+  content: string
+}
+
+/** F347 传世清单的一条（status OPEN=还没封、SEALED=双签已封；signedBy 空串=没人加签；
+ *  ⚠️ canSeal 由后端算好：只有对方登记的且未封存才 true，自己签不封） */
+export interface CoupleLegacyItemVO {
+  id: string
+  item: string
+  kind: CoupleLegacyItemKind
+  detail: string
+  mine: boolean
+  status: CoupleLegacyItemStatus
+  signedBy: string
+  canSeal: boolean
+}
+
+/** F348 今年的周年抽奖箱（prizeMine/prizePartner 空串=那位还没抽；
+ *  remindable=周年已过且我还没抽（后端读时惰性结算 notified 标记才 true）） */
+export interface CoupleLegacyDrawVO {
+  year: string
+  prizeMine: string
+  prizePartner: string
+  drawnMine: boolean
+  drawnPartner: boolean
+  remindable: boolean
+}
+
+/**
+ * F343 里程碑倒推（无表读时算：achieved=台账总笔数、last30=近 30 天笔数；
+ * estimateDays=-1 表示近 30 天零互动算不出速率，此时 estimateDay 为空串、advice 是「先攒一周」文案）
+ */
+export interface CoupleLegacyMilestoneVO {
+  goal: number
+  achieved: number
+  last30: number
+  estimateDays: number
+  estimateDay: string
+  advice: string
+}
+
+/** F349 空间等级（无表读时算：total=台账笔数 + 传世系行数；level 1-99、title 与 line 全由后端 Bank 出） */
+export interface CoupleLegacyLevelVO {
+  level: number
+  title: string
+  total: number
+  ledgerCount: number
+  legacyCount: number
+  line: string
+}
+
+/**
+ * F340-F349 传世系统总览（GET /api/couple/legacy/vault?goal= 一次拉齐；12 个 POST 写接口全部返回整份
+ * LegacyVO，前端整体替换即十卡刷新）。⚠️ 后端只有 /vault 认 goal，12 个写接口一律按 DEFAULT_GOAL=300
+ * 重算 milestone，所以写完 milestone.goal 会回到 300，要按自己的目标得再点一次倒推。
+ * brand/draw/milestone/level 是恒有值嵌套对象（后端不会给 null），auditCandidates 是 F341 年审候选
+ * （回忆资产系现有条目最多 12 项，形如「语录：xxx」）。
+ */
+export interface CoupleLegacyVO {
+  day: string
+  year: string
+  tens: CoupleLegacyTenVO[]
+  audits: CoupleLegacyAuditVO[]
+  speeches: CoupleLegacySpeechVO[]
+  fxes: CoupleLegacyFxVO[]
+  brand: CoupleLegacyBrandVO
+  reviews: CoupleLegacyReviewVO[]
+  items: CoupleLegacyItemVO[]
+  draw: CoupleLegacyDrawVO
+  milestone: CoupleLegacyMilestoneVO
+  level: CoupleLegacyLevelVO
+  auditCandidates: string[]
+}

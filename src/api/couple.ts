@@ -223,6 +223,8 @@ import type {
   CoupleRepairVO,
   CoupleWorldVO,
   CoupleWorldVisitSide,
+  CoupleLegacyVO,
+  CoupleLegacyItemKind,
   CouplePinVO,
 } from '@/types'
 
@@ -2105,4 +2107,69 @@ export const worldApi = {
    *  draft ≤300 字必填，重写后回到 OPEN 等再审），返回整份总览 */
   worldApologyRewrite: (id: string, draft: string) =>
     http.postJson<CoupleWorldVO>('/api/couple/world/apology/rewrite', { id, draft }),
+}
+
+/**
+ * F340-F349 传世系统（legacyApi，基址 /api/couple/legacy）
+ * legacyVault 为唯一读接口（GET /vault?goal=：goal 只在这一个接口认，读时后端顺带惰性结算周年抽奖提醒——
+ * 周年已过且本年没标记过就推双方 legacy-draw-remind，不建定时任务）；
+ * 其余 12 个 POST 写接口（/ten /audit /speech /speech/rate /fx /fx/settle /brand /brand/confirm /review
+ * /item /item/seal /draw）全部返回整份 LegacyVO（后端 CoupleLegacyService.LegacyVO），前端整体替换即十卡刷新。
+ * 业务规则由后端 400 中文 message 直透 ElMessage（十问只有 1-10 题且每题 ≤140 字、年份须写成 yyyy、
+ * 年审最想留/最想删各 ≤3 条各 ≤60 字且至少写一条、一句话 ≤140 字、发言稿 ≤600 字且重发即作废对方已打的分、
+ * 评分卡只有 1-5 档且只能由对方打一年一次、汇率两档各 1-20、两人都报过汇率才结得了账且同年只结一次、
+ * 品牌名 ≤30/slogan ≤60/简介 ≤300 且拟品牌的人自己确认不作数、传世条目名 ≤60 同名即已在册、
+ * 类型只有 PLACE/PASSWORD/THING/WORD、说明 ≤200 字、封存要对方签字、抽奖每人一年一次等）；
+ * 未建空间一律 404「还没有建立情侣空间，先邀请一位好友吧」，组件侧静默降级。
+ */
+export const legacyApi = {
+  /** F340-F349 传世系统总览（十板块一次拉齐：tens 恒「今年+去年」两期、brand/draw/milestone/level 恒有值对象、
+   *  auditCandidates 是 F341 年审候选（回忆资产系现有条目 ≤12 项）；goal 只影响 F343 倒推目标，
+   *  越界后端静默回落 300（前端自己先挡）；未建空间 404 前端静默降级） */
+  legacyVault: (goal?: number) =>
+    http.get<CoupleLegacyVO>(goal ? `/api/couple/legacy/vault?goal=${goal}` : '/api/couple/legacy/vault'),
+  /** F340 答年度十问的一格（year 空串=今年且须 yyyy，slot 1-10 越界 400「十问只有 1-10 题」，answer ≤140 字必填、
+   *  换行被后端压成空格；本人可改写当格，答满 10 格才推 TA legacy-ten-done），返回整份总览 */
+  legacyTen: (year: string, slot: number, answer: string) =>
+    http.postJson<CoupleLegacyVO>('/api/couple/legacy/ten', { year, slot, answer }),
+  /** F341 交记忆库年审（year 空串=今年且须 yyyy，keepThree/deleteThree 是逗号分隔 CSV——各 ≤3 条各 ≤60 字，
+   *  超 3 条 400「最多 3 条」、两边全空 400「至少留一条」；note 一句话 ≤140 字；同年本人改卷不增行），返回整份总览 */
+  legacyAudit: (year: string, keepThree: string, deleteThree: string, note: string) =>
+    http.postJson<CoupleLegacyVO>('/api/couple/legacy/audit', { year, keepThree, deleteThree, note }),
+  /** F342 发这年的发言稿（year 空串=今年且须 yyyy，text ≤600 字必填；本人可改写，⚠️ 重发会把对方已打的分作废
+   *  并清批注），返回整份总览 */
+  legacySpeech: (year: string, text: string) =>
+    http.postJson<CoupleLegacyVO>('/api/couple/legacy/speech', { year, text }),
+  /** F342 给对方这年的发言按评分卡打分（year 空串=今年，score 1-5 越界 400「评分卡只有 1-5 档」，note 评语 ≤140 字可空；
+   *  ⚠️ 只有对方发的那篇能评：评自己这篇/TA 还没发 400「TA 还没发这年的言」、打过再点 400「这年的分已经打过了」），返回整份总览 */
+  legacySpeechRate: (year: string, score: number, note: string) =>
+    http.postJson<CoupleLegacyVO>('/api/couple/legacy/speech/rate', { year, score, note }),
+  /** F344 报自己的恋爱汇率（kissToHug=1 亲亲换几个抱抱、hugToWord=1 抱抱换几句夸夸，两档各 1-20，
+   *  越界 400「只能填 1-20」；uk(space,user) 本人可改写，两人都报过才结得了年末的账），返回整份总览 */
+  legacyFx: (kissToHug: number, hugToWord: number) =>
+    http.postJson<CoupleLegacyVO>('/api/couple/legacy/fx', { kissToHug, hugToWord }),
+  /** F344 年末趣味结算（year 空串=今年；⚠️ 两人都没报过汇率 400「两人都报过汇率才结得了账」、
+   *  同年结过再点 400「已经结算过了，明年重新开盘」；结算文案按操作人自己那份汇率生成），返回整份总览 */
+  legacyFxSettle: (year: string) =>
+    http.postJson<CoupleLegacyVO>('/api/couple/legacy/fx/settle', { year }),
+  /** F345 建/改情侣品牌（name ≤30 字必填「关系叫什么名」，slogan ≤60 字、intro 产品简介 ≤300 字均可空；
+   *  ⚠️ 任何改动都把 published 清零重走确认，且改完的人变成拟定人——确认权又回到对方手里），返回整份总览 */
+  legacyBrand: (name: string, slogan: string, intro: string) =>
+    http.postJson<CoupleLegacyVO>('/api/couple/legacy/brand', { name, slogan, intro }),
+  /** F345 对方确认发布（无请求体；⚠️ 拟品牌的人自己确认 400「自己确认不作数」、还没品牌 400「还没有品牌可发布」；
+   *  发布后 line 字段给 Bank 话术，重复确认幂等不重推），返回整份总览 */
+  legacyBrandConfirm: () => http.postJson<CoupleLegacyVO>('/api/couple/legacy/brand/confirm', {}),
+  /** F346 一键生成本年/某年的年度盘点（year 空串=去年且须 yyyy，越界 400「年份写成 yyyy」；
+   *  正文数字全部来自真实表（台账/十问/年审/发言/清单），同年本人可重生覆盖），返回整份总览 */
+  legacyReview: (year: string) => http.postJson<CoupleLegacyVO>('/api/couple/legacy/review', { year }),
+  /** F347 登记一条传世条目（item 条目名 ≤60 字必填且同空间唯一「已经在清单上了」，kind 只有 PLACE/PASSWORD/THING/WORD
+   *  四键（空串=THING）否则 400，detail 说明 ≤200 字可空；登记完就等对方加签），返回整份总览 */
+  legacyItem: (item: string, kind: CoupleLegacyItemKind, detail: string) =>
+    http.postJson<CoupleLegacyVO>('/api/couple/legacy/item', { item, kind, detail }),
+  /** F347 对方加签封存（⚠️ 只有对方登记的未封存条目能签，自己签 400「封存要对方签字，自己签不封」、
+   *  id 不在清单 400「这条不在清单上」；已封存再点幂等返回，封好的条目留在清单上不离开总览），返回整份总览 */
+  legacyItemSeal: (id: string) => http.postJson<CoupleLegacyVO>('/api/couple/legacy/item/seal', { id }),
+  /** F348 抽今年的奖（无请求体；每人一年一次，抽过再点 400「今年你已经抽过了，剩下的那次是 TA 的」；
+   *  奖品从「你们本年家务积分台账里攒下的愿望条目」中按空间稳定取，今年一条都没攒过才回落后端 Bank 的 8 个固定迷你愿望位），返回整份总览 */
+  legacyDraw: () => http.postJson<CoupleLegacyVO>('/api/couple/legacy/draw', {}),
 }
