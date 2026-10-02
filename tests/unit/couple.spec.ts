@@ -3,12 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, legacyApi, listenApi, manageApi, museumApi, pinApi, postApi, repairApi, theaterApi, worldApi } from '@/api/couple'
+import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, echoApi, factoryApi, legacyApi, listenApi, manageApi, museumApi, pinApi, postApi, repairApi, theaterApi, worldApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleEchoBatteryVO, CoupleEchoCalendarDayVO, CoupleEchoDeedVO, CoupleEchoHighlightVO, CoupleEchoJuiceVO, CoupleEchoReceiptVO, CoupleEchoSelfLetterVO, CoupleEchoSlowVO, CoupleEchoVO, CoupleEchoYearlyVO, CoupleFyBoardVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePraiseVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -939,6 +939,44 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F350-F359 回音壁 echoApi：默认全空但形状完整的 EchoVO
+  // （refill 是「今天还没领」的空包态、selfLetter 没在途信为 null、slowArrived 只给最近 10 封、
+  //   yearly 是当年五项零计数），两个懒读接口 echoCalendar/echoYear 单独给默认值，用例内按需覆盖
+  const echoEmptyYearly = (): CoupleEchoYearlyVO => ({
+    year: 2026, deeds: 0, starred: 0, refills: 0, slowArrived: 0, receipts: 0, summary: '',
+  })
+  const echoEmptyVo = (): CoupleEchoVO => ({
+    day: '2026-10-04',
+    deeds: [],
+    partnerDeeds: [],
+    juices: [],
+    refill: {
+      mineToday: false, partnerToday: false, deeds: [], juices: [], highlights: [], selfLetter: '', line: '',
+    },
+    slowInFlight: [],
+    slowArrived: [],
+    highlights: [],
+    receipts: [],
+    battery: [],
+    selfLetter: null,
+    yearly: echoEmptyYearly(),
+  })
+  const echoBase: Record<string, ReturnType<typeof vi.fn>> = {
+    echoVault: vi.fn().mockResolvedValue(echoEmptyVo()),
+    echoCalendar: vi.fn().mockResolvedValue([] as CoupleEchoCalendarDayVO[]),
+    echoYear: vi.fn().mockResolvedValue(echoEmptyYearly()),
+  }
+  // ⚠️ 这个 Proxy 必须把 mock 函数 return 出去：漏 return 会让 12 个写接口全成 undefined，
+  // 组件里 await undefined.id 直接把整场测试炸成 Unhandled Rejection（批次二十七踩过，别再踩）
+  const echoWrapped = new Proxy(echoBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(echoEmptyVo())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -960,6 +998,8 @@ vi.mock('@/api/couple', () => {
     worldApi: worldWrapped,
     // F340-F349 传世系统 legacyApi：默认全空但形状完整的 LegacyVO，用例内按需覆盖
     legacyApi: legacyWrapped,
+    // F350-F359 回音壁 echoApi：默认全空但形状完整的 EchoVO，用例内按需覆盖
+    echoApi: echoWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -5605,6 +5645,509 @@ describe('CoupleView 情侣空间', () => {
     })
     expect(wrapper.text()).toContain('十问册子还没摊开')
     // 读接口 404 走 safeLoad 静默降级：不把「还没有建立情侣空间」弹成错误条
+    expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('还没有建立情侣空间'))
+    wrapper.unmount()
+  })
+
+  // ============ F350-F359 回音壁（CoupleEcho，care/rescue 子页签末尾） ============
+
+  /** 造一份回音壁总览：默认「今天什么都没发生」（refill 是未领取的空包、selfLetter 无在途信为 null） */
+  function echoVo(partial: Partial<CoupleEchoVO> = {}): CoupleEchoVO {
+    return {
+      day: '2026-10-04',
+      deeds: [],
+      partnerDeeds: [],
+      juices: [],
+      refill: {
+        mineToday: false, partnerToday: false, deeds: [], juices: [], highlights: [], selfLetter: '', line: '',
+      },
+      slowInFlight: [],
+      slowArrived: [],
+      highlights: [],
+      receipts: [],
+      battery: [],
+      selfLetter: null,
+      yearly: { year: 2026, deeds: 0, starred: 0, refills: 0, slowArrived: 0, receipts: 0, summary: '' },
+      ...partial,
+    }
+  }
+  function echoDeed(partial: Partial<CoupleEchoDeedVO> = {}): CoupleEchoDeedVO {
+    return {
+      id: 'd1', fromUser: 'alice', mine: true, content: '下雨天绕路来接我', day: '2026-10-01',
+      starred: false, created: 1_759_000_000_000, ...partial,
+    }
+  }
+  function echoJuice(partial: Partial<CoupleEchoJuiceVO> = {}): CoupleEchoJuiceVO {
+    return {
+      id: 'j1', fromUser: 'alice', mine: true, idx: 1, content: '你比你想的扛得住',
+      created: 1_759_000_000_000, ...partial,
+    }
+  }
+  function echoSlow(partial: Partial<CoupleEchoSlowVO> = {}): CoupleEchoSlowVO {
+    return {
+      id: 's1', fromUser: 'alice', mine: true, toUser: 'bob', content: '谢谢你那晚没讲道理',
+      openDay: '2026-10-09', delivered: false, created: 1_759_000_000_000, ...partial,
+    }
+  }
+  function echoHighlight(partial: Partial<CoupleEchoHighlightVO> = {}): CoupleEchoHighlightVO {
+    return {
+      id: 'h1', fromUser: 'alice', mine: true, moment: '去年冬天十点那晚', did: '一起把碗洗完了',
+      feel: '觉得日子是我们的', created: 1_759_000_000_000, ...partial,
+    }
+  }
+  function echoReceipt(partial: Partial<CoupleEchoReceiptVO> = {}): CoupleEchoReceiptVO {
+    return {
+      id: 'r1', quoteId: 'q1', quoteFrom: 'bob', quoteContent: '你认真起来特别好看',
+      created: 1_759_000_000_000, ...partial,
+    }
+  }
+  function echoBattery(partial: Partial<CoupleEchoBatteryVO> = {}): CoupleEchoBatteryVO {
+    return { fromUser: 'alice', mine: true, level: 4, want: '别问进度', hint: '', ...partial }
+  }
+  function echoSelf(partial: Partial<CoupleEchoSelfLetterVO> = {}): CoupleEchoSelfLetterVO {
+    return { id: 'sl1', content: '撑不住就先去睡一觉', status: 'SEALED', created: 1_759_000_000_000, ...partial }
+  }
+  function echoPraise(partial: Partial<CouplePraiseVO> = {}): CouplePraiseVO {
+    return {
+      id: 'q1', fromUser: 'bob', content: '你认真起来特别好看', status: 'POSTED',
+      receivedAt: null, mine: false, created: 1_759_000_000_000, ...partial,
+    }
+  }
+
+  /** 挂载并切到关怀「🚑 情绪急救」子页签（CoupleEcho 挂在这个 pane 最末） */
+  async function mountOnCareEcho() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-care').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-echo"]').exists()).toBe(true)
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 本批带 :empty 的卡折叠态落库键清理，避免污染后续用例
+    ;['couple-echo-receipt', 'couple-echo-calendar'].forEach((k) => localStorage.removeItem(`arechat_couple_collapse_${k}`))
+  })
+
+  it('回音壁：好事簿空内容与错日期前端挡下不打后端，写好调 echoDeed 后我的证据与 TA 的证据双栏刷新', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo())
+    vi.mocked(echoApi.echoDeed).mockResolvedValue(echoVo({
+      deeds: [echoDeed({ id: 'd1' })],
+      partnerDeeds: [echoDeed({ id: 'd9', fromUser: 'bob', mine: false, content: '陪她看完那场我不想看的电影' })],
+    }))
+    const wrapper = await mountOnCareEcho()
+    // 空着点提交：必须给一句可见 warning，不能让按钮石沉大海
+    await wrapper.find('[data-testid="couple-echo-deed-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoDeed).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('好事总得写一句'))
+    // 日期不是 yyyy-MM-dd：按后端同一条规则先挡
+    await wrapper.find('[data-testid="couple-echo-deed-content"]').setValue('下雨天绕路来接我')
+    await wrapper.find('[data-testid="couple-echo-deed-day"]').setValue('2026/10/03')
+    await wrapper.find('[data-testid="couple-echo-deed-submit"]').trigger('click')
+    expect(echoApi.echoDeed).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('yyyy-MM-dd'))
+    // 日期留空 = 交给后端补今天
+    await wrapper.find('[data-testid="couple-echo-deed-day"]').setValue('')
+    await wrapper.find('[data-testid="couple-echo-deed-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoDeed).toHaveBeenCalledWith('下雨天绕路来接我', '')
+    expect(wrapper.find('[data-testid="couple-echo-deed-d1"]').text()).toContain('下雨天绕路来接我')
+    expect(wrapper.find('[data-testid="couple-echo-deed-partner-d9"]').text()).toContain('陪她看完那场我不想看的电影')
+    expect(wrapper.find('[data-testid="couple-echo-deed-count"]').text()).toContain('我记了 1 条')
+    // 提交成功后输入框清空（写一条是一条，不留在框里误触第二遍）
+    expect((wrapper.find('[data-testid="couple-echo-deed-content"]').element as HTMLTextAreaElement).value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('回音壁：「这条救过我」的星钮只长在我记的证据上，TA 记的那条只给提示；点星调 echoDeedStar 后星标上墙', async () => {
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo({
+      deeds: [
+        echoDeed({ id: 'd1' }),
+        echoDeed({ id: 'd2', content: '把我妈的电话挡掉了', starred: true }),
+        // 防御性一例：万一后端把 TA 记的混进我这栏（deeds 恒 mine=true），也不给星钮只给提示
+        echoDeed({ id: 'd4', fromUser: 'bob', mine: false, content: '不该出现在我这栏的一条' }),
+      ],
+      partnerDeeds: [echoDeed({ id: 'd3', fromUser: 'bob', mine: false, content: '他记得我不吃香菜' })],
+    }))
+    vi.mocked(echoApi.echoDeedStar).mockResolvedValue(echoVo({
+      deeds: [echoDeed({ id: 'd1', starred: true }), echoDeed({ id: 'd2', content: '把我妈的电话挡掉了', starred: true })],
+      partnerDeeds: [echoDeed({ id: 'd3', fromUser: 'bob', mine: false, content: '他记得我不吃香菜' })],
+    }))
+    const wrapper = await mountOnCareEcho()
+    expect(wrapper.find('[data-testid="couple-echo-deed-star-d1"]').exists()).toBe(true)
+    // 已加星的那条不再给钮，只挂徽标
+    expect(wrapper.find('[data-testid="couple-echo-deed-star-d2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-echo-deed-starred-d2"]').text()).toContain('这条救过我')
+    // 后端 400「只有记下这条的人能加星」：不是我记的那条一律不出钮（mine 判定的两处都算）
+    expect(wrapper.find('[data-testid="couple-echo-deed-star-d4"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-echo-deed-star-lock-d4"]').text()).toContain('归记下这条的人点')
+    expect(wrapper.find('[data-testid="couple-echo-deed-star-d3"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-echo-deed-partner-who-d3"]').text()).toContain('bob 记的')
+    await wrapper.find('[data-testid="couple-echo-deed-star-d1"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoDeedStar).toHaveBeenCalledWith('d1')
+    expect(wrapper.find('[data-testid="couple-echo-deed-starred-d1"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('回音壁：鼓励语罐第 6 条前端挡下不打后端，删除钮只在我罐里，TA 的纸条只写「归 TA 整理」', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const fiveMine = Array.from({ length: 5 }, (_, i) => echoJuice({ id: `j${i + 1}`, idx: i + 1, content: `打气话 ${i + 1}` }))
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo({ juices: [...fiveMine, echoJuice({ id: 'jp', fromUser: 'bob', mine: false, idx: 1, content: '你已经很棒了' })] }))
+    const wrapper = await mountOnCareEcho()
+    expect(wrapper.find('[data-testid="couple-echo-juice-count"]').text()).toContain('5/5')
+    await wrapper.find('[data-testid="couple-echo-juice-content"]').setValue('第六张塞不进去')
+    await wrapper.find('[data-testid="couple-echo-juice-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoJuice).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('罐子装不下了'))
+    expect(wrapper.find('[data-testid="couple-echo-juice-full"]').exists()).toBe(true)
+    // TA 罐里的那张：没有删除钮，只有「归 TA 整理」
+    expect(wrapper.find('[data-testid="couple-echo-juice-del-jp"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-echo-juice-partner-lock-jp"]').text()).toContain('归 TA 整理')
+
+    // 抽走一张之后罐子有空位，再塞就打得出去
+    vi.mocked(echoApi.echoJuiceRemove).mockResolvedValue(echoVo({ juices: fiveMine.slice(0, 4) }))
+    await wrapper.find('[data-testid="couple-echo-juice-del-j1"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoJuiceRemove).toHaveBeenCalledWith('j1')
+    expect(wrapper.find('[data-testid="couple-echo-juice-count"]').text()).toContain('4/5')
+    // 写入成功后整份总览替换会清空输入口（防止误触第二遍），所以要重新填一次
+    expect((wrapper.find('[data-testid="couple-echo-juice-content"]').element as HTMLInputElement).value).toBe('')
+    vi.mocked(echoApi.echoJuice).mockResolvedValue(echoVo({ juices: [...fiveMine.slice(0, 4), echoJuice({ id: 'j5', idx: 5 })] }))
+    await wrapper.find('[data-testid="couple-echo-juice-content"]').setValue('第六张塞不进去')
+    await wrapper.find('[data-testid="couple-echo-juice-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoJuice).toHaveBeenCalledWith('第六张塞不进去')
+    expect(wrapper.find('[data-testid="couple-echo-juice-idx-j1"]').text()).toContain('1 号槽')
+    wrapper.unmount()
+  })
+
+  it('回音壁：领补给调 echoRefill 渲染拆开的包（证据/打气话/高光/顺带拆读的信），当天再点只 warning；后续写入把包收回去显示「今天领过了」', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo())
+    vi.mocked(echoApi.echoRefill).mockResolvedValue(echoVo({
+      refill: {
+        mineToday: true,
+        partnerToday: true,
+        deeds: [echoDeed({ id: 'd1' }), echoDeed({ id: 'd2', content: '半夜替我回工作消息', starred: true }), echoDeed({ id: 'd3', content: '把最后一口蛋糕给我' })],
+        juices: [echoJuice({ id: 'j1' }), echoJuice({ id: 'jp', fromUser: 'bob', mine: false, content: '你已经很棒了' })],
+        highlights: [echoHighlight({ id: 'h1' })],
+        selfLetter: '撑不住就先去睡一觉',
+        line: '今日份能量已到账：证据、鼓励、高光各来一点，慢慢用 ⚡',
+      },
+    }))
+    const wrapper = await mountOnCareEcho()
+    expect(wrapper.find('[data-testid="couple-echo-refill-none"]').text()).toContain('还没领今天的能量')
+    await wrapper.find('[data-testid="couple-echo-refill-btn"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoRefill).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="couple-echo-refill-line"]').text()).toContain('今日份能量已到账')
+    expect(wrapper.find('[data-testid="couple-echo-refill-deed-d2"]').text()).toContain('半夜替我回工作消息')
+    expect(wrapper.find('[data-testid="couple-echo-refill-juice-jp"]').text()).toContain('你已经很棒了')
+    expect(wrapper.find('[data-testid="couple-echo-refill-highlight-h1"]').text()).toContain('一起把碗洗完了')
+    expect(wrapper.find('[data-testid="couple-echo-refill-self"]').text()).toContain('撑不住就先去睡一觉')
+    expect(wrapper.find('[data-testid="couple-echo-refill-mine-today"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-echo-refill-partner-today"]').exists()).toBe(true)
+    // 「一键喊 TA」没有独立接口：领补给本身推双方（echo-refilled）
+    expect(wrapper.find('[data-testid="couple-echo-refill-shout"]').text()).toContain('echo-refilled')
+    // 每人每天一次：后端 400「今天已经充过电了」，前端先挡下不发请求
+    await wrapper.find('[data-testid="couple-echo-refill-btn"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoRefill).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('今天已经充过电了'))
+    // 后端只在 /refill 那一次返回里装包：之后任何写入都把 refill 重置成空包 → 卡片落「今天领过了」态
+    vi.mocked(echoApi.echoDeed).mockResolvedValue(echoVo({
+      refill: { mineToday: true, partnerToday: false, deeds: [], juices: [], highlights: [], selfLetter: '', line: '' },
+      deeds: [echoDeed({ id: 'd1' })],
+    }))
+    await wrapper.find('[data-testid="couple-echo-deed-content"]').setValue('下雨天绕路来接我')
+    await wrapper.find('[data-testid="couple-echo-deed-submit"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-echo-refill-spent"]').text()).toContain('今天的补给已经领过了')
+    wrapper.unmount()
+  })
+
+  it('回音壁：感谢慢递在途第 4 封前端挡下，寄出调 echoSlow；我寄的可见正文、TA 在途那封遮正文，到站的进已送达', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const threeMine = Array.from({ length: 3 }, (_, i) => echoSlow({ id: `s${i + 1}`, content: `谢谢 ${i + 1}` }))
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo({ slowInFlight: threeMine }))
+    const wrapper = await mountOnCareEcho()
+    expect(wrapper.find('[data-testid="couple-echo-slow-count"]').text()).toContain('3/3')
+    await wrapper.find('[data-testid="couple-echo-slow-content"]').setValue('第四封先压着')
+    await wrapper.find('[data-testid="couple-echo-slow-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoSlow).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('路上还有 3 封'))
+
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo({
+      slowInFlight: [
+        echoSlow({ id: 's1', content: '谢谢你替我收了那堆碗', openDay: '2026-10-09' }),
+        echoSlow({ id: 'sp', fromUser: 'bob', mine: false, toUser: 'alice', content: '不该被看见的正文', openDay: '2026-10-04' }),
+      ],
+      slowArrived: [echoSlow({ id: 'sa', fromUser: 'bob', mine: false, toUser: 'alice', content: '上次那顿饭谢谢你', openDay: '2026-09-28', delivered: true })],
+    }))
+    vi.mocked(echoApi.echoSlow).mockResolvedValue(echoVo({ slowInFlight: [] }))
+    const wrapper2 = await mountOnCareEcho()
+    // 倒数吃服务端 day（2026-10-04）：10-09 还差 5 天
+    expect(wrapper2.find('[data-testid="couple-echo-slow-left-s1"]').text()).toContain('还有 5 天到站')
+    expect(wrapper2.find('[data-testid="couple-echo-slow-text-s1"]').text()).toContain('谢谢你替我收了那堆碗')
+    // 在途的 TA 信：后端把 content 也下发了，前端按「没到站不看」替用户守住，不渲染正文
+    expect(wrapper2.find('[data-testid="couple-echo-slow-sealed-sp"]').exists()).toBe(true)
+    expect(wrapper2.find('[data-testid="couple-echo-slow-text-sp"]').exists()).toBe(false)
+    expect(wrapper2.find('[data-testid="couple-echo-slow-left-sp"]').text()).toContain('今天到站')
+    expect(wrapper2.find('[data-testid="couple-echo-slow-arrived-sa"]').text()).toContain('上次那顿饭谢谢你')
+    await wrapper2.find('[data-testid="couple-echo-slow-content"]').setValue('第三封寄出去')
+    await wrapper2.find('[data-testid="couple-echo-slow-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoSlow).toHaveBeenCalledWith('第三封寄出去')
+    expect(wrapper2.find('[data-testid="couple-echo-slow-empty"]').exists()).toBe(true)
+    wrapper.unmount()
+    wrapper2.unmount()
+  })
+
+  it('回音壁：高光三行缺一行各挡一次不打后端，齐了调 echoHighlight；第 13 条挡下，删除钮只在我的精选', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo({
+      highlights: [echoHighlight({ id: 'h1' }), echoHighlight({ id: 'hp', fromUser: 'bob', mine: false, moment: '第一次一起做饭', did: '把厨房烧出烟', feel: '笑到没力气' })],
+    }))
+    const wrapper = await mountOnCareEcho()
+    await wrapper.find('[data-testid="couple-echo-highlight-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoHighlight).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('什么时候'))
+    await wrapper.find('[data-testid="couple-echo-highlight-moment"]').setValue('去年冬天十点那晚')
+    await wrapper.find('[data-testid="couple-echo-highlight-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('我们做了什么'))
+    await wrapper.find('[data-testid="couple-echo-highlight-did"]').setValue('一起把碗洗完了')
+    await wrapper.find('[data-testid="couple-echo-highlight-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('什么感觉'))
+    // 三行齐了才打得出去
+    await wrapper.find('[data-testid="couple-echo-highlight-feel"]').setValue('觉得日子是我们的')
+    vi.mocked(echoApi.echoHighlight).mockResolvedValue(echoVo({
+      highlights: [
+        echoHighlight({ id: 'h1' }),
+        echoHighlight({ id: 'hp', fromUser: 'bob', mine: false, moment: '第一次一起做饭', did: '把厨房烧出烟', feel: '笑到没力气' }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-echo-highlight-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoHighlight).toHaveBeenCalledWith('去年冬天十点那晚', '一起把碗洗完了', '觉得日子是我们的')
+    // TA 的精选夹：没有撤下钮，只有「只归本人整理」
+    expect(wrapper.find('[data-testid="couple-echo-highlight-del-hp"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-echo-highlight-partner-lock-hp"]').text()).toContain('只归本人整理')
+
+    // 我的精选夹满了 12 条：第 13 条前端挡下
+    const twelve = Array.from({ length: 12 }, (_, i) => echoHighlight({ id: `h${i + 1}`, moment: `第 ${i + 1} 件` }))
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo({ highlights: twelve }))
+    const wrapper2 = await mountOnCareEcho()
+    expect(wrapper2.find('[data-testid="couple-echo-highlight-count"]').text()).toContain('12/12')
+    await wrapper2.find('[data-testid="couple-echo-highlight-moment"]').setValue('再来一件')
+    await wrapper2.find('[data-testid="couple-echo-highlight-did"]').setValue('又做了一件')
+    await wrapper2.find('[data-testid="couple-echo-highlight-feel"]').setValue('还是很好')
+    await wrapper2.find('[data-testid="couple-echo-highlight-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoHighlight).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('精选夹满了'))
+    vi.mocked(echoApi.echoHighlightRemove).mockResolvedValue(echoVo({ highlights: twelve.slice(0, 11) }))
+    await wrapper2.find('[data-testid="couple-echo-highlight-del-h1"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoHighlightRemove).toHaveBeenCalledWith('h1')
+    expect(wrapper2.find('[data-testid="couple-echo-highlight-count"]').text()).toContain('11/12')
+    wrapper.unmount()
+    wrapper2.unmount()
+  })
+
+  it('回音壁：夸夸回执只给「TA 夸我的、我还没签的」出钮（候选读既有夸夸墙），签收调 echoReceipt 后整行进已签台账', async () => {
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo())
+    vi.mocked(coupleApi.praises).mockResolvedValue([
+      echoPraise({ id: 'q1', fromUser: 'bob', mine: false, content: '你认真起来特别好看' }),
+      echoPraise({ id: 'q2', fromUser: 'alice', mine: true, content: 'bob 做饭是真的行' }),
+    ])
+    vi.mocked(echoApi.echoReceipt).mockResolvedValue(echoVo({ receipts: [echoReceipt({ id: 'r1', quoteId: 'q1' })] }))
+    const wrapper = await mountOnCareEcho()
+    expect(wrapper.find('[data-testid="couple-echo-receipt-quote-q1"]').text()).toContain('你认真起来特别好看')
+    // 我自己贴上墙的夸夸不需要自己签收
+    expect(wrapper.find('[data-testid="couple-echo-receipt-quote-q2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-echo-receipt-empty"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-echo-receipt-quote-btn-q1"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoReceipt).toHaveBeenCalledWith('q1')
+    // 签过的那句离开待签收栏，进已签台账并挂「已送达」
+    expect(wrapper.find('[data-testid="couple-echo-receipt-quote-q1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-echo-receipt-r1"]').text()).toContain('你认真起来特别好看')
+    expect(wrapper.find('[data-testid="couple-echo-receipt-done-r1"]').text()).toContain('已送达')
+    expect(wrapper.find('[data-testid="couple-echo-receipt-from-r1"]').text()).toContain('bob')
+    wrapper.unmount()
+  })
+
+  it('回音壁：电量没点格前端挡下（后端会静默按 3 格），want 超 40 字挡下；报完双格并排，对方 ≤2 格才出「今晚轻轻的」', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo())
+    const wrapper = await mountOnCareEcho()
+    await wrapper.find('[data-testid="couple-echo-battery-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoBattery).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('几格'))
+    expect(wrapper.find('[data-testid="couple-echo-battery-mine-none"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-echo-battery-partner-none"]').exists()).toBe(true)
+    // el-radio 得点原生 input 才写回 v-model
+    await wrapper.find('[data-testid="couple-echo-battery-opt-2"]').find('input').setValue(true)
+    await wrapper.find('[data-testid="couple-echo-battery-want"]').setValue('一'.repeat(41))
+    await wrapper.find('[data-testid="couple-echo-battery-submit"]').trigger('click')
+    expect(echoApi.echoBattery).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('想被怎样对待'))
+    vi.mocked(echoApi.echoBattery).mockResolvedValue(echoVo({
+      battery: [
+        echoBattery({ level: 2, want: '进门先抱一下' }),
+        echoBattery({ fromUser: 'bob', mine: false, level: 1, want: '别问进度', hint: '今晚轻轻的：TA 只剩两格电，少讲道理多盖被子 🕯️' }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-echo-battery-want"]').setValue('进门先抱一下')
+    await wrapper.find('[data-testid="couple-echo-battery-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoBattery).toHaveBeenCalledWith(2, '进门先抱一下')
+    expect(wrapper.find('[data-testid="couple-echo-battery-mine"]').text()).toContain('2/5')
+    expect(wrapper.find('[data-testid="couple-echo-battery-partner"]').text()).toContain('1/5')
+    // hint 只挂在对方那格上（后端给我那格恒空串）
+    expect(wrapper.find('[data-testid="couple-echo-battery-hint"]').text()).toContain('今晚轻轻的')
+    // 本人当天可改写：返回后输入口回填成自己那格
+    expect((wrapper.find('[data-testid="couple-echo-battery-want"]').element as HTMLInputElement).value).toBe('进门先抱一下')
+    wrapper.unmount()
+  })
+
+  it('回音壁：在途的信前端不泄正文（后端 vault 会连 content 一起下发），拆读调 echoSelfRead 后才见正文并放开下一封；没在途信时写一封调 echoSelf', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo({ selfLetter: echoSelf({ id: 'sl1', content: '这封正文不该在这里出现' }) }))
+    const wrapper = await mountOnCareEcho()
+    expect(wrapper.find('[data-testid="couple-echo-self-sealed"]').text()).toContain('封存中')
+    expect(wrapper.text()).not.toContain('这封正文不该在这里出现')
+    // 有在途信时表单收起（后端 400「还有一封在等你」，前端连输入口都不给），只给拆读钮
+    expect(wrapper.find('[data-testid="couple-echo-self-content"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-echo-self-read"]').exists()).toBe(true)
+    vi.mocked(echoApi.echoSelfRead).mockResolvedValue(echoVo({ selfLetter: echoSelf({ id: 'sl1', content: '这封正文不该在这里出现', status: 'READ' }) }))
+    await wrapper.find('[data-testid="couple-echo-self-read"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoSelfRead).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="couple-echo-self-read-line"]').text()).toContain('这封正文不该在这里出现')
+    // 读完就能再写：表单放开
+    expect(wrapper.find('[data-testid="couple-echo-self-content"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-echo-self-submit"]').trigger('click')
+    expect(echoApi.echoSelf).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('哪怕一句也行'))
+    // 超 300 字挡下
+    await wrapper.find('[data-testid="couple-echo-self-content"]').setValue('字'.repeat(301))
+    await wrapper.find('[data-testid="couple-echo-self-submit"]').trigger('click')
+    expect(echoApi.echoSelf).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('300 字'))
+
+    // 没有在途信时：写一封打得出去
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo())
+    vi.mocked(echoApi.echoSelf).mockResolvedValue(echoVo({ selfLetter: echoSelf({ id: 'sl2', content: '撑不住就先去睡一觉' }) }))
+    const wrapper2 = await mountOnCareEcho()
+    expect(wrapper2.find('[data-testid="couple-echo-self-empty"]').exists()).toBe(true)
+    await wrapper2.find('[data-testid="couple-echo-self-content"]').setValue('撑不住就先去睡一觉')
+    await wrapper2.find('[data-testid="couple-echo-self-submit"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoSelf).toHaveBeenCalledWith('撑不住就先去睡一觉')
+    expect(wrapper2.find('[data-testid="couple-echo-self-sealed"]').exists()).toBe(true)
+    wrapper.unmount()
+    wrapper2.unmount()
+  })
+
+  it('回音壁：被爱日历错年份挡下，点「点亮」调 echoCalendar 后按月分组只渲染有动静的日子', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo())
+    const wrapper = await mountOnCareEcho()
+    await wrapper.find('[data-testid="couple-echo-calendar-year"]').setValue('2026年')
+    await wrapper.find('[data-testid="couple-echo-calendar-btn"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoCalendar).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('yyyy'))
+    const days: CoupleEchoCalendarDayVO[] = [
+      { day: '2026-03-02', deeds: 2, starred: 1, refilled: false },
+      { day: '2026-03-18', deeds: 1, starred: 0, refilled: true },
+      { day: '2026-10-04', deeds: 3, starred: 0, refilled: true },
+    ]
+    vi.mocked(echoApi.echoCalendar).mockResolvedValue(days)
+    await wrapper.find('[data-testid="couple-echo-calendar-year"]').setValue('')
+    await wrapper.find('[data-testid="couple-echo-calendar-btn"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoCalendar).toHaveBeenCalledWith('')
+    expect(wrapper.find('[data-testid="couple-echo-calendar-count"]').text()).toContain('点亮了 3 天')
+    expect(wrapper.find('[data-testid="couple-echo-calendar-month-2026-03"]').text()).toContain('3 月')
+    expect(wrapper.find('[data-testid="couple-echo-calendar-month-2026-10"]').text()).toContain('10 月')
+    expect(wrapper.find('[data-testid="couple-echo-calendar-day-2026-03-02"]').text()).toContain('证据 2 条')
+    expect(wrapper.find('[data-testid="couple-echo-calendar-starred-2026-03-02"]').text()).toContain('救过 1 次')
+    // 没加星的那天不出星徽标，充过电的出 ⚡
+    expect(wrapper.find('[data-testid="couple-echo-calendar-starred-2026-03-18"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-echo-calendar-refilled-2026-03-18"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('回音壁：年报五项计数随总览下发并标「今年」，读别的年份调 echoYear 后切过去，点「回到今年」再吃总览那份', async () => {
+    vi.mocked(echoApi.echoVault).mockResolvedValue(echoVo({
+      yearly: {
+        year: 2026, deeds: 12, starred: 4, refills: 20, slowArrived: 3, receipts: 6,
+        summary: '2026 年回音壁年报：你们一共记下 12 件「TA 为我做的事」，其中 4 条救过人。',
+      },
+    }))
+    const wrapper = await mountOnCareEcho()
+    expect(wrapper.find('[data-testid="couple-echo-year-deeds"]').text()).toContain('12 条')
+    expect(wrapper.find('[data-testid="couple-echo-year-starred"]').text()).toContain('4 次')
+    expect(wrapper.find('[data-testid="couple-echo-year-refills"]').text()).toContain('20 次')
+    expect(wrapper.find('[data-testid="couple-echo-year-slow"]').text()).toContain('3 封')
+    expect(wrapper.find('[data-testid="couple-echo-year-receipts"]').text()).toContain('6 张')
+    expect(wrapper.find('[data-testid="couple-echo-year-summary"]').text()).toContain('救过人')
+    expect(wrapper.find('[data-testid="couple-echo-year-current"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-echo-year-reset"]').exists()).toBe(false)
+    // 年份格式错：前端挡下不打后端
+    await wrapper.find('[data-testid="couple-echo-year-input"]').setValue('26')
+    await wrapper.find('[data-testid="couple-echo-year-btn"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoYear).not.toHaveBeenCalled()
+    vi.mocked(echoApi.echoYear).mockResolvedValue({
+      year: 2025, deeds: 3, starred: 0, refills: 1, slowArrived: 0, receipts: 0,
+      summary: '2025 年回音壁年报：你们一共记下 3 件「TA 为我做的事」。',
+    })
+    await wrapper.find('[data-testid="couple-echo-year-input"]').setValue('2025')
+    await wrapper.find('[data-testid="couple-echo-year-btn"]').trigger('click')
+    await flushPromises()
+    expect(echoApi.echoYear).toHaveBeenCalledWith('2025')
+    expect(wrapper.find('[data-testid="couple-echo-year-viewing"]').text()).toContain('2025')
+    expect(wrapper.find('[data-testid="couple-echo-year-deeds"]').text()).toContain('3 条')
+    expect(wrapper.find('[data-testid="couple-echo-year-current"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="couple-echo-year-reset"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-echo-year-viewing"]').text()).toContain('2026')
+    expect(wrapper.find('[data-testid="couple-echo-year-current"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('回音壁：接口失败（未建情侣空间）时十张卡静默降级，卡根仍在不报错', async () => {
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(echoApi.echoVault).mockRejectedValue(new Error('还没有建立情侣空间，先邀请一位好友吧'))
+    // 跨模块那一腿（F54 夸夸墙）同理走 safeLoad：这里不改成 reject，因为 couple store 也吃这个接口，
+    // 让它 reject 会把别的组件的 mounted 报错算到本批头上；组件侧对 undefined/[]/reject 三种落点都已兜住
+    const wrapper = await mountOnCareEcho()
+    expect(wrapper.find('[data-testid="couple-echo"]').exists()).toBe(true)
+    const roots = [
+      'couple-echo-deed', 'couple-echo-juice', 'couple-echo-refill', 'couple-echo-slow',
+      'couple-echo-highlight', 'couple-echo-receipt', 'couple-echo-battery', 'couple-echo-self',
+      'couple-echo-calendar', 'couple-echo-year',
+    ]
+    roots.forEach((k) => {
+      const card = wrapper.find(`[data-testid="${k}"]`)
+      expect(card.exists()).toBe(true)
+      expect(card.classes()).toContain('is-collapsed')
+      expect(wrapper.find(`[data-testid="couple-collapse-${k}"]`).exists()).toBe(true)
+    })
+    expect(wrapper.text()).toContain('回音壁还没开门')
+    expect(wrapper.text()).toContain('精选夹还没买')
+    // 读接口 404 走 safeLoad 静默降级：不把「还没有建立情侣空间」弹成错误条（夸夸墙同理）
     expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('还没有建立情侣空间'))
     wrapper.unmount()
   })
