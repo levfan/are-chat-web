@@ -237,6 +237,10 @@ import type {
   CoupleQuestBattleKind,
   CoupleQuestResult,
   CoupleQuestCareKind,
+  CoupleCatchVO,
+  CoupleCatchYearVO,
+  CoupleCatchSensitiveKind,
+  CoupleCatchProtocolMode,
   CouplePinVO,
 } from '@/types'
 
@@ -2474,4 +2478,128 @@ export const questApi = {
    *  ⚠️ 这是「点按钮才懒读另一年」的独立接口，不在总览聚合里，失败直透 ElMessage.error、首屏不自动拉 */
   questWall: (year?: string) =>
     http.get<CoupleQuestWallVO>(year ? `/api/couple/quest/wall?year=${year}` : '/api/couple/quest/wall'),
+}
+
+/**
+ * F380-F389 聆听者（catchApi，基址 /api/couple/catch）：2 个 GET + 19 个 POST = 21 个映射。
+ * GET /board 是唯一的聚合读接口，19 个 POST 写接口全部原样返回整份 CatchVO
+ * （后端 CoupleCatchService.CatchVO，字段顺序见 types/index.ts 的 CoupleCatchVO），前端整体替换即十卡刷新；
+ * ⚠️ GET /year?year=（F389 年报）是唯一不在聚合里的懒读接口（聚合里的 year 恒是服务端当年那一份）。
+ * 限流与错误码全部抄自后端 CoupleCatchService 与 CoupleCatch* 实体常量
+ * （业务规则归后端，400/404 中文 message 直透 ElMessage，前端只可更严不可更松）：
+ * · F380 /wish：content 必填（400「TA 想要什么，先写一句」）且 ≤60（CONTENT_MAX，400「心愿最多 60 字」）；
+ *   sourceDay 空串=今天、须 yyyy-MM-dd（400「出处日子写成 yyyy-MM-dd」）、不能是将来
+ *   （400「出处日子不能是将来」）；scene ≤40（SCENE_MAX，400「场合最多 40 字」）；
+ *   同一主人心愿文案查重（uk(space,owner,content)）400「这条心愿已经悄悄记过了 🤫」；
+ *   格子按 PER_OWNER_MAX=12 计，⚠️ 减数是 findByOwner 的**全量**（含已兑现揭晓的），
+ *   400「TA 的心愿本最多记 12 条，先兑现几条」这句文案与实现不符（兑现并不释放格子，见交付报告）。
+ *   /wish/fulfill：⚠️ 只有记账人本人能勾（400「这条是 X 悄悄记的，只有 TA 能勾兑现 🎁」），
+ *   已兑现再点是幂等（直接返回整份、不重推）；勾完写 revealed_at，这条立刻离开 myWishes、
+ *   出现在对方的 revealedToMe 里（保密靠读时过滤，不靠前端）；id 找不到/跨空间 404「找不到这条心愿 🤫」。
+ * · F381 /mine：topic 必填（400「哪件事一碰就吵，写个话题」）且 ≤30（TOPIC_MAX）、trip ≤60（TRIP_MAX）、
+ *   safeWay ≤60（SAFE_MAX）；同话题（uk(space,from_user,topic)）400「这颗雷已经挂过了」；
+ *   每人 ≤6 颗（PER_USER_MAX，400「一个人最多挂 6 颗雷，别把日子过成扫雷」）。
+ *   /mine/ack：⚠️ 自己挂的不能自己盖（400「这颗雷是你自己挂的，知晓章要 TA 来盖 ✅」），重复盖幂等不重推；
+ *   404「找不到这颗雷 💣」。/mine/avoid：⚠️ 只有对方能记（400「避雷的人是 TA，你自己绕开不算战绩 🛡️」）、
+ *   必须先盖过知晓（400「先盖「已知晓」，再记这次绕过去了」）；⚠️ 后端**没有**每日上限，avoided 可无限累加。
+ * · F382 /safeword：word 必填（400「暂停词总得有个词」）且 ≤20（WORD_MAX）、note ≤60（NOTE_MAX，
+ *   400「用了之后希望最多 60 字」）；uk(space,from_user) 每人一行、再提交即改写。
+ *   /safeword/use（⚠️ 无请求体，POST 传 {}）：还没约词 400「先约一个安全词，才喊得出口 🛑」、
+ *   一天一人只记一次（uk(space,day,user)）400「今天已经记过一次暂停了，别把安全词用成口头禅」。
+ *   /safeword/reflect {id,reflect}：⚠️ 只有喊停本人能补（400「那次是 TA 喊的停，复盘要 TA 自己写 📝」）、
+ *   必填（400「复盘写一句：当时卡在哪、后来怎么接着聊的」）且 ≤60（REFLECT_MAX）；404「找不到那次暂停记录 🛑」。
+ * · F383 /sensitive：day 必填须 yyyy-MM-dd（400「敏感日写成 yyyy-MM-dd」）、⚠️ 只能今天或将来
+ *   （400「敏感日要提前标，过去的日子就让它过去 📌」）；kind 只能 PERIOD/CHECK/MEMORY/OTHER
+ *   （400「类型只能是周期第一天/考核日/忌日纪念日/其它」，空串后端兜成 OTHER）；care ≤60（CARE_MAX）；
+ *   同一主人同一天同一类（uk(space,owner,day,kind)）400「这一天的这一类已经标过了」；
+ *   ⚠️ 主人恒等于操作人的对方（只能替 TA 标，标不了自己）。/sensitive/remove：⚠️ 只有代标的人能撤
+ *   （400「这个敏感日是 TA 替你标的，要撤也让 TA 来撤 📌」）；404「找不到这个敏感日 📌」。
+ * · F384 /thread：topic 必填（400「聊到哪儿的话题，写一句」）且 ≤40（TOPIC_MAX）、progress ≤60
+ *   （PROGRESS_MAX）；⚠️ 查重只在在途 OPEN 里比（(space,from_user,topic) 不是唯一键，续完后同话题能再存），
+ *   400「这个话题已经在线轴上了 🧵」；在途每人 ≤5（IN_FLIGHT_MAX，400「在途的话头最多 5 个，先聊完几个再存」）。
+ *   /thread/done：⚠️ 只有存话头的人能销（400「这个话头是 TA 存的，让 TA 自己销档 ✂️」），已销幂等；
+ *   404「找不到那个话头 🧵」。
+ * · F385 /say：say 必填（400「嘴上常说的那句写下来」）且 ≤20（SAY_MAX）、means 必填
+ *   （400「翻译结果得写，不然对方猜不到 🔤」）且 ≤60（MEANS_MAX）；同说辞（uk(space,from_user,say)）
+ *   400「这条已经申报过了」；每人 ≤10 条（PER_USER_MAX，400「反话词条最多 10 条，先删几条」）。
+ *   /say/remove：⚠️ 只有申报人本人能删（400「这份对照是 TA 本人申报的，对方不能改也不能删」）；
+ *   404「找不到这条对照词条 🔤」。
+ * · F386 /protocol：mode 只能 REASON/RANT/HUG/FOOD/SPACE 五个（400「五种里选一个：讲道理/陪骂/抱抱不说话/
+ *   递吃的/别理我 🎧」，⚠️ 空串也走这条，不像 F383 的 kind 有兜底）、note ≤60（400「补充说明最多 60 字」）；
+ *   uk(space,from_user) 每人一行可改写。
+ * · F387 /topic：title 必填（400「想多聊的话题写一个」）且 ≤30（TITLE_MAX）；同人同名
+ *   （uk(space,from_user,title)）400「这个话题已经许过了 💭」；⚠️ 后端没有许愿条数上限。
+ *   /topic/take：⚠️ 自己许的题自己接不了（400「自己许的题不能自己接 📥」），非 PENDING 再点是幂等；
+ *   404「找不到这一题 💭」。/topic/talk {id,reflect}：⚠️ 还没接单 400「这一题还没接单，聊不了」、
+ *   只有接单人能勾（400「单是谁接的，谁来说「聊完了」」）、reflect 必填
+ *   （400「聊完了总得留一句感想」）且 ≤60（REFLECT_MAX）；距接单超过 7 天（WEEK_MILLIS）落 overdue。
+ * · F388 /daily：content 必填（400「今天想说的那句写下来 💬」）且 ≤40（CONTENT_MAX）；
+ *   uk(space,day,user) 每人每天一行、当天可改写（只有首次那条推给对方，改写不重推）。
+ * · F389 /year（GET：year 空串=当年、须 yyyy 否则 400「年份写成 yyyy」）：数字全部直查原始表，
+ *   不受 myWishes≤24/mines≤12/uses≤20/sensitives≤12/threads≤12/says≤20/topics≤12/dailies≤14 的列表钳制。
+ * 未建空间一律 404「还没有建立情侣空间，先邀请一位好友吧」，组件侧 safeLoad 静默降级。
+ */
+export const catchApi = {
+  /** F380-F389 聆听者总览（GET /board：二十四个字段一次拉齐；⚠️ myWord/partnerWord/myProtocol/
+   *  partnerProtocol/myToday/partnerToday 没数据时为 null，其余字符串后端恒给空串；未建空间 404 前端静默降级） */
+  catchBoard: () => http.get<CoupleCatchVO>('/api/couple/catch/board'),
+  /** F380 悄悄记一条 TA 随口说的心愿（content 必填 ≤60 字、sourceDay 空串=今天且不能是将来、scene ≤40 字；
+   *  同主人同文案 400、格子按 12 条计且减数含已兑现；⚠️ 后端不推给对方，保密靠读时过滤），返回整份总览 */
+  catchWish: (content: string, sourceDay: string, scene: string) =>
+    http.postJson<CoupleCatchVO>('/api/couple/catch/wish', { content, sourceDay, scene }),
+  /** F380 兑现登记（⚠️ 只有记账人本人能勾；勾完 revealed_at 落库、这条立刻离开 myWishes；已勾再点幂等），
+   *  返回整份总览 */
+  catchWishFulfill: (id: string) => http.postJson<CoupleCatchVO>('/api/couple/catch/wish/fulfill', { id }),
+  /** F381 挂一颗雷（topic 必填 ≤30 字、trip ≤60 字、safeWay ≤60 字；同话题 400、每人 ≤6 颗），返回整份总览 */
+  catchMine: (topic: string, trip: string, safeWay: string) =>
+    http.postJson<CoupleCatchVO>('/api/couple/catch/mine', { topic, trip, safeWay }),
+  /** F381 对方盖「已知晓」（⚠️ 自己挂的不能自己盖；重复盖幂等不重推），返回整份总览 */
+  catchMineAck: (id: string) => http.postJson<CoupleCatchVO>('/api/couple/catch/mine/ack', { id }),
+  /** F381 记一次成功避雷（⚠️ 只有对方能记、必须先盖过知晓；后端无每日上限），返回整份总览 */
+  catchMineAvoid: (id: string) => http.postJson<CoupleCatchVO>('/api/couple/catch/mine/avoid', { id }),
+  /** F382 约定/改写自己的安全词（word 必填 ≤20 字、note ≤60 字；每人一格 upsert），返回整份总览 */
+  catchSafeword: (word: string, note: string) =>
+    http.postJson<CoupleCatchVO>('/api/couple/catch/safeword', { word, note }),
+  /** F382 喊了一次暂停（⚠️ 后端无请求体，传 {}；还没约词 400、一天一人只记一次），返回整份总览 */
+  catchSafewordUse: () => http.postJson<CoupleCatchVO>('/api/couple/catch/safeword/use', {}),
+  /** F382 给某次暂停补事后复盘（⚠️ 只有喊停本人能补；reflect 必填 ≤60 字），返回整份总览 */
+  catchSafewordReflect: (id: string, reflect: string) =>
+    http.postJson<CoupleCatchVO>('/api/couple/catch/safeword/reflect', { id, reflect }),
+  /** F383 给 TA 标一个敏感日（day 必填须 yyyy-MM-dd 且只能今天或将来；kind 四白名单、空串后端兜 OTHER、
+   *  care ≤60 字可空；⚠️ 主人恒是操作人的对方，标不了自己），返回整份总览 */
+  catchSensitive: (day: string, kind: CoupleCatchSensitiveKind | '', care: string) =>
+    http.postJson<CoupleCatchVO>('/api/couple/catch/sensitive', { day, kind, care }),
+  /** F383 撤掉代标的一天（⚠️ 只有代标的人能撤，敏感日的主人自己撤不掉），返回整份总览 */
+  catchSensitiveRemove: (id: string) => http.postJson<CoupleCatchVO>('/api/couple/catch/sensitive/remove', { id }),
+  /** F384 存一个被打断的话头（topic 必填 ≤40 字、progress ≤60 字；在途同名 400、在途每人 ≤5 个），
+   *  返回整份总览 */
+  catchThread: (topic: string, progress: string) =>
+    http.postJson<CoupleCatchVO>('/api/couple/catch/thread', { topic, progress }),
+  /** F384 续完销档（⚠️ 只有存话头的人能销；已销幂等），返回整份总览 */
+  catchThreadDone: (id: string) => http.postJson<CoupleCatchVO>('/api/couple/catch/thread/done', { id }),
+  /** F385 申报一条口是心非（say 必填 ≤20 字、means 必填 ≤60 字；同说辞 400、每人 ≤10 条），返回整份总览 */
+  catchSay: (say: string, means: string) => http.postJson<CoupleCatchVO>('/api/couple/catch/say', { say, means }),
+  /** F385 删掉自己申报的词条（⚠️ 对方只能看，改不了也删不了），返回整份总览 */
+  catchSayRemove: (id: string) => http.postJson<CoupleCatchVO>('/api/couple/catch/say/remove', { id }),
+  /** F386 写/改「我难过时要的是」（mode 只能 REASON/RANT/HUG/FOOD/SPACE 五个、⚠️ 空串没有兜底直接 400；
+   *  note ≤60 字可空；每人一格 upsert），返回整份总览 */
+  catchProtocol: (mode: CoupleCatchProtocolMode, note: string) =>
+    http.postJson<CoupleCatchVO>('/api/couple/catch/protocol', { mode, note }),
+  /** F387 许一题「希望我们多聊 XX」（title 必填 ≤30 字；同人同名 400；后端无条数上限），返回整份总览 */
+  catchTopic: (title: string) => http.postJson<CoupleCatchVO>('/api/couple/catch/topic', { title }),
+  /** F387 接单（⚠️ 只有非许愿人能接；已接/已聊完再点是幂等），返回整份总览 */
+  catchTopicTake: (id: string) => http.postJson<CoupleCatchVO>('/api/couple/catch/topic/take', { id }),
+  /** F387 聊完并留一句感想（⚠️ 只有接单人能勾、reflect 必填 ≤60 字；距接单超 7 天后端落 overdue），
+   *  返回整份总览 */
+  catchTopicTalk: (id: string, reflect: string) =>
+    http.postJson<CoupleCatchVO>('/api/couple/catch/topic/talk', { id, reflect }),
+  /** F388 留今天想对 TA 说的一句（content 必填 ≤40 字；每人每天一行、当天可改写且改写不重推），
+   *  返回整份总览 */
+  catchDaily: (content: string) => http.postJson<CoupleCatchVO>('/api/couple/catch/daily', { content }),
+  /** F389 聆听者年报（GET：year 空串=当年且须 yyyy 否则 400「年份写成 yyyy」；数字全部直查原始表，
+   *  不受总览列表钳制，title/summary 是后端 Bank 整句。
+   *  ⚠️ 这是「点按钮才懒读另一年」的独立接口，不在总览聚合里（聚合里的 year 恒是服务端当年那份），
+   *  失败直透 ElMessage.error、首屏不自动拉 */
+  catchYear: (year?: string) =>
+    http.get<CoupleCatchYearVO>(year ? `/api/couple/catch/year?year=${year}` : '/api/couple/catch/year'),
 }

@@ -5062,3 +5062,232 @@ export interface CoupleQuestVO {
   upcoming: CoupleQuestUpcomingVO[]
   wall: CoupleQuestWallVO
 }
+
+// ============ 批次三十四：聆听者（F380-F389，catchApi / CoupleCatch.vue） ============
+// ⚠️ 字段名、顺序与可空性逐字对齐后端 CoupleCatchService 的 12 个 record（record 参数顺序 = wire 字段顺序）。
+// 字段名对不上只会表现为「卡片空白」，vue-tsc 与单测都照不出来——改后端或抄后端时务必逐字段再比一遍。
+// 可空口径（读 build() 源码逐字段确认）：真可空只有 CatchVO 的 myWord / partnerWord / myProtocol /
+// partnerProtocol / myToday / partnerToday 六个槽位（后端 `row == null ? null : ...`）；
+// 其余字符串一律经 nz() 恒空串、int/long 恒有值（getCreated()/getAvoided() 为 null 时后端兜 0）。
+
+/** F383 敏感日类型（后端 CoupleCatchSensitive.KINDS 四个；⚠️ 请求里传空串后端兜成 OTHER，不报错） */
+export type CoupleCatchSensitiveKind = 'PERIOD' | 'CHECK' | 'MEMORY' | 'OTHER'
+
+/** F386 聆听方式（后端 CoupleCatchProtocol.MODES 五个；白名单外 400「五种里选一个…」） */
+export type CoupleCatchProtocolMode = 'REASON' | 'RANT' | 'HUG' | 'FOOD' | 'SPACE'
+
+/** F387 话题状态（后端 CoupleCatchTopic.STATUS_PENDING/TAKEN/TALKED；⚠️ VO 不下发中文标签，前端只做文案镜像） */
+export type CoupleCatchTopicStatus = 'PENDING' | 'TAKEN' | 'TALKED'
+
+/**
+ * F380 暗中心愿一条（uk(space,owner,content)，每人替 TA 记 ≤12 条 CoupleCatchWish.PER_OWNER_MAX）。
+ * ⚠️ 同一个 WishVO 形状装在两张列表里，语义相反：
+ *   myWishes = 我替 TA 记的 && secret（后端 filter recorder==me && secret），这里 mine 恒 true；
+ *   revealedToMe = TA 替我记的 && 已揭晓（filter !secret），这里 mine 恒 false。
+ * 所以「能不能勾兑现」不能只看 mine，只能看这条出现在哪张列表里。
+ * secret=还没揭晓；filled=已兑现登记；created 是毫秒时间戳（后端 null 兜 0 → 恒 number）。
+ */
+export interface CoupleCatchWishVO {
+  id: string
+  mine: boolean
+  content: string
+  sourceDay: string
+  scene: string
+  secret: boolean
+  filled: boolean
+  created: number
+}
+
+/**
+ * F381 雷区一颗（uk(space,from_user,topic)，每人 ≤6 颗 CoupleCatchMine.PER_USER_MAX）。
+ * mine=这颗是我挂的；acked=对方盖过「已知晓」；ackBy 是盖章人的用户名（没盖空串）；
+ * avoided=成功绕开的累计次数（后端 getAvoided()==null 兜 0 → 恒 number，⚠️ 无每日上限、可无限刷）。
+ */
+export interface CoupleCatchMineVO {
+  id: string
+  mine: boolean
+  topic: string
+  trip: string
+  safeWay: string
+  acked: boolean
+  ackBy: string
+  avoided: number
+}
+
+/**
+ * F382 某一方的安全词（uk(space,from_user)，每人一格可改写，word ≤20、note ≤60）。
+ * useCount=这个人**全历史**喊停次数（countBy 不限月份；⚠️ 规格 F382 说「月度统计」，月度数在
+ * CatchVO.monthUses 且是两人合计，后端不下发分人的本月数）。
+ * ⚠️ 后端不下发「我今天是否已经喊过」，前端只能从 uses（按 day 倒序、≤20 条）比对 mine+day===v.day。
+ */
+export interface CoupleCatchSafewordVO {
+  id: string
+  mine: boolean
+  word: string
+  note: string
+  useCount: number
+}
+
+/**
+ * F382 一次暂停使用（uk(space,day,user_name)，一天一人只记一次）。
+ * word 取的是「喊的那个人当天的词」：我喊的用 myWord 的词、TA 喊的用 partnerWord 的词，
+ * 那一方还没约词时后端给空串。reflect=事后复盘（空串=还没补，只有喊停本人能补）。
+ */
+export interface CoupleCatchUseVO {
+  id: string
+  day: string
+  mine: boolean
+  word: string
+  reflect: string
+}
+
+/**
+ * F383 一个敏感日标注（uk(space,owner,day,kind)，只能标今天或将来；列表口径是 day>=服务端今天，
+ * 过去的日子自动离开总览，不需要前端过滤）。
+ * ⚠️ mineAsOwner=「这条的主人是我」，与批次里常见的 mine 语义相反方向的闸门：
+ * 后端 removeSensitive 是 `if (me.equals(ownerUser)) throw` —— 只有代标的那位能撤，主人自己撤不掉。
+ * daysLeft=距今天还有几天（后端 daysBetween 算）；remindTomorrow=明天是不是这一天（daysLeft===1）。
+ */
+export interface CoupleCatchSensitiveVO {
+  id: string
+  mineAsOwner: boolean
+  ownerUser: string
+  day: string
+  kind: CoupleCatchSensitiveKind
+  kindLabel: string
+  care: string
+  daysLeft: number
+  remindTomorrow: boolean
+}
+
+/**
+ * F384 一个话头存档（status OPEN/DONE，在途每人 ≤5 CoupleCatchThread.IN_FLIGHT_MAX；
+ * ⚠️ DDL 只有普通索引 idx_catch_thread，(space,from_user,status) 不是唯一键，续完后同话题可以再存）。
+ * open=还在途。⚠️ myThreads/partnerThreads 两张列表后端都按 STATUS_OPEN 查，所以这里的 open 恒 true，
+ * 后端 finishThread 里 `!row.open()` 那条幂等分支前端永远走不到。
+ */
+export interface CoupleCatchThreadVO {
+  id: string
+  mine: boolean
+  topic: string
+  progress: string
+  open: boolean
+  created: number
+}
+
+/** F385 一条反话对照（uk(space,from_user,say)，每人 ≤10 条 CoupleCatchSay.PER_USER_MAX；只有申报人能删）。 */
+export interface CoupleCatchSayVO {
+  id: string
+  mine: boolean
+  say: string
+  means: string
+}
+
+/**
+ * F386 一方聆听方式（uk(space,from_user)，每人一格可改写）。
+ * mode 是原始枚举、modeLabel 是后端 CoupleCatchBank.modeLabel 的中文（展示一律吃 label）。
+ */
+export interface CoupleCatchProtocolVO {
+  id: string
+  mine: boolean
+  mode: CoupleCatchProtocolMode
+  modeLabel: string
+  note: string
+}
+
+/**
+ * F387 一题话题许愿（uk(space,from_user,title)；⚠️ topics 是两人合计、含已聊完的，按日渐降序 ≤12 条）。
+ * mine=这题是我许的；takenBy=接单人的用户名（没接空串）；
+ * canTake=后端算好的「这题我能接」= PENDING && 不是我许的；canTalk=「我能勾聊完」= 接单人是我 && 状态 TAKEN；
+ * overdue=聊完时是否已超过接单后一周（WEEK_MILLIS）；talkDay 聊完日、reflect 那一句感想（没聊完都空串）。
+ */
+export interface CoupleCatchTopicVO {
+  id: string
+  mine: boolean
+  title: string
+  status: CoupleCatchTopicStatus
+  takenBy: string
+  canTake: boolean
+  canTalk: boolean
+  overdue: boolean
+  talkDay: string
+  reflect: string
+}
+
+/**
+ * F388 某一天的一句话（uk(space,day,user_name)，当天可改写）。
+ * ⚠️ 三处复用同一个形状：CatchVO.myToday（null=我今天还没写，就是「我这一侧今天」的权威位）、
+ * CatchVO.partnerToday（null=TA 今天还没写）、CatchVO.myHistory（我这方的历史 ≤14 条，
+ * 后端从全空间列表里 filter userName==me 再 limit，所以是日渐降序的我的流水）。
+ */
+export interface CoupleCatchDailyVO {
+  day: string
+  content: string
+  mine: boolean
+}
+
+/**
+ * F389 聆听者年报（数字全部直查原始表，不受 myWishes≤24/mines≤12/uses≤20/…的列表钳制）。
+ * ⚠️ year 是 Java int → number（不是字符串，别抄批次二十五 post 的 string year）。
+ * wishes=空间内暗中心愿**总数**（不分类别/年份，后端 wishes.size()），fulfilled=揭晓时间落在这一年的；
+ * mines=在册雷数、acked=已盖知晓章的、avoids=avoided 求和；uses=这一年喊停次数、
+ * reflected=其中补了复盘的；threads=这一年存档数、finished=这一年销档数；
+ * talked=这一年聊完的题数、onTime=其中没超时的；dailies=这一年留的一句话条数。
+ * title/summary 全是后端 Bank 整句（称号按 fulfilled*3+avoids*2+talked*2+uses+dailies/10 定档）。
+ */
+export interface CoupleCatchYearVO {
+  year: number
+  wishes: number
+  fulfilled: number
+  mines: number
+  acked: number
+  avoids: number
+  uses: number
+  reflected: number
+  sensitives: number
+  threads: number
+  finished: number
+  says: number
+  talked: number
+  onTime: number
+  dailies: number
+  title: string
+  summary: string
+}
+
+/**
+ * 聆听者总览（GET /api/couple/catch/board 一次拉齐；19 个 POST 写接口全部原样返回整份 CatchVO，
+ * 前端整体替换即十卡刷新）。⚠️ 唯一的例外是 GET /year?year=：那是「点按钮才懒读另一年」的独立读接口，
+ * 不进这份聚合（这份里的 year 恒是服务端当年那一份）。
+ * day=服务端今天 yyyy-MM-dd、week=服务端那周的周一 yyyy-MM-dd ——
+ * 所有倒数/本月/今日判定一律吃这两个字段，不吃本地时钟。
+ * protocolHint/dailyHint 是后端 Bank 整句（dailyHint 空串=TA 今天写了或之前没写过）。
+ * wishQuotaLeft=替 TA 记的格子还剩几个（⚠️ 后端的减数是 findByOwner 全量含已兑现，兑现并不释放格子）。
+ * monthUses=本月两人合计喊停次数；sensitives 只给 day>=今天；myThreads/partnerThreads 只给 OPEN。
+ */
+export interface CoupleCatchVO {
+  day: string
+  week: string
+  myWishes: CoupleCatchWishVO[]
+  revealedToMe: CoupleCatchWishVO[]
+  wishQuotaLeft: number
+  mines: CoupleCatchMineVO[]
+  myWord: CoupleCatchSafewordVO | null
+  partnerWord: CoupleCatchSafewordVO | null
+  uses: CoupleCatchUseVO[]
+  monthUses: number
+  sensitives: CoupleCatchSensitiveVO[]
+  myThreads: CoupleCatchThreadVO[]
+  partnerThreads: CoupleCatchThreadVO[]
+  mySays: CoupleCatchSayVO[]
+  partnerSays: CoupleCatchSayVO[]
+  myProtocol: CoupleCatchProtocolVO | null
+  partnerProtocol: CoupleCatchProtocolVO | null
+  protocolHint: string
+  topics: CoupleCatchTopicVO[]
+  myToday: CoupleCatchDailyVO | null
+  partnerToday: CoupleCatchDailyVO | null
+  dailyHint: string
+  myHistory: CoupleCatchDailyVO[]
+  year: CoupleCatchYearVO
+}
