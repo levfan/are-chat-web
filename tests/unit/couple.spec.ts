@@ -7335,21 +7335,31 @@ describe('CoupleView 情侣空间', () => {
     expect(questApi.questMoveNight).toHaveBeenCalledWith('2026-10-08', '')
     expect(wrapper.find('[data-testid="couple-quest-night-both"]').text()).toContain('两个人都在')
 
-    // 反过来：我先点、TA 没点 → 说「还差 TA 一个」，并且那句话的输入口收起（后端不翻转就不写库）
+    // 反过来：我先点、TA 没点 → 说「还差 TA 一个」，输入口不收起（后端已支持点过之后补话落库）
     vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
       moveNight: questNight({ mineTicked: true, partnerTicked: false, bothTicked: false, note: '先入住的那晚' }),
     }))
     const wrapper2 = await mountOnPromisesQuest()
     expect(wrapper2.find('[data-testid="couple-quest-night-wait"]').text()).toContain('还差 TA 一个')
     expect(wrapper2.find('[data-testid="couple-quest-night-wait-me"]').exists()).toBe(false)
-    expect((wrapper2.find('[data-testid="couple-quest-night-note"]').element as HTMLInputElement).disabled).toBe(true)
+    expect((wrapper2.find('[data-testid="couple-quest-night-note"]').element as HTMLInputElement).disabled).toBe(false)
     // 回填吃服务端那一晚的日子与话
     expect((wrapper2.find('[data-testid="couple-quest-night-day"]').element as HTMLInputElement).value).toBe('2026-10-08')
+    // 回填的那句话原样再点是空提交 → 前端挡下并提示可以补话
     const nightCalls = vi.mocked(questApi.questMoveNight).mock.calls.length
     await wrapper2.find('[data-testid="couple-quest-night-submit"]').trigger('click')
     await flushPromises()
     expect(vi.mocked(questApi.questMoveNight).mock.calls.length).toBe(nightCalls)
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('你已经打过卡了'))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('想补一句话'))
+    // 写一句新的补话 → 必须真的再发一次（后端已支持点过后补话落库，不再只有翻转才写）
+    vi.mocked(questApi.questMoveNight).mockResolvedValue(questVo({
+      moveNight: questNight({ mineTicked: true, partnerTicked: false, bothTicked: false, note: '补的那句' }),
+    }))
+    await wrapper2.find('[data-testid="couple-quest-night-note"]').setValue('补的那句')
+    await wrapper2.find('[data-testid="couple-quest-night-submit"]').trigger('click')
+    await flushPromises()
+    expect(vi.mocked(questApi.questMoveNight).mock.calls.length).toBe(nightCalls + 1)
+    expect(vi.mocked(questApi.questMoveNight).mock.lastCall).toEqual(['2026-10-08', '补的那句'])
     wrapper2.unmount()
 
     // 闸门：日子空 / 格式错 / 话超 60 字

@@ -395,7 +395,6 @@
           v-model="nightNote"
           :maxlength="NIGHT_NOTE_MAX"
           show-word-limit
-          :disabled="nightAlreadyMine"
           :placeholder="nightNotePlaceholder"
           data-testid="couple-quest-night-note"
         />
@@ -698,7 +697,7 @@ const awardedThisWeek = computed(() => {
   const to = addDays(from, 6)
   return v.value.wins.some((w) => w.awardedBy === auth.username && w.awardDay >= from && w.awardDay <= to)
 })
-/** 新家第一晚：只有当前这一晚且服务端说我这格点过了，才收掉输入口（后端不翻转就不写库） */
+/** 我这一格是否已点过当前这一晚（只用来挡「既没新话也没得点」的空提交，不再收输入口） */
 const nightAlreadyMine = computed(() => {
   const night = v.value?.moveNight ?? null
   if (!night || !night.mineTicked) return false
@@ -707,8 +706,8 @@ const nightAlreadyMine = computed(() => {
 })
 const nightNotePlaceholder = computed(() =>
   nightAlreadyMine.value
-    ? '那一晚你已经打过卡了，那句话只有先点的人写得进去'
-    : `那一晚的一句话（≤${NIGHT_NOTE_MAX} 字，先点的人写）`,
+    ? `那一晚你已经点过了，想补一句就再写进来（≤${NIGHT_NOTE_MAX} 字）`
+    : `那一晚的一句话（≤${NIGHT_NOTE_MAX} 字，点过之后也能补）`,
 )
 /** 未建空间时总览没有 wall，成就墙那一段落全零空态（不报错、不自造数字） */
 function emptyWall(): CoupleQuestWallVO {
@@ -1321,15 +1320,17 @@ async function onNight() {
     ElMessage.warning(`那一晚的一句话最多 ${NIGHT_NOTE_MAX} 字 🏠`)
     return
   }
-  if (nightAlreadyMine.value) {
-    // 后端只在 0→1 真翻转时写库：重复点既不改 note 也不重推，前端不发这次注定没用的提交
-    ElMessage.warning('那一晚你已经打过卡了，差的是 TA 那一格 🏠')
+  if (nightAlreadyMine.value && note === (v.value?.moveNight?.note ?? '').trim()) {
+    // 点过又没有**新话**可补才是空提交（输入口回填的是服务端那句话，原样再点后端既不写也不推）
+    ElMessage.warning('那一晚你已经打过卡了，差的是 TA 那一格；想补一句话就写进来再点 🏠')
     return
   }
+  const lateNote = nightAlreadyMine.value
   try {
     const data = await questApi.questMoveNight(day, note)
     refresh(data)
     if (data?.moveNight?.bothTicked) ElMessage.success('那一晚两个人都在：房子从这晚开始是家的 🏠✨')
+    else if (lateNote) ElMessage.success('那一晚的话补上了 🏠')
     else ElMessage.success('你这一格点上了，还差 TA 那一格 🏠')
   } catch (e) {
     onError(e, '第一晚打卡失败')
