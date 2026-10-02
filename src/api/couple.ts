@@ -213,6 +213,7 @@ import type {
   CoupleFyBoardVO,
   CoupleCxOverviewVO,
   CouplePostVO,
+  CoupleTheaterVO,
   CouplePinVO,
 } from '@/types'
 
@@ -1783,4 +1784,66 @@ export const postApi = {
   /** F299 兑现销旗（只有立旗的本人能销，点 TA 的旗后端 400；逾期会被后端降额），返回整份总览 */
   postPromiseKeep: (id: string) =>
     http.postJson<CouplePostVO>('/api/couple/post/promise/keep', { id }),
+}
+
+/**
+ * F300-F309 扮演剧场（theaterApi，基址 /api/couple/theater）
+ * theaterToday 为唯一读接口；其余 16 个 POST 写接口全部返回整份 TheaterVO，前端整体替换即五卡刷新。
+ * 业务规则由后端 400 中文 message 直透 ElMessage（演技分 1-5 且本人只能打一次、互换日记 ≤300 字、
+ * 徒弟才能打卡且一周 ≤7 天、评语定级归师父本人且只有出师/留级两个章、侍奉不满 3 次不许出师、
+ * 电话只有给一年后和给一年前两种去向且 ≤300 字、词条 ≤40 字同名即已在册、自己收的梗不能考自己、
+ * 判卷归收录人且要 TA 先作答、提名证据 ≤140 字一人一天一次、家长题 ≤200 字、剧目名 ≤40 字角色名 ≤20 字
+ * 单次角色日记 ≤200 字累计 ≤600 字、工单 ≤80 字、自己的单自己接不了、评分归顾客、只有 1-2 星差评能申诉一次等）。
+ */
+export const theaterApi = {
+  /** F300-F309 今日剧场总览（身份签/日记/师徒/电话亭/黑话/奥斯卡/家长题/追剧/客服/颁奖礼一次拉齐，读时惰性结算到点的跨时空电话；未建空间 404 前端静默降级） */
+  theaterToday: () => http.get<CoupleTheaterVO>('/api/couple/theater/today'),
+  /** F300 日终给今天扮演的那个 TA 打演技分（score 1-5，越界后端 400；本人一天一次，打过再调幂等返回不覆盖） */
+  theaterRate: (score: number) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/role/rate', { score }),
+  /** F301 以 TA 的身份写今天这一页（text ≤300 字必填，当日日本人可改写且改写不重推 TA） */
+  theaterDiary: (text: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/diary', { text }),
+  /** F302 徒弟今日侍奉打卡（师父点了后端 400「这周你是师父」；一天一次，一周 ≤7 天），无请求体 */
+  theaterServe: () =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/master/serve', {}),
+  /** F302 师父写评语并定级（review ≤100 字可空，grade 只有 GRADUATED 出师 / REPEAT 留级；侍奉不满 3 次想出师后端 400，定过级不能再改） */
+  theaterReview: (review: string, grade: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/master/review', { review, grade }),
+  /** F303 拨一通跨时空电话（kind=FUTURE 封存到一年后 / PAST 当场接通带杂音，其它后端 400；text ≤300 字必填） */
+  theaterBooth: (kind: string, text: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/booth', { kind, text }),
+  /** F304 收录一条只有俩人懂的黑话（term ≤40 字、meaning ≤200 字必填，origin ≤200 字可空；同名后端 400「这个梗已经收进大全了」） */
+  theaterRefAdd: (term: string, meaning: string, origin: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/ref', { term, meaning, origin }),
+  /** F304 抽查作答（按词条名交卷，answer ≤200 字；自己收录的词条考自己后端 400；重新作答会把已判的结果清空重判） */
+  theaterRefQuiz: (term: string, answer: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/ref/quiz', { term, answer }),
+  /** F304 收录人判卷：right=true 记住了 / false 记岔了（不是收录人、或 TA 还没作答，后端 400） */
+  theaterRefJudge: (term: string, right: boolean) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/ref/judge', { term, right }),
+  /** F305 递出今日奥斯卡提名（evidence ≤140 字必填；一人一天一次，重交即改写本人那张） */
+  theaterAward: (evidence: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/award', { evidence }),
+  /** F306 作答今日家长题（answer ≤200 字必填，本人当天可改写；两份答卷齐了才互见） */
+  theaterFamily: (answer: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/family', { answer }),
+  /** F307 认领角色并追更一段角色日记（work ≤40 字、roleName ≤20 字必填，entry ≤200 字可空；同人同剧即续写，累计 ≤600 字） */
+  theaterMovie: (work: string, roleName: string, entry: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/movie', { work, roleName, entry }),
+  /** F307 我这一路剧终（work 必填；没在这部剧里认领过后端 400，双方都剧终才合成双视角剧本。请求体沿用 MovieRequest，另两个字段传空串） */
+  theaterMovieFinish: (work: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/movie/finish', { work, roleName: '', entry: '' }),
+  /** F308 下一张服务工单（note ≤80 字必填，30 分钟内等客服响应） */
+  theaterOrder: (note: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/order', { note }),
+  /** F308 客服接单响应（只有非下单人能接，自己的单自己接后端 400；已有人接过再点后端 400） */
+  theaterOrderAnswer: (id: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/order/answer', { id }),
+  /** F308 顾客评分（score 1-5，越界后端 400；客服不能给自己打分，没人接单也不能评） */
+  theaterOrderScore: (id: string, score: number) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/order/score', { id, score }),
+  /** F308 客服对差评申诉一次（appeal ≤80 字必填；顾客申诉后端 400，没评过或不是 1-2 星都 400） */
+  theaterOrderAppeal: (id: string, appeal: string) =>
+    http.postJson<CoupleTheaterVO>('/api/couple/theater/order/appeal', { id, appeal }),
 }

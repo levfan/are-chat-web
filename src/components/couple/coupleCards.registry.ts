@@ -26,6 +26,12 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-deep', label: '今日真心话', tab: 'rituals', sub: 'ceremony' },
   { key: 'couple-fun-talk', label: '默契考验比划猜', tab: 'rituals', sub: 'fun' },
   { key: 'couple-play', label: '趣味小游戏', tab: 'rituals', sub: 'fun' },
+  // 🎭 扮演剧场（F300-F309，rituals/fun 子页签）
+  { key: 'couple-theater-role', label: '今日身份签', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-theater-swap', label: '互换日记与师徒日', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-theater-booth', label: '时空电话亭与黑话', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-theater-act', label: '每日奥斯卡与家长题', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-theater-house', label: '追剧客服颁奖礼', tab: 'rituals', sub: 'fun' },
   // 🌱 养成
   { key: 'couple-challenge', label: '双人挑战赛', tab: 'growth' },
   { key: 'couple-coach', label: '成长搭子', tab: 'growth' },

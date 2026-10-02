@@ -3654,3 +3654,163 @@ export interface CouplePostVO {
   credits: CouplePostCreditVO[]
   creditLine: CouplePostCreditLineVO
 }
+
+// ============ 扮演剧场（F300-F309） ============
+// 字段逐一对齐后端 com.smart.chat.couple.CoupleTheaterService 的嵌套 record：
+// 只有对应 Java Integer 的字段（RoleVO.myRate|partnerRate、TicketVO.score）可空，
+// 其余字符串后端一律给空串（空串=没写 / 没答 / 没判 / 没定级）。
+
+/** F303 跨时空电话去向：PAST 当场接通（带杂音彩蛋），FUTURE 封存到一年后 */
+export type CoupleTheaterBoothKind = 'FUTURE' | 'PAST'
+
+/** F303 电话状态：SEALED 封存中等开放日（读时到点由后端惰性结算成 SENT）/ SENT 已接通 */
+export type CoupleTheaterBoothStatus = 'SEALED' | 'SENT'
+
+/** F302 出师定级章：GRADUATED 出师 / REPEAT 留级（后端只认这两个，其它 400） */
+export type CoupleTheaterGrade = 'GRADUATED' | 'REPEAT'
+
+/** F307 双角色追剧状态（⚠️ 以后端源码为准：status 与 finished 都只在「两人都剧终」时才 FINISHED/true） */
+export type CoupleTheaterMovieStatus = 'ONGOING' | 'FINISHED'
+
+/** F308 工单状态机：OPEN 待接 → ANSWERED 已接 → RATED 已评 → APPEALED 客服申诉过 */
+export type CoupleTheaterTicketStatus = 'OPEN' | 'ANSWERED' | 'RATED' | 'APPEALED'
+
+/** F300 今日身份签（同空间同日同一身份；myRate/partnerRate：null=那位还没打分） */
+export interface CoupleTheaterRoleVO {
+  day: string
+  roleName: string
+  guide: string
+  mineRated: boolean
+  myRate: number | null
+  partnerRate: number | null
+  bothRated: boolean
+}
+
+/** F301 一天两页「作为对方的一天」（mine=我写的那页，可改写；partner 只在双齐时才下发，空串=还没双齐） */
+export interface CoupleTheaterDiaryVO {
+  day: string
+  mine: string
+  partner: string
+  bothIn: boolean
+}
+
+/** F302 本周师徒日（iAmMaster=这周我是师父；serveTarget 后端常量 3；grade 空串=本周还没定级） */
+export interface CoupleTheaterMasterVO {
+  week: string
+  masterUser: string
+  apprenticeUser: string
+  iAmMaster: boolean
+  serveCount: number
+  serveTarget: number
+  servedToday: boolean
+  canReview: boolean
+  review: string
+  grade: CoupleTheaterGrade | ''
+}
+
+/** F303 一通跨时空电话（daysLeft 仅 SEALED 有值=离开放日还剩几天；line 仅已接通时给杂音话术，封存中是空串） */
+export interface CoupleTheaterBoothVO {
+  id: string
+  mine: boolean
+  kind: CoupleTheaterBoothKind
+  text: string
+  openDay: string
+  status: CoupleTheaterBoothStatus
+  daysLeft: number
+  line: string
+}
+
+/** F304 一条黑话词条（meaning/origin 空串=没写；quizBy 空串=没人作答；judged 空串=没判，否则 RIGHT|WRONG；canQuiz/canJudge 后端算好） */
+export interface CoupleTheaterRefVO {
+  id: string
+  term: string
+  meaning: string
+  origin: string
+  mine: boolean
+  quizAnswer: string
+  quizBy: string
+  judged: string
+  canQuiz: boolean
+  canJudge: boolean
+}
+
+/** F305 一次今日奥斯卡提名（mine=我递的那张，一人一天一次、可改写证据；⚠️ AwardVO 无 id，行按 day+fromUser 定位） */
+export interface CoupleTheaterAwardVO {
+  day: string
+  fromUser: string
+  aboutUser: string
+  evidence: string
+  mine: boolean
+  line: string
+}
+
+/** F306 今日家长题（myAnswer 空串=我没答；partnerAnswer 在双答前恒为空串，后端做了互见闸门） */
+export interface CoupleTheaterFamilyVO {
+  day: string
+  question: string
+  myAnswer: string
+  partnerAnswer: string
+  bothIn: boolean
+}
+
+/** F307 一部剧上的双角色线（myRole 空串=我还没认领；partnerDiary 只有双方都剧终才下发；bothClaimed=两人都认领了） */
+export interface CoupleTheaterMovieVO {
+  work: string
+  myRole: string
+  myDiary: string
+  partnerRole: string
+  partnerDiary: string
+  status: CoupleTheaterMovieStatus
+  bothClaimed: boolean
+  finished: boolean
+}
+
+/** F308 一张服务工单（score null=顾客还没评；waitMinutes 仅 OPEN 有值=已等多久；canAnswer/canScore/canAppeal 全由后端算，前端不重复判定） */
+export interface CoupleTheaterTicketVO {
+  id: string
+  note: string
+  status: CoupleTheaterTicketStatus
+  customerUser: string
+  mineCustomer: boolean
+  canAnswer: boolean
+  canScore: boolean
+  canAppeal: boolean
+  onTime: boolean
+  score: number | null
+  appeal: string
+  waitMinutes: number
+}
+
+/** F309 冷知识颁奖礼（后端读时聚合、无表：七项计数 + 当日奖项名与收尾话术） */
+export interface CoupleTheaterGalaVO {
+  day: string
+  prize: string
+  line: string
+  nominations: number
+  terms: number
+  quizzed: number
+  rights: number
+  diaryDays: number
+  onTimeOrders: number
+  orders: number
+}
+
+/**
+ * F300-F309 扮演剧场总览（GET /api/couple/theater/today 一次拉齐；16 个 POST 写接口全部返回整份 TheaterVO，
+ * 前端整体替换即五卡刷新）。diaries/booths/refs/awards/movies/tickets 是**全量历史列表**（后端只按 created|day 倒序，
+ * 不按状态过滤），master/role/family/gala 是恒有值的嵌套对象；本周口径由后端给（week=本周一）。
+ */
+export interface CoupleTheaterVO {
+  day: string
+  week: string
+  role: CoupleTheaterRoleVO
+  diaries: CoupleTheaterDiaryVO[]
+  master: CoupleTheaterMasterVO
+  booths: CoupleTheaterBoothVO[]
+  refs: CoupleTheaterRefVO[]
+  awards: CoupleTheaterAwardVO[]
+  family: CoupleTheaterFamilyVO
+  movies: CoupleTheaterMovieVO[]
+  tickets: CoupleTheaterTicketVO[]
+  gala: CoupleTheaterGalaVO
+}

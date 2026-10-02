@@ -66,6 +66,7 @@ declare module 'vue' {
     CoupleSoft: typeof import('./components/couple/CoupleSoft.vue')['default']
     CoupleSpark: typeof import('./components/couple/CoupleSpark.vue')['default']
     CoupleSurprise: typeof import('./components/couple/CoupleSurprise.vue')['default']
+    CoupleTheater: typeof import('./components/couple/CoupleTheater.vue')['default']
     CoupleTimeline: typeof import('./components/couple/CoupleTimeline.vue')['default']
     CoupleTodayBoard: typeof import('./components/couple/CoupleTodayBoard.vue')['default']
     CoupleTruth: typeof import('./components/couple/CoupleTruth.vue')['default']

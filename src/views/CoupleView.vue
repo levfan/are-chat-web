@@ -197,6 +197,7 @@
                 <div class="tab-stack">
                   <CoupleFunTalk />
                   <CouplePlay />
+                  <CoupleTheater />
                 </div>
               </el-tab-pane>
             </el-tabs>
@@ -474,6 +475,7 @@ import CouplePlay from '@/components/couple/CouplePlay.vue'
 import CoupleDailyLife from '@/components/couple/CoupleDailyLife.vue'
 import CoupleMoodRelay from '@/components/couple/CoupleMoodRelay.vue'
 import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
+import CoupleTheater from '@/components/couple/CoupleTheater.vue'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()
