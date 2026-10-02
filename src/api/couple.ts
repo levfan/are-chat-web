@@ -214,6 +214,12 @@ import type {
   CoupleCxOverviewVO,
   CouplePostVO,
   CoupleTheaterVO,
+  CoupleBodyVO,
+  CoupleBodySnoreLevel,
+  CoupleBodyPhase,
+  CoupleBodyFitKind,
+  CoupleBodyRedlineKind,
+  CoupleBodyMedHow,
   CouplePinVO,
 } from '@/types'
 
@@ -1846,4 +1852,80 @@ export const theaterApi = {
   /** F308 客服对差评申诉一次（appeal ≤80 字必填；顾客申诉后端 400，没评过或不是 1-2 星都 400） */
   theaterOrderAppeal: (id: string, appeal: string) =>
     http.postJson<CoupleTheaterVO>('/api/couple/theater/order/appeal', { id, appeal }),
+}
+
+/**
+ * F310-F319 身体通知系统（bodyApi，基址 /api/couple/body）
+ * bodyOverview 为唯一读接口；其余 20 个 POST 写接口全部返回整份 BodyVO，前端整体替换即五卡刷新。
+ * 产品口径：后端只按「用户自设阈值」判断是否提醒，全链路不做医疗建议，前端同样只陪伴不判断。
+ * 业务规则由后端 400 中文 message 直透 ElMessage（体征至少报一项且各项 ≤10 字、状态 ≤80 字、
+ * 呼噜档位只有 NONE/TINY/MID/HEAVY、震感点评必填且 ≤60 字、周期阶段只有四种且不适 ≤60 字、
+ * 照顾卡必填 ≤100 字且只能给 TA 标的那天递、营期 7-100 天且同名营只能开一个、破戒只有本人记且同日幂等（≤25 条）、
+ * 安慰词只有陪绑方能说且 ≤140 字、结营要本人、运动项目五种且计数 0-9999、SOS 症状 ≤80 字且名下在途仅一条、
+ * 自己发的 SOS 自己接不住、红线项 ≤30 字同名即在册、谁登记的谁才能划、体检一天一次、报告只有本人才 ≤140 字、
+ * 身体账只有 STEADY/HARD/NONE 三档、回话只能给 TA 记过的那周、熄灯线须写成 HH:mm 等）。
+ */
+export const bodyApi = {
+  /** F310-F319 身体总览（近 7 天体征与运动链、近 14 天周期、当周军令状、红线撞当日饭票；未建空间 404 前端静默降级） */
+  bodyOverview: () => http.get<CoupleBodyVO>('/api/couple/body/overview'),
+  /** F310 报今天的体征（temp/weight/sleepHours 三项至少填一项，全空后端 400；各项 ≤10 字、note ≤80 字；当日本人可改写，首报超自设线才推 TA） */
+  bodyMetric: (temp: string, weight: string, sleepHours: string, tempLimit: string, sleepLimit: string, note: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/metric', { temp, weight, sleepHours, tempLimit, sleepLimit, note }),
+  /** F311 晨起自报呼噜档位（level 只有 NONE/TINY/MID/HEAVY，其它后端 400；当日本人可改） */
+  bodySnore: (level: CoupleBodySnoreLevel) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/snore', { level }),
+  /** F311 给 TA 补一句震感点评（text 必填且 ≤60 字，空报后端 400「震感报告总得写一句」；写在对方那行上） */
+  bodySnoreShake: (text: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/snore/shake', { text }),
+  /** F312 标记自己当天的周期阶段与不适（phase 四种之一否则 400，discomfort ≤60 字可空，day 空串=今天且格式须 yyyy-MM-dd；同日本人可改） */
+  bodyCycle: (day: string, phase: CoupleBodyPhase, discomfort: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/cycle', { day, phase, discomfort }),
+  /** F312 递照顾卡（card 必填 ≤100 字；TA 那天没标后端 400「卡递过去也没人接」） */
+  bodyCycleCare: (day: string, card: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/cycle/care', { day, card }),
+  /** F313 开一个互助营（name ≤40 字必填，targetDays 营期 7-100 天（缺省 21），startDay 空串=开今天；同名营后端 400） */
+  bodyQuitStart: (name: string, targetDays: number, startDay: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/quit', { name, targetDays, startDay }),
+  /** F313 记一天破戒（只有本人能记，day 空串=今天；同一天重复点后端幂等直接返回；结过营的 400） */
+  bodyQuitBroke: (id: string, day: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/quit/broke', { id, day }),
+  /** F313 陪绑方送安慰词（cheer ≤140 字必填；自己夸自己后端 400「安慰词是陪绑的人说的」） */
+  bodyQuitCheer: (id: string, cheer: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/quit/cheer', { id, cheer }),
+  /** F313 本人宣布结营（满营期=DONE、提前收=GONE，由后端比较；点 TA 的营后端 400） */
+  bodyQuitClose: (id: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/quit/close', { id }),
+  /** F314 报今天某项目的运动计数（kind 五种之一、count 0-9999，越界后端 400；两人 30 分钟内都报才算接上链） */
+  bodyFit: (kind: CoupleBodyFitKind, count: number) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/fit', { kind, count }),
+  /** F315 一键不舒服（symptom ≤80 字必填，since 自由文本可空；名下在途已有一条后端 400） */
+  bodySos: (symptom: string, since: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/sos', { symptom, since }),
+  /** F315 接住 TA 的不舒服（comfort 从后端下发的 options 里选一句，≤100 字；自己发的自己接、接过的再接后端 400） */
+  bodySosHold: (id: string, comfort: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/sos/hold', { id, comfort }),
+  /** F316 登记忌口红线（item ≤30 字必填且同空间唯一，kind 只有 ALLERGY/AVOID（缺省 AVOID），note ≤60 字可空） */
+  bodyRedlineAdd: (item: string, kind: CoupleBodyRedlineKind, note: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/redline', { item, kind, note }),
+  /** F316 划掉一条红线（谁登记的谁才能划，点 TA 的后端 400；划掉后当日撞饭票的提示行一起消失） */
+  bodyRedlineRemove: (id: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/redline/remove', { id }),
+  /** F317 约一次体检（day 空串=今天且格式须 yyyy-MM-dd，item「查什么」≤60 字可空；本人一天一次，重复约后端 400） */
+  bodyCheckup: (day: string, item: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/checkup', { day, item }),
+  /** F317 TA 虚拟陪同到场打卡（只有对方能到，自己的到场不算陪同；已到场再过一遍后端幂等返回） */
+  bodyCheckupCompany: (id: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/checkup/company', { id }),
+  /** F317 检后一句话报告（report 必填 ≤140 字；只有体检本人能写，写完双方互见，状态转 REPORTED） */
+  bodyCheckupReport: (id: string, report: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/checkup/report', { id, report }),
+  /** F318 记本周身体账（how 只有 STEADY/HARD/NONE 三档，note ≤140 字可空；自愿记、非医嘱；同周本人可改写） */
+  bodyMed: (how: CoupleBodyMedHow, note: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/med', { how, note }),
+  /** F318 回 TA 一句陪伴话术（reply ≤140 字必填，week 空串=本周且须 yyyy-MM-dd；TA 那周没记后端 400） */
+  bodyMedReply: (week: string, reply: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/med/reply', { week, reply }),
+  /** F319 签本周熄灯线（line 须写成 HH:mm 否则 400；本人可改自己那条，双签齐了后端才下发生效文案） */
+  bodyOath: (line: string) =>
+    http.postJson<CoupleBodyVO>('/api/couple/body/oath', { line }),
 }

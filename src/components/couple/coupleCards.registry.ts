@@ -68,6 +68,12 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-ls-misrewind', label: '误会倒带', tab: 'care', sub: 'rescue' },
   { key: 'couple-ls-letter', label: '换位信与早想说', tab: 'care', sub: 'rescue' },
   { key: 'couple-ls-care', label: '呵护台', tab: 'care', sub: 'rescue' },
+  // 🌡️ 身体通知系统（F310-F319，care/rescue 子页签）
+  { key: 'couple-body-metric', label: '今日体征互报', tab: 'care', sub: 'rescue' },
+  { key: 'couple-body-snore', label: '呼噜与震感报告', tab: 'care', sub: 'rescue' },
+  { key: 'couple-body-care', label: '周期照顾卡与不适SOS', tab: 'care', sub: 'rescue' },
+  { key: 'couple-body-camp', label: '戒东西互助营与运动链', tab: 'care', sub: 'rescue' },
+  { key: 'couple-body-ledger', label: '身体账本四页', tab: 'care', sub: 'rescue' },
   { key: 'couple-soft', label: '心动软陪伴', tab: 'care', sub: 'intimate' },
   { key: 'couple-spark', label: '默契亲密仪表盘', tab: 'care', sub: 'intimate' },
   // 🗓️ 共享空间

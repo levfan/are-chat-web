@@ -3814,3 +3814,188 @@ export interface CoupleTheaterVO {
   tickets: CoupleTheaterTicketVO[]
   gala: CoupleTheaterGalaVO
 }
+
+// ============ 身体通知系统（F310-F319） ============
+// 字段逐一对齐后端 com.smart.chat.couple.CoupleBodyService 的嵌套 record：
+// ⚠️ 本批 VO 里**没有任何 Java Integer/Long 包装类型**（全部是原生 int/long/boolean/String），
+// 所以数字字段一律非空、不需要标 | null（对比批次二十六的 myRate/partnerRate）；
+// 字符串字段后端一律给空串（空串=没报 / 没写 / 没人点评），分钟数与倒数日用 -1 表示「没发生」。
+// 产品口径：后端只按用户自设阈值判断是否提醒，全链路无医疗建议，前端文案同样只说「我陪你做什么」。
+
+/** F311 呼噜自报档位（后端 CoupleBodySnore.LEVELS 四档，其它值 400） */
+export type CoupleBodySnoreLevel = 'NONE' | 'TINY' | 'MID' | 'HEAVY'
+
+/** F312 周期阶段（后端 CoupleBodyCycle.PHASES；展示名走 phaseLabel，前端不自己翻译） */
+export type CoupleBodyPhase = 'BEFORE' | 'MENSTRUATING' | 'AFTER' | 'OWULARE'
+
+/** F313 互助营状态：OPEN 在营 / DONE 满天数结营 / GONE 提前收（后端按 campDays 与 targetDays 比较） */
+export type CoupleBodyQuitStatus = 'OPEN' | 'DONE' | 'GONE'
+
+/** F314 运动链项目（后端 CoupleBodyFit.KINDS 五种，其它值 400） */
+export type CoupleBodyFitKind = 'PUSHUP' | 'SQUAT' | 'PLANK' | 'RUN' | 'STRETCH'
+
+/** F315 身体不适 SOS 状态：SENT 在路上等接住 / HELD 已被接住 */
+export type CoupleBodySosStatus = 'SENT' | 'HELD'
+
+/** F316 忌口红线类型：ALLERGY 过敏（碰都不能碰）/ AVOID 忌口（后端缺省 AVOID） */
+export type CoupleBodyRedlineKind = 'ALLERGY' | 'AVOID'
+
+/** F317 体检状态（⚠️ 以后端源码为准：实体定义了 PLAN|ATTENDED|REPORTED 三态，但服务里只写 PLAN 与 REPORTED，虚拟陪同只翻 companion 标志） */
+export type CoupleBodyCheckupStatus = 'PLAN' | 'ATTENDED' | 'REPORTED'
+
+/** F318 本周身体账档位（后端 CoupleBodyMed.HOWS 三档，非医嘱、自愿记） */
+export type CoupleBodyMedHow = 'STEADY' | 'HARD' | 'NONE'
+
+/** F310 一天的体征行（近 7 天双发；mine=我报的那天那行；warn/warnText 只按**本人自设线**算，空串=没填该项） */
+export interface CoupleBodyMetricVO {
+  day: string
+  mine: boolean
+  temp: string
+  weight: string
+  sleepHours: string
+  tempLimit: string
+  sleepLimit: string
+  note: string
+  warn: boolean
+  warnText: string
+}
+
+/** F311 今日呼噜双看板（myLevel/partnerLevel 空串=那位没报；myShake=我写出去的震感点评，partnerShake=TA 写给我的；iCanShake=TA 报了且我还没写；partnerScore=TA 档位换算的震感级数 0-3，NONE 与没报都是 0，要靠 partnerLevel 区分） */
+export interface CoupleBodySnoreVO {
+  day: string
+  myLevel: CoupleBodySnoreLevel | ''
+  partnerLevel: CoupleBodySnoreLevel | ''
+  myShake: string
+  partnerShake: string
+  iCanShake: boolean
+  partnerScore: number
+}
+
+/** F312 一天的周期标记（近 14 天双发；mine=我标的；phaseLabel 后端给中文；careCard 空串=还没人递卡；iCanCare=TA 标的且还没卡） */
+export interface CoupleBodyCycleVO {
+  day: string
+  mine: boolean
+  phase: CoupleBodyPhase | ''
+  phaseLabel: string
+  discomfort: string
+  careCard: string
+  careBy: string
+  iCanCare: boolean
+}
+
+/** F313 一个互助营（mine=我开的营，破戒与结营只归本人；cheer 空串=陪绑的人还没说话；milestone 只在营龄满 7 的整数倍时非空） */
+export interface CoupleBodyQuitVO {
+  id: string
+  name: string
+  mine: boolean
+  targetDays: number
+  startDay: string
+  campDays: number
+  brokeCount: number
+  cheer: string
+  cheerBy: string
+  status: CoupleBodyQuitStatus
+  milestone: string
+}
+
+/** F314 一天一项目的运动链（近 7 天双发；minutesSincePartner=-1 表示 TA 今天没报，>=0 是距今几分钟；linked 由后端按 30 分钟窗口算） */
+export interface CoupleBodyFitVO {
+  day: string
+  kind: CoupleBodyFitKind
+  kindLabel: string
+  myCount: number
+  partnerCount: number
+  linked: boolean
+  partnerIn: boolean
+  minutesSincePartner: number
+}
+
+/** F315 一条身体不适（options 由后端话术池下发；⚠️ 只有「我发的且还在路上」那条给空数组，其余情况一律给全量五句，前端只在 !mine && status==='SENT' 时渲染选项） */
+export interface CoupleBodySosVO {
+  id: string
+  mine: boolean
+  symptom: string
+  since: string
+  status: CoupleBodySosStatus
+  comfort: string
+  holdBy: string
+  options: string[]
+}
+
+/** F316 一条忌口/过敏红线（kind ALLERGY|AVOID；note 空串=没写说明） */
+export interface CoupleBodyRedlineVO {
+  id: string
+  item: string
+  kind: CoupleBodyRedlineKind
+  note: string
+  mine: boolean
+}
+
+/** F316 红线撞上当日饭桌饭票的提示行（⚠️ 后端只下发撞上的项，没撞上就没有这一行） */
+export interface CoupleBodyRedlineHitVO {
+  item: string
+  hits: number
+  line: string
+}
+
+/** F317 一次体检约（daysLeft 可为负=已经过去了；companionLine 只在 TA 虚拟到场后非空；report 空串=检后还没交一句话） */
+export interface CoupleBodyCheckupVO {
+  id: string
+  day: string
+  mine: boolean
+  item: string
+  status: CoupleBodyCheckupStatus
+  companioned: boolean
+  report: string
+  daysLeft: number
+  iCanCompany: boolean
+  companionLine: string
+}
+
+/** F318 一周的身体账（⚠️ MedVO 无 id，行按 week+mine 定位；how 后端实体默认空串，记过之后才是三档；iCanReply=TA 记了我还没回话） */
+export interface CoupleBodyMedVO {
+  week: string
+  mine: boolean
+  how: CoupleBodyMedHow | ''
+  note: string
+  reply: string
+  replyBy: string
+  iCanReply: boolean
+}
+
+/** F319 本周早睡军令状（myLine/partnerLine 空串=没签；line 违约率文案**只在双签后**才非空；违约数读 F220 晚安熄灯数据） */
+export interface CoupleBodyOathVO {
+  week: string
+  myLine: string
+  partnerLine: string
+  mineSigned: boolean
+  partnerSigned: boolean
+  bothSigned: boolean
+  myBreach: number
+  myNights: number
+  partnerBreach: number
+  partnerNights: number
+  line: string
+}
+
+/**
+ * F310-F319 身体通知总览（GET /api/couple/body/overview 一次拉齐；20 个 POST 写接口全部返回整份 BodyVO，
+ * 前端整体替换即五卡刷新）。day=今天、week=本周一；snore 与 oath 是**恒有值的嵌套对象**（后端 ensure* 惰性建行），
+ * 其余全是列表：metrics 近 7 天双发、cycles 近 14 天双发、fits 近 7 天双发、quits/soss/redlines/checkups/meds 全量
+ * （quits/soss/checkups 新→旧、redlines 登记先后升序、meds 约近 10 周升序，均不按状态过滤）。
+ */
+export interface CoupleBodyVO {
+  day: string
+  week: string
+  metrics: CoupleBodyMetricVO[]
+  snore: CoupleBodySnoreVO
+  cycles: CoupleBodyCycleVO[]
+  quits: CoupleBodyQuitVO[]
+  fits: CoupleBodyFitVO[]
+  soss: CoupleBodySosVO[]
+  redlines: CoupleBodyRedlineVO[]
+  redlineHits: CoupleBodyRedlineHitVO[]
+  checkups: CoupleBodyCheckupVO[]
+  meds: CoupleBodyMedVO[]
+  oath: CoupleBodyOathVO
+}
