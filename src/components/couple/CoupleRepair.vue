@@ -272,6 +272,7 @@
             <el-button v-if="w.makeup.canToggle" size="small" plain :data-testid="`couple-repair-makeup-toggle-${w.makeup.id}`" @click="onMakeupToggle(w.makeup)">
               {{ w.makeup.paused ? '帮 TA 继续 ▶️' : '帮 TA 按个暂停 ⏸' }}
             </el-button>
+            <el-button v-if="w.makeup.status === 'RUNNING'" size="small" plain :data-testid="`couple-repair-makeup-offer-${w.makeup.id}`" @click="onMakeupOffer(w.makeup)">提前递台阶 🪜</el-button>
             <el-button v-if="w.makeup.canEnd" size="small" type="primary" :data-testid="`couple-repair-makeup-end-${w.makeup.id}`" @click="onMakeupEnd(w.makeup)">宣布和好 🕊️</el-button>
           </div>
           <p v-if="w.makeup.mine && w.makeup.status === 'RUNNING'" class="wait-line">暂停键在 TA 手里——自己开的自己不能按 ⏳</p>
@@ -770,6 +771,15 @@ async function onMakeupToggle(m: CoupleRepairMakeupVO) {
     ElMessage.success(m.paused ? '倒计时继续走了 ▶️' : '帮 TA 按了暂停，缓好了再继续 ⏸')
   } catch (e) {
     onError(e, '暂停/继续失败')
+  }
+}
+
+async function onMakeupOffer(m: CoupleRepairMakeupVO) {
+  try {
+    refresh(await repairApi.repairMakeupOffer(m.id))
+    ElMessage.success('台阶递过去了，剩下的就是谁先开口 🪜')
+  } catch (e) {
+    onError(e, '递台阶失败')
   }
 }
 

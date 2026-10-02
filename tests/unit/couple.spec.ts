@@ -8,7 +8,7 @@ import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -4527,6 +4527,27 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
 
     expect(repairApi.repairFreezeAsk).toHaveBeenCalledWith('fz1', 1, '我不该摔门')
+  })
+
+  it('修复车间：冷战 RUNNING 中可「提前递台阶」，递出后按钮消失、台阶卡显示', async () => {
+    const makeup: CoupleRepairMakeupVO = {
+      id: 'mk1', day: '2026-10-02', mine: false, minutes: 20, status: 'RUNNING',
+      secondsLeft: 600, paused: false, pausedBy: '', stepCard: '', canToggle: true, canEnd: true,
+    }
+    vi.mocked(repairApi.repairWorkshop).mockResolvedValue(repairVo({ makeup }))
+    vi.mocked(repairApi.repairMakeupOffer).mockResolvedValue(repairVo({
+      makeup: { ...makeup, status: 'OFFERED', stepCard: '我先说对不起，你愿意听我讲两句吗？' },
+    }))
+    const wrapper = await mountOnCareRescue()
+
+    const offer = wrapper.find('[data-testid="couple-repair-makeup-offer-mk1"]')
+    expect(offer.exists()).toBe(true)
+    await offer.trigger('click')
+    await flushPromises()
+
+    expect(repairApi.repairMakeupOffer).toHaveBeenCalledWith('mk1')
+    expect(wrapper.find('[data-testid="couple-repair-makeup-step-mk1"]').text()).toContain('台阶卡')
+    expect(wrapper.find('[data-testid="couple-repair-makeup-offer-mk1"]').exists()).toBe(false)
   })
 
   it('修复车间：打回道歉信必填批注，调 repairSorryVerify 后状态转 BACK 并显示批注', async () => {
