@@ -5,9 +5,10 @@
 ## 环境
 
 - 包管理：**pnpm**（仓库锁文件 pnpm-lock；本机验证 pnpm 11.x）
-- Node：`package.json` 未声明 `engines`；Vite 6 / Vitest 5 / TS 5.9 组合建议 **Node 20+**（本机 v26 可用）
+- Node：`package.json` 未声明 `engines`；Vite 8 / Vitest 5 / jsdom 30 的 engines 交集要求 **Node 22.22+ / 24.15+ / 26+**（本机 v26.4.0 已全链路验证）
+- `@types/node` 与本机 node 次版本线对齐（26.4.x ↔ node 26.4.0），不追更高的 26.6.x：类型包本身无 `engines` 约束，装了高于运行时的声明会放行本机 node 还不存在的 API，构建能过但线上会 `no such method`
 - 后端：独立 Spring Boot 仓库 are-chat，默认 `http://localhost:8080`；dev proxy 可用环境变量 `VITE_API_TARGET` / `VITE_WS_TARGET` 覆盖（见 [架构总览](architecture.md)）
-- 首次：`pnpm install`（依赖已锁精确版本：element-plus 2.14.6 / pinia 4.0.3 / vue 3.5.43 等）
+- 首次：`pnpm install`（依赖已锁精确版本：vite 8.3.2 / vitest 5.0.3 / element-plus 2.14.7 / vue 3.5.43 / vue-router 5.3.1 / typescript 6.0.3 等；`typescript` 勿升 7、`vue-router` 勿降 4，见 [架构总览](architecture.md) 技术栈表备注）
 
 ## 常用命令
 

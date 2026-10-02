@@ -7,11 +7,11 @@
 | 层 | 选型 | 备注 |
 |---|---|---|
 | 框架 | Vue 3.5，全部组件 `<script setup lang="ts">` | 组件普遍带 `data-testid`（单测/e2e 依赖） |
-| 构建 | Vite 6（`vite.config.ts` 同时是 Vitest 配置入口） | `unplugin-auto-import` + `unplugin-vue-components` 自动导入 vue/vue-router/pinia 与 Element Plus，生成 `src/auto-imports.d.ts`、`src/components.d.ts` |
+| 构建 | Vite 8（Rolldown 打包内核，替代 Rollup+esbuild；`vite.config.ts` 同时是 Vitest 配置入口） | `unplugin-auto-import` + `unplugin-vue-components` 自动导入 vue/vue-router/pinia 与 Element Plus，生成 `src/auto-imports.d.ts`、`src/components.d.ts` |
 | 状态 | Pinia 4，setup-store 风格（`defineStore('xxx', () => {...})`） | 见 [状态管理](state-management.md) |
-| 路由 | Vue Router 4，history 模式 | 见 [页面与路由](pages-routing.md) |
+| 路由 | Vue Router 5，history 模式 | 见 [页面与路由](pages-routing.md) |
 | UI | Element Plus 2.14（主题色 `#f56c6c`，暗色跟随 `var(--im-muted)` 等 CSS 变量） | 图标 `@element-plus/icons-vue` |
-| 语言 | TypeScript 5.9，类型集中在 `src/types/index.ts`（按域分节） | `pnpm build` 跑 `vue-tsc --noEmit` |
+| 语言 | TypeScript 6.0，类型集中在 `src/types/index.ts`（按域分节） | `pnpm build` 跑 `vue-tsc --noEmit`；TS 7 已停发 `typescript/lib/tsc`，vue-tsc 挂不上，故钉 6.0 |
 | 测试 | Vitest 5 + @vue/test-utils + jsdom | 见 [测试](testing.md)；另有 `@playwright/test` 依赖与 `playwright.config.ts`（testDir 指向 `./e2e`，当前仓库无 e2e 用例） |
 | 数据获取 | 原生 `fetch` 自封装（`src/api/http.ts`），无 axios | WS 用原生 `WebSocket`（im store 管理） |
 

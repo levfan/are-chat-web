@@ -9,7 +9,7 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 
 ## 一、技术栈与命令
 
-- Vue 3 `<script setup lang="ts">` + Vite 6 + Pinia + Vue Router + Element Plus + TypeScript
+- Vue 3 `<script setup lang="ts">` + Vite 8（Rolldown 打包内核）+ Pinia 4 + Vue Router 5 + Element Plus + TypeScript 6（`vue-tsc` 尚不吃 TS 7，勿升）
 - 测试：Vitest（jsdom），在 `tests/unit/`，命令 `pnpm test`；构建：`pnpm build`（含 vue-tsc 类型检查，何时必跑见第五节）
 - 版本号唯一来源 `package.json` 的 version（alpha → rc → stable 阶梯，升级独立 commit，规范见 `.agents/skills/version-release/SKILL.md`）
 - 规模快照（v7 批次二十八后）：5 个主页面 / CoupleView 11 页签（部分含子页签）/ 情侣组件与注册表共 64 个文件 / registry 卡 104 张 / 单测基线 154 用例；后端配套见 are-chat-map（8080/713 映射/273 表基线）
