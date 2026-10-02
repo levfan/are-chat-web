@@ -13,9 +13,8 @@
     "noEmit": true,
     "allowImportingTsExtensions": false,
     "types": ["node"],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [
