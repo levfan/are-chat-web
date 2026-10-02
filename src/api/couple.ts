@@ -221,6 +221,8 @@ import type {
   CoupleBodyRedlineKind,
   CoupleBodyMedHow,
   CoupleRepairVO,
+  CoupleWorldVO,
+  CoupleWorldVisitSide,
   CouplePinVO,
 } from '@/types'
 
@@ -2016,4 +2018,91 @@ export const repairApi = {
   /** F329 立纪念碑（line ≤140 字必填，一天一人一句；note「现在回看」≤80 字可空，本人补注只改 note 不重推），返回整份总览 */
   repairPeace: (line: string, note: string) =>
     http.postJson<CoupleRepairVO>('/api/couple/repair/peace', { line, note }),
+}
+
+/**
+ * F330-F339 两家与朋友（worldApi，基址 /api/couple/world）
+ * world 为唯一读接口（读时后端惰性结算：已见证的保证到期自动解除并给本人记一笔心动）；
+ * 其余 21 个 POST 写接口全部返回整份 WorldVO（后端 WorldVO），前端整体替换即十卡刷新。
+ * 业务规则由后端 400 中文 message 直透 ElMessage（攻略一天一人一次且前置任务 ≤8 条各 ≤60 字、
+ * 自己写的攻略自己确认不算双确认、战报由写攻略的人交且 ≤200 字、送礼灵感「送谁」必填 ≤30 字且灵感 ≤80 字同名即已在册、
+ * 自己登的灵感不能自己接单、只有接单的人能宣布买好、他观问卷只有 1-3 题且原话 ≤200 字、官宣一个月一张 ≤200 字、
+ * 候选文案一天最多三条 ≤140 字且自己写的稿自己定不算选稿、城市名 ≤30 字行程 ≤8 条小包 ≤12 项、
+ * 称谓同名即已在册 ≤20 字题面 ≤140 字、自己出的题考不了自己、保证 ≤140 字且到期日必须在以后、
+ * 见证人与塌房举报人都必须是对方、塌房记录 ≤80 字必填、群聊素材 ≤200 字当日本人可改写、
+ * 赔礼信正文 ≤300 字、自己审自己的信不算送达、打回必填一句改哪儿、只有被打回的信能重写等）。
+ */
+export const worldApi = {
+  /** F330-F339 两家与朋友总览（十板块一次拉齐；未建空间 404 前端静默降级） */
+  world: () => http.get<CoupleWorldVO>('/api/couple/world/world'),
+  /** F330 写拜访攻略（day 空串=今天且须 yyyy-MM-dd，hostSide 只有 MINE/YOURS（其它 400「攻略只分「我家」和「你家」」），
+   *  preps=前置任务卡逗号/顿号/换行分隔 ≤8 条各 ≤60 字，全空 400「至少写一条」；这天的攻略一人一天一份，写过 400），返回整份总览 */
+  worldVisit: (day: string, hostSide: CoupleWorldVisitSide, preps: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/visit', { day, hostSide, preps }),
+  /** F330 确认攻略（⚠️ 只能对方确认，自己写的自己确认 400「自己写的攻略自己确认不算双确认」；已确认再点幂等返回），返回整份总览 */
+  worldVisitConfirm: (id: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/visit/confirm', { id }),
+  /** F330 回访后交战报（report ≤200 字必填；⚠️ 由写攻略的人交，别人点 400「战报由写攻略的人交」；交完状态转 DONE），返回整份总览 */
+  worldVisitReport: (id: string, report: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/visit/report', { id, report }),
+  /** F331 收一条送礼灵感（person「送谁」≤30 字必填、idea 灵感 ≤80 字必填且同空间唯一、budget/avoid ≤60 字可空），返回整份总览 */
+  worldGift: (person: string, idea: string, budget: string, avoid: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/gift', { person, idea, budget, avoid }),
+  /** F331 接单代买（⚠️ 只能接对方的单，自己登的 400「不用自己接单，等 TA 帮你买」；已被接过再点 400「这单已经有人接了」），返回整份总览 */
+  worldGiftTake: (id: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/gift/take', { id }),
+  /** F331 买回登记（⚠️ 只有接单的人能点，没接单/TA 接的 400「只有接单的人能宣布买好了」；已买过再点幂等返回），返回整份总览 */
+  worldGiftBought: (id: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/gift/bought', { id }),
+  /** F332 线下问过朋友后回填一题（slot 1-3，越界 400「他观问卷只有 1-3 题」；answer 原话 ≤200 字必填，askedTo「问了谁」≤30 字可空；
+   *  三题答齐后端才下发「他观」卡话术），返回整份总览 */
+  worldFriendView: (slot: number, askedTo: string, answer: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/friendView', { slot, askedTo, answer }),
+  /** F333 发本月官宣卡（text ≤200 字必填；每月一张，本月已发 400「一个月一张」；成「官宣编年」倒序下发），返回整份总览 */
+  worldDeclare: (text: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/declare', { text }),
+  /** F334 交一条候选文案（slot 1-3，越界 400「一天最多交三条候选」，text ≤140 字必填；同日同槽本人可改写，改写不重推），返回整份总览 */
+  worldCaption: (slot: number, text: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/caption', { slot, text }),
+  /** F334 互评选稿（⚠️ 只有求稿的对方能定稿，自己选自己的 400「自己写的稿自己定不算互评选稿」；定稿写进百科词条），返回整份总览 */
+  worldCaptionPick: (id: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/caption/pick', { id }),
+  /** F335 存/改一座城市的接待手册（city ≤30 字必填、arriveDay 空串=没定日且须 yyyy-MM-dd、itinerary 行程 ≤8 条各 ≤60 字、
+   *  transport 交通 ≤140 字可空、packList 陪同小包 ≤12 项各 ≤60 字整单 ≤296 字可空；同城名即改写），返回整份总览 */
+  worldCity: (city: string, arriveDay: string, itinerary: string, transport: string, packList: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/city', { city, arriveDay, itinerary, transport, packList }),
+  /** F336 出一条称谓考题（term 称谓 ≤20 字必填且同名即已在册、question 题面 ≤140 字必填、answer 标准答案 ≤80 字必填），返回整份总览 */
+  worldRelative: (term: string, question: string, answer: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/relative', { term, question, answer }),
+  /** F336 作答称谓题（⚠️ 只有被考的人能答，自己出的题考不了自己 400；答错 wrongCount+1 并进「考前强化」，答对后端只回执不改动），返回整份总览 */
+  worldRelativeTry: (id: string, answer: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/relative/try', { id, answer }),
+  /** F337 公开立一条保证（content「我保证不做…」≤140 字必填、dueDay 空串=30 天后且须 yyyy-MM-dd；
+   *  到期日必须在以后否则 400「当天保证等于没保证」；同一句话自己立过 400），返回整份总览 */
+  worldVow: (content: string, dueDay: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/vow', { content, dueDay }),
+  /** F337 TA 见证（⚠️ 见证人得是对方，自己见证 400；已见证再点幂等返回。到期时后端惰性结算：已见证才自动解除并记心动），返回整份总览 */
+  worldVowWitness: (id: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/vow/witness', { id }),
+  /** F337 塌房记录（note 一句事实 ≤80 字必填；⚠️ 只能由对方举报，自己给自己记 400；已收尾的保证再记 400「这条保证已经收尾了」），返回整份总览 */
+  worldVowBreak: (id: string, note: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/vow/break', { id, note }),
+  /** F338 交今天的一条群聊素材（line ≤200 字必填；本人当天可改写，改写不重推），返回整份总览 */
+  worldGroup: (line: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/group', { line }),
+  /** F338 笑了对方那条（无请求体；两人都笑=今日素材双双通过，后端下发双人回执话术），返回整份总览 */
+  worldGroupLaugh: () =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/group/laugh', {}),
+  /** F339 写一封代 TA 送的赔礼信（toPerson 称谓 ≤30 字必填、reason 来龙去脉 ≤200 字可空、draft 正文 ≤300 字必填
+   *  「长了没人听得进去」；写完就进 OPEN 等 TA 审阅），返回整份总览 */
+  worldApology: (toPerson: string, reason: string, draft: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/apology', { toPerson, reason, draft }),
+  /** F339 TA 审阅（pass=true 通过即送达 / false 打回且 note 必填「打回要写一句改哪儿」；⚠️ 自己审自己的信 400「不算送达」；
+   *  已审过再点 400「这封已经审过了」；note ≤140 字），返回整份总览 */
+  worldApologyReview: (id: string, pass: boolean, note: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/apology/review', { id, pass, note }),
+  /** F339 被打回后重写（⚠️ 只有信主本人且只有 BACK 状态能改，别人点 400「信主本人才能改」、没打回点 400「只有被打回的信能重写」；
+   *  draft ≤300 字必填，重写后回到 OPEN 等再审），返回整份总览 */
+  worldApologyRewrite: (id: string, draft: string) =>
+    http.postJson<CoupleWorldVO>('/api/couple/world/apology/rewrite', { id, draft }),
 }

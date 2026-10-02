@@ -4198,3 +4198,183 @@ export interface CoupleRepairVO {
   peace: CoupleRepairPeaceVO[]
   report: CoupleRepairReportVO
 }
+
+// ============ 批次二十九：两家与朋友（F330-F339，GET/POST /api/couple/world） ============
+// 字段逐一对齐后端 com.smart.chat.couple.CoupleWorldService 的嵌套 record（F330 拜访攻略/F331 送礼互助池/
+// F332 朋友视角问卷/F333 官宣日/F334 文案代写/F335 进城接待方案/F336 亲戚称呼册/F337 社会信用/
+// F338 群聊记者/F339 代 TA 赔礼）。口径同批次二十八：后端字符串恒给空串（空串=没写/没交卷/没人接）、
+// 数字恒有值（未设置给 -1 或 0，见各条注释）、可空对象整体可空（本批只有 packTemplate 之外的 group 是恒有值嵌套对象）。
+
+/** F330 拜访方：MINE=我家 / YOURS=你家（其它值后端 400「攻略只分「我家」和「你家」」） */
+export type CoupleWorldVisitSide = 'MINE' | 'YOURS'
+
+/** F330 拜访攻略状态：OPEN 待回访 / DONE 战报已交 */
+export type CoupleWorldVisitStatus = 'OPEN' | 'DONE'
+
+/** F330 前置任务卡类别（后端按文案首词判定：以「雷区」开头=MINE、以「带」开头=BRING、其余=TALK） */
+export type CoupleWorldPrepKind = 'BRING' | 'TALK' | 'MINE'
+
+/** F331 送礼灵感状态：OPEN 在池子里等人接 / TAKEN 已被接单代买 / BOUGHT 买回登记完成 */
+export type CoupleWorldGiftStatus = 'OPEN' | 'TAKEN' | 'BOUGHT'
+
+/** F337 社会信用保证状态：OPEN 在保 / KEPT 到期自动解除（说到做到）/ BROKEN 塌房 */
+export type CoupleWorldVowStatus = 'OPEN' | 'KEPT' | 'BROKEN'
+
+/** F339 赔礼信状态：OPEN 等 TA 审阅 / SENT 审阅通过已送达 / BACK 被打回（只有 BACK 能重写） */
+export type CoupleWorldApologyStatus = 'OPEN' | 'SENT' | 'BACK'
+
+/** F330 一条前置任务卡（seq 从 1 起连续编号，后端把 CSV/顿号/换行拆好并按首词标类） */
+export interface CoupleWorldPrepVO {
+  seq: number
+  text: string
+  kind: CoupleWorldPrepKind
+}
+
+/** F330 一次拜访攻略（hostLabel=后端算好的「我家/你家」中文标签；report 空串=还没交战报；
+ *  canConfirm=对方写的且还没双确认——⚠️ 自己写的自己确认后端 400） */
+export interface CoupleWorldVisitVO {
+  id: string
+  day: string
+  mine: boolean
+  hostSide: CoupleWorldVisitSide | ''
+  hostLabel: string
+  preps: CoupleWorldPrepVO[]
+  confirmed: boolean
+  report: string
+  status: CoupleWorldVisitStatus
+  canConfirm: boolean
+}
+
+/** F331 一条送礼灵感（takerUser 空串=还没人接单；canTake=OPEN 且不是自己登的——⚠️ 自己领自己的后端 400） */
+export interface CoupleWorldGiftVO {
+  id: string
+  person: string
+  idea: string
+  budget: string
+  avoid: string
+  mine: boolean
+  takerUser: string
+  status: CoupleWorldGiftStatus
+  canTake: boolean
+}
+
+/** F332 他观问卷的一题（question 是后端 Bank 按空间稳定出的题面；answer 空串=还没线下问过回填；
+ *  byUser 空串=没人回填过） */
+export interface CoupleWorldViewVO {
+  slot: number
+  question: string
+  askedTo: string
+  answer: string
+  byUser: string
+  filled: boolean
+}
+
+/** F333 本月官宣卡（month=yyyy-MM，每月一张，后端按空间倒序下发历月） */
+export interface CoupleWorldDeclareVO {
+  month: string
+  text: string
+  mine: boolean
+}
+
+/** F334 一条候选文案（slot 1-3 每人每天三条；won=本日定稿的那条；
+ *  ⚠️ 只有求稿的对方能选稿，自己写的自己定后端 400） */
+export interface CoupleWorldCaptionVO {
+  id: string
+  day: string
+  mine: boolean
+  slot: number
+  text: string
+  won: boolean
+}
+
+/** F335 一座城市的接待手册（arriveDay 空串=没定到访日；daysLeft=距到访几天，没定日时后端给 -1；
+ *  itinerary/packList 由后端拆成数组下发） */
+export interface CoupleWorldCityVO {
+  id: string
+  city: string
+  arriveDay: string
+  mine: boolean
+  itinerary: string[]
+  transport: string
+  packList: string[]
+  daysLeft: number
+}
+
+/** F336 一道称谓考题（wrongCount=答错次数，>0 进「考前强化」；lastWrongDay 空串=还没答错过；
+ *  canTry=对方出的题我才可答——自己出的题考不了自己，后端 400） */
+export interface CoupleWorldRelativeVO {
+  id: string
+  term: string
+  question: string
+  answer: string
+  mine: boolean
+  wrongCount: number
+  lastWrongDay: string
+  canTry: boolean
+}
+
+/** F337 一条公开保证（witnessed=TA 已见证；daysLeft=距到期几天（读时后端惰性结算：到期且已见证自动转 KEPT 并记心动）；
+ *  brokenNote 空串=没塌过房；canWitness/canBreak 都只归对方，自己见证/自己记塌房后端 400） */
+export interface CoupleWorldVowVO {
+  id: string
+  content: string
+  mine: boolean
+  dueDay: string
+  witnessed: boolean
+  status: CoupleWorldVowStatus
+  brokenNote: string
+  daysLeft: number
+  canWitness: boolean
+  canBreak: boolean
+}
+
+/** F338 今日群聊素材（myLine/partnerLine 空串=那位还没交；line=后端 Bank 生成的回执话术；
+ *  canWrite=我今天还没交才给提交口；canLaugh=双条齐了且我还没笑过） */
+export interface CoupleWorldGroupVO {
+  day: string
+  myLine: string
+  partnerLine: string
+  iLaughed: boolean
+  partnerLaughed: boolean
+  bothLaughed: boolean
+  line: string
+  canWrite: boolean
+  canLaugh: boolean
+}
+
+/** F339 一封代 TA 送的赔礼信（reviewNote 空串=还没审；template 非空只给信主本人，
+ *  是后端 Bank 按信 id 稳定选出的开场模板；⚠️ 未经 TA 审阅通过就不算送达） */
+export interface CoupleWorldApologyVO {
+  id: string
+  toPerson: string
+  mine: boolean
+  reason: string
+  draft: string
+  status: CoupleWorldApologyStatus
+  reviewNote: string
+  template: string
+}
+
+/**
+ * F330-F339 两家与朋友总览（GET /api/couple/world 一次拉齐；16 个 POST 写接口全部返回整份 WorldVO，
+ * 前端整体替换即十卡刷新）。读时后端做惰性结算：保证到期且已见证自动转 KEPT 并给本人记一笔心动。
+ * visits/gifts/views/declares/captions/cities/relatives/vows/apologies 全是列表（后端按 created 倒序
+ * 带条数钳制、不按状态过滤——已确认/已买回/已塌房的行都留在架上可回看）；views 恒定三行（1-3 题）、
+ * group 是今日那一条恒有值嵌套对象；friendViewLine 空串=三题没答齐；packTemplate 是后端 Bank 的陪同小包模板。
+ */
+export interface CoupleWorldVO {
+  day: string
+  month: string
+  visits: CoupleWorldVisitVO[]
+  gifts: CoupleWorldGiftVO[]
+  views: CoupleWorldViewVO[]
+  friendViewLine: string
+  declares: CoupleWorldDeclareVO[]
+  captions: CoupleWorldCaptionVO[]
+  cities: CoupleWorldCityVO[]
+  relatives: CoupleWorldRelativeVO[]
+  packTemplate: string[]
+  vows: CoupleWorldVowVO[]
+  group: CoupleWorldGroupVO
+  apologies: CoupleWorldApologyVO[]
+}
