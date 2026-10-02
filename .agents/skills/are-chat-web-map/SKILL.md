@@ -12,7 +12,7 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 - Vue 3 `<script setup lang="ts">` + Vite 8（Rolldown 打包内核）+ Pinia 4 + Vue Router 5 + Element Plus + TypeScript 6（`vue-tsc` 尚不吃 TS 7，勿升）
 - 测试：Vitest（jsdom），在 `tests/unit/`，命令 `pnpm test`；构建：`pnpm build`（含 vue-tsc 类型检查，何时必跑见第五节）
 - 版本号唯一来源 `package.json` 的 version（alpha → rc → stable 阶梯，升级独立 commit，规范见 `.agents/skills/version-release/SKILL.md`）
-- 规模快照（v7 批次二十九前端交付后）：5 个主页面 / CoupleView 11 页签（部分含子页签）/ 情侣组件与注册表共 65 个文件 / registry 卡 114 张 / 单测基线 166 用例；后端配套见 are-chat-map（755 映射/292 表基线）
+- 规模快照（v7 批次三十前端交付后）：5 个主页面 / CoupleView 11 页签（部分含子页签）/ 情侣组件与注册表共 66 个文件 / registry 卡 124 张 / 单测基线 177 用例；后端配套见 are-chat-map（755 映射/292 表基线）
 
 ## 二、目录地图与关键文件
 
@@ -113,6 +113,8 @@ F205 卡片折叠（新增 `src/components/couple/CoupleCollapsible.vue`）：�
 批次五体验项（F90-F99）落点：F90/F91 在 `ChatView.vue`（工具条贴贴 popover `data-testid="sticker-*"` 走 `im.sendPoke`；彩蛋指令 `utils/effects.ts` 的 `detectEggCommand`，onSend 命中即换彩蛋文案+playEffect）；F93 在 `LoginView.vue`（`FESTIVAL_LINES` 按 MM-dd 命中显示 `data-testid="login-festival"`）；F94 通知分类筛选在 CoupleView 通知弹窗（`NOTIFY_FILTERS` + `filteredNotifies`）；F95 `CoupleTodayBoard` 挂 CoupleProfile 之下全局区（`@goto` 切页签）；F98 新手引导 dialog（localStorage `arechat_couple_guide_seen` 只弹一次）。
 
 批次二十九（F330-F339 两家与朋友）：api 层新增分组对象 `worldApi`（基址 `/api/couple/world`，1 个 GET /world + 21 个 POST——比后端注释里说的「16 个」多 5 个，以 Controller 实测为准：visit/visit/confirm/visit/report、gift/gift/take/gift/bought、friendView、declare、caption/caption/pick、city、relative/relative/try、vow/vow/witness/vow/break、group/group/laugh、apology/apology/review/apology/rewrite），全部 POST 返回整份 `CoupleWorldVO` 做整体替换；类型 `CoupleWorld*VO`（Visit/Gift/View/Declare/Caption/City/Relative/Vow/Group/Apology + Prep 嵌套）+ 状态字面量 `CoupleWorldVisitSide/VisitStatus/GiftStatus/VowStatus/ApologyStatus` 等，本批 WorldVO **无可空字段**（字符串恒空串、数字恒有值，`group` 是恒有值嵌套对象）；组件 `CoupleWorld.vue`（根 testid `couple-world`，1270 行）挂 **shared 页签新增的第 3 个子页签 `name="world"`「👪 两家与朋友」**，自持数据 onMounted safeLoad、未建空间静默降级、不接 store 不处理 WS；十张 CoupleCollapsible 卡 `couple-world-visit/-gift/-view/-declare/-caption/-city/-relative/-credit/-group/-apology`，主色人情茶褐 **#a0522d**（区别于 repair 的天蓝 #0284c7）；`CityVO.daysLeft=-1` 表示没定到访日、`packTemplate` 是 Bank 下发的 6 条可点击抄进清单的 chip；**前端比后端更严的两处 UI 闸门**（已固化进用例）：F330 未双确认不放开战报输入口（后端 `visitReport` 只校验是否写攻略的人、不校验 confirmed）、`GiftVO` 不下发「我是不是接单侠」只能靠 `useAuthStore().username` 与 `takerUser` 比对（沿批次二十/二十三先例）；**待裁决的后端口径疑点**：`CoupleWorldBank.VISIT_TIPS` 与 `RELATIVES_SAMPLE` 两块静态内容没有任何 VO 下发，前端拿不到「带什么/聊什么/雷区」建议池与考前卷样例；测试 mock 工厂补 `worldEmptyVo()` + `worldWrapped` Proxy 并 return `worldApi`（漏 return 会整场 Unhandled Rejection），用例 11 组，基线 155→166。
+
+批次三十（F340-F349 传世系统）：api 层新增分组对象 `legacyApi`（基址 `/api/couple/legacy`，1 个 GET `/vault?goal=` + 12 个 POST——ten、audit、speech、speech/rate、fx、fx/settle、brand、brand/confirm、review、item、item/seal、draw，全部返回整份 `CoupleLegacyVO` 做整体替换）；类型 `CoupleLegacy*VO` 共 11 个 interface，**与后端 `CoupleLegacyService` 的 11 个 record 逐字段比对零不一致**（字段名对不上只表现为界面空白，vue-tsc 与单测都照不出，务必这样核）；组件 `CoupleLegacy.vue`（根 testid `couple-legacy`，944 行）挂 **timeline 页签新增子页签 `name="legacy"`「🏺 传世系统」**，主色墨玉绿 **#065f46**；十张卡 `couple-legacy-ten/-audit/-speech/-milestone/-fx/-brand/-review/-list/-draw/-level`；口径要点：**F343 的 `goal` 只有 GET /vault 认**，写接口一律按 `DEFAULT_GOAL=300` 重算，所以 `refresh()` 把目标输入框回填成服务端返回的 goal（宁可数一致，不留「写着 1000 却按 300 算」的假输入框）；F345 品牌任何改动都把 published 清零且改的人变成拟定人（确认权回到对方）；F347 封存只认对方加签、已封存条目留在清单上；F342 重发发言会作废对方已打的分；F348 奖池由后端按「本年积分台账 EARN 条目」出，没攒过才回落 Bank 静态位；测试 mock 工厂补 `legacyEmptyVo()` + Proxy 并 return `legacyApi`，用例 11 组，基线 166→177。
 
 ## 四、惯例与红线
 
