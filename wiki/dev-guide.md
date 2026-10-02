@@ -4,11 +4,10 @@
 
 ## 环境
 
-- 包管理：**pnpm**（仓库锁文件 pnpm-lock；本机验证 pnpm 11.x）
-- Node：`package.json` 未声明 `engines`；Vite 8 / Vitest 5 / jsdom 30 的 engines 交集要求 **Node 22.22+ / 24.15+ / 26+**（本机 v26.4.0 已全链路验证）
-- `@types/node` 取与本机 node **完全同版本号**的那一版（当前 `26.4.0` ↔ node v26.4.0）：该包第三段是 DefinitelyTyped 自己的修订计数（`26.4.0` 与 `26.4.1` 同属 node 26.4 线、相隔 5 天连发两版），不是 node 补丁号；类型包无 `engines` 约束，但装了更高次版本线（26.5/26.6）会放行本机 node 还不存在的 API，构建能过而线上 `no such method`
+- Node：以 `package.json` 的 `engines.node` 为准，`devEngines.runtime` 配 `onFail: "error"` 做硬拦截——版本不匹配时 `pnpm install` 直接失败（注意 pnpm 不认 `.npmrc` 的 `engine-strict`，只 WARN 不拦）。约束落在配置里，不靠文档口口相传
+- 包管理：**pnpm**（锁文件 `pnpm-lock.yaml`，lockfileVersion 9.0）；仓库脚本一律以 `pnpm <script>` 书写
 - 后端：独立 Spring Boot 仓库 are-chat，默认 `http://localhost:8080`；dev proxy 可用环境变量 `VITE_API_TARGET` / `VITE_WS_TARGET` 覆盖（见 [架构总览](architecture.md)）
-- 首次：`pnpm install`（依赖已锁精确版本：vite 8.3.2 / vitest 5.0.3 / element-plus 2.14.7 / vue 3.5.43 / vue-router 5.3.1 / typescript 6.0.3 等；`typescript` 勿升 7、`vue-router` 勿降 4，见 [架构总览](architecture.md) 技术栈表备注）
+- 首次：`pnpm install`（依赖全部锁精确版本，不用 caret 区间；各层选型与 TypeScript 上限的理由见 [架构总览](architecture.md) 技术栈表）
 
 ## 常用命令
 

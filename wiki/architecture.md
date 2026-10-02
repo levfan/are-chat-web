@@ -11,7 +11,7 @@
 | 状态 | Pinia 4，setup-store 风格（`defineStore('xxx', () => {...})`） | 见 [状态管理](state-management.md) |
 | 路由 | Vue Router 5，history 模式 | 见 [页面与路由](pages-routing.md) |
 | UI | Element Plus 2.14（主题色 `#f56c6c`，暗色跟随 `var(--im-muted)` 等 CSS 变量） | 图标 `@element-plus/icons-vue` |
-| 语言 | TypeScript 6.0，类型集中在 `src/types/index.ts`（按域分节） | `pnpm build` 跑 `vue-tsc --noEmit`。TS 7 不再导出 `typescript/lib/tsc`，vue-tsc 直接 `ERR_PACKAGE_PATH_NOT_EXPORTED`；其官方桥接 `"typescript": "npm:@typescript/typescript6"` 实测只是让它转装 `typescript@^6`（仍解析到 6.0.3），拿不到 TS 7 编译器，故钉 6.0 并直装 typescript 即可。TS 8 尚未发布 |
+| 语言 | TypeScript 6.0，类型集中在 `src/types/index.ts`（按域分节） | `pnpm build` 跑 `vue-tsc --noEmit`。**6.0 是当前上限**：TS 7 不再导出 `typescript/lib/tsc`，vue-tsc 会 `ERR_PACKAGE_PATH_NOT_EXPORTED`；官方桥接包 `@typescript/typescript6` 也只是转装 `typescript@^6`，同样拿不到 TS 7 编译器。等 vuejs/language-tools 适配后再升 |
 | 测试 | Vitest 5 + @vue/test-utils + jsdom | 见 [测试](testing.md)；另有 `@playwright/test` 依赖与 `playwright.config.ts`（testDir 指向 `./e2e`，当前仓库无 e2e 用例） |
 | 数据获取 | 原生 `fetch` 自封装（`src/api/http.ts`），无 axios | WS 用原生 `WebSocket`（im store 管理） |
 
