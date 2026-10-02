@@ -3,12 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi, postApi, repairApi, theaterApi, worldApi } from '@/api/couple'
+import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, legacyApi, listenApi, manageApi, museumApi, pinApi, postApi, repairApi, theaterApi, worldApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -881,6 +881,64 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F340-F349 传世系统 legacyApi：默认全空但形状完整的 LegacyVO
+  // （tens 恒「今年+去年」两期各 10 格空答案、brand/draw/milestone/level 是后端恒有值嵌套对象、
+  //   milestone.estimateDays=-1 表示近 30 天没速率、auditCandidates 空=回忆资产还没条目），用例内按需覆盖
+  const legacyQuestions = [
+    '今年我们最好的一次是哪天？',
+    '今年吵得最凶的那次，后来是怎么好的？',
+    '今年我为你改变的一件小事是什么？',
+    '今年我最想谢你的一件事是什么？',
+    '今年我们新学会的一件事（菜/运动/技能）？',
+    '今年我最想删掉的一段记忆是什么？',
+    '今年你最让我意外的一次是什么？',
+    '今年我们的钱花得最值的地方是？',
+    '如果明年只能实现一个约定，我希望是？',
+    '用一个词形容我们的今年，我会说：',
+  ]
+  const legacyTen = (year: string, partial: Partial<CoupleLegacyTenVO> = {}): CoupleLegacyTenVO => ({
+    year,
+    mine: true,
+    myAnswersJoined: '',
+    partnerAnswersJoined: '',
+    questions: legacyQuestions,
+    myAnswers: Array.from({ length: 10 }, () => ''),
+    partnerAnswers: Array.from({ length: 10 }, () => ''),
+    answeredCount: 0,
+    bothDone: false,
+    ...partial,
+  })
+  const legacyEmptyVo = (): CoupleLegacyVO => ({
+    day: '2026-10-03',
+    year: '2026',
+    tens: [legacyTen('2026'), legacyTen('2025')],
+    audits: [],
+    speeches: [],
+    fxes: [],
+    brand: { name: '', slogan: '', intro: '', published: false, mine: false, line: '' },
+    reviews: [],
+    items: [],
+    draw: { year: '2026', prizeMine: '', prizePartner: '', drawnMine: false, drawnPartner: false, remindable: false },
+    milestone: { goal: 300, achieved: 0, last30: 0, estimateDays: -1, estimateDay: '', advice: '近 30 天没有互动记录，先攒一周再来倒推。' },
+    level: {
+      level: 1,
+      title: '刚开张的小铺',
+      total: 0,
+      ledgerCount: 0,
+      legacyCount: 0,
+      line: '空间等级 Lv.1｜刚开张的小铺——这是你们一起点出来的数，不是买的。',
+    },
+    auditCandidates: [],
+  })
+  const legacyWrapped = new Proxy({} as Record<string, ReturnType<typeof vi.fn>>, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(legacyEmptyVo())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -900,6 +958,8 @@ vi.mock('@/api/couple', () => {
     repairApi: repairWrapped,
     // F330-F339 两家与朋友 worldApi：默认全空但形状完整的 WorldVO，用例内按需覆盖
     worldApi: worldWrapped,
+    // F340-F349 传世系统 legacyApi：默认全空但形状完整的 LegacyVO，用例内按需覆盖
+    legacyApi: legacyWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -5028,6 +5088,525 @@ describe('CoupleView 情侣空间', () => {
     // 带 :empty 的五卡在没数据时初始收起（DOM 仍在）
     expect(wrapper.find('[data-testid="couple-world-gift"]').classes()).toContain('is-collapsed')
     expect(wrapper.find('[data-testid="couple-world-visit"]').classes()).toContain('is-collapsed')
+  })
+
+  // ============ 批次三十：传世系统（F340-F349，timeline 页签「🏺 传世系统」子页签 CoupleLegacy） ============
+
+  /** 题面抄自后端 CoupleLegacyBank.TEN_QUESTIONS（固定顺序、跨年可比） */
+  const LEGACY_QUESTIONS = [
+    '今年我们最好的一次是哪天？',
+    '今年吵得最凶的那次，后来是怎么好的？',
+    '今年我为你改变的一件小事是什么？',
+    '今年我最想谢你的一件事是什么？',
+    '今年我们新学会的一件事（菜/运动/技能）？',
+    '今年我最想删掉的一段记忆是什么？',
+    '今年你最让我意外的一次是什么？',
+    '今年我们的钱花得最值的地方是？',
+    '如果明年只能实现一个约定，我希望是？',
+    '用一个词形容我们的今年，我会说：',
+  ]
+
+  function legacyTenOf(year: string, partial: Partial<CoupleLegacyTenVO> = {}): CoupleLegacyTenVO {
+    return {
+      year,
+      mine: true,
+      myAnswersJoined: '',
+      partnerAnswersJoined: '',
+      questions: LEGACY_QUESTIONS,
+      myAnswers: Array.from({ length: 10 }, () => ''),
+      partnerAnswers: Array.from({ length: 10 }, () => ''),
+      answeredCount: 0,
+      bothDone: false,
+      ...partial,
+    }
+  }
+
+  /** 满 10 格的答卷（前缀区分年份，方便断言跨年 diff 的「换了说法」） */
+  const tenFull = (prefix: string) => Array.from({ length: 10 }, (_, i) => `${prefix}${i + 1}`)
+
+  /** 传世系统总览空态基底（字段与后端 CoupleLegacyService.LegacyVO 对齐；
+   *  tens 恒两期、brand/draw/milestone/level 是后端恒有值嵌套对象、milestone.estimateDays=-1=没速率） */
+  function legacyVo(partial: Partial<CoupleLegacyVO> = {}): CoupleLegacyVO {
+    return {
+      day: '2026-10-03',
+      year: '2026',
+      tens: [legacyTenOf('2026'), legacyTenOf('2025')],
+      audits: [],
+      speeches: [],
+      fxes: [],
+      brand: { name: '', slogan: '', intro: '', published: false, mine: false, line: '' },
+      reviews: [],
+      items: [],
+      draw: { year: '2026', prizeMine: '', prizePartner: '', drawnMine: false, drawnPartner: false, remindable: false },
+      milestone: { goal: 300, achieved: 0, last30: 0, estimateDays: -1, estimateDay: '', advice: '近 30 天没有互动记录，先攒一周再来倒推。' },
+      level: { level: 1, title: '刚开张的小铺', total: 0, ledgerCount: 0, legacyCount: 0, line: '空间等级 Lv.1｜刚开张的小铺——这是你们一起点出来的数，不是买的。' },
+      auditCandidates: [],
+      ...partial,
+    }
+  }
+
+  /** 挂载并切到时光轴「🏺 传世系统」子页签（CoupleLegacy 所在区） */
+  async function mountOnTimelineLegacy() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-timeline').trigger('click')
+    await flushPromises()
+    await wrapper.find('#tab-legacy').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('#tab-legacy').classes()).toContain('is-active')
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 本批带 :empty 的卡折叠态落库键清理，避免污染后续用例
+    ;[
+      'couple-legacy-ten', 'couple-legacy-audit', 'couple-legacy-speech', 'couple-legacy-milestone',
+      'couple-legacy-fx', 'couple-legacy-brand', 'couple-legacy-review', 'couple-legacy-list',
+      'couple-legacy-draw', 'couple-legacy-level',
+    ].forEach((k) => localStorage.removeItem(`arechat_couple_collapse_${k}`))
+  })
+
+  it('传世系统：年度十问逐格作答且双人都答满才出跨年对照（没答的那格看不到 TA）', async () => {
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo())
+    const wrapper = await mountOnTimelineLegacy()
+    expect(wrapper.find('[data-testid="couple-legacy"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-legacy-ten-empty-2026"]').text()).toContain('一题都还没答')
+    expect(wrapper.find('[data-testid="couple-legacy-ten-partner-hide-2026-1"]').text()).toContain('不是抄答案')
+    expect(wrapper.find('[data-testid="couple-legacy-ten-diff-wait-2026"]').exists()).toBe(true)
+    // 空着点「答这题」：前端先 warning，不打后端
+    await wrapper.find('[data-testid="couple-legacy-ten-submit-2026-1"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyTen).not.toHaveBeenCalled()
+
+    // 答第 1 格：后端逐题钳制，这一格 TA 的答案才露出来
+    const myFirst = ['第一答', ...Array.from({ length: 9 }, () => '')]
+    const taFirst = ['TA第一答', ...Array.from({ length: 9 }, () => '')]
+    vi.mocked(legacyApi.legacyTen).mockResolvedValue(legacyVo({
+      tens: [legacyTenOf('2026', { myAnswers: myFirst, partnerAnswers: taFirst, answeredCount: 1 }), legacyTenOf('2025')],
+    }))
+    await wrapper.find('[data-testid="couple-legacy-ten-answer-2026-1"]').setValue('第一答')
+    await wrapper.find('[data-testid="couple-legacy-ten-submit-2026-1"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyTen).toHaveBeenCalledWith('2026', 1, '第一答')
+    expect(wrapper.find('[data-testid="couple-legacy-ten-mine-2026-1"]').text()).toContain('第一答')
+    expect(wrapper.find('[data-testid="couple-legacy-ten-partner-2026-1"]').text()).toContain('TA第一答')
+    expect(wrapper.find('[data-testid="couple-legacy-ten-partner-hide-2026-2"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-legacy-ten-count-2026"]').text()).toContain('1/10')
+
+    // 我答满 10 格、TA 还没答满：只出「等 TA 那一份」，diff 仍不给
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({
+      tens: [legacyTenOf('2026', { myAnswers: tenFull('我'), answeredCount: 10 }), legacyTenOf('2025')],
+    }))
+    wrapper.unmount()
+    const second = await mountOnTimelineLegacy()
+    expect(second.find('[data-testid="couple-legacy-ten-partner-wait-2026"]').text()).toContain('等 TA 那一份')
+    expect(second.find('[data-testid="couple-legacy-ten-diff-wait-2026"]').exists()).toBe(true)
+    expect(second.find('[data-testid="couple-legacy-ten-diff-2026-1"]').exists()).toBe(false)
+
+    // 双人都答满：出跨年对照，同一句标「和往年一样」、改口的标「换了说法」；最早那期没有可对照的往年
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({
+      tens: [
+        legacyTenOf('2026', {
+          myAnswers: ['一样', ...tenFull('新').slice(1)],
+          partnerAnswers: tenFull('TA'),
+          answeredCount: 10,
+          bothDone: true,
+        }),
+        legacyTenOf('2025', { myAnswers: ['一样', ...tenFull('旧').slice(1)], answeredCount: 10, bothDone: true }),
+      ],
+    }))
+    second.unmount()
+    const third = await mountOnTimelineLegacy()
+    expect(third.find('[data-testid="couple-legacy-ten-both-2026"]').exists()).toBe(true)
+    expect(third.find('[data-testid="couple-legacy-ten-diff-2026-1"]').text()).toContain('和往年一样')
+    expect(third.find('[data-testid="couple-legacy-ten-diff-2026-2"]').text()).toContain('换了说法')
+    expect(third.find('[data-testid="couple-legacy-ten-diff-wait-2026"]').exists()).toBe(false)
+    expect(third.find('[data-testid="couple-legacy-ten-diff-first-2025"]').text()).toContain('最早的一期')
+    third.unmount()
+  })
+
+  it('传世系统：记忆库年审留/删各超 3 条前端挡下不打后端，候选点一下抄进框、交卷后显示还差 TA 那份', async () => {
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({
+      auditCandidates: ['语录：别怕，有我在', '票根：深夜场那部烂片', '第一次：一起看海', '票根：另一部'],
+    }))
+    const wrapper = await mountOnTimelineLegacy()
+    // 最想留 4 条：前端闸门（后端同口径 400「最多 3 条」）
+    await wrapper.find('[data-testid="couple-legacy-audit-keep"]').setValue('留一\n留二\n留三\n留四')
+    await wrapper.find('[data-testid="couple-legacy-audit-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyAudit).not.toHaveBeenCalled()
+    // 最想删 4 条：一样挡下
+    await wrapper.find('[data-testid="couple-legacy-audit-keep"]').setValue('留一')
+    await wrapper.find('[data-testid="couple-legacy-audit-delete"]').setValue('删一\n删二\n删三\n删四')
+    await wrapper.find('[data-testid="couple-legacy-audit-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyAudit).not.toHaveBeenCalled()
+    // 两边全空：至少留一条
+    await wrapper.find('[data-testid="couple-legacy-audit-delete"]').setValue('')
+    await wrapper.find('[data-testid="couple-legacy-audit-keep"]').setValue('')
+    await wrapper.find('[data-testid="couple-legacy-audit-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyAudit).not.toHaveBeenCalled()
+
+    // 候选：点「留」把现有条目抄进框（不发请求），攒满 3 条后再点第四张给一句提醒
+    await wrapper.find('[data-testid="couple-legacy-audit-cand-keep-0"]').trigger('click')
+    await wrapper.find('[data-testid="couple-legacy-audit-cand-del-1"]').trigger('click')
+    await flushPromises()
+    vi.mocked(legacyApi.legacyAudit).mockResolvedValue(legacyVo({
+      audits: [{ year: '2026', mine: true, keepThree: ['语录：别怕，有我在'], deleteThree: ['票根：深夜场那部烂片'], note: '留证据别留情绪', submitted: 1 }],
+      auditCandidates: ['语录：别怕，有我在', '票根：深夜场那部烂片', '第一次：一起看海', '票根：另一部'],
+    }))
+    await wrapper.find('[data-testid="couple-legacy-audit-note"]').setValue('留证据别留情绪')
+    await wrapper.find('[data-testid="couple-legacy-audit-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyAudit).toHaveBeenCalledWith('', '语录：别怕，有我在', '票根：深夜场那部烂片', '留证据别留情绪')
+    // 交卷后整份总览替换：行上墙 + 这份只交了一份
+    expect(wrapper.find('[data-testid="couple-legacy-audit-row-0"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-legacy-audit-keep-text-0"]').text()).toContain('语录：别怕')
+    expect(wrapper.find('[data-testid="couple-legacy-audit-submitted-0"]').text()).toContain('已交 1/2 份')
+    expect(wrapper.find('[data-testid="couple-legacy-audit-wait-0"]').text()).toContain('还差 TA')
+    // 两份都交齐就不再挂等待文案
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({
+      audits: [
+        { year: '2026', mine: true, keepThree: ['语录：别怕，有我在'], deleteThree: [], note: '', submitted: 2 },
+        { year: '2026', mine: false, keepThree: ['票根：深夜场那部烂片'], deleteThree: ['第一次：一起看海'], note: '', submitted: 2 },
+      ],
+    }))
+    wrapper.unmount()
+    const second = await mountOnTimelineLegacy()
+    expect(second.find('[data-testid="couple-legacy-audit-who-1"]').text()).toContain('TA 交的')
+    expect(second.find('[data-testid="couple-legacy-audit-wait-0"]').exists()).toBe(false)
+    second.unmount()
+  })
+
+  it('传世系统：发布会评分卡只出现在对方那篇上，自己那篇只提示「等 TA 打」，交分调 legacySpeechRate', async () => {
+    const mineSpeech: CoupleLegacySpeechVO = {
+      year: '2026', mine: true, text: '明年我要你每周陪我走两次', score: null, scoreNote: '', ratedBy: '', canRate: false,
+    }
+    const partnerSpeech: CoupleLegacySpeechVO = {
+      year: '2026', mine: false, text: '今年我学会了先闭嘴再讲理', score: null, scoreNote: '', ratedBy: '', canRate: true,
+    }
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({ speeches: [mineSpeech, partnerSpeech] }))
+    const wrapper = await mountOnTimelineLegacy()
+    // 归属闸门：我这篇（行 0）没有评分入口，只提示评分权在 TA 手里
+    expect(wrapper.find('[data-testid="couple-legacy-speech-rate-0"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-legacy-speech-rate-btn-0"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-legacy-speech-rate-wait-0"]').text()).toContain('自己给自己打分不算')
+    // 没选档位就交评分卡：前端先 warning，不打后端
+    await wrapper.find('[data-testid="couple-legacy-speech-rate-btn-1"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacySpeechRate).not.toHaveBeenCalled()
+    // 空发言稿直接重发：同样先挡
+    await wrapper.find('[data-testid="couple-legacy-speech-text"]').setValue('')
+    await wrapper.find('[data-testid="couple-legacy-speech-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacySpeech).not.toHaveBeenCalled()
+
+    // 给对方那篇按 4 分档
+    vi.mocked(legacyApi.legacySpeechRate).mockResolvedValue(legacyVo({
+      speeches: [mineSpeech, { ...partnerSpeech, score: 4, scoreNote: '具体但少了一句你要什么', ratedBy: 'alice', canRate: false }],
+    }))
+    await wrapper.find('[data-testid="couple-legacy-speech-rate-opt-1-4"]').find('input').setValue(true)
+    await wrapper.find('[data-testid="couple-legacy-speech-rate-note-1"]').setValue('具体但少了一句你要什么')
+    await wrapper.find('[data-testid="couple-legacy-speech-rate-btn-1"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacySpeechRate).toHaveBeenCalledWith('2026', 4, '具体但少了一句你要什么')
+    expect(wrapper.find('[data-testid="couple-legacy-speech-score-1"]').text()).toContain('4/5')
+    expect(wrapper.find('[data-testid="couple-legacy-speech-unscored-1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-legacy-speech-rated-line-1"]').text()).toContain('已经打过了')
+    wrapper.unmount()
+  })
+
+  it('传世系统：恋爱汇率越界前端挡下，两人都报过才放开年末结算口；结算后改汇率只换文案数字、不能再结', async () => {
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo())
+    const wrapper = await mountOnTimelineLegacy()
+    expect(wrapper.find('[data-testid="couple-legacy-fx-empty"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-legacy-fx-settle-wait"]').text()).toContain('两人都报过汇率')
+    expect(wrapper.find('[data-testid="couple-legacy-fx-settle"]').exists()).toBe(false)
+    // 0 档：越界先挡（后端同口径 400「只能填 1-20」）
+    await wrapper.find('[data-testid="couple-legacy-fx-kiss"]').setValue('0')
+    await wrapper.find('[data-testid="couple-legacy-fx-hug"]').setValue('3')
+    await wrapper.find('[data-testid="couple-legacy-fx-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyFx).not.toHaveBeenCalled()
+    // 我报了，TA 还没报：结算口仍不给
+    const myFx: CoupleLegacyFxVO = { fromUser: 'alice', kissToHug: 5, hugToWord: 3, settledYear: '', settleLine: '' }
+    vi.mocked(legacyApi.legacyFx).mockResolvedValue(legacyVo({ fxes: [myFx] }))
+    await wrapper.find('[data-testid="couple-legacy-fx-kiss"]').setValue('5')
+    await wrapper.find('[data-testid="couple-legacy-fx-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyFx).toHaveBeenCalledWith(5, 3)
+    expect(wrapper.find('[data-testid="couple-legacy-fx-who-0"]').text()).toContain('我报的')
+    expect(wrapper.find('[data-testid="couple-legacy-fx-rate-0"]').text()).toContain('= 15 句夸夸')
+    expect(wrapper.find('[data-testid="couple-legacy-fx-settle"]').exists()).toBe(false)
+
+    // 两人都报过 → 放开结算口
+    const taFx: CoupleLegacyFxVO = { fromUser: 'bob', kissToHug: 3, hugToWord: 2, settledYear: '', settleLine: '' }
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({ fxes: [myFx, taFx] }))
+    const settleLineOf = (k: number, h: number) =>
+      `年末汇率结算：1 个亲亲 = ${k} 个抱抱 = ${k * h} 句夸夸。本年度通胀严重，夸夸成本最低，建议多印。`
+    vi.mocked(legacyApi.legacyFxSettle).mockResolvedValue(legacyVo({
+      fxes: [
+        { ...myFx, settledYear: '2026', settleLine: settleLineOf(5, 3) },
+        { ...taFx, settledYear: '2026', settleLine: settleLineOf(5, 3) },
+      ],
+    }))
+    wrapper.unmount()
+    const second = await mountOnTimelineLegacy()
+    expect(second.find('[data-testid="couple-legacy-fx-settle-wait"]').exists()).toBe(false)
+    await second.find('[data-testid="couple-legacy-fx-settle"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyFxSettle).toHaveBeenCalledWith('')
+    expect(second.find('[data-testid="couple-legacy-fx-settle-line"]').text()).toContain('15 句夸夸')
+    expect(second.find('[data-testid="couple-legacy-fx-settled"]').text()).toContain('已经结过账')
+    expect(second.find('[data-testid="couple-legacy-fx-settle-hint"]').exists()).toBe(true)
+    // 已归档：结算口收起，同年结不了第二次
+    expect(second.find('[data-testid="couple-legacy-fx-settle"]').exists()).toBe(false)
+    // 结算后改汇率：结算文案按新的挂牌价出数字（后端按操作人那份汇率算），但仍不能再结
+    vi.mocked(legacyApi.legacyFx).mockResolvedValue(legacyVo({
+      fxes: [
+        { ...myFx, kissToHug: 8, hugToWord: 4, settledYear: '2026', settleLine: settleLineOf(8, 4) },
+        { ...taFx, settledYear: '2026', settleLine: settleLineOf(8, 4) },
+      ],
+    }))
+    await second.find('[data-testid="couple-legacy-fx-kiss"]').setValue('8')
+    await second.find('[data-testid="couple-legacy-fx-hug"]').setValue('4')
+    await second.find('[data-testid="couple-legacy-fx-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyFx).toHaveBeenCalledWith(8, 4)
+    expect(second.find('[data-testid="couple-legacy-fx-settle-line"]').text()).toContain('32 句夸夸')
+    expect(second.find('[data-testid="couple-legacy-fx-settle"]').exists()).toBe(false)
+    second.unmount()
+  })
+
+  it('传世系统：品牌未发布不显示空间头部预览，拟稿人自己确认不作数，对方确认后才上头部', async () => {
+    const drafted = { name: '两个饭桶', slogan: '吃在一起，久一点', intro: '主营：一日三餐与深夜谈心', published: false, mine: true, line: '' }
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({ brand: drafted }))
+    const wrapper = await mountOnTimelineLegacy()
+    // 未发布：头部预览不渲染
+    expect(wrapper.find('[data-testid="couple-legacy-brand-header"]').exists()).toBe(false)
+    // 我是拟定人：确认钮不在我手上，只有一句「自己确认不作数」
+    expect(wrapper.find('[data-testid="couple-legacy-brand-confirm"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-legacy-brand-confirm-wait"]').text()).toContain('自己确认不作数')
+    expect(wrapper.find('[data-testid="couple-legacy-brand-status"]').text()).toContain('待对方确认')
+    // 名字空着提交：前端先 warning，不打后端
+    await wrapper.find('[data-testid="couple-legacy-brand-name"]').setValue('')
+    await wrapper.find('[data-testid="couple-legacy-brand-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyBrand).not.toHaveBeenCalled()
+
+    // 换成 TA 拟的稿：确认口才放开
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({ brand: { ...drafted, mine: false } }))
+    vi.mocked(legacyApi.legacyBrandConfirm).mockResolvedValue(legacyVo({
+      brand: { ...drafted, mine: false, published: true, line: '品牌已发布：以后这个空间的头部写着我们自己的名字。' },
+    }))
+    wrapper.unmount()
+    const second = await mountOnTimelineLegacy()
+    expect(second.find('[data-testid="couple-legacy-brand-confirm"]').exists()).toBe(true)
+    await second.find('[data-testid="couple-legacy-brand-confirm"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyBrandConfirm).toHaveBeenCalled()
+    expect(second.find('[data-testid="couple-legacy-brand-header"]').text()).toContain('两个饭桶')
+    expect(second.find('[data-testid="couple-legacy-brand-line"]').text()).toContain('头部写着我们自己的名字')
+    expect(second.find('[data-testid="couple-legacy-brand-status"]').text()).toContain('已发布')
+    expect(second.find('[data-testid="couple-legacy-brand-confirm"]').exists()).toBe(false)
+    second.unmount()
+  })
+
+  it('传世系统：年度盘点空着年份按去年生成、格式错前端挡；TA 盘的那份只给改写自己那年的入口', async () => {
+    const mineReview = { year: '2025', mine: true, content: '2025 年我们的一年：1 笔互动进了台账，十问共答了 10 条。' }
+    const taReview = { year: '2024', mine: false, content: '2024 年我们的一年：0 笔互动进了台账。' }
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({ reviews: [mineReview, taReview] }))
+    const wrapper = await mountOnTimelineLegacy()
+    expect(wrapper.find('[data-testid="couple-legacy-review-content-0"]').text()).toContain('10 条')
+    // 年份写成非 yyyy：前端先挡（后端 400「年份写成 yyyy」）
+    await wrapper.find('[data-testid="couple-legacy-review-year"]').setValue('25')
+    await wrapper.find('[data-testid="couple-legacy-review-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyReview).not.toHaveBeenCalled()
+    // 空年份 = 盘去年
+    await wrapper.find('[data-testid="couple-legacy-review-year"]').setValue('')
+    vi.mocked(legacyApi.legacyReview).mockResolvedValue(legacyVo({ reviews: [{ ...mineReview, content: '重算过了。' }, taReview] }))
+    await wrapper.find('[data-testid="couple-legacy-review-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyReview).toHaveBeenCalledWith('')
+    expect(wrapper.find('[data-testid="couple-legacy-review-content-0"]').text()).toContain('重算过了')
+    // 行内重算只归写这份的人
+    expect(wrapper.find('[data-testid="couple-legacy-review-again-0"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-legacy-review-again-1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-legacy-review-lock-1"]').text()).toContain('TA 盘的')
+    await wrapper.find('[data-testid="couple-legacy-review-again-0"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyReview).toHaveBeenCalledWith('2025')
+    wrapper.unmount()
+  })
+
+  it('传世系统：传世清单自己登记的不给封存钮（自己签不封），对方加签后才显示双签封存', async () => {
+    const mineOpen: CoupleLegacyItemVO = {
+      id: 'i1', item: '老屋钥匙', kind: 'PLACE', detail: '抽屉第二层', mine: true, status: 'OPEN', signedBy: '', canSeal: false,
+    }
+    const partnerOpen: CoupleLegacyItemVO = {
+      id: 'i2', item: '纪念日口令', kind: 'PASSWORD', detail: '你的生日倒着写', mine: false, status: 'OPEN', signedBy: '', canSeal: true,
+    }
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({ items: [mineOpen, partnerOpen] }))
+    const wrapper = await mountOnTimelineLegacy()
+    // 我登记的那条：没有封存钮，只有「等 TA 加签」
+    expect(wrapper.find('[data-testid="couple-legacy-list-seal-i1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-legacy-list-wait-i1"]').text()).toContain('自己签不封')
+    expect(wrapper.find('[data-testid="couple-legacy-list-kind-text-i1"]').text()).toContain('地点')
+    expect(wrapper.find('[data-testid="couple-legacy-list-kind-text-i2"]').text()).toContain('口令')
+    // 对方登记的那条：我给加签
+    vi.mocked(legacyApi.legacyItemSeal).mockResolvedValue(legacyVo({
+      items: [mineOpen, { ...partnerOpen, status: 'SEALED', signedBy: 'alice', canSeal: false }],
+    }))
+    await wrapper.find('[data-testid="couple-legacy-list-seal-i2"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyItemSeal).toHaveBeenCalledWith('i2')
+    expect(wrapper.find('[data-testid="couple-legacy-list-sealed-i2"]').text()).toContain('双签封存')
+    expect(wrapper.find('[data-testid="couple-legacy-list-status-i2"]').text()).toContain('已封存')
+    expect(wrapper.find('[data-testid="couple-legacy-list-seal-i2"]').exists()).toBe(false)
+    // 条目名空着：前端先挡，不打后端
+    await wrapper.find('[data-testid="couple-legacy-list-item"]').setValue('')
+    await wrapper.find('[data-testid="couple-legacy-list-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyItem).not.toHaveBeenCalled()
+    // 登记一条（类型缺省 THING，等对方加签）
+    vi.mocked(legacyApi.legacyItem).mockResolvedValue(legacyVo({
+      items: [mineOpen, { ...partnerOpen, status: 'SEALED', signedBy: 'alice', canSeal: false },
+        { id: 'i3', item: '外婆的毛线针', kind: 'THING', detail: '', mine: true, status: 'OPEN', signedBy: '', canSeal: false }],
+    }))
+    await wrapper.find('[data-testid="couple-legacy-list-item"]').setValue('外婆的毛线针')
+    await wrapper.find('[data-testid="couple-legacy-list-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyItem).toHaveBeenCalledWith('外婆的毛线针', 'THING', '')
+    expect(wrapper.find('[data-testid="couple-legacy-list-i3"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('传世系统：周年抽奖每人一年一次，抽过按钮禁用，双方各抽一次才出收齐徽标', async () => {
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo())
+    const wrapper = await mountOnTimelineLegacy()
+    expect(wrapper.find('[data-testid="couple-legacy-draw-mine-none"]').text()).toContain('还没抽')
+    expect(wrapper.find('[data-testid="couple-legacy-draw-remind"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-legacy-draw-btn"]').attributes('disabled')).toBeUndefined()
+    vi.mocked(legacyApi.legacyDraw).mockResolvedValue(legacyVo({
+      draw: { year: '2026', prizeMine: '一次免做家务金牌', prizePartner: '', drawnMine: true, drawnPartner: false, remindable: false },
+    }))
+    await wrapper.find('[data-testid="couple-legacy-draw-btn"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyDraw).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="couple-legacy-draw-mine"]').text()).toContain('免做家务金牌')
+    expect(wrapper.find('[data-testid="couple-legacy-draw-partner-wait"]').text()).toContain('TA 那一次还没抽')
+    expect(wrapper.find('[data-testid="couple-legacy-draw-both"]').exists()).toBe(false)
+    // 抽过就禁用：再点不会打第二次
+    expect(wrapper.find('[data-testid="couple-legacy-draw-btn"]').attributes('disabled')).toBeDefined()
+    await wrapper.find('[data-testid="couple-legacy-draw-btn"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyDraw).toHaveBeenCalledTimes(1)
+
+    // 双方各抽一次：出收齐徽标；周年已过且我还没抽时给提醒话术
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({
+      draw: { year: '2026', prizeMine: '一次免做家务金牌', prizePartner: '一封手写信，内容随你', drawnMine: true, drawnPartner: true, remindable: false },
+    }))
+    wrapper.unmount()
+    const second = await mountOnTimelineLegacy()
+    expect(second.find('[data-testid="couple-legacy-draw-both"]').text()).toContain('两人都抽过了')
+    expect(second.find('[data-testid="couple-legacy-draw-partner"]').text()).toContain('手写信')
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({
+      draw: { year: '2026', prizeMine: '', prizePartner: '一次地点盲选：他定你不问', drawnMine: false, drawnPartner: true, remindable: true },
+    }))
+    second.unmount()
+    const third = await mountOnTimelineLegacy()
+    expect(third.find('[data-testid="couple-legacy-draw-remind"]').text()).toContain('两人各抽一次')
+    expect(third.find('[data-testid="couple-legacy-draw-btn"]').attributes('disabled')).toBeUndefined()
+    third.unmount()
+  })
+
+  it('传世系统：里程碑倒推按后端 goal 参数重读总览，越界与零速率各有可见反馈', async () => {
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo())
+    const wrapper = await mountOnTimelineLegacy()
+    // 零速率态：后端 estimateDays=-1
+    expect(wrapper.find('[data-testid="couple-legacy-ms-no-rate"]').text()).toContain('先攒一周')
+    expect(wrapper.find('[data-testid="couple-legacy-ms-advice"]').text()).toContain('先攒一周')
+    // 越界目标：后端是静默回落 300，前端先给一句话并挡住（挂载已调用过一次）
+    await wrapper.find('[data-testid="couple-legacy-ms-goal"]').setValue('5')
+    await wrapper.find('[data-testid="couple-legacy-ms-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyVault).toHaveBeenCalledTimes(1)
+    await wrapper.find('[data-testid="couple-legacy-ms-goal"]').setValue('abc')
+    await wrapper.find('[data-testid="couple-legacy-ms-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyVault).toHaveBeenCalledTimes(1)
+    // 按 1000 次倒推：GET /vault 带 goal 参数，整份总览替换
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({
+      milestone: { goal: 1000, achieved: 12, last30: 12, estimateDays: 2475, estimateDay: '2033-08-05', advice: '提速建议：把打卡时间固定在同一件小事之后（比如晚饭后），顺手就不费力。' },
+    }))
+    await wrapper.find('[data-testid="couple-legacy-ms-goal"]').setValue('1000')
+    await wrapper.find('[data-testid="couple-legacy-ms-submit"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyVault).toHaveBeenLastCalledWith(1000)
+    expect(wrapper.find('[data-testid="couple-legacy-ms-goal-text-1000"]').text()).toContain('目标 1000 次')
+    expect(wrapper.find('[data-testid="couple-legacy-ms-estimate"]').text()).toContain('2475 天后')
+    expect(wrapper.find('[data-testid="couple-legacy-ms-estimate"]').text()).toContain('2033-08-05')
+    expect(wrapper.find('[data-testid="couple-legacy-ms-advice"]').text()).toContain('晚饭后')
+    expect(wrapper.find('[data-testid="couple-legacy-ms-bar"]').attributes('style')).toContain('width: 1%')
+    // 达成态
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({
+      milestone: { goal: 1000, achieved: 1200, last30: 40, estimateDays: 0, estimateDay: '2026-10-03', advice: '提速建议：每周留一天「双人都在线」，进度基本全靠那天。' },
+    }))
+    wrapper.unmount()
+    const second = await mountOnTimelineLegacy()
+    expect(second.find('[data-testid="couple-legacy-ms-done"]').text()).toContain('已经达成')
+    expect(second.find('[data-testid="couple-legacy-ms-estimate"]').exists()).toBe(false)
+    // 回默认目标：不带 goal 参数
+    await second.find('[data-testid="couple-legacy-ms-reset"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyVault).toHaveBeenLastCalledWith(undefined)
+    second.unmount()
+  })
+
+  it('传世系统：空间等级与年度称号读时展示（Lv/进度条/合计笔数），重读按钮按 goal 参数再拉总览', async () => {
+    vi.mocked(legacyApi.legacyVault).mockResolvedValue(legacyVo({
+      level: { level: 7, title: '有分支了', total: 1234, ledgerCount: 1200, legacyCount: 34, line: '空间等级 Lv.7｜有分支了——这是你们一起点出来的数，不是买的。' },
+    }))
+    const wrapper = await mountOnTimelineLegacy()
+    expect(wrapper.find('[data-testid="couple-legacy-level-lv"]').text()).toContain('Lv.7 / 99')
+    expect(wrapper.find('[data-testid="couple-legacy-level-title"]').text()).toContain('有分支了')
+    expect(wrapper.find('[data-testid="couple-legacy-level-total"]').text()).toContain('1234 笔')
+    expect(wrapper.find('[data-testid="couple-legacy-level-total"]').text()).toContain('传世资产 34 件')
+    expect(wrapper.find('[data-testid="couple-legacy-level-line"]').text()).toContain('空间等级 Lv.7')
+    expect(wrapper.find('[data-testid="couple-legacy-level-bar"]').attributes('style')).toContain('width: 7%')
+    expect(wrapper.find('[data-testid="couple-legacy-level-wait"]').text()).toContain('还差 92 级')
+    expect(wrapper.find('[data-testid="couple-legacy-level-max"]').exists()).toBe(false)
+    // 等级是读时算：卡上的输入口把目标次数按后端参数传给 /vault（等级只按累计笔数，goal 影响倒推卡）
+    await wrapper.find('[data-testid="couple-legacy-level-goal"]').setValue('800')
+    await wrapper.find('[data-testid="couple-legacy-level-refresh"]').trigger('click')
+    await flushPromises()
+    expect(legacyApi.legacyVault).toHaveBeenLastCalledWith(800)
+    wrapper.unmount()
+  })
+
+  it('传世系统：接口失败（未建情侣空间）时十张卡静默降级，卡根仍在不报错', async () => {
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(legacyApi.legacyVault).mockRejectedValue(new Error('还没有建立情侣空间，先邀请一位好友吧'))
+    const wrapper = await mountOnTimelineLegacy()
+    expect(wrapper.find('[data-testid="couple-legacy"]').exists()).toBe(true)
+    const roots = [
+      'couple-legacy-ten', 'couple-legacy-audit', 'couple-legacy-speech', 'couple-legacy-milestone',
+      'couple-legacy-fx', 'couple-legacy-brand', 'couple-legacy-review', 'couple-legacy-list',
+      'couple-legacy-draw', 'couple-legacy-level',
+    ]
+    roots.forEach((k) => {
+      const card = wrapper.find(`[data-testid="${k}"]`)
+      expect(card.exists()).toBe(true)
+      expect(card.classes()).toContain('is-collapsed')
+      expect(wrapper.find(`[data-testid="couple-collapse-${k}"]`).exists()).toBe(true)
+    })
+    expect(wrapper.text()).toContain('十问册子还没摊开')
+    // 读接口 404 走 safeLoad 静默降级：不把「还没有建立情侣空间」弹成错误条
+    expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('还没有建立情侣空间'))
+    wrapper.unmount()
   })
 
   // ============ F205 卡片折叠（CoupleCollapsible） ============
