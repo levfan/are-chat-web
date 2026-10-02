@@ -74,6 +74,17 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-post-home', label: '想象中的家与退休', tab: 'letters', sub: 'send' },
   { key: 'couple-post-well', label: '许愿井与解梦局', tab: 'letters', sub: 'send' },
   { key: 'couple-post-ledger', label: '愿望台账与未来信用卡', tab: 'letters', sub: 'send' },
+  // 👂 聆听者（F380-F389，letters/send 子页签）
+  { key: 'couple-catch-wish', label: '暗中心愿本', tab: 'letters', sub: 'send' },
+  { key: 'couple-catch-mine', label: '雷区探测器', tab: 'letters', sub: 'send' },
+  { key: 'couple-catch-safeword', label: '安全词与暂停复盘', tab: 'letters', sub: 'send' },
+  { key: 'couple-catch-sensitive', label: '敏感日历', tab: 'letters', sub: 'send' },
+  { key: 'couple-catch-thread', label: '「说到哪了」话头存档', tab: 'letters', sub: 'send' },
+  { key: 'couple-catch-say', label: '反话词典', tab: 'letters', sub: 'send' },
+  { key: 'couple-catch-protocol', label: '聆听方式协议', tab: 'letters', sub: 'send' },
+  { key: 'couple-catch-topic', label: '话题许愿池', tab: 'letters', sub: 'send' },
+  { key: 'couple-catch-daily', label: '今日一句话', tab: 'letters', sub: 'send' },
+  { key: 'couple-catch-year', label: '聆听者年报', tab: 'letters', sub: 'send' },
   { key: 'couple-keepsake', label: '回忆收藏册', tab: 'letters', sub: 'collect' },
   // 💗 心情
   { key: 'couple-mood', label: '心情日记', tab: 'mood' },
