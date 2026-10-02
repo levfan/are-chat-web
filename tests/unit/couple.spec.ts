@@ -3,12 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi, postApi, theaterApi } from '@/api/couple'
+import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi, postApi, theaterApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -726,6 +726,74 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F310-F319 身体通知系统 bodyApi：默认全空但形状完整的 BodyVO（snore/oath 是后端 ensure* 惰性建行的恒有值嵌套对象），用例内按需覆盖
+  const bodyEmptyVo = () => ({
+    day: '2026-10-02',
+    week: '2026-09-28',
+    metrics: [],
+    snore: {
+      day: '2026-10-02',
+      myLevel: '',
+      partnerLevel: '',
+      myShake: '',
+      partnerShake: '',
+      iCanShake: false,
+      partnerScore: 0,
+    },
+    cycles: [],
+    quits: [],
+    fits: [],
+    soss: [],
+    redlines: [],
+    redlineHits: [],
+    checkups: [],
+    meds: [],
+    oath: {
+      week: '2026-09-28',
+      myLine: '',
+      partnerLine: '',
+      mineSigned: false,
+      partnerSigned: false,
+      bothSigned: false,
+      myBreach: 0,
+      myNights: 0,
+      partnerBreach: 0,
+      partnerNights: 0,
+      line: '',
+    },
+  })
+  const bodyBase: Record<string, ReturnType<typeof vi.fn>> = {
+    bodyOverview: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyMetric: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodySnore: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodySnoreShake: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyCycle: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyCycleCare: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyQuitStart: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyQuitBroke: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyQuitCheer: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyQuitClose: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyFit: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodySos: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodySosHold: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyRedlineAdd: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyRedlineRemove: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyCheckup: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyCheckupCompany: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyCheckupReport: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyMed: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyMedReply: vi.fn().mockResolvedValue(bodyEmptyVo()),
+    bodyOath: vi.fn().mockResolvedValue(bodyEmptyVo()),
+  }
+  const bodyWrapped = new Proxy(bodyBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(bodyEmptyVo())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -740,6 +808,8 @@ vi.mock('@/api/couple', () => {
     codexApi: codexWrapped,
     postApi: postWrapped,
     theaterApi: theaterWrapped,
+    // F310-F319 身体通知系统 bodyApi：默认全空但形状完整的 BodyVO，用例内按需覆盖
+    bodyApi: bodyWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -4256,6 +4326,80 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.find('[data-testid="couple-theater-house"]').classes()).toContain('is-collapsed')
     vi.mocked(theaterApi.theaterToday).mockResolvedValue(theaterVo())
     wrapper.unmount()
+  })
+
+  // ============ 批次二十七：身体通知系统（F310-F319，care 页签「🚑 情绪急救」子页签末尾 CoupleBody） ============
+
+  /** 身体总览空态基底（字段与后端 CoupleBodyService.BodyVO 对齐；snore/oath 是后端 ensure* 惰性建行的恒有值嵌套对象） */
+  function bodyVo(partial: Partial<CoupleBodyVO> = {}): CoupleBodyVO {
+    return {
+      day: '2026-10-02',
+      week: '2026-09-28',
+      metrics: [],
+      snore: { day: '2026-10-02', myLevel: '', partnerLevel: '', myShake: '', partnerShake: '', iCanShake: false, partnerScore: 0 },
+      cycles: [],
+      quits: [],
+      fits: [],
+      soss: [],
+      redlines: [],
+      redlineHits: [],
+      checkups: [],
+      meds: [],
+      oath: { week: '2026-09-28', myLine: '', partnerLine: '', mineSigned: false, partnerSigned: false, bothSigned: false, myBreach: 0, myNights: 0, partnerBreach: 0, partnerNights: 0, line: '' },
+      ...partial,
+    }
+  }
+
+  it('身体通知：报体征调 bodyMetric，返回整份 BodyVO 后今日卡与超线提醒刷新', async () => {
+    vi.mocked(bodyApi.bodyOverview).mockResolvedValue(bodyVo())
+    vi.mocked(bodyApi.bodyMetric).mockResolvedValue(bodyVo({
+      metrics: [{ day: '2026-10-02', mine: true, temp: '37.4', weight: '', sleepHours: '', tempLimit: '37.2', sleepLimit: '', note: '', warn: true, warnText: '体温超了你自己划的那条线' }],
+    }))
+    const wrapper = await mountOnCareRescue()
+    expect(wrapper.find('[data-testid="couple-body-metric"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-body-metric-temp"]').setValue('37.4')
+    await wrapper.find('[data-testid="couple-body-metric-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(bodyApi.bodyMetric).toHaveBeenCalledWith('37.4', '', '', '', '', '')
+    expect(wrapper.find('[data-testid="couple-body-metric-today"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-body-metric-today-warn"]').exists()).toBe(true)
+  })
+
+  it('身体通知：TA 报了呼噜档位时，我出一句震感报告调 bodySnoreShake', async () => {
+    vi.mocked(bodyApi.bodyOverview).mockResolvedValue(bodyVo({
+      snore: { day: '2026-10-02', myLevel: '', partnerLevel: 'MID', myShake: '', partnerShake: '', iCanShake: true, partnerScore: 2 },
+    }))
+    vi.mocked(bodyApi.bodySnoreShake).mockResolvedValue(bodyVo({
+      snore: { day: '2026-10-02', myLevel: '', partnerLevel: 'MID', myShake: '震感如雷，建议申报地质灾害', partnerShake: '', iCanShake: false, partnerScore: 2 },
+    }))
+    const wrapper = await mountOnCareRescue()
+    expect(wrapper.find('[data-testid="couple-body-snore-partner"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-body-snore-shake-input"]').setValue('震感如雷，建议申报地质灾害')
+    await wrapper.find('[data-testid="couple-body-snore-shake-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(bodyApi.bodySnoreShake).toHaveBeenCalledWith('震感如雷，建议申报地质灾害')
+    expect(wrapper.find('[data-testid="couple-body-snore-my-shake"]').text()).toContain('震感如雷')
+  })
+
+  it('身体通知：TA 喊不舒服时给「我能做」选项，点一张调 bodySosHold 渲染已接住', async () => {
+    vi.mocked(bodyApi.bodyOverview).mockResolvedValue(bodyVo({
+      soss: [{ id: 'sos1', mine: false, symptom: '头疼', since: '下午起', status: 'SENT', comfort: '', holdBy: '', options: ['倒一杯温水放你手边', '把今晚的家务全包了'] }],
+    }))
+    vi.mocked(bodyApi.bodySosHold).mockResolvedValue(bodyVo({
+      soss: [{ id: 'sos1', mine: false, symptom: '头疼', since: '下午起', status: 'HELD', comfort: '把今晚的家务全包了', holdBy: 'bob', options: [] }],
+    }))
+    const wrapper = await mountOnCareRescue()
+    expect(wrapper.find('[data-testid="couple-body-sos-sos1"]').text()).toContain('TA 喊的')
+
+    await wrapper.find('[data-testid="couple-body-sos-hold-sos1-1"]').trigger('click')
+    await flushPromises()
+
+    expect(bodyApi.bodySosHold).toHaveBeenCalledWith('sos1', '把今晚的家务全包了')
+    expect(wrapper.find('[data-testid="couple-body-sos-held-sos1"]').text()).toContain('接住')
   })
 
   // ============ F205 卡片折叠（CoupleCollapsible） ============
