@@ -3,12 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi, postApi } from '@/api/couple'
+import { almanacApi, boardApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi, postApi, theaterApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -647,6 +647,85 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F300-F309 扮演剧场 theaterApi：默认全空但形状完整的 TheaterVO（role/master/family/gala 给完整空对象、六个列表给 []），用例内按需覆盖
+  const theaterEmptyVo = () => ({
+    day: '2026-10-02',
+    week: '2026-09-28',
+    role: {
+      day: '2026-10-02',
+      roleName: '深夜便利店店员',
+      guide: '凌晨两点还在整理货架；对熟客的记忆好得吓人。',
+      mineRated: false,
+      myRate: null,
+      partnerRate: null,
+      bothRated: false,
+    },
+    diaries: [],
+    master: {
+      week: '2026-09-28',
+      masterUser: 'bob',
+      apprenticeUser: 'alice',
+      iAmMaster: false,
+      serveCount: 0,
+      serveTarget: 3,
+      servedToday: false,
+      canReview: false,
+      review: '',
+      grade: '',
+    },
+    booths: [],
+    refs: [],
+    awards: [],
+    family: {
+      day: '2026-10-02',
+      question: '如果我是你爸妈，你觉得你最怕我撞见你们哪种相处场面？',
+      myAnswer: '',
+      partnerAnswer: '',
+      bothIn: false,
+    },
+    movies: [],
+    tickets: [],
+    gala: {
+      day: '2026-10-02',
+      prize: '最佳忘词奖',
+      line: '本届颁奖礼空缺——今天还没人上台表演，先去当一天别人。',
+      nominations: 0,
+      terms: 0,
+      quizzed: 0,
+      rights: 0,
+      diaryDays: 0,
+      onTimeOrders: 0,
+      orders: 0,
+    },
+  })
+  const theaterBase: Record<string, ReturnType<typeof vi.fn>> = {
+    theaterToday: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterRate: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterDiary: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterServe: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterReview: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterBooth: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterRefAdd: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterRefQuiz: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterRefJudge: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterAward: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterFamily: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterMovie: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterMovieFinish: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterOrder: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterOrderAnswer: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterOrderScore: vi.fn().mockResolvedValue(theaterEmptyVo()),
+    theaterOrderAppeal: vi.fn().mockResolvedValue(theaterEmptyVo()),
+  }
+  const theaterWrapped = new Proxy(theaterBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(theaterEmptyVo())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -660,6 +739,7 @@ vi.mock('@/api/couple', () => {
     factoryApi: factoryWrapped,
     codexApi: codexWrapped,
     postApi: postWrapped,
+    theaterApi: theaterWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -3683,6 +3763,498 @@ describe('CoupleView 情侣空间', () => {
     await flushPromises()
     expect(postApi.postDreamRead).toHaveBeenCalledWith('pd2', '说明你最近被人烧水泡着')
     expect(wrapper.find('[data-testid="couple-post-dream-reading-pd2"]').text()).toContain('烧水泡着')
+    wrapper.unmount()
+  })
+
+  // ============ 批次二十六：扮演剧场（F300-F309，rituals 页签「🎲 玩趣时间」子页签 CoupleTheater） ============
+
+  /** 剧场总览空态基底（字段与后端 CoupleTheaterService.TheaterVO 逐一对齐，用例内按分区覆盖） */
+  function theaterVo(partial: Partial<CoupleTheaterVO> = {}): CoupleTheaterVO {
+    return {
+      day: '2026-10-02',
+      week: '2026-09-28',
+      role: {
+        day: '2026-10-02',
+        roleName: '米其林后厨的副厨',
+        guide: '盐放多了会当场道歉，但不允许你说「随便吃点」；上菜要先报菜名。',
+        mineRated: false,
+        myRate: null,
+        partnerRate: null,
+        bothRated: false,
+      },
+      diaries: [],
+      master: {
+        week: '2026-09-28',
+        masterUser: 'bob',
+        apprenticeUser: 'alice',
+        iAmMaster: false,
+        serveCount: 0,
+        serveTarget: 3,
+        servedToday: false,
+        canReview: false,
+        review: '',
+        grade: '',
+      },
+      booths: [],
+      refs: [],
+      awards: [],
+      family: {
+        day: '2026-10-02',
+        question: '如果我是你爸妈，你想让我先夸你哪一点，好让我放心？',
+        myAnswer: '',
+        partnerAnswer: '',
+        bothIn: false,
+      },
+      movies: [],
+      tickets: [],
+      gala: {
+        day: '2026-10-02',
+        prize: '黑话十级证书',
+        line: '本届颁奖礼空缺——今天还没人上台表演，先去当一天别人。',
+        nominations: 0,
+        terms: 0,
+        quizzed: 0,
+        rights: 0,
+        diaryDays: 0,
+        onTimeOrders: 0,
+        orders: 0,
+      },
+      ...partial,
+    }
+  }
+
+  /** 进「🎲 玩趣时间」子页签（CoupleTheater 挂在 CouplePlay 之后） */
+  async function mountOnRitualsFun() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-rituals').trigger('click')
+    await flushPromises()
+    await wrapper.find('#tab-fun').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 扮演剧场折叠态落库键清理，避免污染后续用例
+    localStorage.removeItem('arechat_couple_collapse_couple-theater-swap')
+    localStorage.removeItem('arechat_couple_collapse_couple-theater-booth')
+    localStorage.removeItem('arechat_couple_collapse_couple-theater-act')
+    localStorage.removeItem('arechat_couple_collapse_couple-theater-house')
+  })
+
+  it('扮演剧场：身份签渲染角色与指南，未打分可点星、已打分钮禁用且双评态显示双方分', async () => {
+    const openRole: CoupleTheaterRoleVO = {
+      day: '2026-10-02',
+      roleName: '退休返聘的老教授',
+      guide: '说话慢，爱讲「我们那时候」；打断 TA 会被记小本子。',
+      mineRated: false,
+      myRate: null,
+      partnerRate: null,
+      bothRated: false,
+    }
+    vi.mocked(theaterApi.theaterToday).mockResolvedValue(theaterVo({ role: openRole }))
+    vi.mocked(theaterApi.theaterRate).mockResolvedValue(theaterVo({ role: { ...openRole, mineRated: true, myRate: 4 } }))
+    const wrapper = await mountOnRitualsFun()
+    expect(wrapper.find('[data-testid="couple-theater"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-role-name"]').text()).toContain('退休返聘的老教授')
+    expect(wrapper.find('[data-testid="couple-theater-role-guide"]').text()).toContain('记小本子')
+    expect(wrapper.find('[data-testid="couple-theater-rate-wait"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-rate-partner-wait"]').text()).toContain('还没给你打分')
+    expect((wrapper.find('[data-testid="couple-theater-rate-3"]').element as HTMLButtonElement).disabled).toBe(false)
+
+    await wrapper.find('[data-testid="couple-theater-rate-4"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterRate).toHaveBeenCalledWith(4)
+    expect(wrapper.find('[data-testid="couple-theater-rate-mine"]').text()).toContain('4 星')
+    expect(wrapper.find('[data-testid="couple-theater-rate-wait"]').exists()).toBe(false)
+    // 本人一天只能落一次笔
+    expect((wrapper.find('[data-testid="couple-theater-rate-5"]').element as HTMLButtonElement).disabled).toBe(true)
+    wrapper.unmount()
+
+    // 双评态：双方分都摆出来 + 收工徽标
+    vi.mocked(theaterApi.theaterToday).mockResolvedValue(theaterVo({
+      role: { ...openRole, mineRated: true, myRate: 5, partnerRate: 3, bothRated: true },
+    }))
+    const wrapper2 = await mountOnRitualsFun()
+    expect(wrapper2.find('[data-testid="couple-theater-rate-partner"]').text()).toContain('3 星')
+    expect(wrapper2.find('[data-testid="couple-theater-rate-both"]').exists()).toBe(true)
+    wrapper2.unmount()
+  })
+
+  it('扮演剧场：互换日记本人页回填可改写，TA 那一页要双齐才放出（含往期对着读的行）', async () => {
+    const myPage: CoupleTheaterDiaryVO = { day: '2026-10-02', mine: '今天我像 TA 一样先给了台阶', partner: '', bothIn: false }
+    const pastPage: CoupleTheaterDiaryVO = {
+      day: '2026-10-01', mine: '昨天我替 TA 排队买了咖啡', partner: '昨天 TA 替我把闹钟关了', bothIn: true,
+    }
+    vi.mocked(theaterApi.theaterToday).mockResolvedValue(theaterVo({ diaries: [myPage, pastPage] }))
+    vi.mocked(theaterApi.theaterDiary).mockResolvedValue(theaterVo({
+      diaries: [
+        { ...myPage, mine: '今天我像 TA 一样，忍住了没翻旧账', partner: '今天我像他一样，先把碗收了', bothIn: true },
+        pastPage,
+      ],
+    }))
+    const wrapper = await mountOnRitualsFun()
+    // 本人那页回填进表单，可改写；TA 那页没双齐前不放出
+    const diaryEl = wrapper.find('[data-testid="couple-theater-diary-text"]').element as HTMLTextAreaElement
+    expect(diaryEl.value).toContain('先给了台阶')
+    expect(wrapper.find('[data-testid="couple-theater-diary-submit"]').text()).toContain('改写我今天那页')
+    expect(wrapper.find('[data-testid="couple-theater-diary-mine"]').text()).toContain('先给了台阶')
+    expect(wrapper.find('[data-testid="couple-theater-diary-partner"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-theater-diary-wait"]').text()).toContain('还没交')
+    // 往期双齐的日子两页并排陈列
+    expect(wrapper.find('[data-testid="couple-theater-diary-day-2026-10-01"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-diary-bothin-2026-10-01"]').text()).toContain('双页齐')
+    expect(wrapper.find('[data-testid="couple-theater-diary-partner-2026-10-01"]').text()).toContain('把闹钟关了')
+
+    await wrapper.find('[data-testid="couple-theater-diary-text"]').setValue('今天我像 TA 一样，忍住了没翻旧账')
+    await wrapper.find('[data-testid="couple-theater-diary-submit"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterDiary).toHaveBeenCalledWith('今天我像 TA 一样，忍住了没翻旧账')
+    expect(wrapper.find('[data-testid="couple-theater-diary-both"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-diary-wait"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-theater-diary-partner"]').text()).toContain('先把碗收了')
+    wrapper.unmount()
+  })
+
+  it('扮演剧场：师徒日按主从出不同按钮，徒弟打卡、师父只有出师留级两钮且未满 3 次直透后端 400', async () => {
+    const apprentice: CoupleTheaterMasterVO = {
+      week: '2026-09-28', masterUser: 'bob', apprenticeUser: 'alice', iAmMaster: false,
+      serveCount: 1, serveTarget: 3, servedToday: false, canReview: false, review: '', grade: '',
+    }
+    vi.mocked(theaterApi.theaterToday).mockResolvedValue(theaterVo({ master: apprentice }))
+    vi.mocked(theaterApi.theaterServe).mockResolvedValue(theaterVo({ master: { ...apprentice, serveCount: 2, servedToday: true } }))
+    const wrapper = await mountOnRitualsFun()
+    expect(wrapper.find('[data-testid="couple-theater-master-who"]').text()).toContain('这周我是徒弟')
+    expect(wrapper.find('[data-testid="couple-theater-master-count"]').text()).toContain('1/3')
+    expect(wrapper.find('[data-testid="couple-theater-master-serve"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-master-graduate"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="couple-theater-master-serve"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterServe).toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="couple-theater-master-served"]').exists()).toBe(true)
+    expect((wrapper.find('[data-testid="couple-theater-master-serve"]').element as HTMLButtonElement).disabled).toBe(true)
+    wrapper.unmount()
+
+    // 师父视角：只有出师 / 留级两个章，侍奉没满 3 次点出师由后端 400 文案直透
+    const master: CoupleTheaterMasterVO = {
+      week: '2026-09-28', masterUser: 'alice', apprenticeUser: 'bob', iAmMaster: true,
+      serveCount: 2, serveTarget: 3, servedToday: false, canReview: true, review: '', grade: '',
+    }
+    vi.mocked(theaterApi.theaterToday).mockResolvedValue(theaterVo({ master }))
+    vi.mocked(theaterApi.theaterReview).mockRejectedValue(new Error('侍奉不满 3 次，先留级吧'))
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    const wrapper2 = await mountOnRitualsFun()
+    expect(wrapper2.find('[data-testid="couple-theater-master-serve"]').exists()).toBe(false)
+    expect(wrapper2.find('[data-testid="couple-theater-master-graduate"]').exists()).toBe(true)
+    expect(wrapper2.find('[data-testid="couple-theater-master-repeat"]').exists()).toBe(true)
+    await wrapper2.find('[data-testid="couple-theater-master-review"]').setValue('手艺还差一点，但态度是好的')
+    await wrapper2.find('[data-testid="couple-theater-master-graduate"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterReview).toHaveBeenCalledWith('手艺还差一点，但态度是好的', 'GRADUATED')
+    expect(errorSpy).toHaveBeenCalledWith('侍奉不满 3 次，先留级吧')
+    errorSpy.mockRestore()
+
+    // 留级盖章：整份 VO 换回来，评语与章上墙，定级表单收掉
+    vi.mocked(theaterApi.theaterReview).mockResolvedValue(theaterVo({
+      master: { ...master, review: '态度是好的，下周再练一次', grade: 'REPEAT', canReview: false },
+    }))
+    await wrapper2.find('[data-testid="couple-theater-master-review"]').setValue('态度是好的，下周再练一次')
+    await wrapper2.find('[data-testid="couple-theater-master-repeat"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterReview).toHaveBeenLastCalledWith('态度是好的，下周再练一次', 'REPEAT')
+    expect(wrapper2.find('[data-testid="couple-theater-master-grade"]').text()).toContain('留级')
+    expect(wrapper2.find('[data-testid="couple-theater-master-review-text"]').text()).toContain('下周再练一次')
+    expect(wrapper2.find('[data-testid="couple-theater-master-graduate"]').exists()).toBe(false)
+    expect(wrapper2.find('[data-testid="couple-theater-master-nomove"]').text()).toContain('已经定过级')
+    wrapper2.unmount()
+  })
+
+  it('扮演剧场：电话亭 FUTURE 封存显剩余天数、PAST 接通显杂音话术；黑话抽查自己收的不给作答钮、没人答不给判卷钮', async () => {
+    const sealed: CoupleTheaterBoothVO = {
+      id: 'tb1', mine: true, kind: 'FUTURE', text: '一年后记得去看看那间带窗的书房',
+      openDay: '2027-10-02', status: 'SEALED', daysLeft: 365, line: '',
+    }
+    const connected: CoupleTheaterBoothVO = {
+      id: 'tb2', mine: false, kind: 'PAST', text: '那年你说会等我的',
+      openDay: '2026-10-02', status: 'SENT', daysLeft: 0, line: '滋滋……信号不好……你刚才那句再说一遍，我想听清楚。',
+    }
+    const myUntouchedRef: CoupleTheaterRefVO = {
+      id: 'tr1', term: '二次晚安', meaning: '说了晚安之后还要补的那一句', origin: '2025 年那趟夜班',
+      mine: true, quizAnswer: '', quizBy: '', judged: '', canQuiz: false, canJudge: false,
+    }
+    const taRef: CoupleTheaterRefVO = {
+      id: 'tr2', term: '小猪开关', meaning: '一按就犯困的那个开关', origin: '',
+      mine: false, quizAnswer: '', quizBy: '', judged: '', canQuiz: true, canJudge: false,
+    }
+    const awaitJudgeRef: CoupleTheaterRefVO = {
+      id: 'tr3', term: '台风天', meaning: '谁都不许提分手的那天', origin: '',
+      mine: true, quizAnswer: '就是刮大风那回', quizBy: 'bob', judged: '', canQuiz: false, canJudge: true,
+    }
+    const judgedRef: CoupleTheaterRefVO = {
+      id: 'tr4', term: '老地方', meaning: '那家还开着的馄饨店', origin: '',
+      mine: false, quizAnswer: '馄饨店', quizBy: 'alice', judged: 'RIGHT', canQuiz: false, canJudge: false,
+    }
+    vi.mocked(theaterApi.theaterToday).mockResolvedValue(theaterVo({
+      booths: [sealed, connected], refs: [myUntouchedRef, taRef, awaitJudgeRef, judgedRef],
+    }))
+    // 每次写接口都返回整份 TheaterVO：电话与词条两栏都要带全，否则后续断言的行会被整体替换掉
+    const boothVo = (refs: CoupleTheaterRefVO[]) => theaterVo({
+      booths: [sealed, connected], refs,
+    })
+    const allRefs = [myUntouchedRef, taRef, awaitJudgeRef, judgedRef]
+    vi.mocked(theaterApi.theaterBooth).mockResolvedValue(boothVo(allRefs))
+    vi.mocked(theaterApi.theaterRefAdd).mockResolvedValue(boothVo(allRefs))
+    vi.mocked(theaterApi.theaterRefQuiz).mockResolvedValue(boothVo([
+      myUntouchedRef, { ...taRef, quizAnswer: '一按就犯困的那个开关', quizBy: 'alice', canQuiz: false }, awaitJudgeRef, judgedRef,
+    ]))
+    vi.mocked(theaterApi.theaterRefJudge).mockResolvedValue(boothVo([
+      myUntouchedRef, taRef, { ...awaitJudgeRef, judged: 'WRONG', canJudge: false }, judgedRef,
+    ]))
+    const wrapper = await mountOnRitualsFun()
+    // 封存中的那通：只给剩余天数，不给杂音话术
+    expect(wrapper.find('[data-testid="couple-theater-booth-open-tb1"]').text()).toContain('2027-10-02 接通')
+    expect(wrapper.find('[data-testid="couple-theater-booth-seal-tb1"]').text()).toContain('365 天')
+    expect(wrapper.find('[data-testid="couple-theater-booth-line-tb1"]').exists()).toBe(false)
+    // 已接通的那通：后端下发杂音话术
+    expect(wrapper.find('[data-testid="couple-theater-booth-connected-tb2"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-booth-line-tb2"]').text()).toContain('信号不好')
+    // 黑话：自己收的词条不给作答钮，判卷前释义先遮
+    expect(wrapper.find('[data-testid="couple-theater-ref-quiz-btn-tr1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-theater-ref-right-tr1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-theater-ref-quizwait-tr1"]').text()).toContain('还没答')
+    expect(wrapper.find('[data-testid="couple-theater-ref-quiz-btn-tr2"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-ref-blind-tr2"]').exists()).toBe(true)
+    // TA 答完了我收的词条 → 才给判卷两钮
+    expect(wrapper.find('[data-testid="couple-theater-ref-right-tr3"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-ref-answer-tr3"]').text()).toContain('刮大风那回')
+    // 已判过的词条亮结果与公开释义
+    expect(wrapper.find('[data-testid="couple-theater-ref-judged-tr4"]').text()).toContain('记住了')
+    expect(wrapper.find('[data-testid="couple-theater-ref-meaning-tr4"]').text()).toContain('馄饨店')
+
+    // 换 PAST 路拨号（el-radio 要点原生 input 才写回 v-model）
+    await wrapper.find('[data-testid="couple-theater-booth-opt-PAST"]').find('input').setValue(true)
+    await wrapper.find('[data-testid="couple-theater-booth-text"]').setValue('那一年的我们，后来真的没走散')
+    await wrapper.find('[data-testid="couple-theater-booth-submit"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterBooth).toHaveBeenCalledWith('PAST', '那一年的我们，后来真的没走散')
+
+    // 收录新词条 + 交抽查卷 + 收录人判卷（都按词条名点名）
+    await wrapper.find('[data-testid="couple-theater-ref-term"]').setValue('第三杯')
+    await wrapper.find('[data-testid="couple-theater-ref-meaning"]').setValue('说好只喝两杯之后的那杯')
+    await wrapper.find('[data-testid="couple-theater-ref-origin"]').setValue('去年跨年那顿')
+    await wrapper.find('[data-testid="couple-theater-ref-submit"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterRefAdd).toHaveBeenCalledWith('第三杯', '说好只喝两杯之后的那杯', '去年跨年那顿')
+    await wrapper.find('[data-testid="couple-theater-ref-quiz-input-tr2"]').setValue('一按就犯困的那个开关')
+    await wrapper.find('[data-testid="couple-theater-ref-quiz-btn-tr2"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterRefQuiz).toHaveBeenCalledWith('小猪开关', '一按就犯困的那个开关')
+    await wrapper.find('[data-testid="couple-theater-ref-wrong-tr3"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterRefJudge).toHaveBeenCalledWith('台风天', false)
+    wrapper.unmount()
+  })
+
+  it('扮演剧场：奥斯卡一日一提名（已提名回填证据可改写），家长题双答前只见自己', async () => {
+    const myToday: CoupleTheaterAwardVO = {
+      day: '2026-10-02', fromUser: 'alice', aboutUser: 'bob',
+      evidence: '地铁上被踩了脚还回头说没事', mine: true,
+      line: '今日最佳演技奖颁给 bob：全场最像没事发生的那个人。',
+    }
+    const taAward: CoupleTheaterAwardVO = {
+      day: '2026-10-02', fromUser: 'bob', aboutUser: 'alice',
+      evidence: '把最后一块肉夹给我了还说是店家多给的', mine: false,
+      line: '评委会一致通过，alice 演技稳如老狗，情绪价值片酬翻倍。',
+    }
+    const familyOpen: CoupleTheaterFamilyVO = {
+      day: '2026-10-02', question: '如果我问「她/他到底哪里好」，你会举哪一件最小的事？',
+      myAnswer: '会帮我拎最沉的那袋米', partnerAnswer: '', bothIn: false,
+    }
+    const familyBoth: CoupleTheaterFamilyVO = { ...familyOpen, partnerAnswer: '记得我不吃香菜', bothIn: true }
+    vi.mocked(theaterApi.theaterToday).mockResolvedValue(theaterVo({
+      awards: [myToday, taAward], family: familyOpen,
+    }))
+    vi.mocked(theaterApi.theaterAward).mockResolvedValue(theaterVo({
+      awards: [{ ...myToday, evidence: '被踩了脚还回头说没事，演技到位' }, taAward], family: familyOpen,
+    }))
+    const wrapper = await mountOnRitualsFun()
+    // 我今天那张活在表单里（回填 + 文案转改写），不重复陈列
+    const evidenceEl = wrapper.find('[data-testid="couple-theater-award-evidence"]').element as HTMLInputElement
+    expect(evidenceEl.value).toContain('被踩了脚')
+    expect(wrapper.find('[data-testid="couple-theater-award-submit"]').text()).toContain('改写我这张提名')
+    expect(wrapper.find('[data-testid="couple-theater-award-mine-today"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-award-none"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-theater-award-2026-10-02-alice"]').exists()).toBe(false)
+    // TA 递给我的那张：证据 + 后端颁奖词
+    expect(wrapper.find('[data-testid="couple-theater-award-evidence-text-2026-10-02-bob"]').text()).toContain('最后一块肉')
+    expect(wrapper.find('[data-testid="couple-theater-award-line-2026-10-02-bob"]').text()).toContain('稳如老狗')
+    expect(wrapper.find('[data-testid="couple-theater-award-about-2026-10-02-bob"]').text()).toContain('alice')
+
+    await wrapper.find('[data-testid="couple-theater-award-evidence"]').setValue('被踩了脚还回头说没事，演技到位')
+    await wrapper.find('[data-testid="couple-theater-award-submit"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterAward).toHaveBeenCalledWith('被踩了脚还回头说没事，演技到位')
+    expect((wrapper.find('[data-testid="couple-theater-award-evidence"]').element as HTMLInputElement).value).toContain('演技到位')
+
+    // 家长题：双答前只见自己那份
+    expect(wrapper.find('[data-testid="couple-theater-family-question"]').text()).toContain('哪一件最小的事')
+    expect(wrapper.find('[data-testid="couple-theater-family-mine"]').text()).toContain('拎最沉的那袋米')
+    expect(wrapper.find('[data-testid="couple-theater-family-partner"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-theater-family-wait"]').text()).toContain('等 TA 也交一份')
+    vi.mocked(theaterApi.theaterFamily).mockResolvedValue(theaterVo({
+      family: familyBoth, awards: [myToday, taAward],
+    }))
+    await wrapper.find('[data-testid="couple-theater-family-answer"]').setValue('会帮我拎最沉的那袋米')
+    await wrapper.find('[data-testid="couple-theater-family-submit"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterFamily).toHaveBeenCalledWith('会帮我拎最沉的那袋米')
+    expect(wrapper.find('[data-testid="couple-theater-family-partner"]').text()).toContain('不吃香菜')
+    expect(wrapper.find('[data-testid="couple-theater-family-both"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('扮演剧场：追剧双认领与剧终合剧本后才放 TA 日记；客服接单/评分/申诉状态机各归其人', async () => {
+    const ongoing: CoupleTheaterMovieVO = {
+      work: '请回答1988', myRole: '德善', myDiary: '今天我替她难过了三分钟',
+      partnerRole: '阿泽', partnerDiary: '', status: 'ONGOING', bothClaimed: true, finished: false,
+    }
+    const script: CoupleTheaterMovieVO = {
+      work: '山海情', myRole: '水花', myDiary: '我抱着娃走了一晚上',
+      partnerRole: '得福', partnerDiary: '我在村里找了一晚上人', status: 'FINISHED', bothClaimed: true, finished: true,
+    }
+    const notJoined: CoupleTheaterMovieVO = {
+      work: '漫长的季节', myRole: '', myDiary: '',
+      partnerRole: '王响', partnerDiary: '', status: 'ONGOING', bothClaimed: false, finished: false,
+    }
+    const openMine: CoupleTheaterTicketVO = {
+      id: 'tk1', note: '把阳台的绿萝浇一下', status: 'OPEN', customerUser: 'alice', mineCustomer: true,
+      canAnswer: false, canScore: false, canAppeal: false, onTime: false, score: null, appeal: '', waitMinutes: 12,
+    }
+    const openTa: CoupleTheaterTicketVO = {
+      id: 'tk2', note: '明早帮我带一杯热的豆浆', status: 'OPEN', customerUser: 'bob', mineCustomer: false,
+      canAnswer: true, canScore: false, canAppeal: false, onTime: false, score: null, appeal: '', waitMinutes: 31,
+    }
+    const answered: CoupleTheaterTicketVO = {
+      id: 'tk3', note: '把今晚的碗洗了', status: 'ANSWERED', customerUser: 'alice', mineCustomer: true,
+      canAnswer: false, canScore: true, canAppeal: false, onTime: true, score: null, appeal: '', waitMinutes: 0,
+    }
+    const badRated: CoupleTheaterTicketVO = {
+      id: 'tk4', note: '陪我逛了三小时街', status: 'RATED', customerUser: 'bob', mineCustomer: false,
+      canAnswer: false, canScore: false, canAppeal: true, onTime: false, score: 2, appeal: '', waitMinutes: 0,
+    }
+    const gala = {
+      day: '2026-10-02', prize: '今日片场劳模奖', line: '本届共 2 项提名在册，掌声由电话亭赞助播出。',
+      nominations: 2, terms: 4, quizzed: 2, rights: 1, diaryDays: 5, onTimeOrders: 1, orders: 4,
+    }
+    // 每次写接口都返回整份 TheaterVO：追剧与工单两栏都要带全，否则后续断言的行会被整体替换掉
+    const base: Partial<CoupleTheaterVO> = {
+      movies: [ongoing, script, notJoined],
+      tickets: [openMine, openTa, answered, badRated],
+      gala,
+    }
+    vi.mocked(theaterApi.theaterToday).mockResolvedValue(theaterVo(base))
+    const wrapper = await mountOnRitualsFun()
+    // 双认领但没双剧终 → TA 那条角色线不给看
+    expect(wrapper.find('[data-testid="couple-theater-movie-status-0"]').text()).toContain('双人在演')
+    expect(wrapper.find('[data-testid="couple-theater-movie-tadiary-0"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-theater-movie-wait-0"]').exists()).toBe(true)
+    // 双方都剧终 → 剧本合上，TA 的日记放出，剧终钮收掉
+    expect(wrapper.find('[data-testid="couple-theater-movie-tadiary-1"]').text()).toContain('找了一晚上人')
+    expect(wrapper.find('[data-testid="couple-theater-movie-finish-1"]').exists()).toBe(false)
+    // 我还没进组的那部：只有认领入口，没有剧终入口
+    expect(wrapper.find('[data-testid="couple-theater-movie-claim-2"]').text()).toContain('还没进组')
+    expect(wrapper.find('[data-testid="couple-theater-movie-write-2"]').text()).toContain('认领一个角色')
+    expect(wrapper.find('[data-testid="couple-theater-movie-finish-2"]').exists()).toBe(false)
+
+    // 续写我这条线：角色名后端只认第一次填的，所以表单里那格锁死
+    vi.mocked(theaterApi.theaterMovie).mockResolvedValue(theaterVo(base))
+    await wrapper.find('[data-testid="couple-theater-movie-write-0"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-theater-movie-editing"]').text()).toContain('德善')
+    expect((wrapper.find('[data-testid="couple-theater-movie-role"]').element as HTMLInputElement).disabled).toBe(true)
+    await wrapper.find('[data-testid="couple-theater-movie-entry"]').setValue('今天她在巷口等了一趟班车')
+    await wrapper.find('[data-testid="couple-theater-movie-submit"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterMovie).toHaveBeenCalledWith('请回答1988', '德善', '今天她在巷口等了一趟班车')
+
+    // 我这一路剧终：双剧终后后端把 TA 的日记并排放出来
+    vi.mocked(theaterApi.theaterMovieFinish).mockResolvedValue(theaterVo({
+      ...base,
+      movies: [{ ...ongoing, partnerDiary: '他今天提前回了家', status: 'FINISHED', finished: true }, script, notJoined],
+    }))
+    await wrapper.find('[data-testid="couple-theater-movie-finish-0"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterMovieFinish).toHaveBeenCalledWith('请回答1988')
+    expect(wrapper.find('[data-testid="couple-theater-movie-tadiary-0"]').text()).toContain('提前回了家')
+
+    // 客服状态机：未接的单只有对方下的我才能接
+    expect(wrapper.find('[data-testid="couple-theater-order-answer-tk1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-theater-order-wait-tk1"]').text()).toContain('自己的单自己接不了')
+    expect(wrapper.find('[data-testid="couple-theater-order-wait-tk1"]').text()).toContain('12 分钟')
+    expect(wrapper.find('[data-testid="couple-theater-order-answer-tk2"]').exists()).toBe(true)
+    vi.mocked(theaterApi.theaterOrderAnswer).mockResolvedValue(theaterVo({
+      ...base,
+      tickets: [openMine, { ...openTa, status: 'ANSWERED', canAnswer: false, onTime: false, waitMinutes: 0 }, answered, badRated],
+    }))
+    await wrapper.find('[data-testid="couple-theater-order-answer-tk2"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterOrderAnswer).toHaveBeenCalledWith('tk2')
+    expect(wrapper.find('[data-testid="couple-theater-order-status-tk2"]').text()).toContain('已接单')
+    // 已接的单：顾客（我下的单）才有五星按钮
+    expect(wrapper.find('[data-testid="couple-theater-order-score-tk3-5"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-order-score-tk4-1"]').exists()).toBe(false)
+    vi.mocked(theaterApi.theaterOrderScore).mockResolvedValue(theaterVo({
+      ...base,
+      tickets: [openMine, { ...openTa, status: 'ANSWERED', canAnswer: false, waitMinutes: 0 }, { ...answered, status: 'RATED', canScore: false, score: 5 }, badRated],
+    }))
+    await wrapper.find('[data-testid="couple-theater-order-score-tk3-5"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterOrderScore).toHaveBeenCalledWith('tk3', 5)
+    expect(wrapper.find('[data-testid="couple-theater-order-score-text-tk3"]').text()).toContain('5 星')
+    // 差评单：申诉归客服，且申诉理由跟着请求一起走
+    expect(wrapper.find('[data-testid="couple-theater-order-appeal-btn-tk4"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-theater-order-score-text-tk4"]').text()).toContain('2 星')
+    expect(wrapper.find('[data-testid="couple-theater-order-ontime-tk4"]').text()).toContain('超时')
+    vi.mocked(theaterApi.theaterOrderAppeal).mockResolvedValue(theaterVo({
+      ...base,
+      tickets: [openMine, { ...openTa, status: 'ANSWERED', canAnswer: false, waitMinutes: 0 }, answered, { ...badRated, status: 'APPEALED', canAppeal: false, appeal: '我走了三小时一句没喊累' }],
+    }))
+    await wrapper.find('[data-testid="couple-theater-order-appeal-input-tk4"]').setValue('我走了三小时一句没喊累')
+    await wrapper.find('[data-testid="couple-theater-order-appeal-btn-tk4"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterOrderAppeal).toHaveBeenCalledWith('tk4', '我走了三小时一句没喊累')
+    expect(wrapper.find('[data-testid="couple-theater-order-appeal-tk4"]').text()).toContain('没喊累')
+    // 下单入口常驻，新单走 theaterOrder
+    vi.mocked(theaterApi.theaterOrder).mockResolvedValue(theaterVo(base))
+    await wrapper.find('[data-testid="couple-theater-order-note"]').setValue('把鞋柜里的钥匙盘归个位')
+    await wrapper.find('[data-testid="couple-theater-order-submit"]').trigger('click')
+    await flushPromises()
+    expect(theaterApi.theaterOrder).toHaveBeenCalledWith('把鞋柜里的钥匙盘归个位')
+    // 颁奖礼：奖项名 + 七项计数全由后端聚合下发
+    expect(wrapper.find('[data-testid="couple-theater-gala-prize"]').text()).toContain('今日片场劳模奖')
+    expect(wrapper.find('[data-testid="couple-theater-gala-line"]').text()).toContain('掌声由电话亭赞助')
+    expect(wrapper.find('[data-testid="couple-theater-gala-stats"]').text()).toContain('工单 4 张（其中准时 1 张）')
+    wrapper.unmount()
+  })
+
+  it('扮演剧场：接口失败（未建空间）时静默降级，五卡卡根仍在且身份卡提示剧场没开门', async () => {
+    vi.mocked(theaterApi.theaterToday).mockRejectedValue(new Error('还没有建立情侣空间，先邀请一位好友吧'))
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-rituals').trigger('click')
+    await flushPromises()
+    await wrapper.find('#tab-fun').trigger('click')
+    await flushPromises()
+    for (const testid of ['couple-theater-role', 'couple-theater-swap', 'couple-theater-booth', 'couple-theater-act', 'couple-theater-house']) {
+      expect(wrapper.find(`[data-testid="${testid}"]`).exists()).toBe(true)
+      expect(wrapper.find(`[data-testid="couple-collapse-${testid}"]`).exists()).toBe(true)
+    }
+    expect(wrapper.find('[data-testid="couple-theater-role-name"]').exists()).toBe(false)
+    // 空卡自动收起：没数据时四张列表卡初始折叠（DOM 仍在，收起态挂 is-collapsed）
+    expect(wrapper.find('[data-testid="couple-theater-house"]').classes()).toContain('is-collapsed')
+    vi.mocked(theaterApi.theaterToday).mockResolvedValue(theaterVo())
     wrapper.unmount()
   })
 
