@@ -15,6 +15,7 @@ declare module 'vue' {
     CoupleAnniversaryReport: typeof import('./components/couple/CoupleAnniversaryReport.vue')['default']
     CoupleBadges: typeof import('./components/couple/CoupleBadges.vue')['default']
     CoupleBoard: typeof import('./components/couple/CoupleBoard.vue')['default']
+    CoupleBody: typeof import('./components/couple/CoupleBody.vue')['default']
     CoupleBond: typeof import('./components/couple/CoupleBond.vue')['default']
     CoupleCapsule: typeof import('./components/couple/CoupleCapsule.vue')['default']
     CoupleCare: typeof import('./components/couple/CoupleCare.vue')['default']
