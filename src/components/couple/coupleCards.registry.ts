@@ -114,6 +114,17 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-bd-report', label: '年度述职', tab: 'shared', sub: 'manage' },
   { key: 'couple-bd-pay', label: '发薪日', tab: 'shared', sub: 'manage' },
   { key: 'couple-bd-weekly', label: '例会与周报', tab: 'shared', sub: 'manage' },
+  // 👪 两家与朋友（F330-F339，shared/world 子页签）
+  { key: 'couple-world-visit', label: '拜访攻略（回谁家前置任务卡）', tab: 'shared', sub: 'world' },
+  { key: 'couple-world-gift', label: '送礼互助池（接单代买）', tab: 'shared', sub: 'world' },
+  { key: 'couple-world-view', label: '朋友视角问卷（外人怎么看我们）', tab: 'shared', sub: 'world' },
+  { key: 'couple-world-declare', label: '官宣日（每月一张官宣卡）', tab: 'shared', sub: 'world' },
+  { key: 'couple-world-caption', label: '文案代写（三候选互评选稿）', tab: 'shared', sub: 'world' },
+  { key: 'couple-world-city', label: '进城接待方案（行程与小包）', tab: 'shared', sub: 'world' },
+  { key: 'couple-world-relative', label: '亲戚称呼册（称谓测验）', tab: 'shared', sub: 'world' },
+  { key: 'couple-world-credit', label: '社会信用（保证与见证）', tab: 'shared', sub: 'world' },
+  { key: 'couple-world-group', label: '群聊记者（每日素材互递）', tab: 'shared', sub: 'world' },
+  { key: 'couple-world-apology', label: '代 TA 赔礼（审阅才算送达）', tab: 'shared', sub: 'world' },
   // 🏅 徽章
   { key: 'couple-badges', label: '里程碑徽章墙', tab: 'badges' },
   { key: 'couple-report', label: '恋爱月报', tab: 'badges' },

@@ -74,6 +74,7 @@ declare module 'vue' {
     CoupleTruth: typeof import('./components/couple/CoupleTruth.vue')['default']
     CoupleWhisperBox: typeof import('./components/couple/CoupleWhisperBox.vue')['default']
     CoupleWishBoard: typeof import('./components/couple/CoupleWishBoard.vue')['default']
+    CoupleWorld: typeof import('./components/couple/CoupleWorld.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAutocomplete: typeof import('element-plus/es')['ElAutocomplete']
     ElBadge: typeof import('element-plus/es')['ElBadge']

@@ -293,6 +293,12 @@
                   <CoupleBoard />
                 </div>
               </el-tab-pane>
+              <!-- F330-F339 两家与朋友：见家长、送礼、朋友怎么看我们，都堆在这一个子页签里 -->
+              <el-tab-pane label="👪 两家与朋友" name="world" lazy>
+                <div class="tab-stack">
+                  <CoupleWorld />
+                </div>
+              </el-tab-pane>
             </el-tabs>
           </el-tab-pane>
           <el-tab-pane label="🏅 徽章" name="badges" lazy>
@@ -465,6 +471,7 @@ import CouplePost from '@/components/couple/CouplePost.vue'
 import CoupleSpark from '@/components/couple/CoupleSpark.vue'
 import CoupleManage from '@/components/couple/CoupleManage.vue'
 import CoupleDining from '@/components/couple/CoupleDining.vue'
+import CoupleWorld from '@/components/couple/CoupleWorld.vue'
 import CoupleAlmanac from '@/components/couple/CoupleAlmanac.vue'
 import CoupleFactory from '@/components/couple/CoupleFactory.vue'
 import CoupleCeremony from '@/components/couple/CoupleCeremony.vue'
