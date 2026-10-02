@@ -3,6 +3,16 @@
   "private": true,
   "version": "1.6.0-alpha.3",
   "type": "module",
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "^22.22.2 || ^24.15.0 || >=26.0.0",
+      "onFail": "error"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build && vue-tsc --noEmit",
@@ -13,7 +23,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@element-plus/icons-vue": "^2.3.2",
+    "@element-plus/icons-vue": "2.3.2",
     "element-plus": "2.14.7",
     "pinia": "4.0.3",
     "vue": "3.5.43",
