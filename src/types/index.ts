@@ -3999,3 +3999,202 @@ export interface CoupleBodyVO {
   meds: CoupleBodyMedVO[]
   oath: CoupleBodyOathVO
 }
+
+// ============ 修复车间（F320-F329） ============
+// 字段逐一对齐后端 com.smart.chat.couple.CoupleRepairService 的嵌套 record（F320 冷冻/F321 道歉质检/
+// F322 重来卡/F323 信任重建/F324 和好倒计时/F325 冲突年报/F326 底线卡/F327 我错了榜/F328 礼盒/F329 纪念碑）：
+// ⚠️ 本批唯一的可空数字是 RedoVO.satisfaction（后端 Integer，全季还没人打分=null），其余数字全是原生
+// int/long（minutesLeft/secondsLeft 未到点=正数、到点=0；计数类没发生=0），不给 null；
+// 字符串空串=没写/没答/没人/没递台阶；current 与 makeup 是「在冻/今天开过」才有的嵌套对象，没有时后端整体给 null。
+
+/** F320 冷冻单状态：FROZEN 在冻 / THAWED 已复温（双签 + 三问齐才转） */
+export type CoupleRepairFreezeStatus = 'FROZEN' | 'THAWED'
+
+/** F321 道歉质检状态：VERIFY 等对方验货 / PASSED 进陈列室 / BACK 已打回（只有 BACK 能重写） */
+export type CoupleRepairSorryStatus = 'VERIFY' | 'PASSED' | 'BACK'
+
+/** F323 信任重建计划状态：OPEN 进行中 / DONE 签满自动达成 / GIVENUP 开计划人中止 */
+export type CoupleRepairPlanStatus = 'OPEN' | 'DONE' | 'GIVENUP'
+
+/** F324 和好倒计时状态：RUNNING 计时中 / OFFERED 台阶已递（到点自动或提前递）/ ENDED 已宣布和好 */
+export type CoupleRepairMakeupStatus = 'RUNNING' | 'OFFERED' | 'ENDED'
+
+/** F328 修复礼盒状态：OPEN 待完成 / DONE 本人完成（完成才推 both） */
+export type CoupleRepairBoxStatus = 'OPEN' | 'DONE'
+
+/** F321 道歉六要素自评码（后端 CoupleSorryReview.POINTS，其它码 400；自评至少三项） */
+export type CoupleRepairSorryPoint = 'FACT' | 'FEEL' | 'BLAME' | 'SORRY' | 'FIX' | 'ASK'
+
+/** F320 一单冷冻（minutesLeft=距解冻还剩几分钟，未到点前是正数——后端规定「签了也不算数」；
+ *  三问答案 answer1/2/3 空串=还没答，题干是后端 Bank 静态文案不下发；canSign=没复温且我还没签） */
+export interface CoupleRepairFreezeVO {
+  id: string
+  day: string
+  mine: boolean
+  hours: number
+  status: CoupleRepairFreezeStatus
+  minutesLeft: number
+  reason: string
+  answer1: string
+  answer2: string
+  answer3: string
+  signedMe: boolean
+  signedPartner: boolean
+  bothSigned: boolean
+  questionsDone: boolean
+  canSign: boolean
+}
+
+/** F321 一封道歉信（points=六要素自评码数组；verdict 空串=还没验过；canVerify=对方交的且还在 VERIFY，
+ *  ⚠️ 只有对方能验货、自己验自己 400） */
+export interface CoupleRepairSorryVO {
+  id: string
+  mine: boolean
+  letter: string
+  points: string[]
+  status: CoupleRepairSorryStatus
+  verdict: string
+  verifiedBy: string
+  canVerify: boolean
+}
+
+/** F322 这季的重来卡（satisfaction=null=还没打分；ratedBy 空串=全季没人打过、一人一次；
+ *  canPlay=没重放过（没领卡时也给 true，领卡与改场景共用）；canRate=已重放且全季还没人打分） */
+export interface CoupleRepairRedoVO {
+  quarter: string
+  mine: boolean
+  scene: string
+  used: boolean
+  replayNote: string
+  satisfaction: number | null
+  ratedBy: string
+  canPlay: boolean
+  canRate: boolean
+}
+
+/** F323 一条每日任务卡（seq 从 1 起连续编号，后端把 CSV 拆好下发） */
+export interface CoupleRepairTaskVO {
+  seq: number
+  text: string
+}
+
+/** F323 一个信任重建计划（signedCount=双人齐签的天数——单人签不算一天；dayNo=第几天且封顶 targetDays；
+ *  targetDays 只有 14/30 两档；review 空串=还没写周复盘，任一人可写可改） */
+export interface CoupleRepairRebuildVO {
+  id: string
+  name: string
+  mine: boolean
+  cause: string
+  startDay: string
+  targetDays: number
+  tasks: CoupleRepairTaskVO[]
+  signedCount: number
+  dayNo: number
+  review: string
+  status: CoupleRepairPlanStatus
+}
+
+/** F324 一轮冷战倒计时（secondsLeft=距到点还剩几秒；pausedBy 空串=没被暂停、暂停/继续权只在对方；
+ *  stepCard 空串=台阶还没递（到点自动递或提前递）；canToggle=TA 开的且还在计时；canEnd=还没宣布和好） */
+export interface CoupleRepairMakeupVO {
+  id: string
+  day: string
+  mine: boolean
+  minutes: number
+  status: CoupleRepairMakeupStatus
+  secondsLeft: number
+  paused: boolean
+  pausedBy: string
+  stepCard: string
+  canToggle: boolean
+  canEnd: boolean
+}
+
+/** F326 一条底线声明（slot 1-3 每人各三条；breachCount=被踩次数 0=没被踩过；canBreach=TA 立的线才能由
+ *  踩线的人补红线记录，线主人自己点 400） */
+export interface CoupleRepairBottomVO {
+  id: string
+  mine: boolean
+  slot: number
+  text: string
+  sinceDay: string
+  breachCount: number
+  breachNote: string
+  canBreach: boolean
+}
+
+/** F327 一条认错（aboutUser=向谁认错；touched=被标了「最感人」；canTouch=TA 认的且还没被标，
+ *  ⚠️ 只有被认错的那位能标，自己给自己发奖 400） */
+export interface CoupleRepairAdmitVO {
+  id: string
+  day: string
+  mine: boolean
+  aboutUser: string
+  detail: string
+  touched: boolean
+  canTouch: boolean
+}
+
+/** F328 一个修复礼盒（解冻/宣布和好时掉落；doneLine 空串=还没完成，完成后由后端下发话术） */
+export interface CoupleRepairBoxVO {
+  id: string
+  day: string
+  mine: boolean
+  task: string
+  status: CoupleRepairBoxStatus
+  doneLine: string
+}
+
+/** F329 一句纪念碑刻字（一天一人一句；note 空串=还没补「现在回看」注解，本人补注不重推） */
+export interface CoupleRepairPeaceVO {
+  id: string
+  day: string
+  mine: boolean
+  line: string
+  note: string
+}
+
+/** F325 冲突类型年报（无表读时聚合；avgThawHours=平均冷冻时长小时数四舍五入，一次没冻过=0；
+ *  prize/summary 由后端 Bank 生成，本届没修过也有「空缺奖」文案） */
+export interface CoupleRepairReportVO {
+  year: string
+  freezes: number
+  thawed: number
+  sorryIn: number
+  passed: number
+  backed: number
+  admits: number
+  touched: number
+  redos: number
+  boxesDone: number
+  peaceLines: number
+  reconciles: number
+  reconcileAccepted: number
+  avgThawHours: number
+  prize: string
+  summary: string
+}
+
+/**
+ * F320-F329 修复车间总览（GET /api/couple/repair/workshop 一次拉齐；读时后端惰性结算：倒计时到点自动递台阶卡；
+ * 23 个 POST 写接口全部返回整份 RepairVO，前端整体替换即全卡刷新）。current=在冻的那单（没有=null）、
+ * makeup=今天那轮倒计时（没有=null）；freezes/sorries/rebuilds/makeups/bottoms/admits/boxes/peace 全是列表
+ * （后端按 created|day 倒序带条数钳制，不按状态过滤——打回/中止/完成的行留在架上可回看）。
+ */
+export interface CoupleRepairVO {
+  day: string
+  quarter: string
+  year: string
+  freezes: CoupleRepairFreezeVO[]
+  current: CoupleRepairFreezeVO | null
+  sorries: CoupleRepairSorryVO[]
+  redo: CoupleRepairRedoVO
+  rebuilds: CoupleRepairRebuildVO[]
+  makeup: CoupleRepairMakeupVO | null
+  makeups: CoupleRepairMakeupVO[]
+  bottoms: CoupleRepairBottomVO[]
+  admits: CoupleRepairAdmitVO[]
+  boxes: CoupleRepairBoxVO[]
+  peace: CoupleRepairPeaceVO[]
+  report: CoupleRepairReportVO
+}

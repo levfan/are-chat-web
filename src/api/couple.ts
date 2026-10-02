@@ -220,6 +220,7 @@ import type {
   CoupleBodyFitKind,
   CoupleBodyRedlineKind,
   CoupleBodyMedHow,
+  CoupleRepairVO,
   CouplePinVO,
 } from '@/types'
 
@@ -1928,4 +1929,91 @@ export const bodyApi = {
   /** F319 签本周熄灯线（line 须写成 HH:mm 否则 400；本人可改自己那条，双签齐了后端才下发生效文案） */
   bodyOath: (line: string) =>
     http.postJson<CoupleBodyVO>('/api/couple/body/oath', { line }),
+}
+
+/**
+ * F320-F329 修复车间（repairApi，基址 /api/couple/repair）
+ * repairWorkshop 为唯一读接口（读时后端惰性结算：和好倒计时到点自动递台阶卡）；
+ * 其余 23 个 POST 写接口全部返回整份 WorkshopVO（后端 RepairVO），前端整体替换即全卡刷新。
+ * 业务规则由后端 400 中文 message 直透 ElMessage（冷冻 3-24h 且全局仅一单在冻、未到点签字 400「签了也不算数」、
+ * 三问只有挂冷冻的人能答且双签+三问齐才复温、道歉信六要素自评至少三项且只有对方能验货、
+ * 打回必填一句差在哪、重来卡每季一张且满意度 1-5 全季只打一次、重建计划档位只有 14/30、
+ * 任务卡 ≤10 条各 ≤60 字、signed_days 双签才算一天签满自动 DONE、中止归开计划人、
+ * 倒计时 10-60 分钟一天一轮、暂停/继续权只在对方、宣布和好掉修复礼盒、底线每人 3 格 ≤60 字、
+ * 踩线记录只能踩线的人补、认错一天一次防刷、最感人只能被认错方标、礼盒任务本人完成才推 both、
+ * 纪念碑一天一句本人补注不重推等）。
+ */
+export const repairApi = {
+  /** F320-F329 修复车间总览（十板块一次拉齐，report 字段即 F325 冲突年报；未建空间 404 前端静默降级） */
+  repairWorkshop: () => http.get<CoupleRepairVO>('/api/couple/repair/workshop'),
+  /** F320 挂冷冻（hours 3-24 越界 400「别一冻一天」，reason ≤140 字可空；在冻再挂 400「还冻着呢」），返回整份总览 */
+  repairFreeze: (hours: number, reason: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/freeze', { hours, reason }),
+  /** F320 答解冻三问（slot 1-3，answer ≤140 字必填；只有挂冷冻的人能答「TA 在旁边看」，答 TA 的单/已复温 400），返回整份总览 */
+  repairFreezeAsk: (id: string, slot: number, answer: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/freeze/ask', { id, slot, answer }),
+  /** F320 签解冻（未到点 400 带剩余分钟文案；双签+三问齐才 THAWED，两人各掉一只修复礼盒并给提出人记 EARN「复温成功」8 分），返回整份总览 */
+  repairFreezeSign: (id: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/freeze/sign', { id }),
+  /** F321 交道歉信（letter ≤300 字必填，points=六要素码 CSV 逗号分隔，自评 <3 项 400「空口我错了不算道歉」），返回整份总览 */
+  repairSorry: (letter: string, points: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/sorry', { letter, points }),
+  /** F321 打回后重写（仅信主本人且仅 BACK 状态；重写回 VERIFY 清空旧批注等再验），返回整份总览 */
+  repairSorryRewrite: (id: string, letter: string, points: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/sorry/rewrite', { id, letter, points }),
+  /** F321 对方验货（pass=true 进陈列室推 both / false 打回且 verdict 必填「打回要写一句差在哪」；自己验自己 400），返回整份总览 */
+  repairSorryVerify: (id: string, pass: boolean, verdict: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/sorry/verify', { id, pass, verdict }),
+  /** F322 领这季重来卡（scene ≤140 字必填；每季一张，已用 400「下季再来」；未用同季可改写场景），返回整份总览 */
+  repairRedo: (scene: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/redo', { scene }),
+  /** F322 重放完成（replayNote ≤200 字必填「这次改说了什么」；没用过才能记，用过 400），返回整份总览 */
+  repairRedoPlay: (replayNote: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/redo/play', { replayNote }),
+  /** F322 打重放满意度（1-5 越界 400；还没重放/全季已有人打过 400），返回整份总览 */
+  repairRedoRate: (satisfaction: number) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/redo/rate', { satisfaction }),
+  /** F323 开重建计划（name ≤40 字同空间唯一、cause ≤140 字可空、targetDays 只有 14/30 两档、
+   *  tasks 逗号/顿号/换行分隔 ≤10 条各 ≤60 字，空单 400「光立计划不干活没用」），返回整份总览 */
+  repairRebuild: (name: string, cause: string, targetDays: number, tasks: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/rebuild', { name, cause, targetDays, tasks }),
+  /** F323 每日双签（day 空串=今天且须 yyyy-MM-dd；记号成对才算一天，签满 targetDays 自动 DONE 推 both），返回整份总览 */
+  repairRebuildSign: (id: string, day: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/rebuild/sign', { id, day }),
+  /** F323 写周复盘（review ≤200 字必填；任一人可写可改），返回整份总览 */
+  repairRebuildReview: (id: string, review: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/rebuild/review', { id, review }),
+  /** F323 中止计划（谁开的计划谁才有资格中止，别人点 400；已签天数不清零留档），返回整份总览 */
+  repairRebuildGiveup: (id: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/rebuild/giveup', { id }),
+  /** F324 开冷战倒计时（minutes 10-60 越界 400「别把冷战排班」；一天一轮，重复 400「今天已经开过」），返回整份总览 */
+  repairMakeup: (minutes: number) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/makeup', { minutes }),
+  /** F324 对方按暂停/继续（pause=true 暂停 / false 继续；自己开的自己不能按、台阶已递 400「暂停没用了」），返回整份总览 */
+  repairMakeupPause: (id: string, pause: boolean) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/makeup/pause', { id, pause }),
+  /** F324 提前递台阶（RUNNING 中谁都能递；已递过 400「这轮台阶已经递过了」），返回整份总览 */
+  repairMakeupOffer: (id: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/makeup/offer', { id }),
+  /** F324 宣布和好（任一方可点；计时中先递台阶再 ENDED，给开倒计时的人掉一只修复礼盒），返回整份总览 */
+  repairMakeupEnd: (id: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/makeup/end', { id }),
+  /** F326 声明/改写底线（slot 1-3，text ≤60 字必填，sinceDay 空串=今天且须 yyyy-MM-dd；首立推 TA、改写不重推），返回整份总览 */
+  repairBottom: (slot: number, text: string, sinceDay: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/bottom', { slot, text, sinceDay }),
+  /** F326 踩线补红线记录（note ≤80 字必填「为什么没刹住」；只能踩线的人补，线主人自己点 400），返回整份总览 */
+  repairBottomBreach: (id: string, note: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/bottom/breach', { id, note }),
+  /** F327 认错（detail ≤140 字必填；一天一次防刷「别把认错刷成打卡」），返回整份总览 */
+  repairAdmit: (detail: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/admit', { detail }),
+  /** F327 标「最感人的一次认错」（只有被认错的那位能标，自己给自己发奖 400；已标幂等），返回整份总览 */
+  repairAdmitTouch: (id: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/admit/touch', { id }),
+  /** F328 完成礼盒补偿任务（只有盒主本人能点，TA 的任务 400「你只能等 TA 做完」；完成推 both），返回整份总览 */
+  repairBoxDone: (id: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/box/done', { id }),
+  /** F329 立纪念碑（line ≤140 字必填，一天一人一句；note「现在回看」≤80 字可空，本人补注只改 note 不重推），返回整份总览 */
+  repairPeace: (line: string, note: string) =>
+    http.postJson<CoupleRepairVO>('/api/couple/repair/peace', { line, note }),
 }

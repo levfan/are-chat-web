@@ -74,6 +74,13 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-body-care', label: '周期照顾卡与不适SOS', tab: 'care', sub: 'rescue' },
   { key: 'couple-body-camp', label: '戒东西互助营与运动链', tab: 'care', sub: 'rescue' },
   { key: 'couple-body-ledger', label: '身体账本四页', tab: 'care', sub: 'rescue' },
+  // 🧰 修复车间（F320-F329，care/rescue 子页签）
+  { key: 'couple-repair-freeze', label: '冷冻解冻规程', tab: 'care', sub: 'rescue' },
+  { key: 'couple-repair-sorry', label: '道歉质检', tab: 'care', sub: 'rescue' },
+  { key: 'couple-repair-rebuild', label: '重来卡与信任重建', tab: 'care', sub: 'rescue' },
+  { key: 'couple-repair-makeup', label: '和好倒计时与修复礼盒', tab: 'care', sub: 'rescue' },
+  { key: 'couple-repair-ledger', label: '底线与认错榜与纪念碑', tab: 'care', sub: 'rescue' },
+  { key: 'couple-repair-report', label: '冲突类型年报', tab: 'care', sub: 'rescue' },
   { key: 'couple-soft', label: '心动软陪伴', tab: 'care', sub: 'intimate' },
   { key: 'couple-spark', label: '默契亲密仪表盘', tab: 'care', sub: 'intimate' },
   // 🗓️ 共享空间

@@ -258,6 +258,7 @@
                   <CoupleCozy />
                   <CoupleListen />
                   <CoupleBody />
+                  <CoupleRepair />
                 </div>
               </el-tab-pane>
               <el-tab-pane label="✨ 默契亲密" name="intimate" lazy>
@@ -478,6 +479,7 @@ import CoupleMoodRelay from '@/components/couple/CoupleMoodRelay.vue'
 import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
 import CoupleTheater from '@/components/couple/CoupleTheater.vue'
 import CoupleBody from '@/components/couple/CoupleBody.vue'
+import CoupleRepair from '@/components/couple/CoupleRepair.vue'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()
