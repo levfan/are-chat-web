@@ -4533,3 +4533,152 @@ export interface CoupleLegacyVO {
   level: CoupleLegacyLevelVO
   auditCandidates: string[]
 }
+
+
+// ============ 批次三十一：回音壁（F350-F359，echoApi / CoupleEcho.vue） ============
+// 字段与后端 CoupleEchoService 的 11 个 record 逐一对齐（record 参数顺序 = wire 字段顺序）。
+// 可空性按 Service 实际：只有 EchoVO.selfLetter 是对象可为 null（没有在途信时后端给 null），
+// 其余字符串一律经 nz() 下发空串（toXxx 全走 nz）、数字/布尔恒有值（created 为 null 时后端给 0）。
+// ⚠️ YearlyVO.year 是 Java int → number，不是字符串（和批次三十的 LegacyVO.year: string 不一样）。
+
+/**
+ * F350 好事簿的一条证据。mine=我是记录人（后端按 fromUser==当前用户算）；
+ * deeds 是我记的「TA 为我做的事」，partnerDeeds 是 TA 记的「我为 TA 做的事」，两边各限最近 30 条（DEED_PAGE）。
+ * starred=「这条救过我」加星，只有记录人本人能点（后端 400「只有记下这条的人能加星」，已加星幂等返回）。
+ */
+export interface CoupleEchoDeedVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  content: string
+  day: string
+  starred: boolean
+  created: number
+}
+
+/** F352 鼓励语罐的一张纸条（idx=罐子槽位 1-5，删掉后槽位复用；juices 是两人合计，按 mine 分罐，每人 ≤5 条） */
+export interface CoupleEchoJuiceVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  idx: number
+  content: string
+  created: number
+}
+
+/**
+ * F354 感谢慢递的一封（后端 uk(space,from_user) 每行一条带 open_day）。
+ * openDay=送达日（=寄出日 +7 天，DELIVER_AFTER_DAYS）；delivered=false 还在路上（每人 ≤3 封）。
+ * 到日由读接口惰性结算（vault/calendar/year 任一读取都会结算并推双方 echo-thanks-arrived），无定时任务。
+ */
+export interface CoupleEchoSlowVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  toUser: string
+  content: string
+  openDay: string
+  delivered: boolean
+  created: number
+}
+
+/** F355 三行高光卡（moment=什么时候 ≤40 字 / did=TA 做了什么 ≤80 字 / feel=什么感觉 ≤80 字，每人 ≤12 条） */
+export interface CoupleEchoHighlightVO {
+  id: string
+  fromUser: string
+  mine: boolean
+  moment: string
+  did: string
+  feel: string
+  created: number
+}
+
+/**
+ * F356 夸夸回执（uk(space,quote_id,from_user) 幂等）。
+ * quoteFrom/quoteContent 跨模块只读 couple_praise 回填，⚠️ 原句被删时后端给空串而不是整行剔除。
+ */
+export interface CoupleEchoReceiptVO {
+  id: string
+  quoteId: string
+  quoteFrom: string
+  quoteContent: string
+  created: number
+}
+
+/**
+ * F357 一天的电量格（uk(space,day,user)，本人当天可改写）。
+ * level 1-5（后端钳制，null 按 3 格）；hint=对方 ≤2 格（LOW_LEVEL）时的「今晚轻轻的」Bank 提示行，
+ * ⚠️ 只挂在对方那格上，我这一格恒空串。
+ */
+export interface CoupleEchoBatteryVO {
+  fromUser: string
+  mine: boolean
+  level: number
+  want: string
+  hint: string
+}
+
+/** F358 给低落的自己的信的状态（后端 CoupleEchoSelfLetter.STATUS_SEALED/STATUS_READ） */
+export type CoupleEchoSelfStatus = 'SEALED' | 'READ'
+
+/** F358 给自己的信（一人同时一封在途；uk(space,from_user) 单行 status） */
+export interface CoupleEchoSelfLetterVO {
+  id: string
+  content: string
+  status: CoupleEchoSelfStatus
+  created: number
+}
+
+/**
+ * F351 能量补给包。⚠️ 两种形状同一份 VO：总览里是「今日态」——line/selfLetter 空串、三个列表空数组，
+ * 只有 POST /refill 的返回里才装着拆开的内容（我的证据随机 ≤3 条 + 双方 juice/highlight 各 1 条 + 顺带开读的在途信）。
+ * mineToday/partnerToday 是「今天有没有人领过」（每人每天一次，后端 400「今天已经充过电了」）。
+ */
+export interface CoupleEchoRefillVO {
+  mineToday: boolean
+  partnerToday: boolean
+  deeds: CoupleEchoDeedVO[]
+  juices: CoupleEchoJuiceVO[]
+  highlights: CoupleEchoHighlightVO[]
+  selfLetter: string
+  line: string
+}
+
+/** F353 被爱日历的一天（后端只返回有动静的日子；deeds=当天双方记录数、starred=当天被加星数、refilled=当天有人领过补给） */
+export interface CoupleEchoCalendarDayVO {
+  day: string
+  deeds: number
+  starred: number
+  refilled: boolean
+}
+
+/** F359 回音壁年报（五项计数全部来自真表，summary 是后端 Bank 组好的整句文案；year 是数字） */
+export interface CoupleEchoYearlyVO {
+  year: number
+  deeds: number
+  starred: number
+  refills: number
+  slowArrived: number
+  receipts: number
+  summary: string
+}
+
+/**
+ * F350-F359 回音壁总览（GET /api/couple/echo/vault 一次拉齐；12 个 POST 写接口全部返回整份 EchoVO，
+ * 前端整体替换即十卡刷新）。⚠️ 只有 selfLetter 可 null（没在途信）；refill/yearly 是恒有值嵌套对象。
+ * 被爱日历（F353）不在这份聚合里，走 GET /calendar?year= 懒领取。
+ */
+export interface CoupleEchoVO {
+  day: string
+  deeds: CoupleEchoDeedVO[]
+  partnerDeeds: CoupleEchoDeedVO[]
+  juices: CoupleEchoJuiceVO[]
+  refill: CoupleEchoRefillVO
+  slowInFlight: CoupleEchoSlowVO[]
+  slowArrived: CoupleEchoSlowVO[]
+  highlights: CoupleEchoHighlightVO[]
+  receipts: CoupleEchoReceiptVO[]
+  battery: CoupleEchoBatteryVO[]
+  selfLetter: CoupleEchoSelfLetterVO | null
+  yearly: CoupleEchoYearlyVO
+}

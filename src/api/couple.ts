@@ -225,6 +225,9 @@ import type {
   CoupleWorldVisitSide,
   CoupleLegacyVO,
   CoupleLegacyItemKind,
+  CoupleEchoVO,
+  CoupleEchoCalendarDayVO,
+  CoupleEchoYearlyVO,
   CouplePinVO,
 } from '@/types'
 
@@ -2172,4 +2175,75 @@ export const legacyApi = {
   /** F348 抽今年的奖（无请求体；每人一年一次，抽过再点 400「今年你已经抽过了，剩下的那次是 TA 的」；
    *  奖品从「你们本年家务积分台账里攒下的愿望条目」中按空间稳定取，今年一条都没攒过才回落后端 Bank 的 8 个固定迷你愿望位），返回整份总览 */
   legacyDraw: () => http.postJson<CoupleLegacyVO>('/api/couple/legacy/draw', {}),
+}
+
+/**
+ * F350-F359 回音壁（echoApi，基址 /api/couple/echo）
+ * echoVault 为读接口（GET /vault：读时后端惰性结算感谢慢递——open_day 到期即置已送达并推双方
+ * echo-thanks-arrived，不建定时任务）；echoCalendar / echoYear 是 F353/F359 的按年懒读接口（不在这份聚合里）。
+ * 其余 12 个 POST 写接口（/deed /deed/star /juice /juice/remove /refill /slow /highlight
+ * /highlight/remove /receipt /battery /self /self/read）全部返回整份 EchoVO（后端 CoupleEchoService.EchoVO），
+ * 前端整体替换即十卡刷新。
+ * 业务规则由后端 400 中文 message 直透 ElMessage（好事 ≤80 字、日期须 yyyy-MM-dd、同日同内容不能重复记、
+ * 「这条救过我」只有记录人本人能加星；鼓励语 ≤60 字且每人 ≤5 条、只能清自己罐子的纸条；
+ * 补给每人每天一次；慢递 ≤100 字且在途每人 ≤3 封、寄出 7 天后送达；三行高光 40/80/80 字各自必填、每人 ≤12 条、
+ * 只能整理自己的精选夹；回执那句须在你们自己的夸夸墙上（uk 幂等）；电量 want ≤40 字（level 后端钳 1-5、null 按 3 格）；
+ * 给自己的信 ≤300 字且一人同时只封一封、没在途信时开读 400）；
+ * 未建空间一律 404「还没有建立情侣空间，先邀请一位好友吧」，组件侧 safeLoad 静默降级。
+ */
+export const echoApi = {
+  /** F350-F359 回音壁总览（十板块一次拉齐：deeds/partnerDeeds 各限最近 30 条、juices/highlights 两人合计、
+   *  slowInFlight 按寄出日正序、slowArrived 只给最近 10 封、refill 未领取时是空包的今日态、
+   *  selfLetter 没在途信时为 null；未建空间 404 前端静默降级） */
+  echoVault: () => http.get<CoupleEchoVO>('/api/couple/echo/vault'),
+  /** F350 记一件「TA 为我做的事」（content ≤80 字必填「好事总得写一句」，超 80 字 400；day 空串=今天且须
+   *  yyyy-MM-dd 否则 400「日期写成 yyyy-MM-dd」；同日同人同内容重复 400「这条已经记过了」；新增推双方），返回整份总览 */
+  echoDeed: (content: string, day: string) =>
+    http.postJson<CoupleEchoVO>('/api/couple/echo/deed', { content, day }),
+  /** F350 给证据点「这条救过我」（⚠️ 只有记录人本人能点：id 不在本空间 400「这条不在好事簿里」、
+   *  点 TA 记的那条 400「只有记下这条的人能加星」；已加星再点幂等返回不重推），返回整份总览 */
+  echoDeedStar: (id: string) => http.postJson<CoupleEchoVO>('/api/couple/echo/deed/star', { id }),
+  /** F352 往自己罐里塞一张打气话（content ≤60 字必填「鼓励语总得写一句」，超 60 字 400；
+   *  每人 ≤5 条，第 6 条 400「罐子装不下了」；槽位 idx 复用删掉的空格），返回整份总览 */
+  echoJuice: (content: string) => http.postJson<CoupleEchoVO>('/api/couple/echo/juice', { content }),
+  /** F352 清掉自己罐里的一张（⚠️ 只能删本人的：id 不在罐里 400「这张纸条不在罐子里」、
+   *  删 TA 的 400「只能清自己罐子里的纸条」），返回整份总览 */
+  echoJuiceRemove: (id: string) => http.postJson<CoupleEchoVO>('/api/couple/echo/juice/remove', { id }),
+  /** F351 领今天的能量补给（无请求体；⚠️ 每人每天一次，领过再点 400「今天已经充过电了」；
+   *  返回的 refill 才是拆开的补给包：我的证据随机 ≤3 条 + 双方鼓励语/高光各 1 条 + 顺带开读自己在途的信；
+   *  领取推双方 echo-refilled——这就是「一键喊 TA」，后端没有单独的喊人接口），返回整份总览 */
+  echoRefill: () => http.postJson<CoupleEchoVO>('/api/couple/echo/refill', {}),
+  /** F354 寄一封感谢慢递（content ≤100 字必填「想谢的话总要写一句」，超 100 字 400；
+   *  在途每人 ≤3 封，满了 400「路上还有 3 封」；送达日固定=寄出日+7 天，到日由任一读接口惰性结算），返回整份总览 */
+  echoSlow: (content: string) => http.postJson<CoupleEchoVO>('/api/couple/echo/slow', { content }),
+  /** F355 收藏一条三行高光（moment ≤40「高光发生在什么时候」/ did ≤80「TA 做了什么」/ feel ≤80「当时什么感觉」，
+   *  三段各自必填各有各的 400 文案、超长各自 400；每人 ≤12 条，满了 400「精选夹满了」），返回整份总览 */
+  echoHighlight: (moment: string, did: string, feel: string) =>
+    http.postJson<CoupleEchoVO>('/api/couple/echo/highlight', { moment, did, feel }),
+  /** F355 删掉自己精选夹里的一条（⚠️ 只能整理自己的：id 不在夹里 400「这条不在精选夹里」、
+   *  删 TA 的 400「只能整理自己的精选夹」），返回整份总览 */
+  echoHighlightRemove: (id: string) => http.postJson<CoupleEchoVO>('/api/couple/echo/highlight/remove', { id }),
+  /** F356 给夸夸墙里夸我的某句点「收到」（quoteId 是 couple_praise 的 id：空或不在你们空间 400
+   *  「这句话不在你们的夸夸墙上」；uk(space,quote_id,from_user) 幂等，重复点不重复记；
+   *  回执只推给夸的人 echo-receipt-given，回执句从此进 F351 能量库），返回整份总览 */
+  echoReceipt: (quoteId: string) => http.postJson<CoupleEchoVO>('/api/couple/echo/receipt', { quoteId }),
+  /** F357 报今天的社交电量（level 1-5：后端把 null 当 3 格、越界静默钳到 1-5 不报错，故前端必须先要一次点选；
+   *  want「今天想被怎样对待」≤40 字可空，超 40 字 400；本人当天可改写（upsert）；
+   *  对方 ≤2 格时后端把 Bank 的「今晚轻轻的」提示挂在对方那格的 hint 上），返回整份总览 */
+  echoBattery: (level: number, want: string) =>
+    http.postJson<CoupleEchoVO>('/api/couple/echo/battery', { level, want }),
+  /** F358 写一封给下次低落的自己（content ≤300 字必填「哪怕一句也行，写给低落的自己」，超 300 字 400；
+   *  ⚠️ 一人同时只封一封，有在途信时 400「还有一封在等你」；写完不推对方——这封只归本人），返回整份总览 */
+  echoSelf: (content: string) => http.postJson<CoupleEchoVO>('/api/couple/echo/self', { content }),
+  /** F358 本人现在开读在途信（无请求体；⚠️ 没有在途信时 400「现在没有在途的信」；置 READ 后返回的 selfLetter
+   *  才是刚拆开的那封，不推送给对方；读完就能再写一封），返回整份总览 */
+  echoSelfRead: () => http.postJson<CoupleEchoVO>('/api/couple/echo/self/read', {}),
+  /** F353 被爱日历（GET：year 空串=当年且须 yyyy 否则 400「年份写成 yyyy」；只返回有动静的日子——
+   *  有新证据/被加星/有人领过补给，按天正序；读时同样惰性结算慢递） */
+  echoCalendar: (year?: string) =>
+    http.get<CoupleEchoCalendarDayVO[]>(year ? `/api/couple/echo/calendar?year=${year}` : '/api/couple/echo/calendar'),
+  /** F359 回音壁年报（GET：year 同上；五项真实计数 deeds/starred/refills/slowArrived/receipts +
+   *  后端 Bank 组好的 summary。⚠️ 这份是「另拉一个年份」用的懒读接口，当年的年报恒随总览 yearly 下发） */
+  echoYear: (year?: string) =>
+    http.get<CoupleEchoYearlyVO>(year ? `/api/couple/echo/year?year=${year}` : '/api/couple/echo/year'),
 }
