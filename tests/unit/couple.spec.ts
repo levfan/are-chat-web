@@ -3,12 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, echoApi, factoryApi, legacyApi, listenApi, manageApi, museumApi, pinApi, postApi, repairApi, theaterApi, worldApi } from '@/api/couple'
+import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, echoApi, factoryApi, focusApi, legacyApi, listenApi, manageApi, museumApi, pinApi, postApi, repairApi, theaterApi, worldApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleEchoBatteryVO, CoupleEchoCalendarDayVO, CoupleEchoDeedVO, CoupleEchoHighlightVO, CoupleEchoJuiceVO, CoupleEchoReceiptVO, CoupleEchoSelfLetterVO, CoupleEchoSlowVO, CoupleEchoVO, CoupleEchoYearlyVO, CoupleFyBoardVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePraiseVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleEchoBatteryVO, CoupleEchoCalendarDayVO, CoupleEchoDeedVO, CoupleEchoHighlightVO, CoupleEchoJuiceVO, CoupleEchoReceiptVO, CoupleEchoSelfLetterVO, CoupleEchoSlowVO, CoupleEchoVO, CoupleEchoYearlyVO, CoupleFyBoardVO, CoupleFocusNightVO, CoupleFocusQueueVO, CoupleFocusSlotVO, CoupleFocusTodayVO, CoupleFocusWeeklyVO, CoupleFocusYearlyVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePraiseVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -977,6 +977,58 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F360-F369 注意力保护区 focusApi：默认全空但形状完整的 TodayVO
+  // （night 是「今晚没人报」的全空态而不是 null、slot 没人预约为 null、detoxKind 没挂为 null、
+  //   queueUnread 恒 0（GET /today 读时就结算）、nudgeQuotaLeft 给满额 2 张、meals/gazes 是 0/1/2 计数），
+  // 两个懒读接口 focusWeekly/focusYear 单独给默认值，用例内按需覆盖
+  const focusEmptyNight = (): CoupleFocusNightVO => ({
+    mineReported: false, partnerReported: false, mineMinutes: null, partnerMinutes: null,
+    mineNote: '', partnerNote: '', bothLit: false, totalMinutes: 0, hint: '',
+  })
+  const focusEmptyVo = (): CoupleFocusTodayVO => ({
+    day: '2026-10-05',
+    night: focusEmptyNight(),
+    queueUnread: 0,
+    queue: [],
+    slot: null,
+    meals: 0,
+    mealMine: false,
+    mealBoth: false,
+    gazes: 0,
+    gazeMine: false,
+    gazeBoth: false,
+    unplugMine: false,
+    unplugBoth: false,
+    unplugStreak: 0,
+    nudgesToday: 0,
+    nudgeQuotaLeft: 2,
+    detoxMine: false,
+    detoxBoth: false,
+    detoxKind: null,
+  })
+  const focusEmptyWeekly = (): CoupleFocusWeeklyVO => ({
+    week: '2026-10-05', fromDay: '2026-10-05', toDay: '2026-10-11', minutes: 0, litNights: 0,
+    meals: 0, gazes: 0, unplugs: 0, slots: 0, nudges: 0, unplugStreak: 0, summary: '',
+  })
+  const focusEmptyYearly = (): CoupleFocusYearlyVO => ({
+    year: 2026, minutes: 0, hours: '0.0', litNights: 0, meals: 0, gazes: 0, unplugs: 0, detox: 0,
+    topDay: '', topMinutes: 0, summary: '',
+  })
+  const focusBase: Record<string, ReturnType<typeof vi.fn>> = {
+    focusToday: vi.fn().mockResolvedValue(focusEmptyVo()),
+    focusWeekly: vi.fn().mockResolvedValue(focusEmptyWeekly()),
+    focusYear: vi.fn().mockResolvedValue(focusEmptyYearly()),
+  }
+  // 同样：10 个写接口一律返回整份 TodayVO，Proxy 必须 return，否则组件里 await undefined 炸整场
+  const focusWrapped = new Proxy(focusBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(focusEmptyVo())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -1000,6 +1052,8 @@ vi.mock('@/api/couple', () => {
     legacyApi: legacyWrapped,
     // F350-F359 回音壁 echoApi：默认全空但形状完整的 EchoVO，用例内按需覆盖
     echoApi: echoWrapped,
+    // F360-F369 注意力保护区 focusApi：默认全空但形状完整的 TodayVO，用例内按需覆盖
+    focusApi: focusWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -6148,6 +6202,528 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.text()).toContain('回音壁还没开门')
     expect(wrapper.text()).toContain('精选夹还没买')
     // 读接口 404 走 safeLoad 静默降级：不把「还没有建立情侣空间」弹成错误条（夸夸墙同理）
+    expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('还没有建立情侣空间'))
+    wrapper.unmount()
+  })
+
+  // ============ F360-F369 注意力保护区（CoupleFocus，growth 页签末尾） ============
+
+  /** 造一份今日总览：默认「今晚什么都没发生」（night 全空态、slot/detoxKind 为 null、哨卡额度给满 2 张） */
+  function focusNight(partial: Partial<CoupleFocusNightVO> = {}): CoupleFocusNightVO {
+    return {
+      mineReported: false, partnerReported: false, mineMinutes: null, partnerMinutes: null,
+      mineNote: '', partnerNote: '', bothLit: false, totalMinutes: 0, hint: '', ...partial,
+    }
+  }
+  function focusVo(partial: Partial<CoupleFocusTodayVO> = {}): CoupleFocusTodayVO {
+    return {
+      // day 恒给服务端那一天：用例里的「本周」一律由它推出，不吃本地时钟，跨日边界不会翻脸
+      day: '2026-10-05',
+      night: focusNight(),
+      queueUnread: 0,
+      queue: [],
+      slot: null,
+      meals: 0,
+      mealMine: false,
+      mealBoth: false,
+      gazes: 0,
+      gazeMine: false,
+      gazeBoth: false,
+      unplugMine: false,
+      unplugBoth: false,
+      unplugStreak: 0,
+      nudgesToday: 0,
+      nudgeQuotaLeft: 2,
+      detoxMine: false,
+      detoxBoth: false,
+      detoxKind: null,
+      ...partial,
+    }
+  }
+  function focusQueue(partial: Partial<CoupleFocusQueueVO> = {}): CoupleFocusQueueVO {
+    return {
+      id: 'fq1', fromUser: 'bob', mine: false, content: '你忙的时候我把水放你手边了',
+      read: false, created: 1_759_000_000_000, ...partial,
+    }
+  }
+  function focusSlot(partial: Partial<CoupleFocusSlotVO> = {}): CoupleFocusSlotVO {
+    return {
+      id: 'fs1', week: '2026-10-05', day: '2026-10-07', title: '一起把阳台收拾了', hours: 2,
+      proposedBy: 'bob', mine: false, confirmed: false, created: 1_759_000_000_000, ...partial,
+    }
+  }
+  function focusWeekly(partial: Partial<CoupleFocusWeeklyVO> = {}): CoupleFocusWeeklyVO {
+    return {
+      week: '2026-10-05', fromDay: '2026-10-05', toDay: '2026-10-11', minutes: 0, litNights: 0,
+      meals: 0, gazes: 0, unplugs: 0, slots: 0, nudges: 0, unplugStreak: 0,
+      summary: '🗓️ 2026-10-05 专注周报（2026-10-05 ~ 2026-10-11）：专注是可以存的。', ...partial,
+    }
+  }
+  function focusYearly(partial: Partial<CoupleFocusYearlyVO> = {}): CoupleFocusYearlyVO {
+    return {
+      year: 2026, minutes: 0, hours: '0.0', litNights: 0, meals: 0, gazes: 0, unplugs: 0, detox: 0,
+      topDay: '', topMinutes: 0, summary: '📻 2026 注意力年报：放下的每一分钟，都长在关系里了。', ...partial,
+    }
+  }
+
+  /** 挂载并切到「🌱 养成」页签（CoupleFocus 挂在这个 pane 最末，该页签没有子页签） */
+  async function mountOnGrowthFocus() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-growth').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-focus"]').exists()).toBe(true)
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 十卡全带 :empty，折叠态会落库；清干净避免污染后面的用例
+    ;[
+      'couple-focus-night', 'couple-focus-slot', 'couple-focus-queue', 'couple-focus-meal',
+      'couple-focus-gaze', 'couple-focus-unplug', 'couple-focus-nudge', 'couple-focus-weekly',
+      'couple-focus-detox', 'couple-focus-year',
+    ].forEach((k) => localStorage.removeItem(`arechat_couple_collapse_${k}`))
+  })
+
+  it('注意力保护区：专注打卡空值/越界/超长各自挡下不打后端，报完只有一列时出「还差 TA 一个」，双报才点亮', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo())
+    const wrapper = await mountOnGrowthFocus()
+    // 空着提交：后端会把 null 静默按 0 分钟记账，前端必须挡下来问一句
+    await wrapper.find('[data-testid="couple-focus-night-submit"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusNight).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('总得报个数'))
+    // 超过 180：后端是静默钳制，前端不替 TA 记一个假的 180
+    await wrapper.find('[data-testid="couple-focus-night-minutes"]').setValue('900')
+    await wrapper.find('[data-testid="couple-focus-night-submit"]').trigger('click')
+    expect(focusApi.focusNight).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('180'))
+    // 一句话超 40 字（与后端 NOTE_MAX 同一条规则）
+    await wrapper.find('[data-testid="couple-focus-night-minutes"]').setValue('45')
+    await wrapper.find('[data-testid="couple-focus-night-note"]').setValue('一'.repeat(41))
+    await wrapper.find('[data-testid="couple-focus-night-submit"]').trigger('click')
+    expect(focusApi.focusNight).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('最多 40 字'))
+    // 只报分钟：一人侧亮起，等待态说清楚「还差 TA 一个」，并原样挂上后端 hint
+    vi.mocked(focusApi.focusNight).mockResolvedValueOnce(focusVo({
+      night: focusNight({
+        mineReported: true, mineMinutes: 45, mineNote: '', bothLit: false, totalMinutes: 45,
+        hint: '还有一个人没报，今晚的灯先留着一半 🕯️',
+      }),
+    }))
+    await wrapper.find('[data-testid="couple-focus-night-note"]').setValue('')
+    await wrapper.find('[data-testid="couple-focus-night-submit"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusNight).toHaveBeenCalledWith(45, '')
+    expect(wrapper.find('[data-testid="couple-focus-night-mine-minutes"]').text()).toContain('45 分钟')
+    expect(wrapper.find('[data-testid="couple-focus-night-partner-none"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-focus-night-wait"]').text()).toContain('还差 TA 一个')
+    expect(wrapper.find('[data-testid="couple-focus-night-lit"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-focus-night-hint"]').text()).toContain('灯先留着一半')
+    // 两列都非空才点亮；本人那一侧当天可改写，回填吃服务端返回值
+    vi.mocked(focusApi.focusNight).mockResolvedValueOnce(focusVo({
+      night: focusNight({
+        mineReported: true, partnerReported: true, mineMinutes: 45, partnerMinutes: 60, mineNote: '',
+        partnerNote: '我把消息提示全关了', bothLit: true, totalMinutes: 105, hint: '',
+      }),
+    }))
+    await wrapper.find('[data-testid="couple-focus-night-submit"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-focus-night-lit"]').text()).toContain('今晚点亮了')
+    expect(wrapper.find('[data-testid="couple-focus-night-total"]').text()).toBe('105')
+    expect(wrapper.find('[data-testid="couple-focus-night-wait"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-focus-night-partner-note"]').text()).toContain('我把消息提示全关了')
+    expect((wrapper.find('[data-testid="couple-focus-night-minutes"]').element as HTMLInputElement).value).toBe('45')
+    wrapper.unmount()
+  })
+
+  it('注意力保护区：饭桌不低头各点各的——我点了只出「还差 TA 一个」，重复点被本地挡下；重进页面吃服务端 mealMine 归因，不再误显示成「就差你这一个」', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo())
+    const wrapper = await mountOnGrowthFocus()
+    // 双点口径：meals 是「今天按了几格」（0/1/2），mealBoth 才是同桌成功
+    vi.mocked(focusApi.focusMeal).mockResolvedValue(focusVo({ meals: 1, mealMine: true, mealBoth: false }))
+    await wrapper.find('[data-testid="couple-focus-meal-btn"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusMeal).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="couple-focus-meal-both"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-focus-meal-wait"]').text()).toContain('还差 TA 一个')
+    expect(wrapper.find('[data-testid="couple-focus-meal-count"]').text()).toContain('1/2')
+    // 再点：后端幂等不报错（不会重复推送），前端也不发这次注定没用的提交
+    await wrapper.find('[data-testid="couple-focus-meal-btn"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusMeal).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('已经按过了'))
+    wrapper.unmount()
+
+    // 重进页面：mealMine 由服务端下发，归因不再靠本地位——我扣过就还是「还差 TA 一个」
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ meals: 1, mealMine: true, mealBoth: false }))
+    const wrapper2 = await mountOnGrowthFocus()
+    expect(wrapper2.find('[data-testid="couple-focus-meal-wait"]').text()).toContain('还差 TA 一个')
+    expect(wrapper2.find('[data-testid="couple-focus-meal-wait-partner"]').exists()).toBe(false)
+    await wrapper2.find('[data-testid="couple-focus-meal-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper2.find('[data-testid="couple-focus-meal-wait"]').text()).toContain('还差 TA 一个')
+    wrapper2.unmount()
+
+    // 反过来：只有 TA 扣过（mealMine=false, meals=1）才说「就差你这一个」
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ meals: 1, mealMine: false, mealBoth: false }))
+    const wrapper4 = await mountOnGrowthFocus()
+    expect(wrapper4.find('[data-testid="couple-focus-meal-wait-partner"]').text()).toContain('就差你这一个')
+    wrapper4.unmount()
+
+    // 双点凑齐那一次才是同桌成功
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ meals: 2, mealBoth: true }))
+    const wrapper3 = await mountOnGrowthFocus()
+    expect(wrapper3.find('[data-testid="couple-focus-meal-both"]').text()).toContain('同桌成功')
+    const mealCallsBefore = vi.mocked(focusApi.focusMeal).mock.calls.length
+    await wrapper3.find('[data-testid="couple-focus-meal-btn"]').trigger('click')
+    await flushPromises()
+    expect(vi.mocked(focusApi.focusMeal).mock.calls.length).toBe(mealCallsBefore)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('同桌成功'))
+    wrapper3.unmount()
+  })
+
+  it('注意力保护区：对视十秒同样是双点才算成（0→1 等待、2/2 点亮），不插电用后端给的 unplugMine 判我不判 TA 且带周连击', async () => {
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo())
+    const wrapper = await mountOnGrowthFocus()
+    vi.mocked(focusApi.focusGaze).mockResolvedValue(focusVo({ gazes: 1, gazeMine: true, gazeBoth: false }))
+    await wrapper.find('[data-testid="couple-focus-gaze-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-focus-gaze-wait"]').text()).toContain('还差 TA 一个')
+    expect(wrapper.find('[data-testid="couple-focus-gaze-count"]').text()).toContain('1/2')
+    // 自己这一格今天点过了：重复点是后端幂等（不会再推），前端不发这次没用的提交
+    const gazeCallsBefore = vi.mocked(focusApi.focusGaze).mock.calls.length
+    await wrapper.find('[data-testid="couple-focus-gaze-btn"]').trigger('click')
+    await flushPromises()
+    expect(vi.mocked(focusApi.focusGaze).mock.calls.length).toBe(gazeCallsBefore)
+    wrapper.unmount()
+
+    // 双点凑齐那一次才点亮（同样只能从服务端计数看）
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ gazes: 2, gazeBoth: true }))
+    const wrapperG = await mountOnGrowthFocus()
+    expect(wrapperG.find('[data-testid="couple-focus-gaze-both"]').text()).toContain('对视十秒达成')
+    wrapperG.unmount()
+
+    // F365：这张卡的「我点没点」是后端 TodayVO.unplugMine 直接给的，不需要本地位
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ unplugMine: false, unplugBoth: false, unplugStreak: 0 }))
+    const wrapper2 = await mountOnGrowthFocus()
+    expect(wrapper2.find('[data-testid="couple-focus-unplug-wait-me"]').exists()).toBe(true)
+    vi.mocked(focusApi.focusUnplug).mockResolvedValue(focusVo({ unplugMine: true, unplugBoth: false, unplugStreak: 2 }))
+    await wrapper2.find('[data-testid="couple-focus-unplug-btn"]').trigger('click')
+    await flushPromises()
+    expect(wrapper2.find('[data-testid="couple-focus-unplug-wait"]').text()).toContain('还差 TA 一个')
+    expect(wrapper2.find('[data-testid="couple-focus-unplug-streak"]').text()).toContain('连着 2 晚')
+    // 已经点过 → 本地挡下（后端幂等），并给一句可见提示
+    await wrapper2.find('[data-testid="couple-focus-unplug-btn"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusUnplug).toHaveBeenCalledTimes(1)
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ unplugMine: true, unplugBoth: true, unplugStreak: 5 }))
+    wrapper2.unmount()
+    const wrapper3 = await mountOnGrowthFocus()
+    expect(wrapper3.find('[data-testid="couple-focus-unplug-both"]').exists()).toBe(true)
+    expect(wrapper3.find('[data-testid="couple-focus-unplug-streak"]').text()).toContain('连着 5 晚')
+    wrapper3.unmount()
+  })
+
+  it('注意力保护区：攒一句话空内容与超 80 字挡下；无未读时「一键收全部」只 warning 不打后端（GET /today 读时就结算），有未读才签收', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo())
+    const wrapper = await mountOnGrowthFocus()
+    await wrapper.find('[data-testid="couple-focus-queue-submit"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusQueue).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('说一句'))
+    await wrapper.find('[data-testid="couple-focus-queue-content"]').setValue('话'.repeat(81))
+    await wrapper.find('[data-testid="couple-focus-queue-submit"]').trigger('click')
+    expect(focusApi.focusQueue).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('最多 80 字'))
+    // 攒出去：返回的 queue 只有 TA 攒给我的那一份，我写的那句不回显（后端口径）
+    vi.mocked(focusApi.focusQueue).mockResolvedValue(focusVo({
+      queue: [focusQueue({ id: 'fq9', content: '下楼顺手把快递拿了', read: true })],
+      queueUnread: 0,
+    }))
+    await wrapper.find('[data-testid="couple-focus-queue-content"]').setValue('回来记得喝口水')
+    await wrapper.find('[data-testid="couple-focus-queue-submit"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusQueue).toHaveBeenCalledWith('回来记得喝口水')
+    expect(wrapper.find('[data-testid="couple-focus-queue-fq9"]').text()).toContain('下楼顺手把快递拿了')
+    expect(wrapper.find('[data-testid="couple-focus-queue-read-fq9"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-focus-queue-wait-fq9"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-focus-queue-count"]').text()).toContain('1 句')
+    // queueUnread=0 → 点签收只给一句话，不发这次注定 0 条的请求
+    await wrapper.find('[data-testid="couple-focus-queue-read-all"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusQueueRead).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('没有待签收'))
+    wrapper.unmount()
+
+    // 有未读那一路：真的调 /queue/read 并整卡刷新
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({
+      queue: [focusQueue({ id: 'fq3', read: false }), focusQueue({ id: 'fq4', content: '周日想去公园', read: false })],
+      queueUnread: 2,
+    }))
+    vi.mocked(focusApi.focusQueueRead).mockResolvedValue(focusVo({
+      queue: [focusQueue({ id: 'fq3', read: true }), focusQueue({ id: 'fq4', content: '周日想去公园', read: true })],
+      queueUnread: 0,
+    }))
+    const wrapper2 = await mountOnGrowthFocus()
+    expect(wrapper2.find('[data-testid="couple-focus-queue-wait-fq3"]').exists()).toBe(true)
+    await wrapper2.find('[data-testid="couple-focus-queue-read-all"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusQueueRead).toHaveBeenCalledTimes(1)
+    expect(wrapper2.find('[data-testid="couple-focus-queue-read-fq3"]').exists()).toBe(true)
+    expect(wrapper2.find('[data-testid="couple-focus-queue-count"]').text()).toContain('待签 0 句')
+    wrapper2.unmount()
+  })
+
+  it('注意力保护区：专属时段的归属闸门——自己提议的没有确认钮、对方提议的才放行确认；日子必须落在服务端那天所在的本周', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo())
+    const wrapper = await mountOnGrowthFocus()
+    // 本周锚由 v.day=2026-10-05（周一）推出，七天点选直接给值
+    expect(wrapper.find('[data-testid="couple-focus-slot-week"]').text()).toContain('2026-10-05 ~ 2026-10-11')
+    await wrapper.find('[data-testid="couple-focus-slot-submit"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusSlotPropose).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('总得写点什么'))
+    await wrapper.find('[data-testid="couple-focus-slot-title"]').setValue('一起把阳台收拾了')
+    await wrapper.find('[data-testid="couple-focus-slot-submit"]').trigger('click')
+    expect(focusApi.focusSlotPropose).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先选哪天'))
+    // 落在下周：与后端同一条规则，前端先挡
+    await wrapper.find('[data-testid="couple-focus-slot-day"]').setValue('2026-10-20')
+    await wrapper.find('[data-testid="couple-focus-slot-submit"]').trigger('click')
+    expect(focusApi.focusSlotPropose).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('落在本周'))
+    // 小时越界：后端 1-6 静默钳制（null 按 2），前端不让 TA 以为约了 9 小时
+    await wrapper.find('[data-testid="couple-focus-slot-day-pick-2026-10-11"]').trigger('click')
+    await wrapper.find('[data-testid="couple-focus-slot-hours"]').setValue('9')
+    await wrapper.find('[data-testid="couple-focus-slot-submit"]').trigger('click')
+    expect(focusApi.focusSlotPropose).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1-6 小时'))
+    // 留空 = 后端缺省 2 小时
+    vi.mocked(focusApi.focusSlotPropose).mockResolvedValue(focusVo({
+      slot: focusSlot({ id: 'fs1', day: '2026-10-11', mine: true, proposedBy: 'alice', confirmed: false }),
+    }))
+    await wrapper.find('[data-testid="couple-focus-slot-hours"]').setValue('')
+    await wrapper.find('[data-testid="couple-focus-slot-submit"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusSlotPropose).toHaveBeenCalledWith('一起把阳台收拾了', 2, '2026-10-11')
+    // 自己约的那段：确认权在对方手里，页面上根本不长确认钮
+    expect(wrapper.find('[data-testid="couple-focus-slot-card-fs1"]').text()).toContain('我约的')
+    expect(wrapper.find('[data-testid="couple-focus-slot-wait"]').text()).toContain('点头权在 TA 手里')
+    expect(wrapper.find('[data-testid="couple-focus-slot-confirm"]').exists()).toBe(false)
+    wrapper.unmount()
+
+    // 对方约的那段才有确认钮，点完才是生效态
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ slot: focusSlot({ id: 'fs9' }) }))
+    vi.mocked(focusApi.focusSlotConfirm).mockResolvedValue(focusVo({
+      slot: focusSlot({ id: 'fs9', confirmed: true }),
+    }))
+    const wrapper2 = await mountOnGrowthFocus()
+    expect(wrapper2.find('[data-testid="couple-focus-slot-confirm"]').exists()).toBe(true)
+    await wrapper2.find('[data-testid="couple-focus-slot-confirm"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusSlotConfirm).toHaveBeenCalledTimes(1)
+    expect(wrapper2.find('[data-testid="couple-focus-slot-ok"]').exists()).toBe(true)
+    expect(wrapper2.find('[data-testid="couple-focus-slot-title-text"]').text()).toContain('一起把阳台收拾了')
+    // 生效后确认钮从页面上消失（组件里的「已经生效」「不能自己确认」两道闸门是防御性的：
+    // 模板本来就不给这两种态长按钮，留闸门是为了万一后端下发口径变了也不会有点了没反应的按钮）
+    expect(wrapper2.find('[data-testid="couple-focus-slot-confirm"]').exists()).toBe(false)
+    wrapper2.unmount()
+  })
+
+  it('注意力保护区：走神温柔哨每人每天 2 张——额度用光前端挡下不打后端，哨子上的话超 40 字也挡下', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    // 额度见底（后端 400「今天的 2 张哨卡都用完了」）：按钮点了给一句话，不发请求
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ nudgeQuotaLeft: 0, nudgesToday: 4 }))
+    const wrapper = await mountOnGrowthFocus()
+    expect(wrapper.find('[data-testid="couple-focus-nudge-used-up"]').text()).toContain('再吹就成唠叨了')
+    expect(wrapper.find('[data-testid="couple-focus-nudge-left"]').text()).toContain('还剩 0/2')
+    await wrapper.find('[data-testid="couple-focus-nudge-submit"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusNudge).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('哨卡都用完了'))
+    wrapper.unmount()
+
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ nudgeQuotaLeft: 2, nudgesToday: 1 }))
+    const wrapper2 = await mountOnGrowthFocus()
+    expect(wrapper2.find('[data-testid="couple-focus-nudge-fresh"]').exists()).toBe(true)
+    await wrapper2.find('[data-testid="couple-focus-nudge-note"]').setValue('哨'.repeat(41))
+    await wrapper2.find('[data-testid="couple-focus-nudge-submit"]').trigger('click')
+    expect(focusApi.focusNudge).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('最多 40 字'))
+    vi.mocked(focusApi.focusNudge).mockResolvedValue(focusVo({ nudgeQuotaLeft: 1, nudgesToday: 2 }))
+    await wrapper2.find('[data-testid="couple-focus-nudge-note"]').setValue('抬头看一眼吧')
+    await wrapper2.find('[data-testid="couple-focus-nudge-submit"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusNudge).toHaveBeenCalledWith('抬头看一眼吧')
+    expect(wrapper2.find('[data-testid="couple-focus-nudge-left"]').text()).toContain('还剩 1/2')
+    expect(wrapper2.find('[data-testid="couple-focus-nudge-today"]').text()).toContain('一共递了 2 张')
+    // 额度是「我」的：TodayVO.nudgesToday 是两人合计，卡片不能拿它当额度用
+    wrapper2.unmount()
+  })
+
+  it('注意力保护区：数字排毒半天没选 AM/PM 挡下；半天代号先挂的人定，后应战的人不改写它（前端只提示不改口径），双报才清净达成', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo())
+    const wrapper = await mountOnGrowthFocus()
+    await wrapper.find('[data-testid="couple-focus-detox-submit"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusDetox).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先选一个'))
+    expect(wrapper.find('[data-testid="couple-focus-detox-none"]').exists()).toBe(true)
+    // el-radio 得点原生 input 才写回 v-model
+    await wrapper.find('[data-testid="couple-focus-detox-opt-AM"]').find('input').setValue(true)
+    vi.mocked(focusApi.focusDetox).mockResolvedValue(focusVo({ detoxKind: 'AM', detoxMine: true, detoxBoth: false }))
+    await wrapper.find('[data-testid="couple-focus-detox-submit"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusDetox).toHaveBeenCalledWith('AM')
+    expect(wrapper.find('[data-testid="couple-focus-detox-wait"]').text()).toContain('还差 TA 一个')
+    expect(wrapper.find('[data-testid="couple-focus-detox-kind-text"]').text()).toContain('上半天')
+    wrapper.unmount()
+
+    // TA 先挂的是 PM：我传 AM 后端也不会改写这半天，卡片照实说「挂的是下半天」并提醒一句
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ detoxKind: 'PM', detoxBoth: false }))
+    vi.mocked(focusApi.focusDetox).mockResolvedValue(focusVo({ detoxKind: 'PM', detoxBoth: false }))
+    const wrapper2 = await mountOnGrowthFocus()
+    expect(wrapper2.find('[data-testid="couple-focus-detox-wait-me"]').text()).toContain('就差你一个')
+    await wrapper2.find('[data-testid="couple-focus-detox-opt-AM"]').find('input').setValue(true)
+    await wrapper2.find('[data-testid="couple-focus-detox-submit"]').trigger('click')
+    await flushPromises()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('半天照旧'))
+    expect(wrapper2.find('[data-testid="couple-focus-detox-both"]').exists()).toBe(false)
+    wrapper2.unmount()
+
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo({ detoxKind: 'PM', detoxBoth: true }))
+    const wrapper3 = await mountOnGrowthFocus()
+    expect(wrapper3.find('[data-testid="couple-focus-detox-both"]').text()).toContain('清净半天达成')
+    const detoxCallsBefore = vi.mocked(focusApi.focusDetox).mock.calls.length
+    await wrapper3.find('[data-testid="couple-focus-detox-submit"]').trigger('click')
+    await flushPromises()
+    expect(vi.mocked(focusApi.focusDetox).mock.calls.length).toBe(detoxCallsBefore)
+    wrapper3.unmount()
+  })
+
+  it('注意力保护区：专注周报是点出来的（首屏不自动拉），失败直透 ElMessage.error，成功后八项计数与 summary 上卡', async () => {
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo())
+    const wrapper = await mountOnGrowthFocus()
+    expect(focusApi.focusWeekly).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="couple-focus-weekly-idle"]').exists()).toBe(true)
+    vi.mocked(focusApi.focusWeekly).mockResolvedValue(focusWeekly({
+      minutes: 240, litNights: 3, meals: 4, gazes: 5, unplugs: 2, slots: 1, nudges: 6, unplugStreak: 2,
+    }))
+    await wrapper.find('[data-testid="couple-focus-weekly-btn"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusWeekly).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="couple-focus-weekly-range"]').text()).toContain('2026-10-05 ~ 2026-10-11')
+    expect(wrapper.find('[data-testid="couple-focus-weekly-minutes"]').text()).toContain('240 分钟')
+    expect(wrapper.find('[data-testid="couple-focus-weekly-lit"]').text()).toContain('3 个夜晚')
+    expect(wrapper.find('[data-testid="couple-focus-weekly-streak"]').text()).toContain('2 晚')
+    expect(wrapper.find('[data-testid="couple-focus-weekly-summary"]').text()).toContain('专注周报')
+    // 懒读失败：不是首屏，该报错就报错
+    vi.mocked(focusApi.focusWeekly).mockRejectedValue(new Error('周报机今天卡住了'))
+    await wrapper.find('[data-testid="couple-focus-weekly-btn"]').trigger('click')
+    await flushPromises()
+    expect(errorSpy).toHaveBeenCalledWith('周报机今天卡住了')
+    wrapper.unmount()
+  })
+
+  it('注意力保护区：注意力年报年份格式错挡下，空年份按今年读；hours 是后端字符串、topDay 空串时不自造最专注的一天', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo())
+    const wrapper = await mountOnGrowthFocus()
+    expect(focusApi.focusYear).not.toHaveBeenCalled()
+    await wrapper.find('[data-testid="couple-focus-year-input"]').setValue('20ab')
+    await wrapper.find('[data-testid="couple-focus-year-btn"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusYear).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('yyyy'))
+    vi.mocked(focusApi.focusYear).mockResolvedValue(focusYearly({ year: 2026 }))
+    await wrapper.find('[data-testid="couple-focus-year-input"]').setValue('')
+    await wrapper.find('[data-testid="couple-focus-year-btn"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusYear).toHaveBeenCalledWith('')
+    expect(wrapper.find('[data-testid="couple-focus-year-viewing"]').text()).toContain('2026')
+    expect(wrapper.find('[data-testid="couple-focus-year-hours"]').text()).toContain('0.0 小时')
+    expect(wrapper.find('[data-testid="couple-focus-year-top"]').text()).toContain('今年还长着呢')
+    // 换读往年：hours/topDay 全吃后端下发
+    vi.mocked(focusApi.focusYear).mockResolvedValue(focusYearly({
+      year: 2025, minutes: 420, hours: '7.0', litNights: 12, meals: 30, gazes: 40, unplugs: 20, detox: 3,
+      topDay: '2025-12-31', topMinutes: 180,
+    }))
+    await wrapper.find('[data-testid="couple-focus-year-input"]').setValue('2025')
+    await wrapper.find('[data-testid="couple-focus-year-btn"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusYear).toHaveBeenCalledWith('2025')
+    expect(wrapper.find('[data-testid="couple-focus-year-hours"]').text()).toContain('7.0 小时')
+    expect(wrapper.find('[data-testid="couple-focus-year-top"]').text()).toContain('2025-12-31')
+    expect(wrapper.find('[data-testid="couple-focus-year-detox"]').text()).toContain('3 次')
+    // 「回到今年」只是把懒读那份收掉，不另发请求
+    await wrapper.find('[data-testid="couple-focus-year-reset"]').trigger('click')
+    await flushPromises()
+    expect(focusApi.focusYear).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-testid="couple-focus-year-idle"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('注意力保护区：任一写接口返回的整份 TodayVO 一次刷新十卡，且只回填「本人这一侧」的输入口', async () => {
+    vi.mocked(focusApi.focusToday).mockResolvedValue(focusVo())
+    const wrapper = await mountOnGrowthFocus()
+    expect(focusApi.focusToday).toHaveBeenCalledTimes(1)
+    vi.mocked(focusApi.focusQueue).mockResolvedValue(focusVo({
+      night: focusNight({
+        mineReported: true, partnerReported: true, mineMinutes: 30, partnerMinutes: 45,
+        bothLit: true, totalMinutes: 75,
+      }),
+      queue: [focusQueue({ id: 'fq7', read: true })],
+      meals: 2, mealBoth: true,
+      gazes: 1,
+      unplugMine: true, unplugBoth: false, unplugStreak: 3,
+      nudgesToday: 3, nudgeQuotaLeft: 1,
+      detoxKind: 'PM', detoxBoth: false,
+    }))
+    await wrapper.find('[data-testid="couple-focus-queue-content"]').setValue('回来记得喝口水')
+    await wrapper.find('[data-testid="couple-focus-queue-submit"]').trigger('click')
+    await flushPromises()
+    // 跨卡刷新：攒话的写入把打卡/饭桌/对视/不插电/哨卡/排毒六张卡一起换了
+    expect(wrapper.find('[data-testid="couple-focus-night-lit"]').text()).toContain('今晚点亮了')
+    expect(wrapper.find('[data-testid="couple-focus-meal-both"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-focus-gaze-count"]').text()).toContain('1/2')
+    expect(wrapper.find('[data-testid="couple-focus-unplug-streak"]').text()).toContain('连着 3 晚')
+    expect(wrapper.find('[data-testid="couple-focus-nudge-left"]').text()).toContain('还剩 1/2')
+    expect(wrapper.find('[data-testid="couple-focus-detox-kind-text"]').text()).toContain('下半天')
+    // 本人这一侧回填吃服务端（30 分钟），一次性提交的输入框清空
+    expect((wrapper.find('[data-testid="couple-focus-night-minutes"]').element as HTMLInputElement).value).toBe('30')
+    expect((wrapper.find('[data-testid="couple-focus-queue-content"]').element as HTMLTextAreaElement).value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('注意力保护区：接口失败（未建情侣空间）时十张卡静默降级，卡根仍在不报错', async () => {
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(focusApi.focusToday).mockRejectedValue(new Error('还没有建立情侣空间，先邀请一位好友吧'))
+    const wrapper = await mountOnGrowthFocus()
+    expect(wrapper.find('[data-testid="couple-focus"]').exists()).toBe(true)
+    const roots = [
+      'couple-focus-night', 'couple-focus-slot', 'couple-focus-queue', 'couple-focus-meal',
+      'couple-focus-gaze', 'couple-focus-unplug', 'couple-focus-nudge', 'couple-focus-weekly',
+      'couple-focus-detox', 'couple-focus-year',
+    ]
+    roots.forEach((k) => {
+      const card = wrapper.find(`[data-testid="${k}"]`)
+      expect(card.exists()).toBe(true)
+      expect(card.classes()).toContain('is-collapsed')
+      expect(wrapper.find(`[data-testid="couple-collapse-${k}"]`).exists()).toBe(true)
+    })
+    expect(wrapper.text()).toContain('注意力保护区还没开张')
+    expect(wrapper.text()).toContain('周账本还没装订')
+    // 两个懒读接口首屏不拉，所以未建空间也只有 today 这一条 404 被吞掉
+    expect(focusApi.focusWeekly).not.toHaveBeenCalled()
+    expect(focusApi.focusYear).not.toHaveBeenCalled()
     expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('还没有建立情侣空间'))
     wrapper.unmount()
   })
