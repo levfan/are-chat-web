@@ -3,12 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi, postApi, repairApi, theaterApi } from '@/api/couple'
+import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi, postApi, repairApi, theaterApi, worldApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -848,6 +848,39 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F330-F339 两家与朋友 worldApi：默认全空但形状完整的 WorldVO（views 恒三行、group 是后端 ensure* 惰性建行的恒有值嵌套对象），用例内按需覆盖
+  const worldEmptyVo = () => ({
+    day: '2026-10-02',
+    month: '2026-10',
+    visits: [],
+    gifts: [],
+    views: [
+      { slot: 1, question: '朋友眼里我们俩，谁更迁就谁？', askedTo: '', answer: '', byUser: '', filled: false },
+      { slot: 2, question: '朋友觉得我们最像哪种组合（同学/老夫老妻/欢喜冤家）？', askedTo: '', answer: '', byUser: '', filled: false },
+      { slot: 3, question: '如果朋友要给我们提一个建议，你猜会是什么？', askedTo: '', answer: '', byUser: '', filled: false },
+    ],
+    friendViewLine: '',
+    declares: [],
+    captions: [],
+    cities: [],
+    relatives: [],
+    packTemplate: ['充电线 + 充电宝', '常用药一小袋', '换洗袜子和一件外套', '纸巾湿巾', '雨伞', 'TA 的身份证放包外层拉链袋'],
+    vows: [],
+    group: {
+      day: '2026-10-02', myLine: '', partnerLine: '', iLaughed: false, partnerLaughed: false,
+      bothLaughed: false, line: '', canWrite: true, canLaugh: false,
+    },
+    apologies: [],
+  })
+  const worldWrapped = new Proxy({} as Record<string, ReturnType<typeof vi.fn>>, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(worldEmptyVo())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -865,6 +898,8 @@ vi.mock('@/api/couple', () => {
     // F310-F319 身体通知系统 bodyApi：默认全空但形状完整的 BodyVO，用例内按需覆盖
     bodyApi: bodyWrapped,
     repairApi: repairWrapped,
+    // F330-F339 两家与朋友 worldApi：默认全空但形状完整的 WorldVO，用例内按需覆盖
+    worldApi: worldWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -4585,6 +4620,414 @@ describe('CoupleView 情侣空间', () => {
 
     expect(repairApi.repairAdmitTouch).toHaveBeenCalledWith('a1')
     expect(wrapper.find('[data-testid="couple-repair-admit-touched-a1"]').exists()).toBe(true)
+  })
+
+  // ============ 批次二十九：两家与朋友（F330-F339，shared 页签「👪 两家与朋友」子页签 CoupleWorld） ============
+
+  /** 两家与朋友总览空态基底（字段与后端 CoupleWorldService.WorldVO 对齐；views 恒三行、group 恒有值） */
+  function worldVo(partial: Partial<CoupleWorldVO> = {}): CoupleWorldVO {
+    return {
+      day: '2026-10-02',
+      month: '2026-10',
+      visits: [],
+      gifts: [],
+      views: [
+        { slot: 1, question: '朋友眼里我们俩，谁更迁就谁？', askedTo: '', answer: '', byUser: '', filled: false },
+        { slot: 2, question: '朋友觉得我们最像哪种组合？', askedTo: '', answer: '', byUser: '', filled: false },
+        { slot: 3, question: '如果朋友要给我们提一个建议，你猜会是什么？', askedTo: '', answer: '', byUser: '', filled: false },
+      ],
+      friendViewLine: '',
+      declares: [],
+      captions: [],
+      cities: [],
+      relatives: [],
+      packTemplate: ['充电线 + 充电宝', '常用药一小袋', '纸巾湿巾'],
+      vows: [],
+      group: {
+        day: '2026-10-02', myLine: '', partnerLine: '', iLaughed: false, partnerLaughed: false,
+        bothLaughed: false, line: '', canWrite: true, canLaugh: false,
+      },
+      apologies: [],
+      ...partial,
+    }
+  }
+
+  /** 挂载并切到共享空间「👪 两家与朋友」子页签（CoupleWorld 所在区） */
+  async function mountOnSharedWorld() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-shared').trigger('click')
+    await flushPromises()
+    await wrapper.find('#tab-world').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('#tab-world').classes()).toContain('is-active')
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 本批带 :empty 的卡折叠态落库键清理，避免污染后续用例
+    ;['couple-world-visit', 'couple-world-gift', 'couple-world-relative', 'couple-world-credit', 'couple-world-apology']
+      .forEach((k) => localStorage.removeItem(`arechat_couple_collapse_${k}`))
+  })
+
+  it('两家与朋友：拜访攻略未双确认时不给战报入口，TA 写的攻略才出确认钮并调 worldVisitConfirm', async () => {
+    const mineUnconfirmed: CoupleWorldVisitVO = {
+      id: 'v1', day: '2026-10-06', mine: true, hostSide: 'YOURS', hostLabel: '你家',
+      preps: [{ seq: 1, text: '带两样不踩雷的水果', kind: 'BRING' }, { seq: 2, text: '雷区：别接「工作稳不稳」那句', kind: 'MINE' }],
+      confirmed: false, report: '', status: 'OPEN', canConfirm: false,
+    }
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({ visits: [mineUnconfirmed] }))
+    const wrapper = await mountOnSharedWorld()
+    expect(wrapper.find('[data-testid="couple-world"]').exists()).toBe(true)
+    // 自己写的攻略没有确认钮，只提示「等 TA 双确认」；战报入口也按住
+    expect(wrapper.find('[data-testid="couple-world-visit-confirm-v1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-world-visit-confirm-wait-v1"]').text()).toContain('等 TA 点一下双确认')
+    expect(wrapper.find('[data-testid="couple-world-visit-report-v1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-world-prep-v1-2"]').text()).toContain('雷区')
+
+    // TA 写的那份才给我确认钮
+    const partnerRow: CoupleWorldVisitVO = { ...mineUnconfirmed, id: 'v2', mine: false, canConfirm: true }
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({ visits: [mineUnconfirmed, partnerRow] }))
+    vi.mocked(worldApi.worldVisitConfirm).mockResolvedValue(worldVo({
+      visits: [{ ...mineUnconfirmed, confirmed: true }, { ...partnerRow, confirmed: true, canConfirm: false }],
+    }))
+    wrapper.unmount()
+    const second = await mountOnSharedWorld()
+    await second.find('[data-testid="couple-world-visit-confirm-v2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldVisitConfirm).toHaveBeenCalledWith('v2')
+    // 整份 WorldVO 替换后两份攻略都变成已双确认
+    expect(second.find('[data-testid="couple-world-visit-paired-v1"]').text()).toContain('双确认通过')
+    // 双确认后本人这份才放出战报输入口
+    await second.find('[data-testid="couple-world-visit-report-v1"]').setValue('那句接住了，水果买对了')
+    await second.find('[data-testid="couple-world-visit-report-btn-v1"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldVisitReport).toHaveBeenCalledWith('v1', '那句接住了，水果买对了')
+  })
+
+  it('两家与朋友：送礼池自己登的灵感不能自己领走，TA 的才给接单；买回登记只归接单的人', async () => {
+    const mineOpen: CoupleWorldGiftVO = {
+      id: 'g1', person: 'TA 妈', idea: '艾草足贴', budget: '100 以内', avoid: '不要送鞋',
+      mine: true, takerUser: '', status: 'OPEN', canTake: false,
+    }
+    const partnerOpen: CoupleWorldGiftVO = {
+      id: 'g2', person: 'TA 爸', idea: '一副护膝', budget: '', avoid: '',
+      mine: false, takerUser: '', status: 'OPEN', canTake: true,
+    }
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({ gifts: [mineOpen, partnerOpen] }))
+    vi.mocked(worldApi.worldGiftTake).mockResolvedValue(worldVo({
+      gifts: [mineOpen, { ...partnerOpen, takerUser: 'alice', status: 'TAKEN', canTake: false }],
+    }))
+    vi.mocked(worldApi.worldGiftBought).mockResolvedValue(worldVo({
+      gifts: [mineOpen, { ...partnerOpen, takerUser: 'alice', status: 'BOUGHT', canTake: false }],
+    }))
+    const wrapper = await mountOnSharedWorld()
+    // 自己登的那条：没有接单钮，只提示等 TA 帮买
+    expect(wrapper.find('[data-testid="couple-world-gift-take-g1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-world-gift-lock-g1"]').text()).toContain('不用自己接单')
+    // TA 登的那条：可以接
+    await wrapper.find('[data-testid="couple-world-gift-take-g2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldGiftTake).toHaveBeenCalledWith('g2')
+    expect(wrapper.find('[data-testid="couple-world-gift-status-g2"]').text()).toContain('已接单代买')
+    // 接单的人是我（takerUser=alice），所以买回钮在我手上
+    expect(wrapper.find('[data-testid="couple-world-gift-bought-g2"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-world-gift-bought-g2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldGiftBought).toHaveBeenCalledWith('g2')
+    expect(wrapper.find('[data-testid="couple-world-gift-status-g2"]').text()).toContain('买回来了')
+
+    // 灵感空着提交：前端先 warning，不打后端
+    await wrapper.find('[data-testid="couple-world-gift-person"]').setValue('TA 姐')
+    await wrapper.find('[data-testid="couple-world-gift-submit"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldGift).not.toHaveBeenCalled()
+  })
+
+  it('两家与朋友：他观问卷恒三题，回填调 worldFriendView，三题答齐才出他观卡', async () => {
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo())
+    vi.mocked(worldApi.worldFriendView).mockResolvedValue(worldVo({
+      views: [
+        { slot: 1, question: '朋友眼里我们俩，谁更迁就谁？', askedTo: '小李', answer: '明显是你让得多', byUser: 'alice', filled: true },
+        { slot: 2, question: '朋友觉得我们最像哪种组合？', askedTo: '', answer: '', byUser: '', filled: false },
+        { slot: 3, question: '如果朋友要给我们提一个建议，你猜会是什么？', askedTo: '', answer: '', byUser: '', filled: false },
+      ],
+    }))
+    const wrapper = await mountOnSharedWorld()
+    expect(wrapper.findAll('[data-testid^="couple-world-view-"]')
+      .filter((n) => /couple-world-view-[123]$/.test(n.attributes('data-testid') ?? '')).length).toBe(3)
+    expect(wrapper.find('[data-testid="couple-world-view-wait"]').text()).toContain('还没答齐')
+
+    await wrapper.find('[data-testid="couple-world-view-asked-1"]').setValue('小李')
+    await wrapper.find('[data-testid="couple-world-view-answer-1"]').setValue('明显是你让得多')
+    await wrapper.find('[data-testid="couple-world-view-submit-1"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldFriendView).toHaveBeenCalledWith(1, '小李', '明显是你让得多')
+    expect(wrapper.find('[data-testid="couple-world-view-answer-text-1"]').text()).toContain('明显是你让得多')
+    // 空原话直接点提交：前端先 warning，不打后端
+    await wrapper.find('[data-testid="couple-world-view-submit-2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldFriendView).toHaveBeenCalledTimes(1)
+    // 三题齐了后端才下发他观卡话术
+    vi.mocked(worldApi.worldFriendView).mockResolvedValue(worldVo({
+      views: [
+        { slot: 1, question: 'q1', askedTo: '小李', answer: 'a1', byUser: 'alice', filled: true },
+        { slot: 2, question: 'q2', askedTo: '小李', answer: 'a2', byUser: 'alice', filled: true },
+        { slot: 3, question: 'q3', askedTo: '小李', answer: 'a3', byUser: 'alice', filled: true },
+      ],
+      friendViewLine: '他观卡出炉：外人看到的我们，和自己感觉的总差半拍。',
+    }))
+    await wrapper.find('[data-testid="couple-world-view-answer-2"]').setValue('a2')
+    await wrapper.find('[data-testid="couple-world-view-submit-2"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-world-view-line"]').text()).toContain('他观卡出炉')
+    expect(wrapper.find('[data-testid="couple-world-view-wait"]').exists()).toBe(false)
+  })
+
+  it('两家与朋友：官宣卡本月已发时提示条写明一个月一张，硬提交把后端 400 文案直透', async () => {
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({
+      declares: [{ month: '2026-10', text: '本月官宣：一起去把冬衣收了', mine: false }],
+    }))
+    vi.mocked(worldApi.worldDeclare).mockRejectedValue(new Error('2026-10 的官宣卡已经发过了，一个月一张'))
+    const spy = vi.spyOn(ElMessage, 'error')
+    const wrapper = await mountOnSharedWorld()
+    expect(wrapper.find('[data-testid="couple-world-declare-2026-10"]').text()).toContain('本月')
+    expect(wrapper.find('[data-testid="couple-world-declare-done"]').text()).toContain('一个月一张')
+    expect(wrapper.find('[data-testid="couple-world-declare-submit"]').text()).toContain('再点试试')
+    await wrapper.find('[data-testid="couple-world-declare-text"]').setValue('本月想再发一张')
+    await wrapper.find('[data-testid="couple-world-declare-submit"]').trigger('click')
+    await flushPromises()
+    expect(spy).toHaveBeenCalledWith('2026-10 的官宣卡已经发过了，一个月一张')
+    spy.mockRestore()
+  })
+
+  it('两家与朋友：文案代写只有三条候选入口，选稿钮只出现在 TA 的稿上（自己定自己的不算互评）', async () => {
+    const mine: CoupleWorldCaptionVO = { id: 'c1', day: '2026-10-02', mine: true, slot: 1, text: '今天也是被TA投喂的一天', won: false }
+    const partner: CoupleWorldCaptionVO = { id: 'c2', day: '2026-10-02', mine: false, slot: 2, text: '两人一桌饭，天天像过节', won: false }
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({ captions: [mine, partner] }))
+    vi.mocked(worldApi.worldCaptionPick).mockResolvedValue(worldVo({
+      captions: [mine, { ...partner, won: true }],
+    }))
+    const wrapper = await mountOnSharedWorld()
+    // 三条候选入口常驻（后端 SLOT_MAX=3，第四条只能改现有槽位）
+    expect(wrapper.find('[data-testid="couple-world-caption-input-1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-world-caption-input-3"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-world-caption-input-4"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-world-caption-mine-count"]').text()).toContain('我今天交了 1/3 条')
+    // 自己那条只给提示，不给定稿钮
+    expect(wrapper.find('[data-testid="couple-world-caption-pick-c1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-world-caption-pick-lock-c1"]').text()).toContain('不算互评选稿')
+    // 空候选直接提交：前端先 warning，不打后端
+    await wrapper.find('[data-testid="couple-world-caption-submit-3"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldCaption).not.toHaveBeenCalled()
+    // TA 那条才给选稿钮
+    await wrapper.find('[data-testid="couple-world-caption-pick-c2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldCaptionPick).toHaveBeenCalledWith('c2')
+    expect(wrapper.find('[data-testid="couple-world-caption-won-c2"]').exists()).toBe(true)
+  })
+
+  it('两家与朋友：接待手册点模板把小包抄进清单，城市名空着只 warning，存手册调 worldCity', async () => {
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo())
+    vi.mocked(worldApi.worldCity).mockResolvedValue(worldVo({
+      cities: [{
+        id: 'cy1', city: '杭州', arriveDay: '2026-10-20', mine: true,
+        itinerary: ['高铁站到酒店', '晚上吃那家老字号'], transport: '地铁 1 号线换 4 号线',
+        packList: ['充电线 + 充电宝'], daysLeft: 18,
+      }],
+    }))
+    const wrapper = await mountOnSharedWorld()
+    await wrapper.find('[data-testid="couple-world-city-tpl-0"]').trigger('click')
+    expect((wrapper.find('[data-testid="couple-world-city-pack"]').element as HTMLTextAreaElement).value).toContain('充电线 + 充电宝')
+    // 没写城市名先点存：前端 warning，不打后端
+    await wrapper.find('[data-testid="couple-world-city-submit"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldCity).not.toHaveBeenCalled()
+
+    await wrapper.find('[data-testid="couple-world-city-name"]').setValue('杭州')
+    await wrapper.find('[data-testid="couple-world-city-day"]').setValue('2026-10-20')
+    await wrapper.find('[data-testid="couple-world-city-itinerary"]').setValue('高铁站到酒店\n晚上吃那家老字号')
+    await wrapper.find('[data-testid="couple-world-city-transport"]').setValue('地铁 1 号线换 4 号线')
+    await wrapper.find('[data-testid="couple-world-city-submit"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldCity).toHaveBeenCalledWith(
+      '杭州', '2026-10-20', '高铁站到酒店\n晚上吃那家老字号', '地铁 1 号线换 4 号线', '充电线 + 充电宝',
+    )
+    expect(wrapper.find('[data-testid="couple-world-city-name-text-cy1"]').text()).toBe('杭州')
+    expect(wrapper.find('[data-testid="couple-world-city-count-cy1"]').text()).toContain('还有 18 天')
+    expect(wrapper.find('[data-testid="couple-world-city-pack-cy1-0"]').text()).toBe('充电线 + 充电宝')
+    // 点「改这本手册」把三栏回填进表单
+    await wrapper.find('[data-testid="couple-world-city-edit-cy1"]').trigger('click')
+    expect((wrapper.find('[data-testid="couple-world-city-itinerary"]').element as HTMLTextAreaElement).value).toContain('老字号')
+  })
+
+  it('两家与朋友：称呼册自己出的题不给作答钮，TA 出的题才交卷，错题排进考前强化', async () => {
+    const mineQ: CoupleWorldRelativeVO = {
+      id: 'r1', term: '堂哥的媳妇', question: '你堂哥的媳妇该怎么称呼？', answer: '堂嫂',
+      mine: true, wrongCount: 0, lastWrongDay: '', canTry: false,
+    }
+    const partnerQ: CoupleWorldRelativeVO = {
+      id: 'r2', term: '舅舅的妻子', question: '你舅舅的妻子该怎么称呼？', answer: '舅妈',
+      mine: false, wrongCount: 2, lastWrongDay: '2026-10-01', canTry: true,
+    }
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({ relatives: [partnerQ, mineQ] }))
+    vi.mocked(worldApi.worldRelativeTry).mockResolvedValue(worldVo({
+      relatives: [{ ...partnerQ, wrongCount: 0, lastWrongDay: '', canTry: false }, mineQ],
+    }))
+    const wrapper = await mountOnSharedWorld()
+    // 我出的题只显示标准答案，不给作答钮
+    expect(wrapper.find('[data-testid="couple-world-relative-try-btn-r1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-world-relative-std-r1"]').text()).toContain('标准答案：堂嫂')
+    expect(wrapper.find('[data-testid="couple-world-relative-exam"]').text()).toContain('1 题错过')
+    // TA 出的题（答错过 2 次）才给我交卷
+    await wrapper.find('[data-testid="couple-world-relative-try-r2"]').setValue('舅妈')
+    await wrapper.find('[data-testid="couple-world-relative-try-btn-r2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldRelativeTry).toHaveBeenCalledWith('r2', '舅妈')
+    expect(wrapper.find('[data-testid="couple-world-relative-wrong-r2"]').exists()).toBe(false)
+  })
+
+  it('两家与朋友：社会信用到期日必须在过去时前端直接挡下，见证与塌房记录都只归对方', async () => {
+    const mineVow: CoupleWorldVowVO = {
+      id: 'w1', content: '我保证不在深夜催TA睡觉', mine: true, dueDay: '2026-11-01', witnessed: false,
+      status: 'OPEN', brokenNote: '', daysLeft: 30, canWitness: false, canBreak: false,
+    }
+    const partnerVow: CoupleWorldVowVO = {
+      id: 'w2', content: '我保证不把游戏声音外放', mine: false, dueDay: '2026-10-12', witnessed: false,
+      status: 'OPEN', brokenNote: '', daysLeft: 10, canWitness: true, canBreak: true,
+    }
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({ vows: [mineVow, partnerVow] }))
+    vi.mocked(worldApi.worldVowWitness).mockResolvedValue(worldVo({
+      vows: [mineVow, { ...partnerVow, witnessed: true, canWitness: false }],
+    }))
+    vi.mocked(worldApi.worldVowBreak).mockResolvedValue(worldVo({
+      vows: [mineVow, { ...partnerVow, witnessed: true, canWitness: false, status: 'BROKEN', brokenNote: '昨晚又外放了', canBreak: false }],
+    }))
+    const wrapper = await mountOnSharedWorld()
+    // 我自己立的：没有见证钮，只有「见证人得是对方」提示
+    expect(wrapper.find('[data-testid="couple-world-credit-witness-w1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-world-credit-witness-wait-w1"]').text()).toContain('自己见证不作数')
+    // TA 立的：见证 + 塌房两把钥匙都在我手里
+    await wrapper.find('[data-testid="couple-world-credit-witness-w2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldVowWitness).toHaveBeenCalledWith('w2')
+    await wrapper.find('[data-testid="couple-world-credit-break-note-w2"]').setValue('')
+    await wrapper.find('[data-testid="couple-world-credit-break-w2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldVowBreak).not.toHaveBeenCalled()
+    await wrapper.find('[data-testid="couple-world-credit-break-note-w2"]').setValue('昨晚又外放了')
+    await wrapper.find('[data-testid="couple-world-credit-break-w2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldVowBreak).toHaveBeenCalledWith('w2', '昨晚又外放了')
+    expect(wrapper.find('[data-testid="couple-world-credit-broken-w2"]').text()).toContain('外放')
+
+    // 到期日填成今天/昨天：前端先 warning 挡住，不打后端
+    await wrapper.find('[data-testid="couple-world-credit-content"]').setValue('我保证不熬夜')
+    await wrapper.find('[data-testid="couple-world-credit-due"]').setValue('2026-10-02')
+    await wrapper.find('[data-testid="couple-world-credit-submit"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldVow).not.toHaveBeenCalled()
+  })
+
+  it('两家与朋友：群聊素材两条都交了才给笑，点笑调 worldGroupLaugh 后出双双通过徽标', async () => {
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({
+      group: {
+        day: '2026-10-02', myLine: '群里最活跃的还是我俩', partnerLine: '', iLaughed: false,
+        partnerLaughed: false, bothLaughed: false, line: '', canWrite: false, canLaugh: false,
+      },
+    }))
+    vi.mocked(worldApi.worldGroupLaugh).mockResolvedValue(worldVo({
+      group: {
+        day: '2026-10-02', myLine: '群里最活跃的还是我俩', partnerLine: 'TA 那句被截图了', iLaughed: true,
+        partnerLaughed: true, bothLaughed: true, line: '两人都笑了：今天这素材双双通过，可称佳话。',
+        canWrite: false, canLaugh: false,
+      },
+    }))
+    const wrapper = await mountOnSharedWorld()
+    // TA 还没交：笑钮不给
+    expect(wrapper.find('[data-testid="couple-world-group-laugh"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-world-group-partner-wait"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-world-group-laugh-wait"]').text()).toContain('两条都交了')
+    // 双条齐了才给笑钮
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({
+      group: {
+        day: '2026-10-02', myLine: '群里最活跃的还是我俩', partnerLine: 'TA 那句被截图了', iLaughed: false,
+        partnerLaughed: false, bothLaughed: false, line: '', canWrite: false, canLaugh: true,
+      },
+    }))
+    wrapper.unmount()
+    const second = await mountOnSharedWorld()
+    await second.find('[data-testid="couple-world-group-laugh"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldGroupLaugh).toHaveBeenCalled()
+    expect(second.find('[data-testid="couple-world-group-both"]').text()).toContain('双双通过')
+    expect(second.find('[data-testid="couple-world-group-receipt"]').text()).toContain('两人都笑了')
+    // 空素材直接提交：前端先 warning，不打后端
+    await second.find('[data-testid="couple-world-group-line"]').setValue('')
+    await second.find('[data-testid="couple-world-group-submit"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldGroup).not.toHaveBeenCalled()
+  })
+
+  it('两家与朋友：赔礼信未经 TA 审阅通过不算送达，打回必填一句改哪儿、重写只归信主', async () => {
+    const mineLetter: CoupleWorldApologyVO = {
+      id: 'ap1', toPerson: '舅妈', mine: true, reason: '饭桌上顶了一句', draft: '那天我话说得太急',
+      status: 'OPEN', reviewNote: '', template: '我知道让您为难了。道歉不是要您原谅。',
+    }
+    const partnerLetter: CoupleWorldApologyVO = {
+      id: 'ap2', toPerson: '我姑', mine: false, reason: '', draft: '这事我不该在气头上做',
+      status: 'OPEN', reviewNote: '', template: '',
+    }
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({ apologies: [mineLetter, partnerLetter] }))
+    vi.mocked(worldApi.worldApologyReview).mockResolvedValue(worldVo({
+      apologies: [mineLetter, { ...partnerLetter, status: 'SENT', reviewNote: '', template: '' }],
+    }))
+    const wrapper = await mountOnSharedWorld()
+    // 我写的那封：不给审阅钮、不给送达徽标，只提示「没通过之前不算送达」
+    expect(wrapper.find('[data-testid="couple-world-apology-pass-ap1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-world-apology-sent-ap1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-world-apology-status-ap1"]').text()).toContain('等 TA 审阅')
+    expect(wrapper.find('[data-testid="couple-world-apology-wait-ap1"]').text()).toContain('不算送达')
+    // 打回但不写意见：前端先 warning，不打后端
+    await wrapper.find('[data-testid="couple-world-apology-back-ap2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldApologyReview).not.toHaveBeenCalled()
+    // 通过才算送达
+    await wrapper.find('[data-testid="couple-world-apology-pass-ap2"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldApologyReview).toHaveBeenCalledWith('ap2', true, '')
+    expect(wrapper.find('[data-testid="couple-world-apology-sent-ap2"]').exists()).toBe(true)
+    // 被打回的信只有信主本人能重写
+    vi.mocked(worldApi.world).mockResolvedValue(worldVo({
+      apologies: [{ ...mineLetter, status: 'BACK', reviewNote: '口气太冲了，先认那一句' }, partnerLetter],
+    }))
+    vi.mocked(worldApi.worldApologyRewrite).mockResolvedValue(worldVo({ apologies: [mineLetter, partnerLetter] }))
+    wrapper.unmount()
+    const second = await mountOnSharedWorld()
+    expect(second.find('[data-testid="couple-world-apology-rewrite-ap1"]').exists()).toBe(true)
+    await second.find('[data-testid="couple-world-apology-rewrite-ap1"]').setValue('先给您赔个不是')
+    await second.find('[data-testid="couple-world-apology-rewrite-btn-ap1"]').trigger('click')
+    await flushPromises()
+    expect(worldApi.worldApologyRewrite).toHaveBeenCalledWith('ap1', '先给您赔个不是')
+  })
+
+  it('两家与朋友：接口失败（未建情侣空间）时十张卡静默降级，卡根仍在不报错', async () => {
+    vi.mocked(worldApi.world).mockRejectedValue(new Error('还没有建立情侣空间，先邀请一位好友吧'))
+    const wrapper = await mountOnSharedWorld()
+    expect(wrapper.find('[data-testid="couple-world"]').exists()).toBe(true)
+    const roots = [
+      'couple-world-visit', 'couple-world-gift', 'couple-world-view', 'couple-world-declare', 'couple-world-caption',
+      'couple-world-city', 'couple-world-relative', 'couple-world-credit', 'couple-world-group', 'couple-world-apology',
+    ]
+    roots.forEach((k) => {
+      expect(wrapper.find(`[data-testid="${k}"]`).exists()).toBe(true)
+      expect(wrapper.find(`[data-testid="couple-collapse-${k}"]`).exists()).toBe(true)
+    })
+    // 带 :empty 的五卡在没数据时初始收起（DOM 仍在）
+    expect(wrapper.find('[data-testid="couple-world-gift"]').classes()).toContain('is-collapsed')
+    expect(wrapper.find('[data-testid="couple-world-visit"]').classes()).toContain('is-collapsed')
   })
 
   // ============ F205 卡片折叠（CoupleCollapsible） ============
