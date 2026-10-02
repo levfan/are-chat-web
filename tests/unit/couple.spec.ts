@@ -3,12 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, echoApi, factoryApi, focusApi, legacyApi, listenApi, manageApi, museumApi, pinApi, postApi, repairApi, theaterApi, worldApi } from '@/api/couple'
+import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, echoApi, factoryApi, focusApi, legacyApi, listenApi, manageApi, museumApi, pinApi, postApi, questApi, repairApi, theaterApi, worldApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleEchoBatteryVO, CoupleEchoCalendarDayVO, CoupleEchoDeedVO, CoupleEchoHighlightVO, CoupleEchoJuiceVO, CoupleEchoReceiptVO, CoupleEchoSelfLetterVO, CoupleEchoSlowVO, CoupleEchoVO, CoupleEchoYearlyVO, CoupleFyBoardVO, CoupleFocusNightVO, CoupleFocusQueueVO, CoupleFocusSlotVO, CoupleFocusTodayVO, CoupleFocusWeeklyVO, CoupleFocusYearlyVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePraiseVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleEchoBatteryVO, CoupleEchoCalendarDayVO, CoupleEchoDeedVO, CoupleEchoHighlightVO, CoupleEchoJuiceVO, CoupleEchoReceiptVO, CoupleEchoSelfLetterVO, CoupleEchoSlowVO, CoupleEchoVO, CoupleEchoYearlyVO, CoupleFyBoardVO, CoupleFocusNightVO, CoupleFocusQueueVO, CoupleFocusSlotVO, CoupleFocusTodayVO, CoupleFocusWeeklyVO, CoupleFocusYearlyVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CoupleQuestBattleVO, CoupleQuestCareMarkVO, CoupleQuestMoveNightVO, CoupleQuestMoveVO, CoupleQuestNurseVO, CoupleQuestOvertimeVO, CoupleQuestPodVO, CoupleQuestReportVO, CoupleQuestUpcomingVO, CoupleQuestValleyVO, CoupleQuestVO, CoupleQuestWallVO, CoupleQuestWinVO, CouplePraiseVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -1029,6 +1029,50 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F370-F379 人生关卡 questApi：默认全空但形状完整的 QuestVO
+  // （九个可空槽位一律 null、wall 给当年零计数那一份整对象、六张列表给 []、day/weekStart 给服务端日子），
+  // questWall 是「点按钮才懒读」的独立读接口单独给默认值，27 个写接口走 Proxy，用例内按需覆盖
+  const questEmptyWall = (): CoupleQuestWallVO => ({
+    year: 2026, battles: 0, reports: 0, winRate: 0, nurseDays: 0, pods: 0, valleyDays: 0,
+    awards: 0, attends: 0, title: '刚上场的新兵', summary: '',
+  })
+  const questEmptyVo = (): CoupleQuestVO => ({
+    day: '2026-10-05',
+    weekStart: '2026-10-05',
+    battles: [],
+    reports: [],
+    myOvertime: null,
+    partnerOvertime: null,
+    canLeaveLamp: false,
+    myNurse: null,
+    partnerNurse: null,
+    nurses: [],
+    myPod: null,
+    partnerPod: null,
+    moves: [],
+    moveBoxes: 0,
+    moveNight: null,
+    myValley: null,
+    partnerValley: null,
+    wins: [],
+    upcoming: [],
+    wall: questEmptyWall(),
+  })
+  const questBase: Record<string, ReturnType<typeof vi.fn>> = {
+    questBoard: vi.fn().mockResolvedValue(questEmptyVo()),
+    questWall: vi.fn().mockResolvedValue(questEmptyWall()),
+  }
+  // ⚠️ 这个 Proxy 必须把 mock 函数 return 出去：27 个写接口漏 return 会全成 undefined，
+  // 组件里 await undefined.day 直接把整场测试炸成 Unhandled Rejection（批次二十七踩过，别再踩）
+  const questWrapped = new Proxy(questBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(questEmptyVo())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -1054,6 +1098,8 @@ vi.mock('@/api/couple', () => {
     echoApi: echoWrapped,
     // F360-F369 注意力保护区 focusApi：默认全空但形状完整的 TodayVO，用例内按需覆盖
     focusApi: focusWrapped,
+    // F370-F379 人生关卡 questApi：默认全空但形状完整的 QuestVO，用例内按需覆盖
+    questApi: questWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -6732,6 +6778,933 @@ describe('CoupleView 情侣空间', () => {
 
   /** 折叠态 localStorage 键（与 CoupleCollapsible 内 STORAGE_KEY 对齐） */
   const collapseKey = (testid: string) => `arechat_couple_collapse_${testid}`
+
+  // ============ F370-F379 人生关卡（CoupleQuest，promises「🤝 约定」页签末尾） ============
+
+  /** 成就墙那一份：数字给真实的非零值，用例好断言「墙上的数字来自后端而不是前端自己算」 */
+  function questWallVo(partial: Partial<CoupleQuestWallVO> = {}): CoupleQuestWallVO {
+    return {
+      year: 2026, battles: 24, reports: 18, winRate: 56, nurseDays: 6, pods: 9, valleyDays: 12,
+      awards: 7, attends: 13, title: '人生关卡双人通关组',
+      summary: '🧗 2026 年人生关卡墙：上了 24 场 Boss 战，交了 18 份战报（通关率 56%）——以后的大日子，还是这句：我在。',
+      ...partial,
+    }
+  }
+  /** 造一份关卡总览：默认「十件事都没发生」（九个可空槽位一律 null、六张列表给 []、wall 给零计数以外的那份） */
+  function questVo(partial: Partial<CoupleQuestVO> = {}): CoupleQuestVO {
+    return {
+      // day/weekStart 恒给服务端那两个日子：用例里的倒数与「本周」一律由它们推，不吃本地时钟
+      day: '2026-10-05', weekStart: '2026-10-05',
+      battles: [], reports: [],
+      myOvertime: null, partnerOvertime: null, canLeaveLamp: false,
+      myNurse: null, partnerNurse: null, nurses: [],
+      myPod: null, partnerPod: null,
+      moves: [], moveBoxes: 0, moveNight: null,
+      myValley: null, partnerValley: null,
+      wins: [], upcoming: [], wall: questWallVo(), ...partial,
+    }
+  }
+  function questBattle(partial: Partial<CoupleQuestBattleVO> = {}): CoupleQuestBattleVO {
+    return {
+      id: 'b1', day: '2026-10-20', kind: 'DEFEND', kindLabel: '答辩', name: '述职答辩',
+      fear: '怕被追问数据', mine: true, prep: true, daysLeft: 15, created: 1_759_000_000_000, ...partial,
+    }
+  }
+  function questReport(partial: Partial<CoupleQuestReportVO> = {}): CoupleQuestReportVO {
+    return {
+      id: 'r1', battleId: 'b1', battleName: '述职答辩', result: 'WIN', resultLabel: '漂亮通关',
+      feeling: '下来手还在抖', mine: true, sealed: false, sealedBy: '', sealLabel: '🏆 庆功章', ...partial,
+    }
+  }
+  function questOvertime(partial: Partial<CoupleQuestOvertimeVO> = {}): CoupleQuestOvertimeVO {
+    return { id: 'o1', untilHour: 22, note: '例会拖堂', mine: true, lamp: '', lampBy: '', ...partial }
+  }
+  function questMark(partial: Partial<CoupleQuestCareMarkVO> = {}): CoupleQuestCareMarkVO {
+    return { day: '2026-10-05', kind: 'WATER', kindLabel: '喝水', byUser: 'alice', mine: true, ...partial }
+  }
+  function questNurse(partial: Partial<CoupleQuestNurseVO> = {}): CoupleQuestNurseVO {
+    return {
+      id: 'n1', patientUser: 'bob', carerUser: 'alice', mineAsCarer: true, open: true,
+      openDay: '2026-10-04', closeDay: '', symptom: '发烧 38.5', message: '',
+      waterCount: 2, medCount: 1, days: 2, marks: [], ...partial,
+    }
+  }
+  function questPod(partial: Partial<CoupleQuestPodVO> = {}): CoupleQuestPodVO {
+    return {
+      id: 'p1', mine: true, startDay: '2026-10-05', untilDay: '2026-10-12', in: true,
+      cheerCount: 1, cheeredToday: false, letterDone: false, daysLeft: 7, ...partial,
+    }
+  }
+  function questMove(partial: Partial<CoupleQuestMoveVO> = {}): CoupleQuestMoveVO {
+    return {
+      id: 'm1', slot: 1, name: '厨房', owner: 'alice', mine: true, claimed: true, finished: false, boxes: 3, ...partial,
+    }
+  }
+  function questNight(partial: Partial<CoupleQuestMoveNightVO> = {}): CoupleQuestMoveNightVO {
+    return {
+      id: 'mn1', day: '2026-10-08', mineTicked: false, partnerTicked: false, bothTicked: false,
+      note: '锅碗瓢盆都还没到货', ...partial,
+    }
+  }
+  function questValley(partial: Partial<CoupleQuestValleyVO> = {}): CoupleQuestValleyVO {
+    return {
+      id: 'v1', mine: true, openDay: '2026-10-05', untilDay: '2026-10-20', low: true, careCount: 2,
+      caredToday: false, reviveDay: '', spanDays: 15, daysLeft: 15, ...partial,
+    }
+  }
+  function questWin(partial: Partial<CoupleQuestWinVO> = {}): CoupleQuestWinVO {
+    return {
+      id: 'w1', day: '2026-10-05', mine: true, content: '把简历改了', awardDay: '', awardedBy: '',
+      awarded: false, canAward: false, ...partial,
+    }
+  }
+  function questUpcoming(partial: Partial<CoupleQuestUpcomingVO> = {}): CoupleQuestUpcomingVO {
+    return {
+      id: 'u1', day: '2026-10-12', title: '答辩彩排', mine: true, attendBy: '', attended: false, daysLeft: 7, ...partial,
+    }
+  }
+
+  /** 挂载并停在「🤝 约定」页签（默认页签，CoupleQuest 挂在该 pane 最末，无子页签） */
+  async function mountOnPromisesQuest() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-quest"]').exists()).toBe(true)
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 十卡全带 :empty，折叠态会落库；清干净避免污染后面的用例
+    ;[
+      'couple-quest-upcoming', 'couple-quest-battle', 'couple-quest-overtime', 'couple-quest-nurse',
+      'couple-quest-pod', 'couple-quest-move', 'couple-quest-night', 'couple-quest-valley',
+      'couple-quest-win', 'couple-quest-report',
+    ].forEach((k) => localStorage.removeItem(`arechat_couple_collapse_${k}`))
+  })
+
+  it('人生关卡·关卡预告：日子空/格式错/过去的日子/没选类型/名字空与超长各自挡下不打后端，倒数吃服务端 daysLeft，TA 的关卡不给撤钮', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo())
+    const wrapper = await mountOnPromisesQuest()
+    const submit = wrapper.find('[data-testid="couple-quest-prep-submit"]')
+
+    await submit.trigger('click')
+    expect(questApi.questBattle).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先说哪一天'))
+
+    await wrapper.find('[data-testid="couple-quest-prep-day"]').setValue('2026/10/20')
+    await submit.trigger('click')
+    expect(questApi.questBattle).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('yyyy-MM-dd'))
+
+    await wrapper.find('[data-testid="couple-quest-prep-day"]').setValue('2026-10-01')
+    await submit.trigger('click')
+    expect(questApi.questBattle).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('过去的日子'))
+
+    await wrapper.find('[data-testid="couple-quest-prep-day"]').setValue('2026-10-20')
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先挑一个关卡类型'))
+
+    await wrapper.find('[data-testid="couple-quest-prep-kind-DEFEND"]').trigger('click')
+    await submit.trigger('click')
+    expect(questApi.questBattle).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('关卡总得有个名字'))
+
+    await wrapper.find('[data-testid="couple-quest-prep-name"]').setValue('一'.repeat(31))
+    await submit.trigger('click')
+    expect(questApi.questBattle).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('关卡名最多 30 字'))
+
+    // 挂成功：整份 VO 换掉十卡，倒数那枚 chip 用后端 daysLeft=15，不是自己按今天减
+    vi.mocked(questApi.questBattle).mockResolvedValue(questVo({
+      battles: [
+        questBattle({ id: 'b1', daysLeft: 15 }),
+        questBattle({ id: 'b2', name: '年度体检', kind: 'CHECKUP', kindLabel: '体检', mine: false, daysLeft: 20 }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-quest-prep-name"]').setValue('述职答辩')
+    await wrapper.find('[data-testid="couple-quest-prep-fear"]').setValue('怕被追问数据')
+    await submit.trigger('click')
+    await flushPromises()
+    expect(questApi.questBattle).toHaveBeenCalledWith('2026-10-20', 'DEFEND', '述职答辩', '怕被追问数据')
+    expect(wrapper.find('[data-testid="couple-quest-prep-left-b1"]').text()).toContain('还有 15 天')
+    expect(wrapper.find('[data-testid="couple-quest-prep-fear-b1"]').text()).toContain('怕被追问数据')
+    expect(wrapper.find('[data-testid="couple-quest-prep-remove-b1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-prep-wait-b2"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-prep-remove-b2"]').exists()).toBe(false)
+    // 一次性提交的输入口清空重填，在途计数走服务端列表
+    expect((wrapper.find('[data-testid="couple-quest-prep-name"]').element as HTMLInputElement).value).toBe('')
+    expect(wrapper.find('[data-testid="couple-quest-prep-count"]').text()).toContain('在途一共 2 场')
+    expect(wrapper.find('[data-testid="couple-quest-prep-count"]').text()).toContain('我挂的 1 场')
+
+    await wrapper.find('[data-testid="couple-quest-prep-remove-b1"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questBattleRemove).toHaveBeenCalledWith('b1')
+    expect(wrapper.find('[data-testid="couple-quest-prep-none"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('人生关卡·出关战报：只有我打的关给 pick、战果没选挡下、盖章钮只给非交报人，后端 400 文案原样直透', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      battles: [questBattle({ id: 'b1', mine: true }), questBattle({ id: 'b2', mine: false, name: '年度体检' })],
+    }))
+    const wrapper = await mountOnPromisesQuest()
+
+    // 关卡册只把「我要打的」那一行放进战报表单
+    expect(wrapper.find('[data-testid="couple-quest-report-pick-b1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-report-pick-b2"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="couple-quest-report-submit"]').trigger('click')
+    expect(questApi.questReport).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('哪一关要交战报'))
+
+    await wrapper.find('[data-testid="couple-quest-report-pick-b1"]').trigger('click')
+    expect(wrapper.find('[data-testid="couple-quest-report-target"]').text()).toContain('述职答辩')
+    await wrapper.find('[data-testid="couple-quest-report-submit"]').trigger('click')
+    expect(questApi.questReport).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('战果只有三种'))
+
+    await wrapper.find('[data-testid="couple-quest-report-result-WIN"]').trigger('click')
+    await wrapper.find('[data-testid="couple-quest-report-feeling"]').setValue('一'.repeat(61))
+    await wrapper.find('[data-testid="couple-quest-report-submit"]').trigger('click')
+    expect(questApi.questReport).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('一句感受最多 60 字'))
+
+    vi.mocked(questApi.questReport).mockResolvedValue(questVo({
+      battles: [questBattle({ id: 'b2', mine: false, name: '年度体检' })],
+      reports: [
+        questReport({ id: 'r1', battleId: 'b1', mine: true, sealed: false }),
+        questReport({ id: 'r2', battleId: 'b2', battleName: '年度体检', result: 'LOSE', resultLabel: '没扛住', mine: false, sealed: false, sealLabel: '🫂 抱抱章' }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-quest-report-feeling"]').setValue('下来手还在抖')
+    // 一关一份这类业务规则归后端：400 中文原样直透，前端不重写文案（选好的那一行也留着不冲）
+    vi.mocked(questApi.questReport).mockRejectedValueOnce(new Error('这一关已经交过战报了，一关一份'))
+    await wrapper.find('[data-testid="couple-quest-report-submit"]').trigger('click')
+    await flushPromises()
+    expect(errorSpy).toHaveBeenCalledWith('这一关已经交过战报了，一关一份')
+
+    await wrapper.find('[data-testid="couple-quest-report-submit"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questReport).toHaveBeenCalledWith('b1', 'WIN', '下来手还在抖')
+    // 自己交的那份没有盖章钮（后端 400「战报是自己交的，章要 TA 来盖」，UI 更严：连钮都不给）
+    expect(wrapper.find('[data-testid="couple-quest-report-seal-wait-r1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-report-seal-r1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-quest-report-seal-r2"]').exists()).toBe(true)
+
+    vi.mocked(questApi.questReportSeal).mockResolvedValue(questVo({
+      reports: [
+        questReport({ id: 'r1', battleId: 'b1', mine: true, sealed: false }),
+        questReport({ id: 'r2', battleId: 'b2', battleName: '年度体检', result: 'LOSE', resultLabel: '没扛住', mine: false, sealed: true, sealedBy: 'alice', sealLabel: '🫂 抱抱章' }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-quest-report-seal-r2"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questReportSeal).toHaveBeenCalledWith('r2')
+    expect(wrapper.find('[data-testid="couple-quest-report-sealed-r2"]').text()).toContain('🫂 抱抱章 已盖上（alice）')
+    wrapper.unmount()
+  })
+
+  it('人生关卡·加班预报与留灯：钟点空/非数字/越界挡下（后端是静默钳制），留灯口只给 TA 那行且只有没留过时开放', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo())
+    const wrapper = await mountOnPromisesQuest()
+
+    await wrapper.find('[data-testid="couple-quest-overtime-submit"]').trigger('click')
+    expect(questApi.questOvertime).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('总得报个数'))
+    await wrapper.find('[data-testid="couple-quest-overtime-hour"]').setValue('abc')
+    await wrapper.find('[data-testid="couple-quest-overtime-submit"]').trigger('click')
+    expect(questApi.questOvertime).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('只写数字'))
+    await wrapper.find('[data-testid="couple-quest-overtime-hour"]').setValue('2')
+    await wrapper.find('[data-testid="couple-quest-overtime-submit"]').trigger('click')
+    expect(questApi.questOvertime).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('13-23'))
+
+    // 今晚没人预报：没有灯可留，但提示要说明白
+    expect(wrapper.find('[data-testid="couple-quest-overtime-mine-none"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-overtime-partner-none"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-lamp-text"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-quest-lamp-norow"]').exists()).toBe(true)
+
+    vi.mocked(questApi.questOvertime).mockResolvedValue(questVo({
+      myOvertime: questOvertime({ id: 'o1', untilHour: 22, note: '例会拖堂' }),
+      partnerOvertime: questOvertime({ id: 'o2', untilHour: 21, note: '盘点', mine: false, lamp: '', lampBy: '' }),
+      canLeaveLamp: true,
+    }))
+    await wrapper.find('[data-testid="couple-quest-overtime-hour"]').setValue('22')
+    await wrapper.find('[data-testid="couple-quest-overtime-note"]').setValue('例会拖堂')
+    await wrapper.find('[data-testid="couple-quest-overtime-submit"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questOvertime).toHaveBeenCalledWith(22, '例会拖堂')
+    expect(wrapper.find('[data-testid="couple-quest-overtime-mine-hour"]').text()).toContain('22 点左右')
+    expect(wrapper.find('[data-testid="couple-quest-overtime-partner-hour"]').text()).toContain('21 点左右')
+    expect(wrapper.find('[data-testid="couple-quest-overtime-submit"]').text()).toContain('改写我今晚的预报')
+
+    // 留灯：空话挡下、超 60 字挡下（后端 trim 后必填、LAMP_MAX=60）
+    await wrapper.find('[data-testid="couple-quest-lamp-submit"]').trigger('click')
+    expect(questApi.questLamp).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('灯下想留的那句话写一句'))
+    await wrapper.find('[data-testid="couple-quest-lamp-text"]').setValue('一'.repeat(61))
+    await wrapper.find('[data-testid="couple-quest-lamp-submit"]').trigger('click')
+    expect(questApi.questLamp).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('灯卡最多 60 字'))
+
+    vi.mocked(questApi.questLamp).mockResolvedValue(questVo({
+      myOvertime: questOvertime({ id: 'o1', untilHour: 22, note: '例会拖堂' }),
+      partnerOvertime: questOvertime({ id: 'o2', untilHour: 21, note: '盘点', mine: false, lamp: '回来再晚，屋里是亮的', lampBy: 'alice' }),
+      canLeaveLamp: false,
+    }))
+    await wrapper.find('[data-testid="couple-quest-lamp-text"]').setValue('回来再晚，屋里是亮的')
+    await wrapper.find('[data-testid="couple-quest-lamp-submit"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questLamp).toHaveBeenCalledWith('o2', '回来再晚，屋里是亮的')
+    expect(wrapper.find('[data-testid="couple-quest-lamp-lit"]').text()).toContain('灯已经留过了')
+    // 留灯人是我（lampBy=alice）时仍可改写，canLeaveLamp 已被后端置 false
+    expect(wrapper.find('[data-testid="couple-quest-lamp-submit"]').text()).toContain('改一改我留的灯')
+    wrapper.unmount()
+
+    // 灯是 TA 自己给自己留的（canLeaveLamp=false 且 lampBy 不是我）→ 连输入口都不给
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      partnerOvertime: questOvertime({ id: 'o2', untilHour: 21, note: '盘点', mine: false, lamp: '我自己留的', lampBy: 'bob' }),
+      canLeaveLamp: false,
+    }))
+    const wrapper2 = await mountOnPromisesQuest()
+    expect(wrapper2.find('[data-testid="couple-quest-lamp-text"]').exists()).toBe(false)
+    expect(wrapper2.find('[data-testid="couple-quest-lamp-done"]').exists()).toBe(true)
+    wrapper2.unmount()
+  })
+
+  it('人生关卡·陪护单归属：代记与留言只给陪护人、关单只给病人，今天记过的种类不再发第二次', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      partnerNurse: questNurse({
+        id: 'n1', marks: [questMark({ day: '2026-10-05', kind: 'WATER', byUser: 'alice', mine: true })],
+      }),
+      nurses: [questNurse({ id: 'n1' })],
+    }))
+    const wrapper = await mountOnPromisesQuest()
+    // 我是陪护人：代记/留言在，痊愈关单不在（关单只给病人那一侧）
+    expect(wrapper.find('[data-testid="couple-quest-nurse-mark-WATER-n1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-nurse-close-n1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-quest-nurse-self-none"]').exists()).toBe(true)
+    // 服务端 marks 说今天的喝水我记过了 → 不再发（一天每种一次），吃药照记
+    await wrapper.find('[data-testid="couple-quest-nurse-mark-WATER-n1"]').trigger('click')
+    expect(questApi.questNurseMark).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('今天的喝水已经记过啦'))
+    vi.mocked(questApi.questNurseMark).mockResolvedValue(questVo({
+      partnerNurse: questNurse({
+        id: 'n1', medCount: 2,
+        marks: [questMark({ day: '2026-10-05', kind: 'WATER' }), questMark({ day: '2026-10-05', kind: 'MED', kindLabel: '吃药' })],
+      }),
+    }))
+    await wrapper.find('[data-testid="couple-quest-nurse-mark-MED-n1"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questNurseMark).toHaveBeenCalledWith('n1', 'MED')
+    expect(wrapper.find('[data-testid="couple-quest-nurse-med-n1"]').text()).toContain('吃药 2 次')
+    expect(wrapper.find('[data-testid="couple-quest-nurse-marks"]').text()).toContain('2026-10-05 吃药')
+    // 留言：必填 + ≤80 字，且只有陪护人写得到
+    await wrapper.find('[data-testid="couple-quest-nurse-message-submit"]').trigger('click')
+    expect(questApi.questNurseMessage).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('留言写一句再存'))
+    await wrapper.find('[data-testid="couple-quest-nurse-message"]').setValue('一'.repeat(81))
+    await wrapper.find('[data-testid="couple-quest-nurse-message-submit"]').trigger('click')
+    expect(questApi.questNurseMessage).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('留言最多 80 字'))
+    vi.mocked(questApi.questNurseMessage).mockResolvedValue(questVo({
+      partnerNurse: questNurse({ id: 'n1', message: '药我买好了，睡前记得吃' }),
+    }))
+    await wrapper.find('[data-testid="couple-quest-nurse-message"]').setValue('药我买好了，睡前记得吃')
+    await wrapper.find('[data-testid="couple-quest-nurse-message-submit"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questNurseMessage).toHaveBeenCalledWith('n1', '药我买好了，睡前记得吃')
+    wrapper.unmount()
+
+    // 反过来：我生病 TA 陪 —— 关单钮给我，代记与留言的入口一个都不给
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      myNurse: questNurse({ id: 'n2', patientUser: 'alice', carerUser: 'bob', mineAsCarer: false, message: '别熬夜了' }),
+      nurses: [questNurse({ id: 'n2', patientUser: 'alice', carerUser: 'bob', mineAsCarer: false })],
+    }))
+    const wrapper2 = await mountOnPromisesQuest()
+    expect(wrapper2.find('[data-testid="couple-quest-nurse-close-n2"]').exists()).toBe(true)
+    expect(wrapper2.find('[data-testid="couple-quest-nurse-message-submit"]').exists()).toBe(false)
+    expect(wrapper2.find('[data-testid="couple-quest-nurse-self-message-n2"]').text()).toContain('别熬夜了')
+    vi.mocked(questApi.questNurseClose).mockResolvedValue(questVo({
+      nurses: [questNurse({ id: 'n2', patientUser: 'alice', carerUser: 'bob', mineAsCarer: false, open: false, closeDay: '2026-10-06', days: 3 })],
+    }))
+    await wrapper2.find('[data-testid="couple-quest-nurse-close-n2"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questNurseClose).toHaveBeenCalledWith('n2')
+    // 关了的单留在记录里（后端 nurses 不过滤 CLOSE），两张在途卡都收起
+    expect(wrapper2.find('[data-testid="couple-quest-nurse-hist-n2"]').exists()).toBe(true)
+    expect(wrapper2.find('[data-testid="couple-quest-nurse-self-none"]').exists()).toBe(true)
+    wrapper2.unmount()
+  })
+
+  it('人生关卡·陪护单在途上限：TA 已有一张时不再开单并说明原因，症状超 60 字先挡下；没在途才真开单', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({ partnerNurse: questNurse({ id: 'n1' }) }))
+    const wrapper = await mountOnPromisesQuest()
+    expect(wrapper.find('[data-testid="couple-quest-nurse-inflight"]').text()).toContain('一张够了')
+    await wrapper.find('[data-testid="couple-quest-nurse-submit"]').trigger('click')
+    expect(questApi.questNurse).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('TA 的陪护单还在途'))
+    // 超长判定在在途判定之前（两条都是与后端同规则的前端闸门）
+    await wrapper.find('[data-testid="couple-quest-nurse-symptom"]').setValue('一'.repeat(61))
+    await wrapper.find('[data-testid="couple-quest-nurse-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('症状一句话最多 60 字'))
+    wrapper.unmount()
+
+    // 没人在途：症状可空（后端只校长度），开单成功
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo())
+    vi.mocked(questApi.questNurse).mockResolvedValue(questVo({ partnerNurse: questNurse({ id: 'n9', symptom: '' }) }))
+    const wrapper2 = await mountOnPromisesQuest()
+    await wrapper2.find('[data-testid="couple-quest-nurse-submit"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questNurse).toHaveBeenCalledWith('')
+    expect(wrapper2.find('[data-testid="couple-quest-nurse-symptom-n9"]').text()).toContain('没写症状')
+    wrapper2.unmount()
+  })
+
+  it('人生关卡·静音舱：舱里的人才能自己出舱、加油卡只能从外面递且一天一张、长信只能在出舱后由对方标', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      myPod: questPod({ id: 'p1', mine: true, in: true, daysLeft: 7 }),
+      partnerPod: questPod({ id: 'p2', mine: false, in: true, cheerCount: 1, cheeredToday: false, daysLeft: 3 }),
+    }))
+    const wrapper = await mountOnPromisesQuest()
+    // 还在舱里 → 不能再进一次（后端 400「你还在舱里」），前端先给一句话
+    await wrapper.find('[data-testid="couple-quest-pod-until"]').setValue('2026-10-30')
+    await wrapper.find('[data-testid="couple-quest-pod-submit"]').trigger('click')
+    expect(questApi.questPod).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('你还在舱里'))
+    // 出舱日闸门：空/格式/当天开了就关
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo())
+    const wrapperN = await mountOnPromisesQuest()
+    await wrapperN.find('[data-testid="couple-quest-pod-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('出舱日填一下'))
+    await wrapperN.find('[data-testid="couple-quest-pod-until"]').setValue('2026-10-04')
+    await wrapperN.find('[data-testid="couple-quest-pod-submit"]').trigger('click')
+    expect(questApi.questPod).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('要晚于今天'))
+    wrapperN.unmount()
+
+    // 加油卡：舱外的我递进去；cheeredToday 由服务端说，递过就不再发第二次
+    vi.mocked(questApi.questPodCheer).mockResolvedValue(questVo({
+      myPod: questPod({ id: 'p1', in: true, daysLeft: 7 }),
+      partnerPod: questPod({ id: 'p2', mine: false, in: true, cheerCount: 2, cheeredToday: true, daysLeft: 3 }),
+    }))
+    await wrapper.find('[data-testid="couple-quest-pod-cheer-p2"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questPodCheer).toHaveBeenCalledWith('p2')
+    const cheerCalls = vi.mocked(questApi.questPodCheer).mock.calls.length
+    await wrapper.find('[data-testid="couple-quest-pod-cheer-p2"]').trigger('click')
+    await flushPromises()
+    expect(vi.mocked(questApi.questPodCheer).mock.calls.length).toBe(cheerCalls)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('一天一张'))
+    // 出舱只给舱里那个人：我这格有 out 钮，TA 那格没有
+    expect(wrapper.find('[data-testid="couple-quest-pod-out-p1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-pod-letter-p2"]').exists()).toBe(false)
+    vi.mocked(questApi.questPodOut).mockResolvedValue(questVo({
+      myPod: questPod({ id: 'p1', in: false, letterDone: false, daysLeft: 0 }),
+      partnerPod: questPod({ id: 'p2', mine: false, in: true, cheerCount: 2, cheeredToday: true, daysLeft: 3 }),
+    }))
+    await wrapper.find('[data-testid="couple-quest-pod-out-p1"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questPodOut).toHaveBeenCalledWith('p1')
+    expect(wrapper.find('[data-testid="couple-quest-pod-letter-wait-p1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-pod-out-p1"]').exists()).toBe(false)
+    wrapper.unmount()
+
+    // TA 出舱后：长信标记钮给舱外那个人（也就是我），标过就收起
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      partnerPod: questPod({ id: 'p2', mine: false, in: false, letterDone: false }),
+    }))
+    vi.mocked(questApi.questPodLetter).mockResolvedValue(questVo({
+      partnerPod: questPod({ id: 'p2', mine: false, in: false, letterDone: true }),
+    }))
+    const wrapper2 = await mountOnPromisesQuest()
+    expect(wrapper2.find('[data-testid="couple-quest-pod-letter-p2"]').exists()).toBe(true)
+    await wrapper2.find('[data-testid="couple-quest-pod-letter-p2"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questPodLetter).toHaveBeenCalledWith('p2')
+    expect(wrapper2.find('[data-testid="couple-quest-pod-partner-letter-ok-p2"]').exists()).toBe(true)
+    // TA 还在舱里时长信不许标（后端 400「TA 还在舱里，长信等出舱再写」）
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      partnerPod: questPod({ id: 'p3', mine: false, in: true, cheeredToday: false }),
+    }))
+    const wrapper3 = await mountOnPromisesQuest()
+    expect(wrapper3.find('[data-testid="couple-quest-pod-cheer-p3"]').exists()).toBe(true)
+    expect(wrapper3.find('[data-testid="couple-quest-pod-letter-p3"]').exists()).toBe(false)
+    wrapper2.unmount()
+    wrapper3.unmount()
+  })
+
+  it('人生关卡·搬家区块：数箱与勾完成只给认领人，抢 TA 的格子挡下，箱数空/越界挡下（后端 0-99 静默钳制）', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const movesBoard = questVo({
+      moves: [
+        questMove({ id: 'm1', slot: 1, name: '厨房', owner: 'alice', mine: true, claimed: true, boxes: 3 }),
+        questMove({ id: 'm2', slot: 2, name: '书房', owner: 'bob', mine: false, claimed: true, finished: true, boxes: 5 }),
+      ],
+      moveBoxes: 8,
+    })
+    vi.mocked(questApi.questBoard).mockResolvedValue(movesBoard)
+    const wrapper = await mountOnPromisesQuest()
+    // 我认领的第 1 格：数箱 + 勾完成都在；TA 的第 2 格：一个都不给，只说明归谁
+    expect(wrapper.find('[data-testid="couple-quest-move-boxes-btn-1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-move-done-1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-move-wait-2"]').text()).toContain('bob')
+    expect(wrapper.find('[data-testid="couple-quest-move-boxes-btn-2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-quest-move-done-2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-quest-move-finished-2"]').text()).toContain('打包完 5 箱')
+    expect(wrapper.find('[data-testid="couple-quest-move-total-boxes"]').text()).toBe('8')
+    expect(wrapper.find('[data-testid="couple-quest-move-done-count"]').text()).toBe('1')
+
+    await wrapper.find('[data-testid="couple-quest-move-claim-2"]').trigger('click')
+    expect(questApi.questMoveClaim).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('bob 已经认领了'))
+
+    await wrapper.find('[data-testid="couple-quest-move-boxes-1"]').setValue('')
+    await wrapper.find('[data-testid="couple-quest-move-boxes-btn-1"]').trigger('click')
+    expect(questApi.questMoveBoxes).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('几箱'))
+    await wrapper.find('[data-testid="couple-quest-move-boxes-1"]').setValue('120')
+    await wrapper.find('[data-testid="couple-quest-move-boxes-btn-1"]').trigger('click')
+    expect(questApi.questMoveBoxes).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('封顶'))
+
+    vi.mocked(questApi.questMoveBoxes).mockResolvedValue(questVo({
+      moves: [questMove({ id: 'm1', slot: 1, boxes: 12 }), questMove({ id: 'm2', slot: 2, owner: 'bob', mine: false, claimed: true, finished: true, boxes: 5 })],
+      moveBoxes: 17,
+    }))
+    await wrapper.find('[data-testid="couple-quest-move-boxes-1"]').setValue('12')
+    await wrapper.find('[data-testid="couple-quest-move-boxes-btn-1"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questMoveBoxes).toHaveBeenCalledWith(1, 12)
+    expect(wrapper.find('[data-testid="couple-quest-move-total-boxes"]').text()).toBe('17')
+    // 起名谁都能补（后端不校验归属），空名先挡下
+    await wrapper.find('[data-testid="couple-quest-move-name-3"]').setValue('')
+    await wrapper.find('[data-testid="couple-quest-move-name-btn-3"]').trigger('click')
+    expect(questApi.questMoveName).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('写个名字'))
+    vi.mocked(questApi.questMoveName).mockResolvedValue(movesBoard)
+    await wrapper.find('[data-testid="couple-quest-move-name-3"]').setValue('阳台')
+    await wrapper.find('[data-testid="couple-quest-move-name-btn-3"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questMoveName).toHaveBeenCalledWith(3, '阳台')
+    // 勾完成：第一下真勾上，勾完那一格不再发第二次（后端幂等，前端也不留静默按钮）
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      moves: [questMove({ id: 'm1', finished: false, boxes: 12 })], moveBoxes: 12,
+    }))
+    vi.mocked(questApi.questMoveDone).mockResolvedValue(questVo({
+      moves: [questMove({ id: 'm1', finished: true, boxes: 12 })], moveBoxes: 12,
+    }))
+    const wrapper2 = await mountOnPromisesQuest()
+    await wrapper2.find('[data-testid="couple-quest-move-done-1"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questMoveDone).toHaveBeenCalledWith(1)
+    await wrapper2.find('[data-testid="couple-quest-move-done-1"]').trigger('click')
+    await flushPromises()
+    expect(vi.mocked(questApi.questMoveDone).mock.calls.length).toBe(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('已经打包完了'))
+    wrapper.unmount()
+    wrapper2.unmount()
+  })
+
+  it('人生关卡·新家第一晚双拍：归因一律吃服务端 mineTicked/partnerTicked——我点过就永远说「还差 TA 一个」，重进页面也不反转成「就差你这一个」', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    // 开场：只有 TA 点过 → 界面该催我
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      moveNight: questNight({ mineTicked: false, partnerTicked: true, bothTicked: false }),
+    }))
+    const wrapper = await mountOnPromisesQuest()
+    expect(wrapper.find('[data-testid="couple-quest-night-wait-me"]').text()).toContain('就差你这一个')
+    expect(wrapper.find('[data-testid="couple-quest-night-wait"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-quest-night-note"]').element as HTMLInputElement).disabled).toBe(false)
+    // 我点下去：后端把这一拍翻成 1，bothTicked 才算庆祝
+    vi.mocked(questApi.questMoveNight).mockResolvedValue(questVo({
+      moveNight: questNight({ mineTicked: true, partnerTicked: true, bothTicked: true }),
+    }))
+    await wrapper.find('[data-testid="couple-quest-night-submit"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questMoveNight).toHaveBeenCalledWith('2026-10-08', '')
+    expect(wrapper.find('[data-testid="couple-quest-night-both"]').text()).toContain('两个人都在')
+
+    // 反过来：我先点、TA 没点 → 说「还差 TA 一个」，并且那句话的输入口收起（后端不翻转就不写库）
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      moveNight: questNight({ mineTicked: true, partnerTicked: false, bothTicked: false, note: '先入住的那晚' }),
+    }))
+    const wrapper2 = await mountOnPromisesQuest()
+    expect(wrapper2.find('[data-testid="couple-quest-night-wait"]').text()).toContain('还差 TA 一个')
+    expect(wrapper2.find('[data-testid="couple-quest-night-wait-me"]').exists()).toBe(false)
+    expect((wrapper2.find('[data-testid="couple-quest-night-note"]').element as HTMLInputElement).disabled).toBe(true)
+    // 回填吃服务端那一晚的日子与话
+    expect((wrapper2.find('[data-testid="couple-quest-night-day"]').element as HTMLInputElement).value).toBe('2026-10-08')
+    const nightCalls = vi.mocked(questApi.questMoveNight).mock.calls.length
+    await wrapper2.find('[data-testid="couple-quest-night-submit"]').trigger('click')
+    await flushPromises()
+    expect(vi.mocked(questApi.questMoveNight).mock.calls.length).toBe(nightCalls)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('你已经打过卡了'))
+    wrapper2.unmount()
+
+    // 闸门：日子空 / 格式错 / 话超 60 字
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({ moveNight: null }))
+    const wrapper3 = await mountOnPromisesQuest()
+    expect(wrapper3.find('[data-testid="couple-quest-night-none"]').exists()).toBe(true)
+    await wrapper3.find('[data-testid="couple-quest-night-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先填日子'))
+    await wrapper3.find('[data-testid="couple-quest-night-day"]').setValue('2026/10/08')
+    await wrapper3.find('[data-testid="couple-quest-night-submit"]').trigger('click')
+    expect(questApi.questMoveNight).not.toHaveBeenCalledWith('2026/10/08', '')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('第一晚写成 yyyy-MM-dd'))
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      moveNight: questNight({ mineTicked: false, partnerTicked: false, bothTicked: false }),
+    }))
+    const wrapper4 = await mountOnPromisesQuest()
+    await wrapper4.find('[data-testid="couple-quest-night-note"]').setValue('一'.repeat(61))
+    await wrapper4.find('[data-testid="couple-quest-night-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('最多 60 字'))
+    expect(wrapper4.find('[data-testid="couple-quest-night-open"]').exists()).toBe(true)
+    wrapper.unmount()
+    wrapper3.unmount()
+    wrapper4.unmount()
+  })
+
+  it('人生关卡·低谷通行证：跨度 7-30 天与格式各自挡下、在途不再开；递卡只给 TA 那张且一天一张，回升只由本人宣布', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo())
+    const wrapper = await mountOnPromisesQuest()
+    await wrapper.find('[data-testid="couple-quest-valley-submit"]').trigger('click')
+    expect(questApi.questValley).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('回升日填一下'))
+    await wrapper.find('[data-testid="couple-quest-valley-until"]').setValue('2026-10-08')
+    await wrapper.find('[data-testid="couple-quest-valley-submit"]').trigger('click')
+    expect(questApi.questValley).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('7-30 天'))
+    await wrapper.find('[data-testid="couple-quest-valley-until"]').setValue('2026-12-30')
+    await wrapper.find('[data-testid="couple-quest-valley-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenLastCalledWith(expect.stringContaining('太短像赌气，太长像放弃'))
+    await wrapper.find('[data-testid="couple-quest-valley-until"]').setValue('乱七八糟')
+    await wrapper.find('[data-testid="couple-quest-valley-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('回升日写成 yyyy-MM-dd'))
+
+    vi.mocked(questApi.questValley).mockResolvedValue(questVo({ myValley: questValley({ id: 'v1', low: true, daysLeft: 15 }) }))
+    await wrapper.find('[data-testid="couple-quest-valley-until"]').setValue('2026-10-20')
+    await wrapper.find('[data-testid="couple-quest-valley-submit"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questValley).toHaveBeenCalledWith('2026-10-20')
+    expect(wrapper.find('[data-testid="couple-quest-valley-mine-left-v1"]').text()).toContain('还有 15 天')
+    expect(wrapper.find('[data-testid="couple-quest-valley-rise-v1"]').exists()).toBe(true)
+    // 我自己的通行证不给「递卡」钮——卡要从外面递进来
+    expect(wrapper.find('[data-testid="couple-quest-valley-care-v1"]').exists()).toBe(false)
+    // 在途一张：再挂先给一句话（与后端同规则）
+    await wrapper.find('[data-testid="couple-quest-valley-until"]').setValue('2026-10-28')
+    await wrapper.find('[data-testid="couple-quest-valley-submit"]').trigger('click')
+    expect(vi.mocked(questApi.questValley).mock.calls.length).toBe(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('还在有效期内'))
+
+    // TA 在低谷：递卡给我，caredToday 为真时不再发第二次
+    vi.mocked(questApi.questValleyCare).mockResolvedValue(questVo({
+      partnerValley: questValley({ id: 'v2', mine: false, careCount: 3, caredToday: true, daysLeft: 6 }),
+    }))
+    const valleyBoard = questVo({
+      myValley: null,
+      partnerValley: questValley({ id: 'v2', mine: false, careCount: 2, caredToday: false, daysLeft: 6 }),
+    })
+    vi.mocked(questApi.questBoard).mockResolvedValue(valleyBoard)
+    const wrapper2 = await mountOnPromisesQuest()
+    expect(wrapper2.find('[data-testid="couple-quest-valley-rise-v2"]').exists()).toBe(false)
+    await wrapper2.find('[data-testid="couple-quest-valley-care-v2"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questValleyCare).toHaveBeenCalledWith('v2')
+    await wrapper2.find('[data-testid="couple-quest-valley-care-v2"]').trigger('click')
+    await flushPromises()
+    expect(vi.mocked(questApi.questValleyCare).mock.calls.length).toBe(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('一天一张'))
+    wrapper2.unmount()
+
+    // TA 自己宣布回升后：卡改天再递，回升日只由本人定
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      partnerValley: questValley({ id: 'v3', mine: false, low: false, caredToday: false, reviveDay: '2026-10-10', daysLeft: 0 }),
+    }))
+    const wrapper3 = await mountOnPromisesQuest()
+    expect(wrapper3.find('[data-testid="couple-quest-valley-care-v3"]').exists()).toBe(false)
+    expect(wrapper3.find('[data-testid="couple-quest-valley-partner-up-v3"]').exists()).toBe(true)
+    // 我这张已经收尾的通行证：不再给回升钮（幂等也不发）
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      myValley: questValley({ id: 'v4', low: false, reviveDay: '2026-10-09', daysLeft: 0 }),
+    }))
+    const wrapper4 = await mountOnPromisesQuest()
+    expect(wrapper4.find('[data-testid="couple-quest-valley-rise-v4"]').exists()).toBe(false)
+    expect(wrapper4.find('[data-testid="couple-quest-valley-mine-revive-v4"]').text()).toContain('缓过来了')
+    wrapper.unmount()
+    wrapper3.unmount()
+    wrapper4.unmount()
+  })
+
+  it('人生关卡·小胜利账本：内容空/超长/预支未来挡下，今天这条走改写；自己的记录不给自颁，本周颁过不再发', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      wins: [
+        questWin({ id: 'w1', day: '2026-10-05', mine: true, content: '把简历改了' }),
+        questWin({ id: 'w2', day: '2026-10-04', mine: false, content: '独自把马桶换了', canAward: true }),
+      ],
+    }))
+    const wrapper = await mountOnPromisesQuest()
+    // 本人今天那条回填进输入口，按钮文案转成「改写」
+    expect((wrapper.find('[data-testid="couple-quest-win-content"]').element as HTMLInputElement).value).toBe('把简历改了')
+    expect(wrapper.find('[data-testid="couple-quest-win-submit"]').text()).toContain('改写今天这条')
+    await wrapper.find('[data-testid="couple-quest-win-content"]').setValue('')
+    await wrapper.find('[data-testid="couple-quest-win-submit"]').trigger('click')
+    expect(questApi.questWin).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('做成的一件小事写一句'))
+    await wrapper.find('[data-testid="couple-quest-win-content"]').setValue('一'.repeat(41))
+    await wrapper.find('[data-testid="couple-quest-win-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('一条小事最多 40 字'))
+    await wrapper.find('[data-testid="couple-quest-win-content"]').setValue('把简历改了')
+    await wrapper.find('[data-testid="couple-quest-win-day"]').setValue('20261005')
+    await wrapper.find('[data-testid="couple-quest-win-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('日子写成 yyyy-MM-dd'))
+    await wrapper.find('[data-testid="couple-quest-win-day"]').setValue('2026-10-09')
+    await wrapper.find('[data-testid="couple-quest-win-submit"]').trigger('click')
+    expect(questApi.questWin).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先别预支'))
+    vi.mocked(questApi.questWin).mockResolvedValue(questVo({
+      wins: [questWin({ id: 'w1', content: '把简历改了' }), questWin({ id: 'w2', mine: false, canAward: true })],
+    }))
+    await wrapper.find('[data-testid="couple-quest-win-day"]').setValue('')
+    await wrapper.find('[data-testid="couple-quest-win-content"]').setValue('把简历改了')
+    await wrapper.find('[data-testid="couple-quest-win-submit"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questWin).toHaveBeenCalledWith('把简历改了', '')
+    // 归属：自己的那条没有颁奖钮，只有一句「只颁给 TA」
+    expect(wrapper.find('[data-testid="couple-quest-win-award-w1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-quest-win-award-wait-w1"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-quest-win-award-w2"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questWinAward).toHaveBeenCalledWith('w2')
+
+    // 一周一颁：服务端行里已有「颁名人=我 + awardDay 落在本周」→ 再颁先给一句话
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      wins: [
+        questWin({ id: 'w3', day: '2026-10-03', mine: false, content: '替我值了一次班', canAward: true }),
+        questWin({ id: 'w4', day: '2026-10-04', mine: false, content: '独自把马桶换了', canAward: true, awarded: true, awardedBy: 'alice', awardDay: '2026-10-06' }),
+      ],
+    }))
+    const wrapper2 = await mountOnPromisesQuest()
+    expect(wrapper2.find('[data-testid="couple-quest-win-week"]').text()).toContain('已经颁过一次')
+    expect(wrapper2.find('[data-testid="couple-quest-win-awarded-w4"]').exists()).toBe(true)
+    await wrapper2.find('[data-testid="couple-quest-win-award-w3"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questWinAward).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('这周你已经颁过一次'))
+    wrapper.unmount()
+    wrapper2.unmount()
+  })
+
+  it('人生关卡·关口预约：60 天窗口与格式挡下，倒数吃 daysLeft；到场只能对方说、撤单只能挂单人', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      upcoming: [
+        questUpcoming({ id: 'u1', day: '2026-10-12', title: '答辩彩排', mine: true, attended: false, daysLeft: 7 }),
+        questUpcoming({ id: 'u2', day: '2026-10-20', title: '全身体检', mine: false, attended: true, attendBy: 'alice', daysLeft: 15 }),
+      ],
+    }))
+    const wrapper = await mountOnPromisesQuest()
+    expect(wrapper.find('[data-testid="couple-quest-next-left-u1"]').text()).toContain('还有 7 天')
+    // 自己挂的那个：没有「我会到场」钮，只有等待说明；撤单钮给自己的
+    expect(wrapper.find('[data-testid="couple-quest-next-attend-u1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-quest-next-wait-u1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-next-remove-u1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-next-remove-u2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-quest-next-ok-u2"]').text()).toContain('alice 说：这一天我会到场')
+
+    await wrapper.find('[data-testid="couple-quest-next-submit"]').trigger('click')
+    expect(questApi.questUpcoming).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先说关口是哪一天'))
+    await wrapper.find('[data-testid="couple-quest-next-day"]').setValue('2026-10-01')
+    await wrapper.find('[data-testid="couple-quest-next-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('今天起 60 天之内'))
+    await wrapper.find('[data-testid="couple-quest-next-day"]').setValue('2026-12-31')
+    await wrapper.find('[data-testid="couple-quest-next-submit"]').trigger('click')
+    expect(vi.mocked(questApi.questUpcoming).mock.calls.length).toBe(0)
+    await wrapper.find('[data-testid="couple-quest-next-day"]').setValue('2026-10-14')
+    await wrapper.find('[data-testid="couple-quest-next-submit"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('关口叫什么，写一句'))
+    vi.mocked(questApi.questUpcoming).mockResolvedValue(questVo({
+      upcoming: [
+        questUpcoming({ id: 'u1' }),
+        questUpcoming({ id: 'u3', day: '2026-10-14', title: '试岗第一天', mine: true, attended: false, daysLeft: 9 }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-quest-next-title"]').setValue('试岗第一天')
+    await wrapper.find('[data-testid="couple-quest-next-submit"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questUpcoming).toHaveBeenCalledWith('2026-10-14', '试岗第一天')
+    expect(wrapper.find('[data-testid="couple-quest-next-title-text-u3"]').text()).toBe('试岗第一天')
+    // 对方挂、还没人应援的那个关口才给到场钮；撤单钮只给挂单人（UI 比后端更严：TA 挂的那行连钮都不给）
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({
+      upcoming: [
+        questUpcoming({ id: 'u9', day: '2026-10-25', title: '复查', mine: false, attended: false, daysLeft: 20 }),
+        questUpcoming({ id: 'u10', day: '2026-10-28', title: '搬家看房', mine: true, attended: false, daysLeft: 23 }),
+      ],
+    }))
+    const wrapper2 = await mountOnPromisesQuest()
+    expect(wrapper2.find('[data-testid="couple-quest-next-attend-u9"]').exists()).toBe(true)
+    expect(wrapper2.find('[data-testid="couple-quest-next-remove-u9"]').exists()).toBe(false)
+    expect(wrapper2.find('[data-testid="couple-quest-next-attend-u10"]').exists()).toBe(false)
+    expect(wrapper2.find('[data-testid="couple-quest-next-remove-u10"]').exists()).toBe(true)
+    vi.mocked(questApi.questUpcomingAttend).mockResolvedValue(questVo({
+      upcoming: [
+        questUpcoming({ id: 'u9', day: '2026-10-25', title: '复查', mine: false, attended: true, attendBy: 'alice', daysLeft: 20 }),
+        questUpcoming({ id: 'u10', day: '2026-10-28', title: '搬家看房', mine: true, attended: false, daysLeft: 23 }),
+      ],
+    }))
+    await wrapper2.find('[data-testid="couple-quest-next-attend-u9"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questUpcomingAttend).toHaveBeenCalledWith('u9')
+    expect(wrapper2.find('[data-testid="couple-quest-next-ok-u9"]').exists()).toBe(true)
+    vi.mocked(questApi.questUpcomingRemove).mockResolvedValue(questVo({
+      upcoming: [questUpcoming({ id: 'u9', day: '2026-10-25', title: '复查', mine: false, attended: true, attendBy: 'alice', daysLeft: 20 })],
+    }))
+    await wrapper2.find('[data-testid="couple-quest-next-remove-u10"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questUpcomingRemove).toHaveBeenCalledWith('u10')
+    expect(wrapper2.find('[data-testid="couple-quest-next-none"]').exists()).toBe(false)
+    wrapper.unmount()
+    wrapper2.unmount()
+  })
+
+  it('人生关卡·成就墙懒读：首屏不调 /wall，年份格式错挡下，成功后换成那一年的数字，失败直透 ElMessage.error', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo({ wall: questWallVo({ year: 2026 }) }))
+    const wrapper = await mountOnPromisesQuest()
+    expect(questApi.questWall).not.toHaveBeenCalled()
+    // 今年那一份是随总览下发的（QuestVO.wall 恒有值），不是懒读来的
+    expect(wrapper.find('[data-testid="couple-quest-win-wall-year"]').text()).toContain('2026 年')
+    expect(wrapper.find('[data-testid="couple-quest-win-wall-battles"]').text()).toContain('24 场')
+    expect(wrapper.find('[data-testid="couple-quest-win-wall-rate"]').text()).toContain('56%')
+    expect(wrapper.find('[data-testid="couple-quest-win-wall-title"]').text()).toContain('人生关卡双人通关组')
+    expect(wrapper.find('[data-testid="couple-quest-wall-current"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-wall-reset"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="couple-quest-wall-year"]').setValue('2025年')
+    await wrapper.find('[data-testid="couple-quest-wall-btn"]').trigger('click')
+    expect(questApi.questWall).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('年份写成 yyyy'))
+
+    vi.mocked(questApi.questWall).mockResolvedValue(questWallVo({
+      year: 2025, battles: 3, reports: 2, winRate: 50, title: '举牌助威的人',
+      summary: '🧗 2025 年人生关卡墙：上了 3 场 Boss 战——你上场，我举牌——这队伍配置挺合理的。',
+    }))
+    await wrapper.find('[data-testid="couple-quest-wall-year"]').setValue('2025')
+    await wrapper.find('[data-testid="couple-quest-wall-btn"]').trigger('click')
+    await flushPromises()
+    expect(questApi.questWall).toHaveBeenCalledWith('2025')
+    expect(wrapper.find('[data-testid="couple-quest-win-wall-year"]').text()).toContain('2025 年')
+    expect(wrapper.find('[data-testid="couple-quest-win-wall-battles"]').text()).toContain('3 场')
+    expect(wrapper.find('[data-testid="couple-quest-win-wall-title"]').text()).toContain('举牌助威的人')
+    expect(wrapper.find('[data-testid="couple-quest-wall-lazy"]').exists()).toBe(true)
+
+    // 写接口返回的整份总览不许把懒读结果冲掉（wallView 是独立那份）
+    vi.mocked(questApi.questWin).mockResolvedValue(questVo({ wins: [questWin({ id: 'w1' })] }))
+    await wrapper.find('[data-testid="couple-quest-win-content"]').setValue('把阳台收了')
+    await wrapper.find('[data-testid="couple-quest-win-submit"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-quest-win-wall-year"]').text()).toContain('2025 年')
+
+    await wrapper.find('[data-testid="couple-quest-wall-reset"]').trigger('click')
+    expect(wrapper.find('[data-testid="couple-quest-win-wall-year"]').text()).toContain('2026 年')
+    expect(wrapper.find('[data-testid="couple-quest-wall-current"]').exists()).toBe(true)
+
+    vi.mocked(questApi.questWall).mockRejectedValueOnce(new Error('年份写成 yyyy'))
+    await wrapper.find('[data-testid="couple-quest-wall-btn"]').trigger('click')
+    await flushPromises()
+    expect(errorSpy).toHaveBeenCalledWith('年份写成 yyyy')
+    wrapper.unmount()
+  })
+
+  it('人生关卡·整份替换：任一写接口返回的整份 QuestVO 一次刷新十卡，且只回填「本人这一侧」的输入口', async () => {
+    vi.mocked(questApi.questBoard).mockResolvedValue(questVo())
+    const wrapper = await mountOnPromisesQuest()
+    // 先在几个输入口里写点东西，提交后应当被服务端返回的本人字段覆盖或清空
+    await wrapper.find('[data-testid="couple-quest-prep-name"]').setValue('写到一半的名字')
+    await wrapper.find('[data-testid="couple-quest-next-day"]').setValue('2026-10-31')
+    await wrapper.find('[data-testid="couple-quest-overtime-hour"]').setValue('19')
+
+    const board = questVo({
+      battles: [questBattle({ id: 'b1' })],
+      reports: [questReport({ id: 'r1', sealed: true, sealedBy: 'bob' })],
+      myOvertime: questOvertime({ id: 'o1', untilHour: 23, note: '年底结算' }),
+      partnerOvertime: questOvertime({ id: 'o2', untilHour: 20, mine: false, note: '' }),
+      canLeaveLamp: true,
+      partnerNurse: questNurse({ id: 'n1', message: '药我买好了' }),
+      nurses: [questNurse({ id: 'n1', message: '药我买好了' })],
+      myPod: questPod({ id: 'p1', in: true }),
+      partnerPod: questPod({ id: 'p2', mine: false, in: true }),
+      moves: [questMove({ id: 'm1', slot: 1, name: '厨房', boxes: 7 })],
+      moveBoxes: 7,
+      moveNight: questNight({ mineTicked: false, partnerTicked: true }),
+      myValley: null,
+      partnerValley: questValley({ id: 'v2', mine: false }),
+      wins: [questWin({ id: 'w1', mine: true, content: '把简历改了' }), questWin({ id: 'w2', mine: false, canAward: true })],
+      upcoming: [questUpcoming({ id: 'u2', mine: false, attended: false })],
+      wall: questWallVo({ year: 2026, battles: 8 }),
+    })
+    vi.mocked(questApi.questOvertime).mockResolvedValue(board)
+    await wrapper.find('[data-testid="couple-quest-overtime-submit"]').trigger('click')
+    await flushPromises()
+    // 十卡同时刷新：各卡的关键节点都换成这份 VO 的内容
+    expect(wrapper.find('[data-testid="couple-quest-prep-name-text-b1"]').text()).toBe('述职答辩')
+    expect(wrapper.find('[data-testid="couple-quest-report-sealed-r1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-overtime-mine-hour"]').text()).toContain('23 点左右')
+    expect(wrapper.find('[data-testid="couple-quest-nurse-message-submit"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-pod-out-p1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-move-total-boxes"]').text()).toBe('7')
+    expect(wrapper.find('[data-testid="couple-quest-night-wait-me"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-valley-care-v2"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-quest-win-wall-battles"]').text()).toContain('8 场')
+    expect(wrapper.find('[data-testid="couple-quest-next-attend-u2"]').exists()).toBe(true)
+    // 只回填本人这一侧：加班钟点/陪护留言/今天那条小事被服务端值覆盖，一次性提交的全部清空
+    expect((wrapper.find('[data-testid="couple-quest-overtime-hour"]').element as HTMLInputElement).value).toBe('23')
+    expect((wrapper.find('[data-testid="couple-quest-nurse-message"]').element as HTMLInputElement).value).toBe('药我买好了')
+    expect((wrapper.find('[data-testid="couple-quest-win-content"]').element as HTMLInputElement).value).toBe('把简历改了')
+    expect((wrapper.find('[data-testid="couple-quest-move-name-1"]').element as HTMLInputElement).value).toBe('厨房')
+    expect((wrapper.find('[data-testid="couple-quest-move-boxes-1"]').element as HTMLInputElement).value).toBe('7')
+    expect((wrapper.find('[data-testid="couple-quest-prep-name"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.find('[data-testid="couple-quest-next-day"]').element as HTMLInputElement).value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('人生关卡·十卡静默降级：接口 404（还没建立情侣空间）时不弹错误条，十张卡根与折叠钮都在、一律收起', async () => {
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(questApi.questBoard).mockRejectedValue(new Error('还没有建立情侣空间，先邀请一位好友吧'))
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+
+    const keys = [
+      'couple-quest-upcoming', 'couple-quest-battle', 'couple-quest-overtime', 'couple-quest-nurse',
+      'couple-quest-pod', 'couple-quest-move', 'couple-quest-night', 'couple-quest-valley',
+      'couple-quest-win', 'couple-quest-report',
+    ]
+    keys.forEach((k) => {
+      expect(wrapper.find(`[data-testid="${k}"]`).exists()).toBe(true)
+      expect(wrapper.find(`[data-testid="${k}"]`).classes()).toContain('is-collapsed')
+      expect(wrapper.find(`[data-testid="couple-collapse-${k}"]`).exists()).toBe(true)
+    })
+    // 没数据时连输入口都不铺（点了也只会被「还没拿到总览」挡下），首屏不报错
+    expect(wrapper.find('[data-testid="couple-quest-prep-submit"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-quest-overtime-submit"]').exists()).toBe(false)
+    expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('还没有建立情侣空间'))
+    wrapper.unmount()
+  })
 
   describe('F205 卡片折叠', () => {
     afterEach(() => {
