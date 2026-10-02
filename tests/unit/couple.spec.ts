@@ -3,12 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi, postApi, theaterApi } from '@/api/couple'
+import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, factoryApi, listenApi, manageApi, museumApi, pinApi, postApi, repairApi, theaterApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleFyBoardVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CouplePromiseVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -794,6 +794,60 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F320-F329 修复车间 repairApi：默认全空但形状完整的 RepairVO（current 在冻单与 makeup 倒计时可空），用例内按需覆盖
+  const repairEmptyVo = () => ({
+    day: '2026-10-02',
+    quarter: '2026-Q4',
+    year: '2026',
+    freezes: [],
+    current: null,
+    sorries: [],
+    redo: {
+      quarter: '2026-Q4',
+      mine: false,
+      scene: '',
+      used: false,
+      replayNote: '',
+      satisfaction: null,
+      ratedBy: '',
+      canPlay: true,
+      canRate: false,
+    },
+    rebuilds: [],
+    makeup: null,
+    makeups: [],
+    bottoms: [],
+    admits: [],
+    boxes: [],
+    peace: [],
+    report: {
+      year: '2026',
+      freezes: 0,
+      thawed: 0,
+      sorryIn: 0,
+      passed: 0,
+      backed: 0,
+      admits: 0,
+      touched: 0,
+      redos: 0,
+      boxesDone: 0,
+      peaceLines: 0,
+      reconciles: 0,
+      reconcileAccepted: 0,
+      avgThawHours: 0,
+      prize: '',
+      summary: '',
+    },
+  })
+  const repairWrapped = new Proxy({} as Record<string, ReturnType<typeof vi.fn>>, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(repairEmptyVo())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -810,6 +864,7 @@ vi.mock('@/api/couple', () => {
     theaterApi: theaterWrapped,
     // F310-F319 身体通知系统 bodyApi：默认全空但形状完整的 BodyVO，用例内按需覆盖
     bodyApi: bodyWrapped,
+    repairApi: repairWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -4400,6 +4455,115 @@ describe('CoupleView 情侣空间', () => {
 
     expect(bodyApi.bodySosHold).toHaveBeenCalledWith('sos1', '把今晚的家务全包了')
     expect(wrapper.find('[data-testid="couple-body-sos-held-sos1"]').text()).toContain('接住')
+  })
+
+  // ============ 批次二十八：修复车间（F320-F329，care 页签「🚑 情绪急救」子页签末尾 CoupleRepair） ============
+
+  /** 修复车间总览空态基底（字段与后端 CoupleRepairService.RepairVO 对齐；current/makeup 为可空单行对象） */
+  function repairVo(partial: Partial<CoupleRepairVO> = {}): CoupleRepairVO {
+    return {
+      day: '2026-10-02',
+      quarter: '2026-Q4',
+      year: '2026',
+      freezes: [],
+      current: null,
+      sorries: [],
+      redo: {
+        quarter: '2026-Q4',
+        mine: false,
+        scene: '',
+        used: false,
+        replayNote: '',
+        satisfaction: null,
+        ratedBy: '',
+        canPlay: true,
+        canRate: false,
+      },
+      rebuilds: [],
+      makeup: null,
+      makeups: [],
+      bottoms: [],
+      admits: [],
+      boxes: [],
+      peace: [],
+      report: {
+        year: '2026',
+        freezes: 0,
+        thawed: 0,
+        sorryIn: 0,
+        passed: 0,
+        backed: 0,
+        admits: 0,
+        touched: 0,
+        redos: 0,
+        boxesDone: 0,
+        peaceLines: 0,
+        reconciles: 0,
+        reconcileAccepted: 0,
+        avgThawHours: 0,
+        prize: '',
+        summary: '',
+      },
+      ...partial,
+    }
+  }
+
+  it('修复车间：在冻单到点前不给签（签了也不算数），三问逐题作答调 repairFreezeAsk', async () => {
+    vi.mocked(repairApi.repairWorkshop).mockResolvedValue(repairVo({
+      current: {
+        id: 'fz1', day: '2026-10-02', mine: true, hours: 6, status: 'FROZEN', minutesLeft: 30,
+        reason: '都在气头上', answer1: '', answer2: '', answer3: '',
+        signedMe: false, signedPartner: false, bothSigned: false, questionsDone: false, canSign: true,
+      },
+    }))
+    vi.mocked(repairApi.repairFreezeAsk).mockResolvedValue(repairVo())
+    const wrapper = await mountOnCareRescue()
+    expect(wrapper.find('[data-testid="couple-repair"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-repair-freeze-timer"]').text()).toContain('30')
+    expect(wrapper.find('[data-testid="couple-repair-freeze-wait"]').text()).toContain('签了也不算数')
+
+    await wrapper.find('[data-testid="couple-repair-freeze-answer-1"]').setValue('我不该摔门')
+    await wrapper.find('[data-testid="couple-repair-freeze-answer-btn-1"]').trigger('click')
+    await flushPromises()
+
+    expect(repairApi.repairFreezeAsk).toHaveBeenCalledWith('fz1', 1, '我不该摔门')
+  })
+
+  it('修复车间：打回道歉信必填批注，调 repairSorryVerify 后状态转 BACK 并显示批注', async () => {
+    const letter: CoupleRepairSorryVO = {
+      id: 'sp1', mine: false, letter: '我今天不该那样说话', points: ['FACT', 'SORRY'],
+      status: 'VERIFY', verdict: '', verifiedBy: '', canVerify: true,
+    }
+    vi.mocked(repairApi.repairWorkshop).mockResolvedValue(repairVo({ sorries: [letter] }))
+    vi.mocked(repairApi.repairSorryVerify).mockResolvedValue(repairVo({
+      sorries: [{ ...letter, status: 'BACK', verdict: '把当时的感觉也写进去', verifiedBy: 'alice', canVerify: false }],
+    }))
+    const wrapper = await mountOnCareRescue()
+
+    await wrapper.find('[data-testid="couple-repair-sorry-verdict-input-sp1"]').setValue('把当时的感觉也写进去')
+    await wrapper.find('[data-testid="couple-repair-sorry-back-sp1"]').trigger('click')
+    await flushPromises()
+
+    expect(repairApi.repairSorryVerify).toHaveBeenCalledWith('sp1', false, '把当时的感觉也写进去')
+    expect(wrapper.find('[data-testid="couple-repair-sorry-verdict-sp1"]').text()).toContain('感觉')
+  })
+
+  it('修复车间：TA 的认错可标最感人，调 repairAdmitTouch 后奖杯亮起', async () => {
+    const admit = {
+      id: 'a1', day: '2026-10-02', mine: false, aboutUser: 'alice',
+      detail: '把外卖点成了辣锅', touched: false, canTouch: true,
+    }
+    vi.mocked(repairApi.repairWorkshop).mockResolvedValue(repairVo({ admits: [admit] }))
+    vi.mocked(repairApi.repairAdmitTouch).mockResolvedValue(repairVo({
+      admits: [{ ...admit, touched: true, canTouch: false }],
+    }))
+    const wrapper = await mountOnCareRescue()
+
+    await wrapper.find('[data-testid="couple-repair-admit-touch-a1"]').trigger('click')
+    await flushPromises()
+
+    expect(repairApi.repairAdmitTouch).toHaveBeenCalledWith('a1')
+    expect(wrapper.find('[data-testid="couple-repair-admit-touched-a1"]').exists()).toBe(true)
   })
 
   // ============ F205 卡片折叠（CoupleCollapsible） ============
