@@ -321,7 +321,10 @@ function onPickPlanDay(day: string) {
 }
 
 async function onSavePlan() {
-  if (!planDay.value) return
+  if (!planDay.value) {
+    ElMessage.warning('先在下面挑一天，菜才排得上去 🗓️')
+    return
+  }
   try {
     board.value = (await diningApi.dineSavePlan(planDay.value, planDishDraft.value.trim())) ?? board.value
     ElMessage.success(planDishDraft.value.trim() ? '这天的菜排上了 🗓️' : '这格已清空')
@@ -331,7 +334,10 @@ async function onSavePlan() {
 }
 
 async function onClearPlan() {
-  if (!planDay.value) return
+  if (!planDay.value) {
+    ElMessage.warning('先选中要擦掉的那格 🧽')
+    return
+  }
   try {
     board.value = (await diningApi.dineSavePlan(planDay.value, '')) ?? board.value
     planDishDraft.value = ''

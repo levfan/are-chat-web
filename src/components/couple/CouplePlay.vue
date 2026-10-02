@@ -295,7 +295,10 @@ function rollDice() {
 
 async function onAnswerSurvey(qNo: number) {
   const answer = (surveyDrafts.value[qNo] ?? '').trim()
-  if (!answer) return
+  if (!answer) {
+    ElMessage.warning('这题还没写答案呢，先答一句 🔓')
+    return
+  }
   try {
     await couple.answerSurvey(qNo, answer)
     surveyDrafts.value[qNo] = ''
@@ -322,7 +325,10 @@ async function onMakeQuiz() {
 
 async function onAnswerQuiz(id: string) {
   const answer = (quizAnswerDrafts.value[id] ?? '').trim()
-  if (!answer) return
+  if (!answer) {
+    ElMessage.warning('先写下你的答案再交卷 ✍️')
+    return
+  }
   try {
     await couple.answerQuiz(id, answer)
     quizAnswerDrafts.value[id] = ''

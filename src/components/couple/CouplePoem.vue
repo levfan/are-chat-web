@@ -208,7 +208,10 @@ const journalDraft = ref('')
 /** 编码：a=1..z=26，空格=0，分隔符 -（F164 前端编码器） */
 function encodeCipher() {
   const text = cipherPlain.value.trim().toLowerCase()
-  if (!text) return
+  if (!text) {
+    ElMessage.warning('先把想说的话写下来，才编得出密码 💌')
+    return
+  }
   const codes: string[] = []
   for (const ch of text) {
     if (ch === ' ') {
@@ -286,7 +289,10 @@ async function onTossBottle() {
 
 async function onReplyBottle(id: string) {
   const reply = bottleReplies[id]?.trim()
-  if (!reply) return
+  if (!reply) {
+    ElMessage.warning('回信先写一句，瓶子才不会空着漂回去 🍾')
+    return
+  }
   try {
     await couple.replyBottleItem(id, reply)
     bottleReplies[id] = ''
