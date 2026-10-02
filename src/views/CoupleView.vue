@@ -180,6 +180,7 @@
               <CouplePromises />
               <CoupleSecure />
               <CouplePact />
+              <CoupleQuest />
             </div>
           </el-tab-pane>
           <!-- F202 小仪式拆分：🌙 每日仪式 / 🎲 玩趣时间 -->
@@ -498,6 +499,7 @@ import CoupleRepair from '@/components/couple/CoupleRepair.vue'
 import CoupleLegacy from '@/components/couple/CoupleLegacy.vue'
 import CoupleEcho from '@/components/couple/CoupleEcho.vue'
 import CoupleFocus from '@/components/couple/CoupleFocus.vue'
+import CoupleQuest from '@/components/couple/CoupleQuest.vue'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()

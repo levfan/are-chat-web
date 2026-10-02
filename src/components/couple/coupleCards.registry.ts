@@ -20,6 +20,17 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-promises', label: '双向约定卡', tab: 'promises' },
   { key: 'couple-secure', label: '确定感与安全感', tab: 'promises' },
   { key: 'couple-pacts', label: '恋爱条约', tab: 'promises' },
+  // 🧗 人生关卡（F370-F379，promises 页签末尾）
+  { key: 'couple-quest-upcoming', label: '关卡预告（挂一场 Boss 战）', tab: 'promises' },
+  { key: 'couple-quest-battle', label: '出关战报与盖章', tab: 'promises' },
+  { key: 'couple-quest-overtime', label: '加班预报与留灯', tab: 'promises' },
+  { key: 'couple-quest-nurse', label: '生病陪护单', tab: 'promises' },
+  { key: 'couple-quest-pod', label: '考试周静音舱', tab: 'promises' },
+  { key: 'couple-quest-move', label: '搬家区块分工', tab: 'promises' },
+  { key: 'couple-quest-night', label: '新家第一晚', tab: 'promises' },
+  { key: 'couple-quest-valley', label: '低谷通行证', tab: 'promises' },
+  { key: 'couple-quest-win', label: '小胜利账本与成就墙', tab: 'promises' },
+  { key: 'couple-quest-report', label: '下次关口预约', tab: 'promises' },
   // 🌅 小仪式
   { key: 'couple-rituals', label: '早晚安打卡', tab: 'rituals', sub: 'ceremony' },
   { key: 'couple-daily', label: '甜蜜任务与运势', tab: 'rituals', sub: 'ceremony' },
