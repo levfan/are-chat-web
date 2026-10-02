@@ -4814,3 +4814,251 @@ export interface CoupleFocusTodayVO {
 
 /** F368 半日无手机挑战的半天代号（后端 CoupleFocusDetox.KIND_AM/KIND_PM，只能这两个） */
 export type CoupleFocusDetoxKind = 'AM' | 'PM'
+
+// ============ 批次三十三：人生关卡（F370-F379，questApi / CoupleQuest.vue） ============
+// 字段名与顺序与后端 CoupleQuestService 的 13 个 record 逐一对齐（record 参数顺序 = wire 字段顺序）。
+// 可空口径（照后端 build()/toXxx() 源码，不是猜的）：QuestVO 里真可空只有
+//   myOvertime / partnerOvertime（今晚那一方没预报）、myNurse / partnerNurse（没在途单）、
+//   myPod / partnerPod（进过舱就有值，出舱后也在，见下方 PodVO 说明）、moveNight（从来没打过）、
+//   myValley / partnerValley（没在途通行证）；wall 恒有值（当年零计数也给你一整份）。
+// 其余字符串经后端 nz() 恒为空串（没写=空串而不是 null），数字/布尔恒有值，「没打过」一律给 0 或 false。
+
+/** F370 关卡类型（后端 CoupleQuestBattle.KINDS 六个，白名单外 400「关卡类型只能是…」） */
+export type CoupleQuestBattleKind = 'INTERVIEW' | 'REPORT' | 'DEFEND' | 'TALK' | 'CHECKUP' | 'OTHER'
+
+/** F371 战果（后端 CoupleQuestReport.RESULTS；白名单外 400「战果只有三种」） */
+export type CoupleQuestResult = 'WIN' | 'LOSE' | 'SURVIVE'
+
+/** F373 代记种类（后端 CoupleQuestCareMark.KINDS，只有这两种） */
+export type CoupleQuestCareKind = 'WATER' | 'MED'
+
+/**
+ * F370 一关（在途或已打）。⚠️ QuestVO.battles 只下发 prep()=true 的在途关（报过战报的关离开这份列表，
+ * 历史活在 reports 里），所以 prep 在这个列表里恒 true，别拿它当「还能不能撤」的二次判据。
+ * daysLeft=服务端今天到关卡日还差几天（今天 0、已过为负，后端 daysBetween 原样给，不取绝对值）；
+ * kindLabel 是后端 Bank 的中文（面试/汇报/答辩/谈判/体检/其它），created 毫秒、没下发时后端给 0。
+ */
+export interface CoupleQuestBattleVO {
+  id: string
+  day: string
+  kind: CoupleQuestBattleKind
+  kindLabel: string
+  name: string
+  fear: string
+  mine: boolean
+  prep: boolean
+  daysLeft: number
+  created: number
+}
+
+/**
+ * F371 战报与盖章。mine=我是打这一关的人（后端按 battle.fromUser 判，不是按战报提交人判）；
+ * sealed=对方盖过章，sealedBy 盖章人（没盖是空串）；sealLabel 按战果定的章名
+ * （WIN「🏆 庆功章」/SURVIVE「🍀 幸亏章」/LOSE「🫂 抱抱章」，后端 Bank 下发）。
+ * 一关一份战报，报完那一关就从 battles 里消失。
+ */
+export interface CoupleQuestReportVO {
+  id: string
+  battleId: string
+  battleName: string
+  result: CoupleQuestResult
+  resultLabel: string
+  feeling: string
+  mine: boolean
+  sealed: boolean
+  sealedBy: string
+  sealLabel: string
+}
+
+/**
+ * F372 今晚的加班预报（uk(space,day,user)，每人每天一行、本人当天可改写）。
+ * untilHour 后端 13-23 钳制（null 按缺省 20）；lamp/lampBy=留的那句灯卡和留灯的人，没留是空串。
+ */
+export interface CoupleQuestOvertimeVO {
+  id: string
+  untilHour: number
+  note: string
+  mine: boolean
+  lamp: string
+  lampBy: string
+}
+
+/** F373 一次代记打卡（uk 是 nurse+day+kind+by_user，一天每种只记一次）。 */
+export interface CoupleQuestCareMarkVO {
+  day: string
+  kind: CoupleQuestCareKind
+  kindLabel: string
+  byUser: string
+  mine: boolean
+}
+
+/**
+ * F373 陪护单。patientUser 生病的人 / carerUser 陪护的人（开单时 patient 恒等于「操作人的对方」，
+ * 生病的人自己开不了）；mineAsCarer=我是陪护人；open=还在途（关单后为 false，行仍留在 nurses 里）。
+ * days=陪了几天（在途按今天算、关单按 closeDay 算，后端 Math.max(1, …) 恒 ≥1）；
+ * waterCount/medCount 是这张单累计的两种代记次数，marks 按打卡日升序。
+ * ⚠️ QuestVO.myNurse=「我生病、TA 陪我」那张，partnerNurse=「TA 生病、我陪 TA」那张，都只给在途的。
+ */
+export interface CoupleQuestNurseVO {
+  id: string
+  patientUser: string
+  carerUser: string
+  mineAsCarer: boolean
+  open: boolean
+  openDay: string
+  closeDay: string
+  symptom: string
+  message: string
+  waterCount: number
+  medCount: number
+  days: number
+  marks: CoupleQuestCareMarkVO[]
+}
+
+/**
+ * F374 静音舱一行。in=还在舱里（出舱后为 false，行仍下发）；cheerCount=累计收到几张加油卡；
+ * cheeredToday=我今天已经给这一舱递过一张了（后端按 MMdd CSV 判）；letterDone=对方标记过长信已补；
+ * daysLeft 出舱倒数（⚠️ 后端只在 in=true 时给真实天数，出舱后恒 0）。
+ * ⚠️ myPod/partnerPod 取的是「各自最近一次入舱」那一行（pods 按 startDay 降序取第一条），
+ * 出过舱的人这里给的是那一行 OUT 记录而不是 null——判「还能不能再进舱」只能看 in。
+ */
+export interface CoupleQuestPodVO {
+  id: string
+  mine: boolean
+  startDay: string
+  untilDay: string
+  in: boolean
+  cheerCount: number
+  cheeredToday: boolean
+  letterDone: boolean
+  daysLeft: number
+}
+
+/**
+ * F375 搬家区块一格（uk(space,slot)，slot 1-8；moves 只给开过的格，八格看板要自己补齐）。
+ * owner 认领人（空串=没人认领）、claimed=owner 非空、mine=我是认领人（后端直接 me.equals(owner)）。
+ * 没开过的格在后端 requireMove 里点认领/记箱数会自动建行，name 给空串。
+ */
+export interface CoupleQuestMoveVO {
+  id: string
+  slot: number
+  name: string
+  owner: string
+  mine: boolean
+  claimed: boolean
+  finished: boolean
+  boxes: number
+}
+
+/**
+ * F375 新家第一晚（uk(space,day)，双方共写一行，按 userA/userB 位打勾）。
+ * mineTicked/partnerTicked 是服务端按 space.userA 位置算出来的真值 —— 双拍归因一律吃这两个位，
+ * 不留本地「我按过没」的位；bothTicked=两人都点了才算庆祝；note 那句话只有点那一拍的人写的会落库。
+ */
+export interface CoupleQuestMoveNightVO {
+  id: string
+  day: string
+  mineTicked: boolean
+  partnerTicked: boolean
+  bothTicked: boolean
+  note: string
+}
+
+/**
+ * F376 低谷通行证（后端按 from_user 记是谁开的，在途每人 ≤1）。
+ * mine=这张是我开的；low=还在有效期内（回升后为 false，行仍下发）；careCount=累计收到几张
+ * 「不说话也行」卡；caredToday=我今天已经给这张递过卡了；reviveDay 回升日（没回升空串）；
+ * spanDays 挂了几天的口径 = 后端 daysBetween(openDay, untilDay)（宣布日到回升日的跨度）；
+ * daysLeft=还剩几天（⚠️ 只在 low=true 时给真实值，回升后恒 0）。
+ */
+export interface CoupleQuestValleyVO {
+  id: string
+  mine: boolean
+  openDay: string
+  untilDay: string
+  low: boolean
+  careCount: number
+  caredToday: boolean
+  reviveDay: string
+  spanDays: number
+  daysLeft: number
+}
+
+/**
+ * F377 小胜利一条（uk(space,day,user)，每人每天一条、当天改写不重推）。
+ * canAward 是后端算好的「这条我可以颁奖」= 不是我的那条 && 是 TA 的（自己那条恒 false）；
+ * awarded=已经颁过，awardedBy 颁奖人、awardDay 颁在哪天（没颁都是空串）。
+ * ⚠️ wins 是两人合计、按日渐降序、只给最近 21 条。
+ */
+export interface CoupleQuestWinVO {
+  id: string
+  day: string
+  mine: boolean
+  content: string
+  awardDay: string
+  awardedBy: string
+  awarded: boolean
+  canAward: boolean
+}
+
+/** F379 下次关卡预约（uk(space,day,title)，⚠️ 查重是按「同人同日同名」，挂单人自己判重）。 */
+export interface CoupleQuestUpcomingVO {
+  id: string
+  day: string
+  title: string
+  mine: boolean
+  attendBy: string
+  attended: boolean
+  daysLeft: number
+}
+
+/**
+ * F378 关卡成就墙（年度聚合，数字全部直接查原始表，不受列表钳制影响）。
+ * year 是 Java int → number（不是字符串，别抄批次二十五的 string year）；
+ * winRate=通关率整数百分比（reports 为 0 时后端给 0）；pods 这一项后端给的是
+ * 「静音舱数 + 搬家区块打包完成数」的合计（wallOf 里 pods + movesDone）；
+ * awards 同理是「小赢奖次数 + 低谷卡次数」的合计；title/summary 全是后端 Bank 整句。
+ */
+export interface CoupleQuestWallVO {
+  year: number
+  battles: number
+  reports: number
+  winRate: number
+  nurseDays: number
+  pods: number
+  valleyDays: number
+  awards: number
+  attends: number
+  title: string
+  summary: string
+}
+
+/**
+ * 关卡总览（GET /api/couple/quest/board 一次拉齐；27 个 POST 写接口全部原样返回整份 QuestVO，
+ * 前端整体替换即十卡刷新）。⚠️ 唯一的例外是 GET /wall?year=：那是「点按钮才懒读另一份」的独立读接口，
+ * 不进这份聚合（这份里的 wall 恒是服务端当年那一份）。
+ * day=服务端今天 yyyy-MM-dd、weekStart=服务端那周的周一 yyyy-MM-dd ——
+ * 所有倒数/是否本周的判定一律吃这两个字段，不吃本地时钟。
+ */
+export interface CoupleQuestVO {
+  day: string
+  weekStart: string
+  battles: CoupleQuestBattleVO[]
+  reports: CoupleQuestReportVO[]
+  myOvertime: CoupleQuestOvertimeVO | null
+  partnerOvertime: CoupleQuestOvertimeVO | null
+  canLeaveLamp: boolean
+  myNurse: CoupleQuestNurseVO | null
+  partnerNurse: CoupleQuestNurseVO | null
+  nurses: CoupleQuestNurseVO[]
+  myPod: CoupleQuestPodVO | null
+  partnerPod: CoupleQuestPodVO | null
+  moves: CoupleQuestMoveVO[]
+  moveBoxes: number
+  moveNight: CoupleQuestMoveNightVO | null
+  myValley: CoupleQuestValleyVO | null
+  partnerValley: CoupleQuestValleyVO | null
+  wins: CoupleQuestWinVO[]
+  upcoming: CoupleQuestUpcomingVO[]
+  wall: CoupleQuestWallVO
+}

@@ -232,6 +232,11 @@ import type {
   CoupleFocusWeeklyVO,
   CoupleFocusYearlyVO,
   CoupleFocusDetoxKind,
+  CoupleQuestVO,
+  CoupleQuestWallVO,
+  CoupleQuestBattleKind,
+  CoupleQuestResult,
+  CoupleQuestCareKind,
   CouplePinVO,
 } from '@/types'
 
@@ -2321,4 +2326,152 @@ export const focusApi = {
    *  hours 是后端 %.1f 换算的小时数字符串，topDay 空串=今年还没有最专注的一天） */
   focusYear: (year?: string) =>
     http.get<CoupleFocusYearlyVO>(year ? `/api/couple/focus/year?year=${year}` : '/api/couple/focus/year'),
+}
+
+/**
+ * F370-F379 人生关卡（questApi，基址 /api/couple/quest）—— v7 最大一批：29 个映射 = 2 个 GET + 27 个 POST。
+ * GET /board 是唯一的聚合读接口，27 个 POST 写接口全部原样返回整份 QuestVO（后端 CoupleQuestService.QuestVO），
+ * 前端整体替换即十卡刷新；⚠️ GET /wall?year=（F378 成就墙）是「点按钮才懒读另一年」的独立读接口，
+ * 不在这份聚合里（聚合里的 wall 恒是服务端当年那一份）。
+ * 限流与错误码全部抄自后端 Service/实体常量（业务规则归后端，400 中文 message 直透 ElMessage）：
+ * · F370 /battle：day 须 yyyy-MM-dd（400「关卡日写成 yyyy-MM-dd」）且不能早于服务端今天
+ *   （400「关卡日是过去的日子啦，要打就挑今天或以后 ⚔️）；kind 只能 INTERVIEW/REPORT/DEFEND/TALK/CHECKUP/OTHER
+ *   （400「关卡类型只能是面试/汇报/答辩/谈判/体检/其它」，空串后端兜成 OTHER）；name 必填
+ *   （400「关卡总得有个名字，比如「述职答辩」」）且 ≤30（NAME_MAX，400「关卡名最多 30 字」）；fear ≤60
+ *   （FEAR_MAX，400「怯场话最多 60 字」）；同人同日同名 uk 重复 400「这场已经挂过了，换个名字或换个日子 ⚔️」；
+ *   在途每人 ≤3（IN_FLIGHT_MAX，400「在途的关卡最多 3 场，先打完再挂」）。
+ *   /battle/remove：⚠️ 只有挂关人本人能撤（400「这场是 TA 的关卡，只有 TA 自己能撤 ⚔️」），
+ *   已交过战报的关不能再撤（400「这一关已经报过战报了，留着当记录吧」）；id 找不到是 404
+ *   「找不到这一场关卡，可能已经撤掉了 ⚔️」。
+ * · F371 /report：battleId 必填；⚠️ 只有打这一关的人能交（400「这一关是 TA 打的，战报得 TA 来交 📣」）、
+ *   一战一报（400「这一关已经交过战报了，一关一份」）；result 只能 WIN/LOSE/SURVIVE（400「战果只有三种…」）；
+ *   feeling ≤60（FEELING_MAX，400「一句感受最多 60 字」）可空。报完这一关离开 battles 列表（prep 过滤）。
+ *   /report/seal：⚠️ 章只能由「非交报人」盖（400「战报是自己交的，章要 TA 来盖 🎖️」），已盖再点是幂等
+ *   （后端直接返回整份 VO 不报错不重推）；按战果自动定章名（WIN 庆功/SURVIVE 幸亏/LOSE 抱抱）。
+ * · F372 /overtime：untilHour 后端 13-23 静默钳制（HOUR_MIN/MAX，null 按 HOUR_DEFAULT=20）；note ≤40
+ *   （NOTE_MAX，400「一句说明最多 40 字」）可空；uk(space,day,user) 每人每天一行、本人当天可改写。
+ *   /overtime/lamp：{id,text}；⚠️ 灯只能留给对方那行（400「灯是给加班的人留的，自己留不算 💡」）、
+ *   text 必填（400「灯下想留的那句话写一句」）且 ≤60（LAMP_MAX，400「灯卡最多 60 字」）；
+ *   id 找不到是 404「找不到今晚的加班预报，先让 TA 报一下 🌙」（明晚的灯要明晚再留）。
+ * · F373 /nurse：symptom ≤60（SYMPTOM_MAX，400「症状一句话最多 60 字」）可空；⚠️ 生病的人自己开不了单
+ *   （后端把 patient 恒定为「操作人的对方」），在途每人 ≤1（400「TA 的陪护单还在途，一张够了 🤒」）。
+ *   /nurse/mark {nurseId,kind}：单关了 400「这张单已经关了，不用继续记了」、⚠️ 只有陪护人能代记
+ *   （400「陪护单是 X 在陪，代记轮不到别人 💧」）、kind 只能 WATER/MED（400「只能记喝水或吃药两种」）、
+ *   一天每种只记一次（400「今天的喝水/吃药已经记过啦」）。/nurse/message {nurseId,text}：只有陪护人写
+ *   （400「病中留言是陪护人写的 ✍️」）、必填（400「留言写一句再存」）且 ≤80（MESSAGE_MAX）。
+ *   /nurse/close：⚠️ 痊愈只能病人自己宣布（400「痊愈要病人自己说，陪护的人不能替 TA 宣布 🎉」），
+ *   已关单再点是幂等（直接返回整份 VO）。
+ * · F374 /pod：untilDay 须 yyyy-MM-dd 且严格晚于今天（400「出舱日要晚于今天，静音舱不能当天开了就关 🔇」）；
+ *   一人同时只有一舱在途（400「你还在舱里，先出舱再进一次」）。/pod/cheer {id}：⚠️ 只有舱外的人能递
+ *   （400「舱是 TA 进的，加油卡要从外面递进去 💪」）、TA 已出舱 400「TA 已经出舱了，加油卡改成长信吧 🔔」、
+ *   一天一张（400「今天这张加油卡已经递过了，一天一张」，按 MMdd CSV 判）。/pod/out {id}：只有舱里的人自己出
+ *   （400「舱里的人才能自己出舱 🔔」），已出舱再点是幂等。/pod/letter {id}：TA 还在舱里 400
+ *   「TA 还在舱里，长信等出舱再写」、⚠️ 只有舱外那个人能标（400「长信是对面那个人写的，自己不能替 TA 打勾 ✉️」），
+ *   标过再点是幂等。
+ * · F375 /move/name {slot,name}：slot 只能 1-8（SLOT_MIN/MAX，400「区块位只有 1-8 格」）、name 必填
+ *   （400「这块要装什么，写个名字」）且 ≤20（NAME_MAX），谁都能补/改写。/move/claim {slot}：⚠️ 对方已认领
+ *   400「这一格 X 已经认领了，换一格吧 📦」，自己再点一次是松手（并把 done 清 0）。/move/boxes {slot,boxes}：
+ *   只有认领人能填（400「这一格还没归你认领，数不了箱 📦」），boxes 后端 0-99 静默钳制（BOX_MAX，null 按 0）。
+ *   /move/done {slot}：只有认领人能勾（400「谁认领的谁来勾完成 📦」），已勾再点是幂等。
+ *   /move/night {day,note}：day 必填须 yyyy-MM-dd（400「第一晚是哪天写成 yyyy-MM-dd」）、note ≤60
+ *   （NOTE_MAX，400「那一晚的一句话最多 60 字」）；⚠️ 后端只在「这一拍真的 0→1 翻转」时才写库，
+ *   已经打过卡的那一方再送来的 note 会被静默丢掉（不 update），所以前端在 mineTicked 时就不再放输入口。
+ * · F376 /valley：untilDay 须 yyyy-MM-dd 且与服务端今天的跨度只能 7-30 天（SPAN_MIN/MAX，400
+ *   「通行证要挂 7-30 天，太短像赌气，太长像放弃 🌧️」）；在途每人 ≤1（400「你的通行证还在有效期内，不用重复开」）。
+ *   /valley/care {id}：⚠️ 只有对方能递（400「通行证是 TA 开的，卡要从外面递进来 🧻」）、TA 已回升 400
+ *   「TA 已经回升了，卡改天再递 🌤️」、一天一张（400「今天的卡已经递过了，一天一张」）。/valley/rise {id}：
+ *   只有本人能定回升日（400「缓没缓过来只有 TA 自己说了算，别人不能替 TA 宣布 🌤️」），已回升幂等。
+ * · F377 /win：content 必填（400「做成的一件小事写一句，比如「把简历改了」」）且 ≤40（CONTENT_MAX）；
+ *   day 空串=今天、须 yyyy-MM-dd（400「日子写成 yyyy-MM-dd」）、不能是未来（400「小事要今天或以前做成了才算，
+ *   先别预支 🏅」）；uk(space,day,user) 每人每天一条，改写不重推。/win/award {id}：⚠️ 只能颁对方的记录
+ *   （400「小赢奖是颁给 TA 的，不能自颁 🏆」）且一人一周一颁（400「这周你已经颁过一次小赢奖了，下周再来」）。
+ * · F379 /upcoming：day 须落在服务端今天起 60 天内（WINDOW_DAYS，400「关口只挂今天起 60 天之内的 🙋」）、
+ *   title 必填（400「关口叫什么，写一句」）且 ≤30（TITLE_MAX）；同人同日同名 400「这个关口你已经挂过了」。
+ *   /upcoming/attend {id}：⚠️ 只有非挂单人能点（400「到场要对方来说，自己给自己应援不算 🙋」），重复点幂等。
+ *   /upcoming/remove {id}：只有挂单人能撤（400「这个关口是 TA 挂的，只有 TA 能撤」）。
+ * · F378 /wall（GET：year 空串=当年且须 yyyy 否则 400「年份写成 yyyy」）：年度聚合，数字直接查原始表
+ *   （不受 battles≤12/reports≤20/nurses≤6/pods≤8/wins≤21/upcoming≤20 的列表钳制）。
+ * 未建空间一律 404「还没有建立情侣空间，先邀请一位好友吧」，组件侧 safeLoad 静默降级。
+ */
+export const questApi = {
+  /** F370-F379 关卡总览（GET /board：十九个字段一次拉齐，⚠️ wall 恒是「服务端当年」那一份；
+   *  myOvertime/partnerOvertime/myNurse/partnerNurse/myPod/partnerPod/moveNight/myValley/partnerValley
+   *  没数据时为 null，其余字符串后端恒给空串；未建空间 404 前端静默降级） */
+  questBoard: () => http.get<CoupleQuestVO>('/api/couple/quest/board'),
+  /** F370 挂一场 Boss 战（day 今天或以后、kind 六白名单之一、name ≤30 必填、fear ≤60；
+   *  同人同日同名 400、在途每人 ≤3 场），返回整份总览 */
+  questBattle: (day: string, kind: CoupleQuestBattleKind, name: string, fear: string) =>
+    http.postJson<CoupleQuestVO>('/api/couple/quest/battle', { day, kind, name, fear }),
+  /** F370 撤掉自己挂的在途关卡（⚠️ 只有挂关人本人能撤，已交战报的不能再撤），返回整份总览 */
+  questBattleRemove: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/battle/remove', { id }),
+  /** F371 交出关战报（battleId 必填；⚠️ 只有打这一关的人能交、一战一报；result 只能
+   *  'WIN'|'LOSE'|'SURVIVE'；feeling ≤60 字可空），返回整份总览 */
+  questReport: (battleId: string, result: CoupleQuestResult, feeling: string) =>
+    http.postJson<CoupleQuestVO>('/api/couple/quest/report', { battleId, result, feeling }),
+  /** F371 对方按战果盖章（⚠️ 自己交的战报自己盖不了，章名由后端按战果定；已盖再点幂等不报错），返回整份总览 */
+  questReportSeal: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/report/seal', { id }),
+  /** F372 预报今晚忙到几点（untilHour 后端 13-23 静默钳制、null 按 20；note ≤40 字可空；
+   *  每人每天一行、本人当天可改写），返回整份总览 */
+  questOvertime: (untilHour: number | null, note: string) =>
+    http.postJson<CoupleQuestVO>('/api/couple/quest/overtime', { untilHour, note }),
+  /** F372 给对方留一张到家灯卡（id 是对方今晚那行预报的 id；⚠️ 只有对方能留、自己的行留不算，
+   *  text 必填 ≤60 字；找不到那行是 404），返回整份总览 */
+  questLamp: (id: string, text: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/overtime/lamp', { id, text }),
+  /** F373 为 TA 开生病陪护单（symptom ≤60 字可空；⚠️ 生病的人自己开不了，病人恒等于操作人的对方；
+   *  在途每人 ≤1 张），返回整份总览 */
+  questNurse: (symptom: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/nurse', { symptom }),
+  /** F373 陪护人代记一次喝水/吃药（kind 只能 'WATER'|'MED'；⚠️ 只有陪护人能记、一天每种只记一次、
+   *  单关了不能再记），返回整份总览 */
+  questNurseMark: (nurseId: string, kind: CoupleQuestCareKind) =>
+    http.postJson<CoupleQuestVO>('/api/couple/quest/nurse/mark', { nurseId, kind }),
+  /** F373 陪护人写/改病中留言（⚠️ 只有陪护人写；text 必填 ≤80 字；单关了 400），返回整份总览 */
+  questNurseMessage: (nurseId: string, text: string) =>
+    http.postJson<CoupleQuestVO>('/api/couple/quest/nurse/message', { nurseId, text }),
+  /** F373 病人自己宣布痊愈关单（⚠️ 陪护人不能替 TA 宣布；已关单再点是幂等），返回整份总览 */
+  questNurseClose: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/nurse/close', { id }),
+  /** F374 宣布进静音舱（untilDay 须 yyyy-MM-dd 且严格晚于服务端今天；一人同时只有一舱在途），返回整份总览 */
+  questPod: (untilDay: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/pod', { untilDay }),
+  /** F374 给舱里的人递一张加油卡（⚠️ 只有舱外的人能递、TA 出舱后不能再递、一天一张），返回整份总览 */
+  questPodCheer: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/pod/cheer', { id }),
+  /** F374 本人出舱（到点或提前都行；⚠️ 舱里的人才能自己出，已出舱再点幂等），返回整份总览 */
+  questPodOut: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/pod/out', { id }),
+  /** F374 对方标记「长信已补」（⚠️ 只有舱外那个人能标、TA 还在舱里时 400；标过再点幂等），返回整份总览 */
+  questPodLetter: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/pod/letter', { id }),
+  /** F375 给搬家区块起名（slot 只能 1-8；name 必填 ≤20 字；谁都能补，同名格子改写）），返回整份总览 */
+  questMoveName: (slot: number, name: string) =>
+    http.postJson<CoupleQuestVO>('/api/couple/quest/move/name', { slot, name }),
+  /** F375 认领/松手某一格（⚠️ 对方已认领的格子 400；自己再点一次是松手并把「打包完成」清 0），返回整份总览 */
+  questMoveClaim: (slot: number) => http.postJson<CoupleQuestVO>('/api/couple/quest/move/claim', { slot }),
+  /** F375 记这一格打包了几箱（⚠️ 只有认领人能填；boxes 后端 0-99 静默钳制、null 按 0），返回整份总览 */
+  questMoveBoxes: (slot: number, boxes: number | null) =>
+    http.postJson<CoupleQuestVO>('/api/couple/quest/move/boxes', { slot, boxes }),
+  /** F375 这一格打包完成（⚠️ 只有认领人能勾；已勾再点是幂等），返回整份总览 */
+  questMoveDone: (slot: number) => http.postJson<CoupleQuestVO>('/api/couple/quest/move/done', { slot }),
+  /** F375 新家第一晚打卡（day 必填须 yyyy-MM-dd、note ≤60 字可空；双人才算庆祝推双方；
+   *  ⚠️ 后端只在 0→1 真翻转时写库，已打过卡那一方再送的 note 会被静默丢掉），返回整份总览 */
+  questMoveNight: (day: string, note: string) =>
+    http.postJson<CoupleQuestVO>('/api/couple/quest/move/night', { day, note }),
+  /** F376 本人宣布进低谷（untilDay 与服务端今天的跨度只能 7-30 天；在途每人 ≤1 张），返回整份总览 */
+  questValley: (untilDay: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/valley', { untilDay }),
+  /** F376 递一张「不说话也行」卡（⚠️ 只有对方能递、TA 已回升 400、一天一张），返回整份总览 */
+  questValleyCare: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/valley/care', { id }),
+  /** F376 本人宣布回升收尾（⚠️ 只有本人能定回升日；已回升再点是幂等），返回整份总览 */
+  questValleyRise: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/valley/rise', { id }),
+  /** F377 记今天做成的一件小事（content 必填 ≤40 字；day 空串=今天、不能是未来；每人每天一条，
+   *  当天改写不重推），返回整份总览 */
+  questWin: (content: string, day: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/win', { content, day }),
+  /** F377 互颁小赢奖（⚠️ 只能颁对方的记录、一人一周一颁），返回整份总览 */
+  questWinAward: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/win/award', { id }),
+  /** F379 挂一个未来 60 天内的关口（day 须 yyyy-MM-dd、title 必填 ≤30 字；同人同日同名 400），返回整份总览 */
+  questUpcoming: (day: string, title: string) =>
+    http.postJson<CoupleQuestVO>('/api/couple/quest/upcoming', { day, title }),
+  /** F379 对方点「我会到场」（⚠️ 只有非挂单人能点；重复点幂等），返回整份总览 */
+  questUpcomingAttend: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/upcoming/attend', { id }),
+  /** F379 撤掉自己挂的关口（⚠️ 只有挂单人能撤），返回整份总览 */
+  questUpcomingRemove: (id: string) => http.postJson<CoupleQuestVO>('/api/couple/quest/upcoming/remove', { id }),
+  /** F378 关卡成就墙（GET：year 空串=当年且须 yyyy 否则 400「年份写成 yyyy」；数字全部直接查原始表，
+   *  pods 那项是「静音舱+搬家打包完成」合计、awards 是「小赢奖+低谷卡」合计。
+   *  ⚠️ 这是「点按钮才懒读另一年」的独立接口，不在总览聚合里，失败直透 ElMessage.error、首屏不自动拉 */
+  questWall: (year?: string) =>
+    http.get<CoupleQuestWallVO>(year ? `/api/couple/quest/wall?year=${year}` : '/api/couple/quest/wall'),
 }
