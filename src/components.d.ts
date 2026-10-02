@@ -37,6 +37,7 @@ declare module 'vue' {
     CoupleEcho: typeof import('./components/couple/CoupleEcho.vue')['default']
     CoupleFactory: typeof import('./components/couple/CoupleFactory.vue')['default']
     CoupleFirsts: typeof import('./components/couple/CoupleFirsts.vue')['default']
+    CoupleFocus: typeof import('./components/couple/CoupleFocus.vue')['default']
     CoupleFund: typeof import('./components/couple/CoupleFund.vue')['default']
     CoupleFunTalk: typeof import('./components/couple/CoupleFunTalk.vue')['default']
     CoupleGame: typeof import('./components/couple/CoupleGame.vue')['default']
