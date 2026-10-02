@@ -148,6 +148,17 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-cx-dossier', label: '考据卷宗', tab: 'timeline', sub: 'flow' },
   { key: 'couple-cx-soul', label: '灵魂与人格', tab: 'timeline', sub: 'flow' },
   { key: 'couple-museum', label: '时光博物馆', tab: 'timeline', sub: 'museum' },
+  // 🏺 传世系统（F340-F349，timeline/legacy 子页签）
+  { key: 'couple-legacy-ten', label: '年度十问（跨年对照）', tab: 'timeline', sub: 'legacy' },
+  { key: 'couple-legacy-audit', label: '记忆库年审', tab: 'timeline', sub: 'legacy' },
+  { key: 'couple-legacy-speech', label: '续约发布会（发言与评分卡）', tab: 'timeline', sub: 'legacy' },
+  { key: 'couple-legacy-milestone', label: '里程碑倒推', tab: 'timeline', sub: 'legacy' },
+  { key: 'couple-legacy-fx', label: '恋爱汇率与年末结算', tab: 'timeline', sub: 'legacy' },
+  { key: 'couple-legacy-brand', label: '情侣品牌', tab: 'timeline', sub: 'legacy' },
+  { key: 'couple-legacy-review', label: '我们的一年（年度盘点）', tab: 'timeline', sub: 'legacy' },
+  { key: 'couple-legacy-list', label: '传世清单（双签封存）', tab: 'timeline', sub: 'legacy' },
+  { key: 'couple-legacy-draw', label: '周年抽奖箱', tab: 'timeline', sub: 'legacy' },
+  { key: 'couple-legacy-level', label: '空间等级与年度称号', tab: 'timeline', sub: 'legacy' },
 ]
 
 /** 一级页签的展示名（搜索/收藏 chip 的补充说明用） */

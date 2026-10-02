@@ -330,6 +330,12 @@
                   <CoupleMuseum />
                 </div>
               </el-tab-pane>
+              <!-- F340-F349 传世系统：十问/年审/发布会/倒推/汇率/品牌/盘点/清单/抽奖/等级，都堆在这一个子页签里 -->
+              <el-tab-pane label="🏺 传世系统" name="legacy" lazy>
+                <div class="tab-stack">
+                  <CoupleLegacy />
+                </div>
+              </el-tab-pane>
             </el-tabs>
           </el-tab-pane>
         </el-tabs>
@@ -487,6 +493,7 @@ import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
 import CoupleTheater from '@/components/couple/CoupleTheater.vue'
 import CoupleBody from '@/components/couple/CoupleBody.vue'
 import CoupleRepair from '@/components/couple/CoupleRepair.vue'
+import CoupleLegacy from '@/components/couple/CoupleLegacy.vue'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()
