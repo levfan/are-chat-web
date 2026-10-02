@@ -3,12 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, bodyApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, echoApi, factoryApi, focusApi, legacyApi, listenApi, manageApi, museumApi, pinApi, postApi, questApi, repairApi, theaterApi, worldApi } from '@/api/couple'
+import { almanacApi, boardApi, bodyApi, catchApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, echoApi, factoryApi, focusApi, legacyApi, listenApi, manageApi, museumApi, pinApi, postApi, questApi, repairApi, theaterApi, worldApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleEchoBatteryVO, CoupleEchoCalendarDayVO, CoupleEchoDeedVO, CoupleEchoHighlightVO, CoupleEchoJuiceVO, CoupleEchoReceiptVO, CoupleEchoSelfLetterVO, CoupleEchoSlowVO, CoupleEchoVO, CoupleEchoYearlyVO, CoupleFyBoardVO, CoupleFocusNightVO, CoupleFocusQueueVO, CoupleFocusSlotVO, CoupleFocusTodayVO, CoupleFocusWeeklyVO, CoupleFocusYearlyVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CoupleQuestBattleVO, CoupleQuestCareMarkVO, CoupleQuestMoveNightVO, CoupleQuestMoveVO, CoupleQuestNurseVO, CoupleQuestOvertimeVO, CoupleQuestPodVO, CoupleQuestReportVO, CoupleQuestUpcomingVO, CoupleQuestValleyVO, CoupleQuestVO, CoupleQuestWallVO, CoupleQuestWinVO, CouplePraiseVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCatchDailyVO, CoupleCatchMineVO, CoupleCatchProtocolVO, CoupleCatchSayVO, CoupleCatchSensitiveVO, CoupleCatchSafewordVO, CoupleCatchThreadVO, CoupleCatchTopicVO, CoupleCatchUseVO, CoupleCatchVO, CoupleCatchWishVO, CoupleCatchYearVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleEchoBatteryVO, CoupleEchoCalendarDayVO, CoupleEchoDeedVO, CoupleEchoHighlightVO, CoupleEchoJuiceVO, CoupleEchoReceiptVO, CoupleEchoSelfLetterVO, CoupleEchoSlowVO, CoupleEchoVO, CoupleEchoYearlyVO, CoupleFyBoardVO, CoupleFocusNightVO, CoupleFocusQueueVO, CoupleFocusSlotVO, CoupleFocusTodayVO, CoupleFocusWeeklyVO, CoupleFocusYearlyVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CoupleQuestBattleVO, CoupleQuestCareMarkVO, CoupleQuestMoveNightVO, CoupleQuestMoveVO, CoupleQuestNurseVO, CoupleQuestOvertimeVO, CoupleQuestPodVO, CoupleQuestReportVO, CoupleQuestUpcomingVO, CoupleQuestValleyVO, CoupleQuestVO, CoupleQuestWallVO, CoupleQuestWinVO, CouplePraiseVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -1073,6 +1073,56 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F380-F389 聆听者 catchApi：默认全空但形状完整的 CatchVO（后端 CoupleCatchService.CatchVO 二十四个字段）
+  // 六个可空槽位（myWord/partnerWord/myProtocol/partnerProtocol/myToday/partnerToday）一律 null、
+  // 八张列表给 []、day/week 给服务端日子、year 给「服务端当年零计数 + Bank 称号」那一份整对象；
+  // catchYear 是「点按钮才懒读」的独立读接口单独给默认值，19 个写接口走 Proxy，用例内按需覆盖
+  const catchEmptyYear = (): CoupleCatchYearVO => ({
+    year: 2026, wishes: 0, fulfilled: 0, mines: 0, acked: 0, avoids: 0, uses: 0, reflected: 0,
+    sensitives: 0, threads: 0, finished: 0, says: 0, talked: 0, onTime: 0, dailies: 0,
+    title: '刚拿起小本本', summary: '👂 2026 年聆听者年报：还没开始记。',
+  })
+  const catchEmptyVo = (): CoupleCatchVO => ({
+    day: '2026-10-05',
+    week: '2026-09-28',
+    myWishes: [],
+    revealedToMe: [],
+    wishQuotaLeft: 12,
+    mines: [],
+    myWord: null,
+    partnerWord: null,
+    uses: [],
+    monthUses: 0,
+    sensitives: [],
+    myThreads: [],
+    partnerThreads: [],
+    mySays: [],
+    partnerSays: [],
+    myProtocol: null,
+    partnerProtocol: null,
+    protocolHint: '🎧 两个人都写完说明书，下次安慰才有依据——还差你',
+    topics: [],
+    myToday: null,
+    partnerToday: null,
+    dailyHint: '',
+    myHistory: [],
+    year: catchEmptyYear(),
+  })
+  const catchBase: Record<string, ReturnType<typeof vi.fn>> = {
+    catchBoard: vi.fn().mockResolvedValue(catchEmptyVo()),
+    catchYear: vi.fn().mockResolvedValue(catchEmptyYear()),
+  }
+  // ⚠️ 这个 Proxy 必须把 mock 函数 return 出去：19 个写接口漏 return 会全成 undefined，
+  // 组件里 await undefined.day 直接把整场测试炸成 Unhandled Rejection（批次二十七踩过，别再踩）
+  const catchWrapped = new Proxy(catchBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(catchEmptyVo())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -1100,6 +1150,8 @@ vi.mock('@/api/couple', () => {
     focusApi: focusWrapped,
     // F370-F379 人生关卡 questApi：默认全空但形状完整的 QuestVO，用例内按需覆盖
     questApi: questWrapped,
+    // F380-F389 聆听者 catchApi：默认全空但形状完整的 CatchVO，用例内按需覆盖
+    catchApi: catchWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -7713,6 +7765,826 @@ describe('CoupleView 情侣空间', () => {
     expect(wrapper.find('[data-testid="couple-quest-prep-submit"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="couple-quest-overtime-submit"]').exists()).toBe(false)
     expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('还没有建立情侣空间'))
+    wrapper.unmount()
+  })
+
+  // ============ F380-F389 聆听者（CoupleCatch，letters「💌 悄悄话」→ send「💌 寄给你」子页签末尾） ============
+
+  /** 年报那一份：数字给真实的非零值，用例好断言「墙上的数字来自后端而不是前端自己算」 */
+  function catchYearVo(partial: Partial<CoupleCatchYearVO> = {}): CoupleCatchYearVO {
+    return {
+      year: 2026, wishes: 9, fulfilled: 4, mines: 5, acked: 3, avoids: 7, uses: 6, reflected: 2,
+      sensitives: 8, threads: 11, finished: 9, says: 12, talked: 5, onTime: 3, dailies: 130,
+      title: '会喊停的成年人',
+      summary: '👂 2026 年聆听者年报：偷偷记了 9 个心愿，兑现揭晓 4 个——称号「会喊停的成年人」。',
+      ...partial,
+    }
+  }
+  /** 造一份聆听者总览：默认「十件事都没发生」（六个可空槽位一律 null、八张列表给 []、year 给当年零计数那份） */
+  function catchVo(partial: Partial<CoupleCatchVO> = {}): CoupleCatchVO {
+    return {
+      // day/week 恒给服务端那两个日子：用例里的倒数与「今天」一律由它们推，不吃本地时钟
+      day: '2026-10-05', week: '2026-09-28',
+      myWishes: [], revealedToMe: [], wishQuotaLeft: 12, mines: [],
+      myWord: null, partnerWord: null, uses: [], monthUses: 0, sensitives: [],
+      myThreads: [], partnerThreads: [], mySays: [], partnerSays: [],
+      myProtocol: null, partnerProtocol: null,
+      protocolHint: '🎧 两个人都写完说明书，下次安慰才有依据——还差你',
+      topics: [], myToday: null, partnerToday: null, dailyHint: '', myHistory: [],
+      year: catchYearVo({ wishes: 0, fulfilled: 0, title: '刚拿起小本本' }), ...partial,
+    }
+  }
+  function catchWishRow(partial: Partial<CoupleCatchWishVO> = {}): CoupleCatchWishVO {
+    return {
+      id: 'w1', mine: true, content: '那支蓝色的钢笔', sourceDay: '2026-09-18', scene: '逛文具店',
+      secret: true, filled: false, created: 1_758_000_000_000, ...partial,
+    }
+  }
+  function catchMineRow(partial: Partial<CoupleCatchMineVO> = {}): CoupleCatchMineVO {
+    return {
+      id: 'm1', mine: false, topic: 'TA 的前任', trip: '被拿来比较', safeWay: '直说我需要安全感',
+      acked: false, ackBy: '', avoided: 0, ...partial,
+    }
+  }
+  function catchWordRow(partial: Partial<CoupleCatchSafewordVO> = {}): CoupleCatchSafewordVO {
+    return { id: 'sw1', mine: true, word: '冷静十分钟', note: '先停十分钟再聊', useCount: 2, ...partial }
+  }
+  function catchUseRow(partial: Partial<CoupleCatchUseVO> = {}): CoupleCatchUseVO {
+    return { id: 'u1', day: '2026-10-05', mine: true, word: '冷静十分钟', reflect: '', ...partial }
+  }
+  function catchSensRow(partial: Partial<CoupleCatchSensitiveVO> = {}): CoupleCatchSensitiveVO {
+    return {
+      id: 'se1', mineAsOwner: false, ownerUser: 'bob', day: '2026-10-12', kind: 'CHECK', kindLabel: '考核日',
+      care: '别问细节，递杯热的', daysLeft: 7, remindTomorrow: false, ...partial,
+    }
+  }
+  function catchThreadRow(partial: Partial<CoupleCatchThreadVO> = {}): CoupleCatchThreadVO {
+    return { id: 't1', mine: true, topic: '装修预算', progress: '说到厨房那笔', open: true, created: 1_759_000_000_000, ...partial }
+  }
+  function catchSayRow(partial: Partial<CoupleCatchSayVO> = {}): CoupleCatchSayVO {
+    return { id: 'sy1', mine: true, say: '随便', means: '你替我选，但别选错', ...partial }
+  }
+  function catchProtoRow(partial: Partial<CoupleCatchProtocolVO> = {}): CoupleCatchProtocolVO {
+    return { id: 'pr1', mine: true, mode: 'HUG', modeLabel: '抱抱，别说话', note: '等我哭完再讲道理', ...partial }
+  }
+  function catchTopicRow(partial: Partial<CoupleCatchTopicVO> = {}): CoupleCatchTopicVO {
+    return {
+      id: 'tp1', mine: false, title: '婚后要不要回老家', status: 'PENDING', takenBy: '',
+      canTake: true, canTalk: false, overdue: false, talkDay: '', reflect: '', ...partial,
+    }
+  }
+  function catchDailyRow(partial: Partial<CoupleCatchDailyVO> = {}): CoupleCatchDailyVO {
+    return { day: '2026-10-05', content: '今天风很大，想你了', mine: true, ...partial }
+  }
+
+  /** 进「💌 寄给你」子页签（CoupleCatch 挂在 CouplePost 之后，同子页签最末） */
+  async function mountOnLettersCatch() {
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-letters').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-catch"]').exists()).toBe(true)
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 十卡全带 :empty，折叠态会落库；清干净避免污染后面的用例
+    ;[
+      'couple-catch-wish', 'couple-catch-mine', 'couple-catch-safeword', 'couple-catch-sensitive',
+      'couple-catch-thread', 'couple-catch-say', 'couple-catch-protocol', 'couple-catch-topic',
+      'couple-catch-daily', 'couple-catch-year',
+    ].forEach((k) => localStorage.removeItem(`arechat_couple_collapse_${k}`))
+  })
+
+  it('聆听者·暗中心愿本：空/出处格式/将来日子/场合超长/记满/同名各自挡下不打后端，兑现钮只在我替 TA 记的行，后端中文直透', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      wishQuotaLeft: 12,
+      myWishes: [catchWishRow()],
+      revealedToMe: [catchWishRow({ id: 'w9', mine: false, content: '那台胶片相机', secret: false, filled: true })],
+    }))
+    const wrapper = await mountOnLettersCatch()
+    const submit = wrapper.find('[data-testid="couple-catch-wish-submit"]')
+
+    // 内容空
+    await submit.trigger('click')
+    expect(catchApi.catchWish).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先写一句 TA 想要什么'))
+
+    // 出处日子格式错
+    await wrapper.find('[data-testid="couple-catch-wish-content"]').setValue('想要一台胶片相机')
+    await wrapper.find('[data-testid="couple-catch-wish-day"]').setValue('20261001')
+    await submit.trigger('click')
+    expect(catchApi.catchWish).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('出处日子写成 yyyy-MM-dd'))
+
+    // 出处日子是将来（服务端 day=2026-10-05）
+    await wrapper.find('[data-testid="couple-catch-wish-day"]').setValue('2026-10-20')
+    await submit.trigger('click')
+    expect(catchApi.catchWish).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('不能是将来'))
+
+    // 场合超长
+    await wrapper.find('[data-testid="couple-catch-wish-day"]').setValue('')
+    await wrapper.find('[data-testid="couple-catch-wish-scene"]').setValue('一'.repeat(41))
+    await submit.trigger('click')
+    expect(catchApi.catchWish).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('场合最多 40 字'))
+
+    // 同主人同文案（吃服务端 myWishes 里那一条）
+    await wrapper.find('[data-testid="couple-catch-wish-scene"]').setValue('')
+    await wrapper.find('[data-testid="couple-catch-wish-content"]').setValue('那支蓝色的钢笔')
+    await submit.trigger('click')
+    expect(catchApi.catchWish).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('已经悄悄记过了'))
+
+    // 写成功 → 整份替换：新那份的 wishQuotaLeft=0（含已揭晓的占格），下一笔直接被挡
+    await wrapper.find('[data-testid="couple-catch-wish-content"]').setValue('想要一台胶片相机')
+    vi.mocked(catchApi.catchWish).mockResolvedValue(catchVo({ wishQuotaLeft: 0, myWishes: [catchWishRow(), catchWishRow({ id: 'w2', content: '想要一台胶片相机' })] }))
+    await submit.trigger('click')
+    expect(catchApi.catchWish).toHaveBeenCalledWith('想要一台胶片相机', '', '')
+    await wrapper.find('[data-testid="couple-catch-wish-content"]').setValue('一副手套')
+    await submit.trigger('click')
+    expect(catchApi.catchWish).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('已经记满 12 条'))
+    expect((wrapper.find('[data-testid="couple-catch-wish-quota"]').element as HTMLElement).textContent).toContain('还能记 0 条')
+
+    // 兑现登记归记账人，揭晓的那页不给钮（保密靠后端读时过滤）
+    // 后端 404 中文直透（先试错再试对，免得整份替换后这一行已经离开 myWishes）
+    vi.mocked(catchApi.catchWishFulfill).mockRejectedValueOnce(new Error('找不到这条心愿 🤫'))
+    await wrapper.find('[data-testid="couple-catch-wish-fill-w1"]').trigger('click')
+    expect(errorSpy).toHaveBeenCalledWith('找不到这条心愿 🤫')
+
+    vi.mocked(catchApi.catchWishFulfill).mockResolvedValue(catchVo({ revealedToMe: [catchWishRow({ id: 'w9', mine: false, secret: false, filled: true })] }))
+    await wrapper.find('[data-testid="couple-catch-wish-fill-w1"]').trigger('click')
+    expect(catchApi.catchWishFulfill).toHaveBeenCalledWith('w1')
+    expect(wrapper.find('[data-testid="couple-catch-wish-revealed-w9"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-wish-fill-w9"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('聆听者·雷区探测器：知晓章与避雷都只给对方的雷，自己的雷只给等待文案；必填/超长/同名/满 6 颗挡下，避雷 400 直透', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      mines: [
+        catchMineRow({ id: 'm1', mine: false, acked: false }),
+        catchMineRow({ id: 'm2', mine: false, topic: '谁做饭', acked: true, ackBy: 'alice', avoided: 1 }),
+        catchMineRow({ id: 'm3', mine: true, topic: '加班到半夜', acked: false }),
+      ],
+    }))
+    const wrapper = await mountOnLettersCatch()
+
+    // 归属闸门：TA 的两颗分别给「知晓」和「避雷」，我自己那颗两个都不给
+    expect(wrapper.find('[data-testid="couple-catch-mine-ack-m1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-mine-avoid-m1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-catch-mine-avoid-m2"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-mine-ack-m3"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-catch-mine-wait-m3"]').element as HTMLElement).textContent).toContain('知晓章要 TA 来盖')
+
+    // 整份替换必须带上下一步还要点的行：m1 盖过章、m2 还在、m3 仍是自己的
+    vi.mocked(catchApi.catchMineAck).mockResolvedValue(catchVo({
+      mines: [
+        catchMineRow({ id: 'm1', acked: true, ackBy: 'alice' }),
+        catchMineRow({ id: 'm2', topic: '谁做饭', acked: true, ackBy: 'alice', avoided: 1 }),
+        catchMineRow({ id: 'm3', mine: true, topic: '加班到半夜' }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-catch-mine-ack-m1"]').trigger('click')
+    expect(catchApi.catchMineAck).toHaveBeenCalledWith('m1')
+    // 整份替换后 m1 已盖过章 → 换的是避雷钮（钮位由服务端 acked 位驱动，不是本地状态）
+    expect(wrapper.find('[data-testid="couple-catch-mine-avoid-m1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-mine-ack-m1"]').exists()).toBe(false)
+
+    // 后端 400 中文直透（先试错，因为成功那次会把整份列表换掉）
+    vi.mocked(catchApi.catchMineAvoid).mockRejectedValueOnce(new Error('先盖「已知晓」，再记这次绕过去了'))
+    await wrapper.find('[data-testid="couple-catch-mine-avoid-m2"]').trigger('click')
+    expect(errorSpy).toHaveBeenCalledWith('先盖「已知晓」，再记这次绕过去了')
+    vi.mocked(catchApi.catchMineAvoid).mockResolvedValue(catchVo({
+      mines: [
+        catchMineRow({ id: 'm1', acked: true, ackBy: 'alice', avoided: 1 }),
+        catchMineRow({ id: 'm2', topic: '谁做饭', acked: true, ackBy: 'alice', avoided: 2 }),
+        catchMineRow({ id: 'm3', mine: true, topic: '加班到半夜' }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-catch-mine-avoid-m2"]').trigger('click')
+    expect(catchApi.catchMineAvoid).toHaveBeenCalledWith('m2')
+    expect((wrapper.find('[data-testid="couple-catch-mine-avoided-m2"]').element as HTMLElement).textContent).toContain('绕开 2 次')
+
+    // 挂雷闸门
+    const submit = wrapper.find('[data-testid="couple-catch-mine-submit"]')
+    const before = catchApi.catchMine as ReturnType<typeof vi.fn>
+    before.mockClear()
+    await submit.trigger('click')
+    expect(before).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先写个话题'))
+
+    await wrapper.find('[data-testid="couple-catch-mine-topic"]').setValue('话'.repeat(31))
+    await submit.trigger('click')
+    expect(before).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('话题最多 30 字'))
+
+    await wrapper.find('[data-testid="couple-catch-mine-topic"]').setValue('加班到半夜')
+    await wrapper.find('[data-testid="couple-catch-mine-trip"]').setValue('雷'.repeat(61))
+    await submit.trigger('click')
+    expect(before).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('雷点最多 60 字'))
+
+    await wrapper.find('[data-testid="couple-catch-mine-trip"]').setValue('被拿来比较')
+    await submit.trigger('click')
+    expect(before).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('这颗雷已经挂过了'))
+
+    // 写成功 → 新那份我已经挂了 6 颗，下一颗被上限挡下（上限吃服务端列表）
+    vi.mocked(catchApi.catchMine).mockResolvedValue(catchVo({
+      mines: [1, 2, 3, 4, 5, 6].map((i) => catchMineRow({ id: `own${i}`, mine: true, topic: `雷${i}` })),
+    }))
+    await wrapper.find('[data-testid="couple-catch-mine-topic"]').setValue('新话题')
+    await submit.trigger('click')
+    await flushPromises()
+    expect(catchApi.catchMine).toHaveBeenCalledWith('新话题', '被拿来比较', '')
+    expect(wrapper.find('[data-testid="couple-catch-mine-ack-own1"]').exists()).toBe(false)
+    // 整份替换清掉了草稿（设计如此），重填一句才看得出上限是服务端那 6 颗顶住的
+    await wrapper.find('[data-testid="couple-catch-mine-topic"]').setValue('第七颗')
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('最多挂 6 颗雷'))
+    expect(catchApi.catchMine).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('聆听者·安全词：没约词喊不出停、约上才能喊，「今天已经喊过」吃服务端 uses 那一行而不是本地计数；必填与超长挡下', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({ myWord: null, uses: [], monthUses: 0 }))
+    const wrapper = await mountOnLettersCatch()
+
+    await wrapper.find('[data-testid="couple-catch-word-use"]').trigger('click')
+    expect(catchApi.catchSafewordUse).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先约一个安全词'))
+    expect(wrapper.find('[data-testid="couple-catch-word-mine-none"]').exists()).toBe(true)
+
+    const submit = wrapper.find('[data-testid="couple-catch-word-submit"]')
+    await submit.trigger('click')
+    expect(catchApi.catchSafeword).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('暂停词总得有个词'))
+
+    await wrapper.find('[data-testid="couple-catch-word-text"]').setValue('词'.repeat(21))
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('安全词最多 20 字'))
+
+    await wrapper.find('[data-testid="couple-catch-word-text"]').setValue('冷静十分钟')
+    await wrapper.find('[data-testid="couple-catch-word-note"]').setValue('希'.repeat(61))
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('用了之后希望最多 60 字'))
+
+    // 约定成功：返回那份带上我的词，输入口回填成服务端的值
+    vi.mocked(catchApi.catchSafeword).mockResolvedValue(catchVo({ myWord: catchWordRow(), uses: [], monthUses: 1 }))
+    await wrapper.find('[data-testid="couple-catch-word-note"]').setValue('先停十分钟再聊')
+    await submit.trigger('click')
+    expect(catchApi.catchSafeword).toHaveBeenCalledWith('冷静十分钟', '先停十分钟再聊')
+    expect((wrapper.find('[data-testid="couple-catch-word-text"]').element as HTMLInputElement).value).toBe('冷静十分钟')
+    expect((wrapper.find('[data-testid="couple-catch-word-mine-count"]').element as HTMLElement).textContent).toContain('累计喊过 2 次')
+
+    // 喊一次：返回那份带上今天这一行 → 「今天已经记过」是服务端位，按钮再点只提示不发请求
+    vi.mocked(catchApi.catchSafewordUse).mockResolvedValue(catchVo({ myWord: catchWordRow(), uses: [catchUseRow()], monthUses: 2 }))
+    await wrapper.find('[data-testid="couple-catch-word-use"]').trigger('click')
+    expect(catchApi.catchSafewordUse).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="couple-catch-word-use-today"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-catch-word-use"]').trigger('click')
+    expect(catchApi.catchSafewordUse).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('别把安全词用成口头禅'))
+    wrapper.unmount()
+  })
+
+  it('聆听者·暂停复盘只归喊停的人：TA 那行没有输入口，复盘必填与超长挡下，复盘文案与次数都吃服务端', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      myWord: catchWordRow({ useCount: 1 }),
+      partnerWord: catchWordRow({ id: 'sw2', mine: false, word: '我去走走', note: '', useCount: 3 }),
+      uses: [
+        catchUseRow({ id: 'u1', mine: true, day: '2026-10-04', reflect: '' }),
+        catchUseRow({ id: 'u2', mine: false, day: '2026-10-03', word: '我去走走', reflect: '' }),
+        catchUseRow({ id: 'u3', mine: false, day: '2026-10-02', word: '我去走走', reflect: '她一个人下楼绕了一圈' }),
+      ],
+      monthUses: 4,
+    }))
+    const wrapper = await mountOnLettersCatch()
+
+    expect(wrapper.find('[data-testid="couple-catch-reflect-input-u1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-reflect-input-u2"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-catch-use-reflect-wait-u2"]').element as HTMLElement).textContent).toContain('复盘要 TA 自己写')
+    expect((wrapper.find('[data-testid="couple-catch-use-reflect-text-u3"]').element as HTMLElement).textContent).toContain('她一个人下楼绕了一圈')
+    expect((wrapper.find('[data-testid="couple-catch-word-partner-text"]').element as HTMLElement).textContent).toContain('我去走走')
+    expect((wrapper.find('[data-testid="couple-catch-word-partner-count"]').element as HTMLElement).textContent).toContain('3 次')
+
+    await wrapper.find('[data-testid="couple-catch-reflect-btn-u1"]').trigger('click')
+    expect(catchApi.catchSafewordReflect).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('当时卡在哪'))
+
+    await wrapper.find('[data-testid="couple-catch-reflect-input-u1"]').setValue('复盘'.repeat(31))
+    await wrapper.find('[data-testid="couple-catch-reflect-btn-u1"]').trigger('click')
+    expect(catchApi.catchSafewordReflect).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('复盘最多 60 字'))
+
+    vi.mocked(catchApi.catchSafewordReflect).mockResolvedValue(catchVo({
+      uses: [catchUseRow({ id: 'u1', mine: true, day: '2026-10-04', reflect: '第二天我才接上话' })],
+    }))
+    await wrapper.find('[data-testid="couple-catch-reflect-input-u1"]').setValue('第二天我才接上话')
+    await wrapper.find('[data-testid="couple-catch-reflect-btn-u1"]').trigger('click')
+    expect(catchApi.catchSafewordReflect).toHaveBeenCalledWith('u1', '第二天我才接上话')
+    expect((wrapper.find('[data-testid="couple-catch-reflect-input-u1"]').element as HTMLInputElement).value).toBe('第二天我才接上话')
+    expect((wrapper.find('[data-testid="couple-catch-use-reflect-u1"]').element as HTMLElement).textContent).toContain('已补复盘')
+
+    vi.mocked(catchApi.catchSafewordReflect).mockRejectedValueOnce(new Error('那次是 TA 喊的停，复盘要 TA 自己写 📝'))
+    await wrapper.find('[data-testid="couple-catch-reflect-btn-u1"]').trigger('click')
+    expect(errorSpy).toHaveBeenCalledWith('那次是 TA 喊的停，复盘要 TA 自己写 📝')
+    wrapper.unmount()
+  })
+
+  it('聆听者·敏感日历：日子必填/格式/过去的日子/没选类型/超长/同日同类挡下，倒数与「就是明天」吃服务端位，只有代标人能撤', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      sensitives: [
+        catchSensRow({ id: 'se1', mineAsOwner: false, day: '2026-10-06', daysLeft: 1, remindTomorrow: true }),
+        catchSensRow({ id: 'se2', mineAsOwner: true, ownerUser: 'alice', day: '2026-10-20', kind: 'PERIOD', kindLabel: '周期第一天', daysLeft: 15, remindTomorrow: false }),
+      ],
+    }))
+    const wrapper = await mountOnLettersCatch()
+
+    // 倒数与提醒全吃服务端 daysLeft/remindTomorrow
+    expect((wrapper.find('[data-testid="couple-catch-sens-left-se1"]').element as HTMLElement).textContent).toContain('还有 1 天')
+    expect(wrapper.find('[data-testid="couple-catch-sens-bell-se1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-sens-bell-se2"]').exists()).toBe(false)
+    // 撤除权只在代标人那侧
+    expect(wrapper.find('[data-testid="couple-catch-sens-del-se1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-sens-del-se2"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-catch-sens-wait-se2"]').element as HTMLElement).textContent).toContain('要撤也只能 TA 来撤')
+
+    const submit = wrapper.find('[data-testid="couple-catch-sens-submit"]')
+    await submit.trigger('click')
+    expect(catchApi.catchSensitive).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('写个日子'))
+
+    await wrapper.find('[data-testid="couple-catch-sens-day"]').setValue('20261102')
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('敏感日写成 yyyy-MM-dd'))
+
+    await wrapper.find('[data-testid="couple-catch-sens-day"]').setValue('2026-09-01')
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('过去的日子就让它过去'))
+
+    await wrapper.find('[data-testid="couple-catch-sens-day"]').setValue('2026-11-02')
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先挑一个类型'))
+
+    await wrapper.find('[data-testid="couple-catch-sens-kind-PERIOD"]').trigger('click')
+    await wrapper.find('[data-testid="couple-catch-sens-care"]').setValue('照'.repeat(61))
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('当天想被怎样对待最多 60 字'))
+
+    // 同一天同一类（吃服务端我代标的那些行）
+    await wrapper.find('[data-testid="couple-catch-sens-care"]').setValue('')
+    await wrapper.find('[data-testid="couple-catch-sens-day"]').setValue('2026-10-06')
+    await wrapper.find('[data-testid="couple-catch-sens-kind-CHECK"]').trigger('click')
+    await submit.trigger('click')
+    expect(catchApi.catchSensitive).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('这一天的这一类已经标过了'))
+
+    await wrapper.find('[data-testid="couple-catch-sens-day"]').setValue('2026-11-02')
+    await wrapper.find('[data-testid="couple-catch-sens-kind-PERIOD"]').trigger('click')
+    // 成功那次返回的那一份仍带着上面两行（整份替换要带上后续要断言/要点的行）
+    vi.mocked(catchApi.catchSensitive).mockResolvedValue(catchVo({
+      sensitives: [
+        catchSensRow({ id: 'se1', mineAsOwner: false, day: '2026-10-06', daysLeft: 1, remindTomorrow: true }),
+        catchSensRow({ id: 'se2', mineAsOwner: true, ownerUser: 'alice', day: '2026-11-02', kind: 'PERIOD', kindLabel: '周期第一天', daysLeft: 27, remindTomorrow: false }),
+      ],
+    }))
+    await submit.trigger('click')
+    expect(catchApi.catchSensitive).toHaveBeenCalledWith('2026-11-02', 'PERIOD', '')
+    expect((wrapper.find('[data-testid="couple-catch-sens-left-se2"]').element as HTMLElement).textContent).toContain('还有 27 天')
+    vi.mocked(catchApi.catchSensitiveRemove).mockResolvedValue(catchVo({ sensitives: [] }))
+    await wrapper.find('[data-testid="couple-catch-sens-del-se1"]').trigger('click')
+    expect(catchApi.catchSensitiveRemove).toHaveBeenCalledWith('se1')
+    expect(wrapper.find('[data-testid="couple-catch-sens-none"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('聆听者·话头存档：必填/超长/在途同名/满 5 个挡下，TA 的话头没有销档钮，销一个之后上限位由服务端腾出来', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const five = [1, 2, 3, 4, 5].map((i) => catchThreadRow({ id: `t${i}`, topic: i === 1 ? '装修预算' : `话头${i}` }))
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      myThreads: five,
+      partnerThreads: [catchThreadRow({ id: 't9', mine: false, topic: 'TA 的年终总结' })],
+    }))
+    const wrapper = await mountOnLettersCatch()
+
+    // 归属闸门：TA 那行只有等待文案，没有销档钮
+    expect(wrapper.find('[data-testid="couple-catch-thread-done-t9"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-catch-thread-p-t9"]').exists()).toBe(true)
+    expect((wrapper.find('[data-testid="couple-catch-thread-p-wait-t9"]').element as HTMLElement).textContent).toContain('让 TA 自己销档')
+
+    const submit = wrapper.find('[data-testid="couple-catch-thread-submit"]')
+    await submit.trigger('click')
+    expect(catchApi.catchThread).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先写一句'))
+
+    await wrapper.find('[data-testid="couple-catch-thread-topic"]').setValue('题'.repeat(41))
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('话题最多 40 字'))
+
+    await wrapper.find('[data-testid="couple-catch-thread-topic"]').setValue('装修预算')
+    await wrapper.find('[data-testid="couple-catch-thread-progress"]').setValue('说'.repeat(61))
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('说到哪了最多 60 字'))
+
+    await wrapper.find('[data-testid="couple-catch-thread-progress"]').setValue('')
+    await submit.trigger('click')
+    expect(catchApi.catchThread).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('已经在线轴上了'))
+
+    await wrapper.find('[data-testid="couple-catch-thread-topic"]').setValue('年终奖怎么花')
+    await submit.trigger('click')
+    expect(catchApi.catchThread).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('最多 5 个'))
+
+    // 销掉一个 → 返回那份只剩 4 个在途，同一笔提交这次才放行（上限位吃服务端列表，不是本地计数）
+    vi.mocked(catchApi.catchThreadDone).mockResolvedValue(catchVo({ myThreads: [2, 3, 4, 5].map((i) => catchThreadRow({ id: `t${i}`, topic: `话头${i}` })) }))
+    await wrapper.find('[data-testid="couple-catch-thread-done-t1"]').trigger('click')
+    expect(catchApi.catchThreadDone).toHaveBeenCalledWith('t1')
+    // 整份替换把一次性草稿清了（这是设计），重新填一句才能证明腾出来的格子来自服务端而不是本地计数
+    expect((wrapper.find('[data-testid="couple-catch-thread-topic"]').element as HTMLInputElement).value).toBe('')
+    await wrapper.find('[data-testid="couple-catch-thread-topic"]').setValue('年终奖怎么花')
+    await submit.trigger('click')
+    expect(catchApi.catchThread).toHaveBeenCalledWith('年终奖怎么花', '')
+    wrapper.unmount()
+  })
+
+  it('聆听者·反话词典：翻译结果必填（后端也强制），满 10 条挡下，TA 的对照没有删钮，删一条才腾出格子', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    const ten = Array.from({ length: 10 }, (_, i) => catchSayRow({ id: `sy${i + 1}`, say: `说${i + 1}` }))
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      mySays: ten,
+      partnerSays: [catchSayRow({ id: 'ps1', mine: false, say: '我没事', means: '有点事，先别问' })],
+    }))
+    const wrapper = await mountOnLettersCatch()
+
+    expect(wrapper.find('[data-testid="couple-catch-say-del-ps1"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-catch-say-p-text-ps1"]').element as HTMLElement).textContent).toContain('我没事')
+
+    const submit = wrapper.find('[data-testid="couple-catch-say-submit"]')
+    await submit.trigger('click')
+    expect(catchApi.catchSay).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('嘴上常说的那句先写下来'))
+
+    await wrapper.find('[data-testid="couple-catch-say-input"]').setValue('随'.repeat(21))
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('嘴上那句最多 20 字'))
+
+    await wrapper.find('[data-testid="couple-catch-say-input"]').setValue('随便')
+    await submit.trigger('click')
+    expect(catchApi.catchSay).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('翻译结果得写'))
+
+    await wrapper.find('[data-testid="couple-catch-say-means"]').setValue('意'.repeat(61))
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('实际意思最多 60 字'))
+
+    await wrapper.find('[data-testid="couple-catch-say-means"]').setValue('你替我选，但别选错')
+    await submit.trigger('click')
+    expect(catchApi.catchSay).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('反话词条最多 10 条'))
+
+    // 删掉自己那条 → 返回那份只剩 9 条，同一笔再交就放行
+    vi.mocked(catchApi.catchSayRemove).mockResolvedValue(catchVo({ mySays: ten.slice(1) }))
+    await wrapper.find('[data-testid="couple-catch-say-del-sy1"]').trigger('click')
+    expect(catchApi.catchSayRemove).toHaveBeenCalledWith('sy1')
+    // 整份替换清空了一次性草稿（设计如此），重填后才看得出格子真的腾出来了
+    expect((wrapper.find('[data-testid="couple-catch-say-input"]').element as HTMLInputElement).value).toBe('')
+    await wrapper.find('[data-testid="couple-catch-say-input"]').setValue('随便')
+    await wrapper.find('[data-testid="couple-catch-say-means"]').setValue('你替我选，但别选错')
+    await submit.trigger('click')
+    expect(catchApi.catchSay).toHaveBeenCalledWith('随便', '你替我选，但别选错')
+
+    vi.mocked(catchApi.catchSay).mockRejectedValueOnce(new Error('这条已经申报过了'))
+    await wrapper.find('[data-testid="couple-catch-say-input"]').setValue('我很好')
+    await wrapper.find('[data-testid="couple-catch-say-means"]').setValue('有点事，但先不想说')
+    await submit.trigger('click')
+    await flushPromises()
+    expect(errorSpy).toHaveBeenCalledWith('这条已经申报过了')
+    wrapper.unmount()
+  })
+
+  it('聆听者·聆听协议：五种里必须选一个，交完回填吃服务端 myProtocol，hint 与对方的 modeLabel 都是后端整句', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      myProtocol: null,
+      partnerProtocol: catchProtoRow({ id: 'pr2', mine: false, mode: 'FOOD', modeLabel: '递吃的', note: '别说话，先给我吃的' }),
+      protocolHint: '🎧 两个人都写完说明书，下次安慰才有依据——还差你',
+    }))
+    const wrapper = await mountOnLettersCatch()
+
+    expect((wrapper.find('[data-testid="couple-catch-proto-hint"]').element as HTMLElement).textContent).toContain('还差你')
+    expect((wrapper.find('[data-testid="couple-catch-proto-partner-text"]').element as HTMLElement).textContent).toContain('递吃的')
+    expect(wrapper.find('[data-testid="couple-catch-proto-mine-none"]').exists()).toBe(true)
+
+    const submit = wrapper.find('[data-testid="couple-catch-proto-submit"]')
+    await submit.trigger('click')
+    expect(catchApi.catchProtocol).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('五种里选一个'))
+
+    await wrapper.find('[data-testid="couple-catch-proto-mode-HUG"]').trigger('click')
+    await wrapper.find('[data-testid="couple-catch-proto-note"]').setValue('说'.repeat(61))
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('补充说明最多 60 字'))
+
+    vi.mocked(catchApi.catchProtocol).mockResolvedValue(catchVo({
+      myProtocol: catchProtoRow(),
+      partnerProtocol: catchProtoRow({ id: 'pr2', mine: false, mode: 'FOOD', modeLabel: '递吃的' }),
+      protocolHint: '⚠️ 你们要的安慰不一样：你要「抱抱，别说话」，TA 要「递吃的」——这不是矛盾。',
+    }))
+    await wrapper.find('[data-testid="couple-catch-proto-note"]').setValue('等我哭完再讲道理')
+    await submit.trigger('click')
+    expect(catchApi.catchProtocol).toHaveBeenCalledWith('HUG', '等我哭完再讲道理')
+    expect((wrapper.find('[data-testid="couple-catch-proto-mine-text"]').element as HTMLElement).textContent).toContain('抱抱，别说话')
+    expect((wrapper.find('[data-testid="couple-catch-proto-note"]').element as HTMLInputElement).value).toBe('等我哭完再讲道理')
+    expect((wrapper.find('[data-testid="couple-catch-proto-hint"]').element as HTMLElement).textContent).toContain('这不是矛盾')
+    wrapper.unmount()
+  })
+
+  it('聆听者·话题许愿池：接单与「聊完了」全按后端 canTake/canTalk 放钮，感想必填，超时章吃后端 overdue', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      topics: [
+        catchTopicRow({ id: 'tp1', mine: false, status: 'PENDING', canTake: true, canTalk: false }),
+        catchTopicRow({ id: 'tp2', mine: true, title: '孩子要跟谁姓', status: 'PENDING', canTake: false }),
+        catchTopicRow({ id: 'tp3', mine: false, title: '装修要不要吊顶', status: 'TAKEN', takenBy: 'alice', canTake: false, canTalk: true }),
+        catchTopicRow({ id: 'tp4', mine: true, title: '婚礼请谁', status: 'TALKED', takenBy: 'bob', canTake: false, canTalk: false, overdue: true, talkDay: '2026-10-04', reflect: '原来他怕的是这个' }),
+      ],
+    }))
+    const wrapper = await mountOnLettersCatch()
+
+    expect(wrapper.find('[data-testid="couple-catch-topic-take-tp1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-topic-take-tp2"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-catch-topic-wait-tp2"]').element as HTMLElement).textContent).toContain('自己许的题自己接不了')
+    expect(wrapper.find('[data-testid="couple-catch-talk-btn-tp3"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-talk-input-tp4"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-catch-topic-overdue-tp4"]').element as HTMLElement).textContent).toContain('超过一周')
+    expect((wrapper.find('[data-testid="couple-catch-topic-talked-tp4"]').element as HTMLElement).textContent).toContain('原来他怕的是这个')
+
+    // 接单：后端 400 中文直透，前端不重写
+    vi.mocked(catchApi.catchTopicTake).mockRejectedValueOnce(new Error('自己许的题不能自己接 📥'))
+    await wrapper.find('[data-testid="couple-catch-topic-take-tp1"]').trigger('click')
+    expect(errorSpy).toHaveBeenCalledWith('自己许的题不能自己接 📥')
+    vi.mocked(catchApi.catchTopicTake).mockResolvedValue(catchVo({
+      topics: [
+        catchTopicRow({ id: 'tp1', status: 'TAKEN', takenBy: 'alice', canTake: false, canTalk: true }),
+        catchTopicRow({ id: 'tp3', title: '装修要不要吊顶', status: 'TAKEN', takenBy: 'alice', canTake: false, canTalk: true }),
+        catchTopicRow({ id: 'tp4', mine: true, title: '婚礼请谁', status: 'TALKED', takenBy: 'bob', canTake: false, canTalk: false, overdue: true, talkDay: '2026-10-04', reflect: '原来他怕的是这个' }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-catch-topic-take-tp1"]').trigger('click')
+    expect(catchApi.catchTopicTake).toHaveBeenCalledWith('tp1')
+    expect(wrapper.find('[data-testid="couple-catch-talk-btn-tp1"]').exists()).toBe(true)
+
+    // 感想必填 + 超长
+    const talkBtn = wrapper.find('[data-testid="couple-catch-talk-btn-tp3"]')
+    await talkBtn.trigger('click')
+    expect(catchApi.catchTopicTalk).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('留一句感想'))
+    await wrapper.find('[data-testid="couple-catch-talk-input-tp3"]').setValue('感'.repeat(61))
+    await talkBtn.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('感想最多 60 字'))
+    await wrapper.find('[data-testid="couple-catch-talk-input-tp3"]').setValue('聊到两点才睡')
+    vi.mocked(catchApi.catchTopicTalk).mockResolvedValue(catchVo({ topics: [] }))
+    await talkBtn.trigger('click')
+    expect(catchApi.catchTopicTalk).toHaveBeenCalledWith('tp3', '聊到两点才睡')
+
+    // 许愿闸门
+    const submit = wrapper.find('[data-testid="couple-catch-topic-submit"]')
+    await submit.trigger('click')
+    expect(catchApi.catchTopic).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('想多聊的话题写一个'))
+    await wrapper.find('[data-testid="couple-catch-topic-title"]').setValue('话'.repeat(31))
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('话题最多 30 字'))
+    wrapper.unmount()
+  })
+
+  it('聆听者·今日一句话：「今天写没写」吃服务端 myToday 位，原样再点挡下，TA 没写时显示后端那句 dailyHint', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      myToday: null,
+      partnerToday: catchDailyRow({ content: '记得喝水', mine: false }),
+      dailyHint: '',
+      myHistory: [catchDailyRow({ day: '2026-10-04', content: '昨天那句' })],
+    }))
+    const wrapper = await mountOnLettersCatch()
+
+    expect(wrapper.find('[data-testid="couple-catch-daily-mine-none"]').exists()).toBe(true)
+    expect((wrapper.find('[data-testid="couple-catch-daily-mine-none"]').element as HTMLElement).textContent).toContain('今天还没说')
+    expect((wrapper.find('[data-testid="couple-catch-daily-partner"]').element as HTMLElement).textContent).toContain('记得喝水')
+    expect((wrapper.find('[data-testid="couple-catch-daily-hist-text-2026-10-04"]').element as HTMLElement).textContent).toContain('昨天那句')
+
+    const submit = wrapper.find('[data-testid="couple-catch-daily-submit"]')
+    await submit.trigger('click')
+    expect(catchApi.catchDaily).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('今天想说的那句写下来'))
+
+    await wrapper.find('[data-testid="couple-catch-daily-input"]').setValue('句'.repeat(41))
+    await submit.trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('今日一句话最多 40 字'))
+
+    // 写成功 → myToday 落起来：按钮文案换成「改写」，输入口回填服务端那句
+    await wrapper.find('[data-testid="couple-catch-daily-input"]').setValue('今天风很大')
+    vi.mocked(catchApi.catchDaily).mockResolvedValue(catchVo({
+      myToday: catchDailyRow({ content: '今天风很大' }),
+      partnerToday: null,
+      dailyHint: '🕯️ 今天还没说。昨天那句还在这儿：2026-10-04「早点睡」',
+      myHistory: [catchDailyRow({ day: '2026-10-05', content: '今天风很大' }), catchDailyRow({ day: '2026-10-04', content: '早点睡' })],
+    }))
+    await submit.trigger('click')
+    expect(catchApi.catchDaily).toHaveBeenCalledWith('今天风很大')
+    expect((wrapper.find('[data-testid="couple-catch-daily-submit"]').element as HTMLElement).textContent).toContain('改写今天这句')
+    expect(wrapper.find('[data-testid="couple-catch-daily-mine-none"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-catch-daily-hint"]').element as HTMLElement).textContent).toContain('昨天那句还在这儿')
+    expect(wrapper.find('[data-testid="couple-catch-daily-hist-today-2026-10-05"]').exists()).toBe(true)
+
+    // 原样再点（内容一个字没改）→ 不发请求，给一句提示
+    await submit.trigger('click')
+    expect(catchApi.catchDaily).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('这句话还没改'))
+    wrapper.unmount()
+  })
+
+  it('聆听者·年报只在点按钮时懒读：首屏不自动拉、年份格式错挡下、失败弹错误条、看完另一年能回到服务端当年那份', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({ year: catchYearVo() }))
+    const wrapper = await mountOnLettersCatch()
+
+    // 首屏静默：聚合自带的 year 已经在屏上，但没有自动打过 GET /year
+    expect(catchApi.catchYear).not.toHaveBeenCalled()
+    expect((wrapper.find('[data-testid="couple-catch-year-num"]').element as HTMLElement).textContent).toContain('2026 年')
+    expect((wrapper.find('[data-testid="couple-catch-year-wishes"]').element as HTMLElement).textContent).toContain('9 个')
+    expect((wrapper.find('[data-testid="couple-catch-year-title"]').element as HTMLElement).textContent).toContain('会喊停的成年人')
+    expect(wrapper.find('[data-testid="couple-catch-year-back"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="couple-catch-year-input"]').setValue('26')
+    await wrapper.find('[data-testid="couple-catch-year-load"]').trigger('click')
+    expect(catchApi.catchYear).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('年份写成 yyyy'))
+
+    vi.mocked(catchApi.catchYear).mockResolvedValue(catchYearVo({ year: 2025, wishes: 0, title: '刚拿起小本本', summary: '👂 2025 年还没开始记。' }))
+    await wrapper.find('[data-testid="couple-catch-year-input"]').setValue('2025')
+    await wrapper.find('[data-testid="couple-catch-year-load"]').trigger('click')
+    expect(catchApi.catchYear).toHaveBeenCalledWith('2025')
+    expect((wrapper.find('[data-testid="couple-catch-year-num"]').element as HTMLElement).textContent).toContain('2025 年')
+    expect((wrapper.find('[data-testid="couple-catch-year-summary"]').element as HTMLElement).textContent).toContain('还没开始记')
+    expect(wrapper.find('[data-testid="couple-catch-year-current"]').exists()).toBe(false)
+
+    // 懒读失败 → ElMessage.error 直透，屏上仍是我刚看过的那一年
+    vi.mocked(catchApi.catchYear).mockRejectedValueOnce(new Error('还没有建立情侣空间，先邀请一位好友吧'))
+    await wrapper.find('[data-testid="couple-catch-year-input"]').setValue('2024')
+    await wrapper.find('[data-testid="couple-catch-year-load"]').trigger('click')
+    expect(errorSpy).toHaveBeenCalledWith('还没有建立情侣空间，先邀请一位好友吧')
+
+    await wrapper.find('[data-testid="couple-catch-year-back"]').trigger('click')
+    expect(wrapper.find('[data-testid="couple-catch-year-back"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-catch-year-num"]').element as HTMLElement).textContent).toContain('2026 年')
+    wrapper.unmount()
+  })
+
+  it('聆听者·整份替换只回填本人这一侧：我的词/说明书/今日那句跟着服务端走，一次性表单清空，对方那侧绝不写进我的输入口', async () => {
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      myWord: catchWordRow({ word: '停一下', note: '先停十分钟' }),
+      partnerWord: catchWordRow({ id: 'sw2', mine: false, word: '我去走走', note: '走回来再聊' }),
+      myProtocol: catchProtoRow({ mode: 'RANT', modeLabel: '陪我一起骂', note: '别急着给方案' }),
+      myToday: catchDailyRow({ content: '今天想早点睡' }),
+    }))
+    const wrapper = await mountOnLettersCatch()
+    // 本人侧输入口开局就是服务端那一份，不是我本地编的
+    expect((wrapper.find('[data-testid="couple-catch-word-text"]').element as HTMLInputElement).value).toBe('停一下')
+    expect((wrapper.find('[data-testid="couple-catch-proto-note"]').element as HTMLInputElement).value).toBe('别急着给方案')
+    expect((wrapper.find('[data-testid="couple-catch-daily-input"]').element as HTMLInputElement).value).toBe('今天想早点睡')
+    expect((wrapper.find('[data-testid="couple-catch-word-partner-text"]').element as HTMLElement).textContent).toContain('我去走走')
+
+    // 铺一堆一次性草稿，再触发一次写接口
+    await wrapper.find('[data-testid="couple-catch-wish-content"]').setValue('一副手套')
+    await wrapper.find('[data-testid="couple-catch-wish-day"]').setValue('2026-10-01')
+    await wrapper.find('[data-testid="couple-catch-mine-topic"]').setValue('谁来洗碗')
+    await wrapper.find('[data-testid="couple-catch-sens-day"]').setValue('2026-11-11')
+    await wrapper.find('[data-testid="couple-catch-thread-topic"]').setValue('保险要不要续')
+    await wrapper.find('[data-testid="couple-catch-say-input"]').setValue('马上到')
+    await wrapper.find('[data-testid="couple-catch-topic-title"]').setValue('孩子的姓氏')
+    // 我把词改了一半、今日那句也改成另一句，但回填一律以服务端那一份为准
+    await wrapper.find('[data-testid="couple-catch-word-text"]').setValue('我自己乱改的')
+    await wrapper.find('[data-testid="couple-catch-daily-input"]').setValue('我本地改的那句')
+
+    vi.mocked(catchApi.catchDaily).mockResolvedValue(catchVo({
+      myWord: catchWordRow({ word: '停一下', note: '先停十分钟' }),
+      partnerWord: catchWordRow({ id: 'sw2', mine: false, word: '我去走走', note: '走回来再聊' }),
+      myProtocol: catchProtoRow({ mode: 'RANT', modeLabel: '陪我一起骂', note: '别急着给方案' }),
+      myToday: catchDailyRow({ content: '服务端回来的那句' }),
+      myWishes: [catchWishRow()],
+      mines: [catchMineRow()],
+      sensitives: [catchSensRow()],
+      myThreads: [catchThreadRow()],
+      mySays: [catchSayRow()],
+      topics: [catchTopicRow()],
+    }))
+    await wrapper.find('[data-testid="couple-catch-daily-submit"]').trigger('click')
+    expect(catchApi.catchDaily).toHaveBeenCalledWith('我本地改的那句')
+
+    // 一次性草稿全清、本人侧全回填服务端
+    expect((wrapper.find('[data-testid="couple-catch-word-text"]').element as HTMLInputElement).value).toBe('停一下')
+    expect((wrapper.find('[data-testid="couple-catch-word-note"]').element as HTMLInputElement).value).toBe('先停十分钟')
+    expect((wrapper.find('[data-testid="couple-catch-daily-input"]').element as HTMLInputElement).value).toBe('服务端回来的那句')
+    expect((wrapper.find('[data-testid="couple-catch-wish-content"]').element as HTMLTextAreaElement).value).toBe('')
+    expect((wrapper.find('[data-testid="couple-catch-wish-day"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.find('[data-testid="couple-catch-mine-topic"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.find('[data-testid="couple-catch-sens-day"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.find('[data-testid="couple-catch-thread-topic"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.find('[data-testid="couple-catch-say-input"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.find('[data-testid="couple-catch-topic-title"]').element as HTMLInputElement).value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('聆听者·双拍与归属不反转：同一份 VO 里 mine 位一翻转，按钮与输入口就换人，绝不留本地「我按过没」', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(catchApi.catchBoard).mockResolvedValue(catchVo({
+      myToday: null,
+      partnerToday: catchDailyRow({ content: 'TA 今天说了这句', mine: false }),
+      myHistory: [],
+      uses: [catchUseRow({ id: 'u2', mine: false, day: '2026-10-04', reflect: '' })],
+      topics: [catchTopicRow({ id: 'tp5', mine: true, status: 'TAKEN', takenBy: 'bob', canTake: false, canTalk: false })],
+      mines: [catchMineRow({ id: 'm5', mine: true, acked: false })],
+    }))
+    const wrapper = await mountOnLettersCatch()
+
+    // 今天这句是 TA 的：我没有 myToday、TA 的行没有复盘输入口、TA 接的题我给不了「聊完了」
+    expect(wrapper.find('[data-testid="couple-catch-daily-mine-none"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-reflect-input-u2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-catch-talk-btn-tp5"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-catch-mine-ack-m5"]').exists()).toBe(false)
+
+    // 写一次之后：翻转的三位全来自服务端返回那一份（mine 位、myToday、canTalk）
+    vi.mocked(catchApi.catchSay).mockResolvedValue(catchVo({
+      myToday: catchDailyRow({ content: '我今天这句' }),
+      partnerToday: catchDailyRow({ content: 'TA 今天说了这句', mine: false }),
+      mySays: [catchSayRow()],
+      uses: [
+        catchUseRow({ id: 'u1', mine: true, day: '2026-10-04', reflect: '' }),
+        catchUseRow({ id: 'u2', mine: false, day: '2026-10-03', reflect: '' }),
+      ],
+      topics: [catchTopicRow({ id: 'tp6', mine: false, status: 'TAKEN', takenBy: 'alice', canTake: false, canTalk: true })],
+      mines: [catchMineRow({ id: 'm6', mine: false, acked: false })],
+    }))
+    await wrapper.find('[data-testid="couple-catch-say-input"]').setValue('随便')
+    await wrapper.find('[data-testid="couple-catch-say-means"]').setValue('你替我选')
+    await wrapper.find('[data-testid="couple-catch-say-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="couple-catch-daily-mine-none"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-catch-daily-mine"]').element as HTMLElement).textContent).toContain('我今天这句')
+    expect(wrapper.find('[data-testid="couple-catch-reflect-input-u1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-reflect-input-u2"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-catch-talk-btn-tp6"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-catch-mine-ack-m6"]').exists()).toBe(true)
+    // 今天已被我自己喊过的判定：uses 里 mine+day===v.day 才算，TA 那行不算
+    await wrapper.find('[data-testid="couple-catch-word-use"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先约一个安全词'))
+    wrapper.unmount()
+  })
+
+  it('聆听者·十卡静默降级：接口 404（还没建立情侣空间）时不弹错误条，十张卡根与折叠钮都在、一律收起', async () => {
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(catchApi.catchBoard).mockRejectedValue(new Error('还没有建立情侣空间，先邀请一位好友吧'))
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-letters').trigger('click')
+    await flushPromises()
+
+    const keys = [
+      'couple-catch-wish', 'couple-catch-mine', 'couple-catch-safeword', 'couple-catch-sensitive',
+      'couple-catch-thread', 'couple-catch-say', 'couple-catch-protocol', 'couple-catch-topic',
+      'couple-catch-daily', 'couple-catch-year',
+    ]
+    keys.forEach((k) => {
+      expect(wrapper.find(`[data-testid="${k}"]`).exists()).toBe(true)
+      expect(wrapper.find(`[data-testid="${k}"]`).classes()).toContain('is-collapsed')
+      expect(wrapper.find(`[data-testid="couple-collapse-${k}"]`).exists()).toBe(true)
+    })
+    // 没数据时连输入口都不铺（点了也只会被「还没拿到总览」挡下），首屏不报错
+    expect(wrapper.find('[data-testid="couple-catch-wish-submit"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-catch-year-load"]').exists()).toBe(false)
+    expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('还没有建立情侣空间'))
+    // 年报的懒读接口首屏也不许自动打
+    expect(catchApi.catchYear).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 
