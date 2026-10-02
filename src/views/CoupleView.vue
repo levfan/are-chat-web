@@ -259,6 +259,7 @@
                   <CoupleListen />
                   <CoupleBody />
                   <CoupleRepair />
+                  <CoupleEcho />
                 </div>
               </el-tab-pane>
               <el-tab-pane label="✨ 默契亲密" name="intimate" lazy>
@@ -494,6 +495,7 @@ import CoupleTheater from '@/components/couple/CoupleTheater.vue'
 import CoupleBody from '@/components/couple/CoupleBody.vue'
 import CoupleRepair from '@/components/couple/CoupleRepair.vue'
 import CoupleLegacy from '@/components/couple/CoupleLegacy.vue'
+import CoupleEcho from '@/components/couple/CoupleEcho.vue'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()

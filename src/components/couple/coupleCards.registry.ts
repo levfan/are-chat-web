@@ -81,6 +81,17 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-repair-makeup', label: '和好倒计时与修复礼盒', tab: 'care', sub: 'rescue' },
   { key: 'couple-repair-ledger', label: '底线与认错榜与纪念碑', tab: 'care', sub: 'rescue' },
   { key: 'couple-repair-report', label: '冲突类型年报', tab: 'care', sub: 'rescue' },
+  // 📣 回音壁（F350-F359，care/rescue 子页签）
+  { key: 'couple-echo-deed', label: '好事簿（被爱的证据）', tab: 'care', sub: 'rescue' },
+  { key: 'couple-echo-juice', label: '鼓励语罐', tab: 'care', sub: 'rescue' },
+  { key: 'couple-echo-refill', label: '能量补给', tab: 'care', sub: 'rescue' },
+  { key: 'couple-echo-slow', label: '感谢慢递', tab: 'care', sub: 'rescue' },
+  { key: 'couple-echo-highlight', label: '高光重放', tab: 'care', sub: 'rescue' },
+  { key: 'couple-echo-receipt', label: '夸夸回执', tab: 'care', sub: 'rescue' },
+  { key: 'couple-echo-battery', label: '电量预报', tab: 'care', sub: 'rescue' },
+  { key: 'couple-echo-self', label: '写给低落的自己', tab: 'care', sub: 'rescue' },
+  { key: 'couple-echo-calendar', label: '被爱日历', tab: 'care', sub: 'rescue' },
+  { key: 'couple-echo-year', label: '回音壁年报', tab: 'care', sub: 'rescue' },
   { key: 'couple-soft', label: '心动软陪伴', tab: 'care', sub: 'intimate' },
   { key: 'couple-spark', label: '默契亲密仪表盘', tab: 'care', sub: 'intimate' },
   // 🗓️ 共享空间
