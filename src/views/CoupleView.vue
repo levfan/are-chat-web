@@ -177,9 +177,6 @@
           <el-tab-pane label="🤝 约定" name="promises">
             <TabExtras tab="promises" />
             <div class="tab-stack">
-              <CouplePromises />
-              <CoupleSecure />
-              <CouplePact />
               <CoupleQuest />
             </div>
           </el-tab-pane>
@@ -190,7 +187,6 @@
               <el-tab-pane label="🌙 每日仪式" name="ceremony" lazy>
                 <div class="tab-stack">
                   <CoupleRituals />
-                  <CoupleDaily />
                   <CoupleTruth />
                 </div>
               </el-tab-pane>
@@ -198,7 +194,6 @@
                 <div class="tab-stack">
                   <CoupleFunTalk />
                   <CouplePlay />
-                  <CoupleTheater />
                   <CoupleLaugh />
                 </div>
               </el-tab-pane>
@@ -207,11 +202,7 @@
           <el-tab-pane label="🌱 养成" name="growth" lazy>
             <TabExtras tab="growth" />
             <div class="tab-stack">
-              <CoupleChallenge />
-              <CoupleCoach />
-              <CoupleReadWatch />
               <CoupleWishBoard />
-              <CoupleDict />
               <CoupleFocus />
             </div>
           </el-tab-pane>
@@ -231,8 +222,6 @@
                   <CoupleLetter />
                   <CoupleWhisperBox />
                   <CoupleCapsule />
-                  <CouplePoem />
-                  <CouplePost />
                   <CoupleCatch />
                 </div>
               </el-tab-pane>
@@ -247,7 +236,6 @@
             <TabExtras tab="mood" />
             <div class="tab-stack">
               <CoupleMood />
-              <CoupleMoodRelay />
             </div>
           </el-tab-pane>
           <!-- F201 关怀拆分：🚑 情绪急救 / ✨ 默契亲密 -->
@@ -261,15 +249,11 @@
                   <CoupleMakeup />
                   <CoupleCozy />
                   <CoupleListen />
-                  <CoupleBody />
-                  <CoupleRepair />
                   <CoupleEcho />
                 </div>
               </el-tab-pane>
               <el-tab-pane label="✨ 默契亲密" name="intimate" lazy>
                 <div class="tab-stack">
-                  <CoupleSoft />
-                  <CoupleSpark />
                 </div>
               </el-tab-pane>
             </el-tabs>
@@ -280,28 +264,13 @@
             <el-tabs v-model="subTabs.shared" class="sub-tabs">
               <el-tab-pane label="🧾 过日子" name="daily" lazy>
                 <div class="tab-stack">
-                  <CoupleCityCard />
-                  <CoupleDistance />
                   <CoupleCountdown />
-                  <CoupleLife />
-                  <CoupleShared />
-                  <CoupleDailyLife />
-                  <CoupleFund />
                   <CoupleDining />
-                  <CoupleAlmanac />
                   <CoupleFactory />
                 </div>
               </el-tab-pane>
               <el-tab-pane label="🏪 经营所" name="manage" lazy>
                 <div class="tab-stack">
-                  <CoupleManage />
-                  <CoupleBoard />
-                </div>
-              </el-tab-pane>
-              <!-- F330-F339 两家与朋友：见家长、送礼、朋友怎么看我们，都堆在这一个子页签里 -->
-              <el-tab-pane label="👪 两家与朋友" name="world" lazy>
-                <div class="tab-stack">
-                  <CoupleWorld />
                 </div>
               </el-tab-pane>
             </el-tabs>
@@ -310,8 +279,6 @@
             <TabExtras tab="badges" />
             <div class="tab-stack">
               <CoupleBadges />
-              <CoupleReport />
-              <CoupleAnniversaryReport />
               <CoupleHeatmap />
             </div>
           </el-tab-pane>
@@ -324,7 +291,6 @@
                   <CoupleOnThisDay />
                   <CoupleFirsts />
                   <CoupleHeartMoments />
-                  <CoupleTimeline />
                   <CoupleChronicle />
                   <CoupleCeremony />
                   <CoupleCodex />
@@ -332,7 +298,6 @@
               </el-tab-pane>
               <el-tab-pane label="🏛️ 博物馆" name="museum" lazy>
                 <div class="tab-stack">
-                  <CoupleMuseum />
                 </div>
               </el-tab-pane>
               <!-- F340-F349 传世系统：十问/年审/发布会/倒推/汇率/品牌/盘点/清单/抽奖/等级，都堆在这一个子页签里 -->
@@ -437,30 +402,19 @@ import { todayBackground as getTodayBackground, todayStickers as getTodaySticker
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import CoupleSetup from '@/components/couple/CoupleSetup.vue'
 import CoupleBond from '@/components/couple/CoupleBond.vue'
-import CouplePromises from '@/components/couple/CouplePromises.vue'
 import CoupleRituals from '@/components/couple/CoupleRituals.vue'
-import CoupleDaily from '@/components/couple/CoupleDaily.vue'
 import CoupleCare from '@/components/couple/CoupleCare.vue'
 import CoupleCapsule from '@/components/couple/CoupleCapsule.vue'
 import CoupleCountdown from '@/components/couple/CoupleCountdown.vue'
 import CoupleBadges from '@/components/couple/CoupleBadges.vue'
 import CoupleOnThisDay from '@/components/couple/CoupleOnThisDay.vue'
-import CoupleLife from '@/components/couple/CoupleLife.vue'
 import CoupleProfile from '@/components/couple/CoupleProfile.vue'
-import CoupleReport from '@/components/couple/CoupleReport.vue'
 import CoupleGame from '@/components/couple/CoupleGame.vue'
 import CoupleHeartMoments from '@/components/couple/CoupleHeartMoments.vue'
 import CoupleFirsts from '@/components/couple/CoupleFirsts.vue'
 import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
-import CoupleShared from '@/components/couple/CoupleShared.vue'
-import CouplePact from '@/components/couple/CouplePact.vue'
-import CoupleCityCard from '@/components/couple/CoupleCityCard.vue'
-import CoupleFund from '@/components/couple/CoupleFund.vue'
-import CoupleTimeline from '@/components/couple/CoupleTimeline.vue'
-import CoupleMuseum from '@/components/couple/CoupleMuseum.vue'
 import CoupleChronicle from '@/components/couple/CoupleChronicle.vue'
-import CoupleAnniversaryReport from '@/components/couple/CoupleAnniversaryReport.vue'
 import CoupleKeepsake from '@/components/couple/CoupleKeepsake.vue'
 import CoupleTodayBoard from '@/components/couple/CoupleTodayBoard.vue'
 import CoupleHeatmap from '@/components/couple/CoupleHeatmap.vue'
@@ -472,34 +426,15 @@ import CoupleCozy from '@/components/couple/CoupleCozy.vue'
 import CoupleListen from '@/components/couple/CoupleListen.vue'
 import CoupleTruth from '@/components/couple/CoupleTruth.vue'
 import CoupleWhisperBox from '@/components/couple/CoupleWhisperBox.vue'
-import CoupleChallenge from '@/components/couple/CoupleChallenge.vue'
-import CoupleReadWatch from '@/components/couple/CoupleReadWatch.vue'
 import CoupleWishBoard from '@/components/couple/CoupleWishBoard.vue'
-import CoupleDict from '@/components/couple/CoupleDict.vue'
-import CoupleCoach from '@/components/couple/CoupleCoach.vue'
-import CouplePoem from '@/components/couple/CouplePoem.vue'
-import CouplePost from '@/components/couple/CouplePost.vue'
 import CoupleCatch from '@/components/couple/CoupleCatch.vue'
-import CoupleSpark from '@/components/couple/CoupleSpark.vue'
-import CoupleManage from '@/components/couple/CoupleManage.vue'
 import CoupleDining from '@/components/couple/CoupleDining.vue'
-import CoupleWorld from '@/components/couple/CoupleWorld.vue'
-import CoupleAlmanac from '@/components/couple/CoupleAlmanac.vue'
 import CoupleFactory from '@/components/couple/CoupleFactory.vue'
 import CoupleCeremony from '@/components/couple/CoupleCeremony.vue'
 import CoupleCodex from '@/components/couple/CoupleCodex.vue'
-import CoupleBoard from '@/components/couple/CoupleBoard.vue'
-import CoupleSoft from '@/components/couple/CoupleSoft.vue'
-import CoupleDistance from '@/components/couple/CoupleDistance.vue'
-import CoupleSecure from '@/components/couple/CoupleSecure.vue'
 import CouplePlay from '@/components/couple/CouplePlay.vue'
-import CoupleDailyLife from '@/components/couple/CoupleDailyLife.vue'
-import CoupleMoodRelay from '@/components/couple/CoupleMoodRelay.vue'
 import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
-import CoupleTheater from '@/components/couple/CoupleTheater.vue'
 import CoupleLaugh from '@/components/couple/CoupleLaugh.vue'
-import CoupleBody from '@/components/couple/CoupleBody.vue'
-import CoupleRepair from '@/components/couple/CoupleRepair.vue'
 import CoupleLegacy from '@/components/couple/CoupleLegacy.vue'
 import CoupleEcho from '@/components/couple/CoupleEcho.vue'
 import CoupleFocus from '@/components/couple/CoupleFocus.vue'

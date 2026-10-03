@@ -1,10 +1,5 @@
 <template>
   <div class="today-board" data-testid="couple-today-board">
-    <p v-if="greeting" class="greeting" data-testid="couple-greeting">
-      <span class="greeting-icon">{{ greeting.icon }}</span>
-      <span class="greeting-text">{{ greeting.text }}</span>
-      <span v-if="greeting.quietNow" class="greeting-quiet">🌙 静音时段·不打扰</span>
-    </p>
     <h4 class="title">📋 今日看点 <span class="sub">今天值得做的甜蜜小事，做完一项亮一项</span></h4>
     <div class="todo-grid">
       <button
@@ -94,15 +89,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useCoupleStore } from '@/stores/couple'
-import { museumApi } from '@/api/couple'
-import type { CoupleMuseumGreetingVO } from '@/types'
 
 const emit = defineEmits<{ (e: 'goto', tab: string): void }>()
 const couple = useCoupleStore()
 const dash = computed(() => couple.dashboard)
-const greeting = ref<CoupleMuseumGreetingVO | null>(null)
 
 function go(tab: string) {
   emit('goto', tab)
@@ -113,11 +105,6 @@ onMounted(() => {
   void couple.loadDashboard().catch(() => {
     // 未建立空间等场景：静默
   })
-  museumApi.getGreeting().then((g) => {
-    greeting.value = g
-  }).catch(() => {
-    // 未建立空间等场景：静默
-  })
 })
 </script>
 
@@ -126,29 +113,6 @@ onMounted(() => {
   border: 1px solid var(--el-border-color-lighter, #ebeef5);
   border-radius: 12px;
   padding: 14px;
-}
-.greeting {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 10px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: var(--el-color-danger-light-9, #fef0f0);
-  font-size: 13px;
-  line-height: 1.5;
-}
-.greeting-icon {
-  font-size: 16px;
-}
-.greeting-text {
-  color: var(--im-text, #303133);
-}
-.greeting-quiet {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--im-muted, #8f959e);
-  white-space: nowrap;
 }
 .title {
   margin: 0 0 10px;

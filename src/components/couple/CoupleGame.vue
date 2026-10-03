@@ -35,7 +35,7 @@
     </div>
 
     <!-- F33 互动热力图 -->
-    <div class="heat-box" data-testid="couple-heatmap">
+    <div class="heat-box" data-testid="couple-game-heat">
       <div class="heat-head">
         <h4 class="section-title">🔥 互动热力图</h4>
         <span class="heat-meta">最近 12 周 · 有互动 {{ couple.heatmap?.activeDays ?? 0 }} 天</span>
