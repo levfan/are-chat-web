@@ -3,12 +3,15 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import CoupleCollapsible from '@/components/couple/CoupleCollapsible.vue'
-import { almanacApi, boardApi, bodyApi, catchApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, echoApi, factoryApi, focusApi, legacyApi, listenApi, manageApi, museumApi, pinApi, postApi, questApi, repairApi, theaterApi, worldApi } from '@/api/couple'
+import { almanacApi, boardApi, bodyApi, catchApi, codexApi, coupleApi, ceremonyApi, cozyApi, diningApi, echoApi, factoryApi, focusApi, legacyApi, laughApi, listenApi, manageApi, museumApi, pinApi, postApi, questApi, repairApi, theaterApi, worldApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { useImStore } from '@/stores/im'
-import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCatchDailyVO, CoupleCatchMineVO, CoupleCatchProtocolVO, CoupleCatchSayVO, CoupleCatchSensitiveVO, CoupleCatchSafewordVO, CoupleCatchThreadVO, CoupleCatchTopicVO, CoupleCatchUseVO, CoupleCatchVO, CoupleCatchWishVO, CoupleCatchYearVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleEchoBatteryVO, CoupleEchoCalendarDayVO, CoupleEchoDeedVO, CoupleEchoHighlightVO, CoupleEchoJuiceVO, CoupleEchoReceiptVO, CoupleEchoSelfLetterVO, CoupleEchoSlowVO, CoupleEchoVO, CoupleEchoYearlyVO, CoupleFyBoardVO, CoupleFocusNightVO, CoupleFocusQueueVO, CoupleFocusSlotVO, CoupleFocusTodayVO, CoupleFocusWeeklyVO, CoupleFocusYearlyVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO, CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CoupleQuestBattleVO, CoupleQuestCareMarkVO, CoupleQuestMoveNightVO, CoupleQuestMoveVO, CoupleQuestNurseVO, CoupleQuestOvertimeVO, CoupleQuestPodVO, CoupleQuestReportVO, CoupleQuestUpcomingVO, CoupleQuestValleyVO, CoupleQuestVO, CoupleQuestWallVO, CoupleQuestWinVO, CouplePraiseVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
+import type { CoupleAlmTodayVO, CoupleBdOverviewVO, CoupleBodyVO, CoupleCatchDailyVO, CoupleCatchMineVO, CoupleCatchProtocolVO, CoupleCatchSayVO, CoupleCatchSensitiveVO, CoupleCatchSafewordVO, CoupleCatchThreadVO, CoupleCatchTopicVO, CoupleCatchUseVO, CoupleCatchVO, CoupleCatchWishVO, CoupleCatchYearVO, CoupleCerOverviewVO, CoupleCozyTodayVO, CoupleCxOverviewVO, CoupleCxTopBoardVO, CoupleEchoBatteryVO, CoupleEchoCalendarDayVO, CoupleEchoDeedVO, CoupleEchoHighlightVO, CoupleEchoJuiceVO, CoupleEchoReceiptVO, CoupleEchoSelfLetterVO, CoupleEchoSlowVO, CoupleEchoVO, CoupleEchoYearlyVO, CoupleFyBoardVO, CoupleFocusNightVO, CoupleFocusQueueVO, CoupleFocusSlotVO, CoupleFocusTodayVO, CoupleFocusWeeklyVO, CoupleFocusYearlyVO, CoupleLegacyFxVO, CoupleLegacyItemVO, CoupleLegacySpeechVO, CoupleLegacyTenVO, CoupleLegacyVO,
+  CoupleLaughAttackVO, CoupleLaughCringeVO, CoupleLaughDailyVO, CoupleLaughGuessVO, CoupleLaughJokeVO,
+  CoupleLaughMomentVO, CoupleLaughRxVO, CoupleLaughStyleVO, CoupleLaughVO, CoupleLaughWeekVO, CoupleLaughYearVO,
+  CoupleLsTodayVO, CoupleOverview, CouplePostBucketVO, CouplePostCreditVO, CouplePostDreamVO, CouplePostHomeVO, CouplePostRelayVO, CouplePostSomedayVO, CouplePostVO, CoupleQuestBattleVO, CoupleQuestCareMarkVO, CoupleQuestMoveNightVO, CoupleQuestMoveVO, CoupleQuestNurseVO, CoupleQuestOvertimeVO, CoupleQuestPodVO, CoupleQuestReportVO, CoupleQuestUpcomingVO, CoupleQuestValleyVO, CoupleQuestVO, CoupleQuestWallVO, CoupleQuestWinVO, CouplePraiseVO, CouplePromiseVO, CoupleRepairMakeupVO, CoupleRepairSorryVO, CoupleRepairVO, CoupleTheaterAwardVO, CoupleTheaterBoothVO, CoupleTheaterDiaryVO, CoupleTheaterFamilyVO, CoupleTheaterMasterVO, CoupleTheaterMovieVO, CoupleTheaterRefVO, CoupleTheaterRoleVO, CoupleTheaterTicketVO, CoupleTheaterVO, CoupleWorldApologyVO, CoupleWorldCaptionVO, CoupleWorldGiftVO, CoupleWorldRelativeVO, CoupleWorldVO, CoupleWorldVisitVO, CoupleWorldVowVO, FriendVO } from '@/types'
 
 vi.mock('@/api/couple', () => {
   const base = {
@@ -1123,6 +1126,54 @@ vi.mock('@/api/couple', () => {
       return target[prop]
     },
   })
+  // F390-F399 欢笑银行 laughApi：默认全空但形状完整的 LaughVO（后端 CoupleLaughService.LaughVO 十七个字段）
+  // today 给 null（今天没人交节目）、五张列表给 []、styleHint/rotationHint 给后端 Bank 原句、
+  // ⚠️ 聚合里已经带了 weekReport 与 year 两份榜单（/week 与 /year 只是按钮级懒读的另一次读）；
+  // day/week 恒给服务端那两个日子，用例里的「今天/本周/当年」一律由它们推，不吃本地时钟
+  const laughEmptyWeek = (): CoupleLaughWeekVO => ({
+    week: '2026-09-28', fromDay: '2026-09-28', toDay: '2026-10-04',
+    moments: 0, served: 0, happy: 0, fake: 0, frozen: 0, hits: 0, guesses: 0,
+    summary: '🎪 2026-09-28 周欢乐账（2026-09-28 ~ 2026-10-04）：还没开始笑。',
+  })
+  const laughEmptyYear = (): CoupleLaughYearVO => ({
+    year: 2026, moments: 0, laughs: 0, dailyDone: 0, happy: 0, frozen: 0, kingOfCold: '还没人', cringe: 0,
+    cringeHealed: 0, turns: 0, attacks: 0, hits: 0, guessTwin: 0, rxTaken: 0, bestLine: '',
+    title: '还在攒第一声笑', summary: '🏆 2026 年我们的喜剧奖：暂时选不出最好笑的一条。',
+  })
+  const laughEmptyVo = (): CoupleLaughVO => ({
+    day: '2026-10-05',
+    week: '2026-09-28',
+    today: null,
+    moments: [],
+    jokes: [],
+    cringes: [],
+    turnedFunny: 0,
+    attacks: [],
+    guesses: [],
+    rxList: [],
+    styles: [],
+    styleHint: '🎭 风格图鉴还没填满：自评一份、再替对方评一份，差异才会给建议。',
+    rotationHint: '🎪 今天轮到 bob 上台逗',
+    myFrozen: 0,
+    partnerFrozen: 0,
+    weekReport: laughEmptyWeek(),
+    year: laughEmptyYear(),
+  })
+  const laughBase: Record<string, ReturnType<typeof vi.fn>> = {
+    laughBank: vi.fn().mockResolvedValue(laughEmptyVo()),
+    laughWeek: vi.fn().mockResolvedValue(laughEmptyWeek()),
+    laughYear: vi.fn().mockResolvedValue(laughEmptyYear()),
+  }
+  // ⚠️ 同样必须 return：14 个写接口漏 return 会全成 undefined，整场 Unhandled Rejection + exit 1
+  const laughWrapped = new Proxy(laughBase, {
+    get(target, prop) {
+      if (typeof prop !== 'string' || prop in target) {
+        return target[prop as string]
+      }
+      target[prop] = vi.fn().mockResolvedValue(laughEmptyVo())
+      return target[prop]
+    },
+  })
   return {
     coupleApi: wrapped,
     manageApi: manageWrapped,
@@ -1152,6 +1203,9 @@ vi.mock('@/api/couple', () => {
     questApi: questWrapped,
     // F380-F389 聆听者 catchApi：默认全空但形状完整的 CatchVO，用例内按需覆盖
     catchApi: catchWrapped,
+    // F390-F399 欢笑银行 laughApi：默认全空但形状完整的 LaughVO，用例内按需覆盖
+    // ⚠️ 这一行 return 不能漏，漏了 14 个写接口全成 undefined，整场 Unhandled Rejection 且 exit 1
+    laughApi: laughWrapped,
     // F207 常用收藏 pinApi：默认空收藏，用例内按需覆盖
     pinApi: {
       list: vi.fn().mockResolvedValue({ mine: [], partner: [] }),
@@ -8585,6 +8639,827 @@ describe('CoupleView 情侣空间', () => {
     expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('还没有建立情侣空间'))
     // 年报的懒读接口首屏也不许自动打
     expect(catchApi.catchYear).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  // ============ F390-F399 欢笑银行（CoupleLaugh，rituals「🌅 小仪式」→ fun「🎲 玩趣时间」子页签末尾） ============
+
+  /** 周报那一份：七个计数给非零值，用例好断言「墙上的数字来自后端而不是前端自己算」 */
+  function laughWeekVo(partial: Partial<CoupleLaughWeekVO> = {}): CoupleLaughWeekVO {
+    return {
+      week: '2026-09-28', fromDay: '2026-09-28', toDay: '2026-10-04',
+      moments: 3, served: 5, happy: 3, fake: 1, frozen: 2, hits: 4, guesses: 2,
+      summary: '🎪 2026-09-28 周欢乐账（2026-09-28 ~ 2026-10-04）：存档 3 条笑点，一逗上台 5 天。这周的笑声，记账了。',
+      ...partial,
+    }
+  }
+  /** 年度榜那一份：⚠️ year 是 Java int → number（别抄批次二十五 post 的 string year） */
+  function laughYearVo(partial: Partial<CoupleLaughYearVO> = {}): CoupleLaughYearVO {
+    return {
+      year: 2026, moments: 21, laughs: 9, dailyDone: 40, happy: 25, frozen: 12, kingOfCold: 'bob', cringe: 8,
+      cringeHealed: 5, turns: 2, attacks: 30, hits: 22, guessTwin: 6, rxTaken: 4,
+      bestLine: '拖鞋事件', title: '彼此的快乐供应商',
+      summary: '🏆 2026 年我们的喜剧奖：当年最好笑：「拖鞋事件」；冷场之王是 bob——称号「彼此的快乐供应商」。',
+      ...partial,
+    }
+  }
+  /** 造一份欢笑银行总览：默认「十件事都没发生」（today=null、五张列表给 []、两份榜单给零计数那两份），用例内按需覆盖 */
+  function laughVo(partial: Partial<CoupleLaughVO> = {}): CoupleLaughVO {
+    return {
+      // day/week 恒给服务端那两个日子：用例里的「今天/本周/当年」一律由它们推，不吃本地时钟
+      day: '2026-10-05', week: '2026-09-28', today: null,
+      moments: [], jokes: [], cringes: [], turnedFunny: 0, attacks: [], guesses: [], rxList: [], styles: [],
+      styleHint: '🎭 风格图鉴还没填满：自评一份、再替对方评一份，差异才会给建议。',
+      rotationHint: '🎪 今天轮到 bob 上台逗',
+      myFrozen: 0, partnerFrozen: 0,
+      weekReport: laughWeekVo(), year: laughYearVo(), ...partial,
+    }
+  }
+  function laughMomentRow(partial: Partial<CoupleLaughMomentVO> = {}): CoupleLaughMomentVO {
+    return {
+      id: 'mo1', day: '2026-10-01', mine: true, title: '拖鞋事件', culprit: 'bob',
+      scene: '他踩到狗绳来了个劈叉', funLevel: 5, witness: '', witnessBy: '', witnessed: false, canWitness: false,
+      ...partial,
+    }
+  }
+  function laughDailyRow(partial: Partial<CoupleLaughDailyVO> = {}): CoupleLaughDailyVO {
+    return {
+      id: 'd1', day: '2026-10-05', mineOwner: false, ownerUser: 'bob', content: '我给你学一段企鹅走路',
+      verdict: '', verdictLabel: '还没判', judged: false, canServe: false, canJudge: true, ...partial,
+    }
+  }
+  function laughJokeRow(partial: Partial<CoupleLaughJokeVO> = {}): CoupleLaughJokeVO {
+    return {
+      id: 'j1', day: '2026-10-05', mine: false, content: '钟表为什么幽默？因为它会讲小时',
+      frozen: false, judged: false, judgedBy: '', canJudge: true, canGuess: true, ...partial,
+    }
+  }
+  function laughCringeRow(partial: Partial<CoupleLaughCringeVO> = {}): CoupleLaughCringeVO {
+    return {
+      id: 'cr1', day: '2025-10-06', mine: true, content: '在电梯里跟陌生人挥手', healed: false, healedBy: '',
+      turnedFunny: false, daysOld: 364, canHeal: true, ...partial,
+    }
+  }
+  function laughAttackRow(partial: Partial<CoupleLaughAttackVO> = {}): CoupleLaughAttackVO {
+    return {
+      id: 'at1', day: '2026-10-05', mine: false, kind: 'PRAISE', kindLabel: '一串夸奖',
+      content: '你切菜的样子像在指挥乐队', hit: false, hitBy: '', canHit: true, ...partial,
+    }
+  }
+  function laughGuessRow(partial: Partial<CoupleLaughGuessVO> = {}): CoupleLaughGuessVO {
+    return {
+      jokeId: 'j1', minePredicted: false, partnerPredicted: false, predictsLaugh: false,
+      partnerPredictsLaugh: false, twin: false, predictCount: 0, ...partial,
+    }
+  }
+  function laughRxRow(partial: Partial<CoupleLaughRxVO> = {}): CoupleLaughRxVO {
+    return {
+      id: 'rx1', day: '2026-10-05', mine: false, targetKind: 'MOMENT', targetLabel: '一条笑点存档',
+      targetId: 'mo1', targetTitle: '拖鞋事件', note: '饭后翻三分钟', taken: false, takenBy: '', ...partial,
+    }
+  }
+  function laughStyleRow(partial: Partial<CoupleLaughStyleVO> = {}): CoupleLaughStyleVO {
+    return {
+      id: 'st1', aboutUser: 'alice', rater: 'alice', mine: true, selfRated: true,
+      style: 'PUN', styleLabel: '谐音梗', note: '一回家就开始', ...partial,
+    }
+  }
+
+  /** 进「🎲 玩趣时间」子页签（CoupleLaugh 挂在 CoupleTheater 之后，同子页签最末） */
+  async function mountOnRitualsLaugh(ov: CoupleOverview = establishedOverview) {
+    mockedOverview.mockResolvedValue(ov)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-rituals').trigger('click')
+    await flushPromises()
+    await wrapper.find('#tab-fun').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-laugh"]').exists()).toBe(true)
+    return wrapper
+  }
+
+  afterEach(() => {
+    // 十卡全带 :empty，折叠态会落库；清干净避免污染后面的用例
+    ;[
+      'couple-laugh-moment', 'couple-laugh-daily', 'couple-laugh-joke', 'couple-laugh-cringe',
+      'couple-laugh-attack', 'couple-laugh-guess', 'couple-laugh-rx', 'couple-laugh-style',
+      'couple-laugh-week', 'couple-laugh-year',
+    ].forEach((k) => localStorage.removeItem(`arechat_couple_collapse_${k}`))
+  })
+
+  it('欢笑银行·笑点存档：名字空/日子格式与将来/现场超长/好笑度没点/同名/同一事发日满 3 条各自挡下不打后端，存成功整份替换并清空一次性输入', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      rotationHint: '',
+      today: laughDailyRow({ mineOwner: true, ownerUser: 'alice', canServe: true, canJudge: false }),
+      moments: [
+        laughMomentRow({ id: 'mo1', mine: true, day: '2026-10-01', title: '拖鞋事件' }),
+        laughMomentRow({ id: 'mo2', mine: true, day: '2026-10-05', title: '甲' }),
+        laughMomentRow({ id: 'mo3', mine: true, day: '2026-10-05', title: '乙' }),
+        laughMomentRow({ id: 'mo4', mine: true, day: '2026-10-05', title: '丙' }),
+      ],
+    }))
+    const wrapper = await mountOnRitualsLaugh()
+    const submit = wrapper.find('[data-testid="couple-laugh-moment-submit"]')
+
+    // 名字空
+    await submit.trigger('click')
+    expect(laughApi.laughMoment).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先起个名'))
+
+    // 日子格式错
+    await wrapper.find('[data-testid="couple-laugh-moment-title"]').setValue('新笑点')
+    await wrapper.find('[data-testid="couple-laugh-moment-day"]').setValue('20261120')
+    await submit.trigger('click')
+    expect(laughApi.laughMoment).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('发生的日子写成 yyyy-MM-dd'))
+
+    // 日子是将来（服务端今天=2026-10-05）
+    await wrapper.find('[data-testid="couple-laugh-moment-day"]').setValue('2026-11-20')
+    await submit.trigger('click')
+    expect(laughApi.laughMoment).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('只能是已经发生过的日子'))
+
+    // 现场还原超长
+    await wrapper.find('[data-testid="couple-laugh-moment-day"]').setValue('')
+    await wrapper.find('[data-testid="couple-laugh-moment-scene"]').setValue('一'.repeat(101))
+    await submit.trigger('click')
+    expect(laughApi.laughMoment).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('现场还原最多 100 字'))
+
+    // 好笑度没点（后端 null 会静默兜 3，界面不许「没选就按默认分」存进去）
+    await wrapper.find('[data-testid="couple-laugh-moment-scene"]').setValue('他踩到狗绳来了个劈叉')
+    await submit.trigger('click')
+    expect(laughApi.laughMoment).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先点一个好笑度'))
+
+    // 同一个事发日同名（吃服务端那一行，后端按 equalsIgnoreCase 比）
+    await wrapper.find('[data-testid="couple-laugh-moment-day"]').setValue('2026-10-01')
+    await wrapper.find('[data-testid="couple-laugh-moment-title"]').setValue('拖鞋事件')
+    await wrapper.find('[data-testid="couple-laugh-moment-level-5"]').trigger('click')
+    await submit.trigger('click')
+    expect(laughApi.laughMoment).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('那个日子这条笑点已经存过了'))
+
+    // 同一个事发日满 3 条（day 空=服务端今天，那三条正是今天）
+    await wrapper.find('[data-testid="couple-laugh-moment-day"]').setValue('')
+    await wrapper.find('[data-testid="couple-laugh-moment-title"]').setValue('丁')
+    await submit.trigger('click')
+    expect(laughApi.laughMoment).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('同一个日子最多存 3 条'))
+
+    // 换一个没存过的日子 → 过闸门；后端仍有最终口径（这里先演一次 400 中文直透）
+    await wrapper.find('[data-testid="couple-laugh-moment-day"]').setValue('2026-10-04')
+    await wrapper.find('[data-testid="couple-laugh-moment-culprit"]').setValue('bob')
+    vi.mocked(laughApi.laughMoment).mockRejectedValueOnce(new Error('一天最多存 3 条，笑也要节制 😂'))
+    await submit.trigger('click')
+    expect(laughApi.laughMoment).toHaveBeenCalledWith('2026-10-04', '丁', 'bob', '他踩到狗绳来了个劈叉', 5)
+    expect(errorSpy).toHaveBeenCalledWith('一天最多存 3 条，笑也要节制 😂')
+
+    // 写成功：整份替换 + 一次性输入清空（好笑度回到「没点」）
+    vi.mocked(laughApi.laughMoment).mockResolvedValue(laughVo({
+      rotationHint: '',
+      today: laughDailyRow({ mineOwner: true, ownerUser: 'alice', canServe: true, canJudge: false }),
+      moments: [laughMomentRow({ id: 'mo9', mine: true, day: '2026-10-04', title: '丁' })],
+    }))
+    await submit.trigger('click')
+    await flushPromises()
+    expect((wrapper.find('[data-testid="couple-laugh-moment-title"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.find('[data-testid="couple-laugh-moment-day"]').element as HTMLInputElement).value).toBe('')
+    expect(wrapper.find('[data-testid="couple-laugh-moment-mo9"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid^="couple-laugh-moment-"]').length).toBeGreaterThan(1)
+    wrapper.unmount()
+  })
+
+  it('欢笑银行·现场证词归对方：我的行不给证词输入口，canWitness 那行才给；空证词与超长先挡，补过再补的 400 中文直透', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      moments: [
+        laughMomentRow({ id: 'moMine', mine: true, canWitness: false }),
+        laughMomentRow({ id: 'moOther', mine: false, canWitness: true, witness: '', witnessBy: '' }),
+        laughMomentRow({ id: 'moDone', mine: false, canWitness: false, witnessed: true, witness: '我在场，笑到蹲下', witnessBy: 'bob' }),
+      ],
+    }))
+    const wrapper = await mountOnRitualsLaugh()
+
+    // 归属：我自己存的那条没有证词输入口；TA 存没人补的那条才有
+    expect(wrapper.find('[data-testid="couple-laugh-moment-witness-input-moMine"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-moment-witness-wait-moMine"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-laugh-moment-witness-input-moOther"]').exists()).toBe(true)
+    // 补过的行只回显正文与补词人（后端按 witness_by 判「补没补」）
+    expect((wrapper.find('[data-testid="couple-laugh-moment-witness-text-moDone"]').element as HTMLElement).textContent).toContain('我在场，笑到蹲下')
+    expect((wrapper.find('[data-testid="couple-laugh-moment-witnessed-moDone"]').element as HTMLElement).textContent).toContain('双人认证')
+
+    await wrapper.find('[data-testid="couple-laugh-moment-witness-btn-moOther"]').trigger('click')
+    expect(laughApi.laughMomentWitness).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('现场证词写一句'))
+
+    await wrapper.find('[data-testid="couple-laugh-moment-witness-input-moOther"]').setValue('一'.repeat(101))
+    await wrapper.find('[data-testid="couple-laugh-moment-witness-btn-moOther"]').trigger('click')
+    expect(laughApi.laughMomentWitness).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('证词最多 100 字'))
+
+    // 后端「一条只补一次」是 400（不同于 heal/hit/taken 的幂等静默），中文直透
+    await wrapper.find('[data-testid="couple-laugh-moment-witness-input-moOther"]').setValue('我在场')
+    vi.mocked(laughApi.laughMomentWitness).mockRejectedValueOnce(new Error('这条已经有人补过证词了'))
+    await wrapper.find('[data-testid="couple-laugh-moment-witness-btn-moOther"]').trigger('click')
+    expect(laughApi.laughMomentWitness).toHaveBeenCalledWith('moOther', '我在场')
+    expect(errorSpy).toHaveBeenCalledWith('这条已经有人补过证词了')
+
+    vi.mocked(laughApi.laughMomentWitness).mockResolvedValue(laughVo({
+      moments: [laughMomentRow({ id: 'moOther', mine: false, canWitness: false, witnessed: true, witness: '我在场', witnessBy: 'alice' })],
+    }))
+    await wrapper.find('[data-testid="couple-laugh-moment-witness-btn-moOther"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-laugh-moment-witness-text-moOther"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('欢笑银行·每日一逗：rotationHint 照后端文案渲染且前端没有 dutyUser 位可挡（抢班 400 直透），判分三钮只在 canJudge，判完双方都见 verdict', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({ today: null }))
+    const wrapper = await mountOnRitualsLaugh()
+    // 今天没人交节目：只有后端 rotationHint 那一句，界面不假装知道「轮不轮到我」
+    expect((wrapper.find('[data-testid="couple-laugh-daily-rotation"]').element as HTMLElement).textContent).toContain('今天轮到 bob 上台逗')
+    expect(wrapper.find('[data-testid="couple-laugh-daily-none"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-laugh-daily-submit"]').trigger('click')
+    expect(laughApi.laughDaily).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先写出来'))
+
+    await wrapper.find('[data-testid="couple-laugh-daily-content"]').setValue('一'.repeat(101))
+    await wrapper.find('[data-testid="couple-laugh-daily-submit"]').trigger('click')
+    expect(laughApi.laughDaily).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('节目内容最多 100 字'))
+
+    // 轮不到你：LaughVO 没有任何本人值班位（today=null 时只剩文案），所以这条只能由后端裁定
+    await wrapper.find('[data-testid="couple-laugh-daily-content"]').setValue('我给你学一段企鹅走路')
+    vi.mocked(laughApi.laughDaily).mockRejectedValueOnce(new Error('今天轮不到你——bob 才是值班喜剧人 🎪'))
+    await wrapper.find('[data-testid="couple-laugh-daily-submit"]').trigger('click')
+    expect(laughApi.laughDaily).toHaveBeenCalledWith('我给你学一段企鹅走路')
+    expect(errorSpy).toHaveBeenCalledWith('今天轮不到你——bob 才是值班喜剧人 🎪')
+
+    // 交上了：判分归对方，三个白名单钮一次给全；我自己那条不给判分钮
+    vi.mocked(laughApi.laughDaily).mockResolvedValue(laughVo({ rotationHint: '', today: laughDailyRow() }))
+    await wrapper.find('[data-testid="couple-laugh-daily-submit"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="couple-laugh-daily-rotation"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-daily-judge-HAPPY"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-laugh-daily-judge-FAKE"]').exists()).toBe(true)
+    expect((wrapper.find('[data-testid="couple-laugh-daily-unjudged"]').element as HTMLElement).textContent).toContain('还没判分')
+
+    // 判分：三钮一次给全，点一票之后后端落 judged 位，界面就不再递第二票
+    // （后端 judgeDaily 对「已判过」是**幂等静默返回整份**，不 400；前端按服务端 judged/canJudge 收口）
+    vi.mocked(laughApi.laughDailyJudge).mockResolvedValue(laughVo({
+      rotationHint: '',
+      today: laughDailyRow({ verdict: 'HAPPY', verdictLabel: '真笑了', judged: true, canJudge: false }),
+    }))
+    await wrapper.find('[data-testid="couple-laugh-daily-judge-HAPPY"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughDailyJudge).toHaveBeenCalledWith('d1', 'HAPPY')
+    expect((wrapper.find('[data-testid="couple-laugh-daily-verdict"]').element as HTMLElement).textContent).toContain('真笑了')
+    expect(wrapper.find('[data-testid="couple-laugh-daily-unjudged"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-daily-judge-FLAT"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-daily-locked"]').exists()).toBe(true)
+
+    // 我自己值班那一格：判分钮不给，只给等待文案
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      rotationHint: '',
+      today: laughDailyRow({ mineOwner: true, ownerUser: 'alice', canServe: true, canJudge: false }),
+    }))
+    const mine = await mountOnRitualsLaugh()
+    expect((mine.find('[data-testid="couple-laugh-daily-owner"]').element as HTMLElement).textContent).toContain('我今天值班')
+    expect(mine.find('[data-testid="couple-laugh-daily-judge-wait"]').exists()).toBe(true)
+    expect(mine.find('[data-testid="couple-laugh-daily-judge-HAPPY"]').exists()).toBe(false)
+    expect(mine.find('[data-testid="couple-laugh-daily-locked"]').exists()).toBe(false)
+    // 判过分之后再来交：后端 400，中文直透
+    await mine.find('[data-testid="couple-laugh-daily-content"]').setValue('再加一段')
+    vi.mocked(laughApi.laughDaily).mockRejectedValueOnce(new Error('今天已经判过分了，节目就定格在这了'))
+    await mine.find('[data-testid="couple-laugh-daily-submit"]').trigger('click')
+    expect(errorSpy).toHaveBeenCalledWith('今天已经判过分了，节目就定格在这了')
+    wrapper.unmount()
+    mine.unmount()
+  })
+
+  it('欢笑银行·每日一逗回填只认本人那一侧：我值班时节目回填可改写，判过后端把节目定格（TA 值班时绝不清空我的草稿位）', async () => {
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      rotationHint: '',
+      today: laughDailyRow({ mineOwner: true, ownerUser: 'alice', content: '旧节目一条', canServe: true, canJudge: false }),
+    }))
+    const wrapper = await mountOnRitualsLaugh()
+    expect((wrapper.find('[data-testid="couple-laugh-daily-content"]').element as HTMLTextAreaElement).value).toBe('旧节目一条')
+
+    // 整份替换：新返回里今天已经判过，节目定格、改写钮文案回到「交今天的节目」
+    vi.mocked(laughApi.laughDaily).mockResolvedValue(laughVo({
+      rotationHint: '',
+      today: laughDailyRow({ mineOwner: true, ownerUser: 'alice', content: '旧节目一条', verdict: 'FAKE', verdictLabel: '强撑的笑', judged: true, canServe: true, canJudge: false }),
+    }))
+    await wrapper.find('[data-testid="couple-laugh-daily-submit"]').trigger('click')
+    await flushPromises()
+    expect((wrapper.find('[data-testid="couple-laugh-daily-content"]').element as HTMLTextAreaElement).value).toBe('旧节目一条')
+    expect(wrapper.find('[data-testid="couple-laugh-daily-locked"]').exists()).toBe(true)
+    expect((wrapper.find('[data-testid="couple-laugh-daily-verdict"]').element as HTMLElement).textContent).toContain('强撑的笑')
+    wrapper.unmount()
+  })
+
+  it('欢笑银行·冷笑话结冰榜：空/超长/重播/今天满 3 条挡下；frozen=false 未判只说「还没人判」；判冰与翻案 400 各按后端；结冰数随整份替换刷新', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      myFrozen: 1, partnerFrozen: 2,
+      jokes: [
+        laughJokeRow({ id: 'jA', mine: false, judged: false, canJudge: true }),
+        laughJokeRow({ id: 'jB', mine: true, content: '我讲的冷笑话', canJudge: false, canGuess: false }),
+        laughJokeRow({ id: 'jC', mine: false, judged: true, frozen: true, judgedBy: 'alice', canJudge: false }),
+        laughJokeRow({ id: 'jD', mine: false, judged: true, frozen: false, judgedBy: 'alice', canJudge: false }),
+      ],
+    }))
+    const wrapper = await mountOnRitualsLaugh()
+    // 未判的 frozen=0 不等于「没结冰」：只有 judged 为真才允许说出结/没冰
+    expect((wrapper.find('[data-testid="couple-laugh-joke-pending-jA"]').element as HTMLElement).textContent).toContain('还没人判')
+    expect(wrapper.find('[data-testid="couple-laugh-joke-melt-jA"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-laugh-joke-iced-jC"]').element as HTMLElement).textContent).toContain('结冰')
+    expect((wrapper.find('[data-testid="couple-laugh-joke-melt-jD"]').element as HTMLElement).textContent).toContain('没结冰')
+    expect(wrapper.find('[data-testid="couple-laugh-joke-freeze-jB"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-joke-judge-wait-jB"]').exists()).toBe(true)
+    expect((wrapper.find('[data-testid="couple-laugh-joke-frozen-total"]').element as HTMLElement).textContent).toContain('我 1 条')
+
+    const submit = wrapper.find('[data-testid="couple-laugh-joke-submit"]')
+    await submit.trigger('click')
+    expect(laughApi.laughJoke).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先有个冷句'))
+
+    await wrapper.find('[data-testid="couple-laugh-joke-input"]').setValue('一'.repeat(81))
+    await submit.trigger('click')
+    expect(laughApi.laughJoke).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('冷笑话最多 80 字'))
+
+    // 同人同内容（后端全历史查重，equalsIgnoreCase 同口径）
+    await wrapper.find('[data-testid="couple-laugh-joke-input"]').setValue('我讲的冷笑话')
+    await submit.trigger('click')
+    expect(laughApi.laughJoke).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('不许重播'))
+
+    // 每人今天 3 条（吃服务端 jokes 里 mine && day===v.day）
+    await wrapper.find('[data-testid="couple-laugh-joke-input"]').setValue('新的冷笑话')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      jokes: [
+        laughJokeRow({ id: 'j1', mine: true, content: '冷笑话一' }),
+        laughJokeRow({ id: 'j2', mine: true, content: '冷笑话二' }),
+        laughJokeRow({ id: 'j3', mine: true, content: '冷笑话三' }),
+      ],
+    }))
+    const full = await mountOnRitualsLaugh()
+    await full.find('[data-testid="couple-laugh-joke-input"]').setValue('冷笑话四')
+    await full.find('[data-testid="couple-laugh-joke-submit"]').trigger('click')
+    expect(laughApi.laughJoke).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('今天已经丢了 3 条'))
+    full.unmount()
+
+    // 判冰：一条只判一次——已判再判是后端 400「结冰榜不许翻案」（与 heal/hit/taken 的幂等静默不同），中文直透
+    vi.mocked(laughApi.laughJokeJudge).mockRejectedValueOnce(new Error('这条已经判过了，结冰榜不许翻案'))
+    await wrapper.find('[data-testid="couple-laugh-joke-freeze-jA"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughJokeJudge).toHaveBeenCalledWith('jA', true)
+    expect(errorSpy).toHaveBeenCalledWith('这条已经判过了，结冰榜不许翻案')
+
+    // 判成功那次：整份替换后 jA 落 judged 位，判分钮收起、结冰 chip 上墙，累计数跟着服务端走
+    vi.mocked(laughApi.laughJokeJudge).mockResolvedValue(laughVo({
+      myFrozen: 1, partnerFrozen: 3,
+      jokes: [laughJokeRow({ id: 'jA', judged: true, frozen: true, judgedBy: 'alice', canJudge: false })],
+    }))
+    await wrapper.find('[data-testid="couple-laugh-joke-notfreeze-jA"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughJokeJudge).toHaveBeenLastCalledWith('jA', false)
+    expect((wrapper.find('[data-testid="couple-laugh-joke-iced-jA"]').element as HTMLElement).textContent).toContain('结冰')
+    expect(wrapper.find('[data-testid="couple-laugh-joke-freeze-jA"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-laugh-joke-frozen-total"]').element as HTMLElement).textContent).toContain('TA 3 条')
+    wrapper.unmount()
+  })
+
+  it('欢笑银行·社死往事：将来日与同一天重复挡下；daysOld/turnedFunny/turnedFunny 合计全吃服务端位；满一年仍可补盖（后端没规则禁止）', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      turnedFunny: 1,
+      cringes: [
+        laughCringeRow({ id: 'crMine', mine: true, day: '2025-10-06', daysOld: 364, turnedFunny: false, healed: false, canHeal: false }),
+        laughCringeRow({ id: 'crOld', mine: true, day: '2024-10-06', daysOld: 730, turnedFunny: true, healed: true, healedBy: 'bob', canHeal: false }),
+        laughCringeRow({ id: 'crOther', mine: false, day: '2026-10-01', daysOld: 4, turnedFunny: false, healed: false, canHeal: true }),
+      ],
+    }))
+    const wrapper = await mountOnRitualsLaugh()
+    expect((wrapper.find('[data-testid="couple-laugh-cringe-turned"]').element as HTMLElement).textContent).toContain('转成「好笑的事」的：1 条')
+    expect(wrapper.find('[data-testid="couple-laugh-cringe-funny-crOld"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-laugh-cringe-funny-crMine"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-laugh-cringe-old-crOld"]').element as HTMLElement).textContent).toContain('已经过去 730 天')
+    // 满一年 + 已盖过章：后端 canHeal=false，界面就不给钮
+    expect(wrapper.find('[data-testid="couple-laugh-cringe-heal-crOld"]').exists()).toBe(false)
+    // 没盖过但 canHeal=true 的（哪怕是 TA 的旧社死）给钮——满一年不自动收走盖章资格
+    expect(wrapper.find('[data-testid="couple-laugh-cringe-heal-crOther"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-laugh-cringe-heal-wait-crMine"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-laugh-cringe-submit"]').trigger('click')
+    expect(laughApi.laughCringe).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('当时发生了什么'))
+
+    await wrapper.find('[data-testid="couple-laugh-cringe-day"]').setValue('2026-12-31')
+    await wrapper.find('[data-testid="couple-laugh-cringe-content"]').setValue('跨年社死')
+    await wrapper.find('[data-testid="couple-laugh-cringe-submit"]').trigger('click')
+    expect(laughApi.laughCringe).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('只能是已经发生过的日子'))
+
+    // 同人同一天（服务端那一行 mine && day===2025-10-06）
+    await wrapper.find('[data-testid="couple-laugh-cringe-day"]').setValue('2025-10-06')
+    await wrapper.find('[data-testid="couple-laugh-cringe-submit"]').trigger('click')
+    expect(laughApi.laughCringe).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('那天已经交过一条了'))
+
+    await wrapper.find('[data-testid="couple-laugh-cringe-day"]').setValue('2026-10-04')
+    vi.mocked(laughApi.laughCringe).mockResolvedValue(laughVo({
+      turnedFunny: 0,
+      cringes: [
+        laughCringeRow({ id: 'crNew', mine: true, day: '2026-10-04', canHeal: false }),
+        laughCringeRow({ id: 'crT', mine: false, day: '2026-10-02', daysOld: 3, canHeal: true }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-laugh-cringe-submit"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughCringe).toHaveBeenCalledWith('2026-10-04', '跨年社死')
+    expect(wrapper.find('[data-testid="couple-laugh-cringe-crNew"]').exists()).toBe(true)
+    // 我自己那条只给等待文案（后端 canHeal=!mine&&!healed），TA 那条才给盖章钮
+    expect(wrapper.find('[data-testid="couple-laugh-cringe-heal-crNew"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-cringe-heal-wait-crNew"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-laugh-cringe-heal-crT"]').trigger('click')
+    expect(laughApi.laughCringeHeal).toHaveBeenCalledWith('crT')
+    wrapper.unmount()
+  })
+
+  it('欢笑银行·快乐突袭：kind 没点先挡（后端会静默兜 PRAISE）；今天已发再点挡下；中弹钮只给收方；整份替换后额度文案翻转', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      attacks: [laughAttackRow({ id: 'atOther', mine: false, day: '2026-10-05', canHit: true }), laughAttackRow({ id: 'atMine', mine: true, day: '2026-10-04', canHit: false })],
+    }))
+    const wrapper = await mountOnRitualsLaugh()
+    const submit = wrapper.find('[data-testid="couple-laugh-attack-submit"]')
+
+    await wrapper.find('[data-testid="couple-laugh-attack-content"]').setValue('你笑起来像刚出锅的薯条')
+    await submit.trigger('click')
+    expect(laughApi.laughAttack).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先挑一种突袭'))
+
+    await wrapper.find('[data-testid="couple-laugh-attack-kind-MEME"]').trigger('click')
+    await wrapper.find('[data-testid="couple-laugh-attack-content"]').setValue('一'.repeat(101))
+    await submit.trigger('click')
+    expect(laughApi.laughAttack).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('突袭内容最多 100 字'))
+
+    // 我今天已经发过（服务端 attacks 里 mine && day===v.day）
+    vi.mocked(laughApi.laughAttack).mockResolvedValue(laughVo({
+      attacks: [laughAttackRow({ id: 'atNew', mine: true, day: '2026-10-05', canHit: false })],
+    }))
+    await wrapper.find('[data-testid="couple-laugh-attack-content"]').setValue('一串夸奖')
+    await submit.trigger('click')
+    await flushPromises()
+    expect(laughApi.laughAttack).toHaveBeenCalledWith('MEME', '一串夸奖')
+    expect((wrapper.find('[data-testid="couple-laugh-attack-quota"]').element as HTMLElement).textContent).toContain('今天这一发已经打出去了')
+    // 一次性输入被整份替换清掉了；再填一次点下去 → 每日一次闸门挡在本地，不打后端
+    expect((wrapper.find('[data-testid="couple-laugh-attack-content"]').element as HTMLInputElement).value).toBe('')
+    await wrapper.find('[data-testid="couple-laugh-attack-content"]').setValue('再夸一串')
+    await submit.trigger('click')
+    expect(laughApi.laughAttack).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('明天再来'))
+
+    // 中弹归收方：我发的那条只给等待文案
+    expect(wrapper.find('[data-testid="couple-laugh-attack-hit-btn-atNew"]').exists()).toBe(false)
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      attacks: [laughAttackRow({ id: 'atOther', mine: false, canHit: true }), laughAttackRow({ id: 'atMine', mine: true, day: '2026-10-03', canHit: false })],
+    }))
+    const other = await mountOnRitualsLaugh()
+    expect(other.find('[data-testid="couple-laugh-attack-hit-wait-atMine"]').exists()).toBe(true)
+    vi.mocked(laughApi.laughAttackHit).mockRejectedValueOnce(new Error('自己发的弹不能自己认 🎯'))
+    await other.find('[data-testid="couple-laugh-attack-hit-btn-atOther"]').trigger('click')
+    expect(laughApi.laughAttackHit).toHaveBeenCalledWith('atOther')
+    expect(errorSpy).toHaveBeenCalledWith('自己发的弹不能自己认 🎯')
+    wrapper.unmount()
+    other.unmount()
+  })
+
+  it('欢笑银行·笑点预判：判冰前两边都能投（含我自己讲的那条，F395 要的就是双判一致），判过冰才收口；投哪一票只改自己那一票，twin 与票数吃服务端', async () => {
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      jokes: [
+        laughJokeRow({ id: 'jT', mine: false, canJudge: false, canGuess: true }),
+        laughJokeRow({ id: 'jMe', mine: true, content: '我自己讲的梗', canJudge: false, canGuess: true }),
+        laughJokeRow({ id: 'jIcy', mine: true, content: '已经结冰的那条', judged: true, canGuess: false }),
+      ],
+      guesses: [
+        laughGuessRow({ jokeId: 'jT' }),
+        laughGuessRow({ jokeId: 'jMe', minePredicted: true, predictsLaugh: true, predictCount: 1 }),
+        laughGuessRow({ jokeId: 'jIcy', minePredicted: false, partnerPredicted: true, predictsLaugh: false, partnerPredictsLaugh: true, predictCount: 1 }),
+      ],
+    }))
+    const wrapper = await mountOnRitualsLaugh()
+    expect(wrapper.find('[data-testid="couple-laugh-guess-yes-jT"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-laugh-guess-no-jT"]').exists()).toBe(true)
+    // 自己讲的那条也要能预判（原先 canGuess=「不是我的」，一条梗最多一票，默契双判永远凑不齐）
+    expect(wrapper.find('[data-testid="couple-laugh-guess-yes-jMe"]').exists()).toBe(true)
+    // 只有判过冰的那条才收口
+    expect(wrapper.find('[data-testid="couple-laugh-guess-yes-jIcy"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-guess-wait-jIcy"]').exists()).toBe(true)
+    expect((wrapper.find('[data-testid="couple-laugh-guess-count-jMe"]').element as HTMLElement).textContent).toContain('已收到 1 票')
+    expect((wrapper.find('[data-testid="couple-laugh-guess-mine-jMe"]').element as HTMLElement).textContent).toContain('会笑')
+    expect((wrapper.find('[data-testid="couple-laugh-guess-partner-jT"]').element as HTMLElement).textContent).toContain('还没投这一票')
+
+    vi.mocked(laughApi.laughGuess).mockResolvedValue(laughVo({
+      jokes: [
+        laughJokeRow({ id: 'jT', mine: false, canJudge: false, canGuess: true }),
+        laughJokeRow({ id: 'jMe', mine: true, content: '我自己讲的梗', canJudge: false, canGuess: true }),
+      ],
+      guesses: [
+        laughGuessRow({ jokeId: 'jT', minePredicted: true, partnerPredicted: true, predictsLaugh: true, partnerPredictsLaugh: true, twin: true, predictCount: 2 }),
+        laughGuessRow({ jokeId: 'jMe', minePredicted: true, predictsLaugh: true, predictCount: 1 }),
+      ],
+    }))
+    await wrapper.find('[data-testid="couple-laugh-guess-yes-jT"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughGuess).toHaveBeenCalledWith('jT', true)
+    // 一条梗每人一票、自己那一票可改写：投完这一票钮还在
+    expect(wrapper.find('[data-testid="couple-laugh-guess-no-jT"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-laugh-guess-no-jT"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughGuess).toHaveBeenLastCalledWith('jT', false)
+    // 我讲的那条也递得出这一票
+    await wrapper.find('[data-testid="couple-laugh-guess-no-jMe"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughGuess).toHaveBeenLastCalledWith('jMe', false)
+    expect(wrapper.find('[data-testid="couple-laugh-guess-twin-chip-jT"]').exists()).toBe(true)
+    expect((wrapper.find('[data-testid="couple-laugh-guess-twin"]').element as HTMLElement).textContent).toContain('1 题')
+    // 自己讲的那条判过冰之前一直投得出去；判冰的那条始终收着
+    expect(wrapper.find('[data-testid="couple-laugh-guess-yes-jMe"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-laugh-guess-yes-jIcy"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('欢笑银行·大笑处方：没点条目/医嘱超长/今天已开各自挡下；targetTitle=null 渲染「已经查不到了」；已服用只给收方点', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      moments: [laughMomentRow({ id: 'mo1', mine: false, canWitness: false })],
+      cringes: [laughCringeRow({ id: 'cr1', mine: false, canHeal: false })],
+      rxList: [
+        laughRxRow({ id: 'rxOther', mine: false, taken: false }),
+        laughRxRow({ id: 'rxMine', mine: true, day: '2026-10-03', taken: false, targetTitle: null }),
+        laughRxRow({ id: 'rxDone', mine: false, taken: true, takenBy: 'alice' }),
+      ],
+    }))
+    const wrapper = await mountOnRitualsLaugh()
+    // 后端 safeTargetTitle 查不到目标行时给 null（这批唯一可空的字符串），界面必须说实话
+    expect((wrapper.find('[data-testid="couple-laugh-rx-title-rxMine"]').element as HTMLElement).textContent).toContain('已经查不到了')
+    expect(wrapper.find('[data-testid="couple-laugh-rx-take-rxMine"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-rx-take-wait-rxMine"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-laugh-rx-take-rxDone"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-rx-take-rxOther"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="couple-laugh-rx-submit"]').trigger('click')
+    expect(laughApi.laughRx).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('先点一条'))
+
+    // 换类别 → 候选池换人且之前那条被清掉（免得开出指向错类的处方）
+    expect(wrapper.find('[data-testid="couple-laugh-rx-pick-mo1"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-laugh-rx-kind-CRINGE"]').trigger('click')
+    expect(wrapper.find('[data-testid="couple-laugh-rx-pick-mo1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-rx-pick-cr1"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="couple-laugh-rx-pick-cr1"]').trigger('click')
+    await wrapper.find('[data-testid="couple-laugh-rx-note"]').setValue('一'.repeat(61))
+    await wrapper.find('[data-testid="couple-laugh-rx-submit"]').trigger('click')
+    expect(laughApi.laughRx).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('医嘱最多 60 字'))
+
+    await wrapper.find('[data-testid="couple-laugh-rx-note"]').setValue('饭后翻三分钟')
+    vi.mocked(laughApi.laughRx).mockRejectedValueOnce(new Error('处方指向的那条已经不在这儿了 💊'))
+    await wrapper.find('[data-testid="couple-laugh-rx-submit"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughRx).toHaveBeenCalledWith('CRINGE', 'cr1', '饭后翻三分钟')
+    expect(errorSpy).toHaveBeenCalledWith('处方指向的那条已经不在这儿了 💊')
+
+    vi.mocked(laughApi.laughRx).mockResolvedValue(laughVo({
+      cringes: [laughCringeRow({ id: 'cr1', mine: false, canHeal: false })],
+      rxList: [laughRxRow({ id: 'rxNew', mine: true, day: '2026-10-05', taken: false })],
+    }))
+    await wrapper.find('[data-testid="couple-laugh-rx-submit"]').trigger('click')
+    await flushPromises()
+    // 一次性目标位被整份替换清空；重新点同一条再交 → 「今天已经开过」闸门挡在本地
+    expect(wrapper.find('[data-testid="couple-laugh-rx-pick-rxNew"]').exists()).toBe(false)
+    expect((wrapper.find('[data-testid="couple-laugh-rx-quota"]').element as HTMLElement).textContent).toContain('已经开过了')
+    await wrapper.find('[data-testid="couple-laugh-rx-pick-cr1"]').trigger('click')
+    await wrapper.find('[data-testid="couple-laugh-rx-submit"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughRx).toHaveBeenCalledTimes(2)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('明天再复诊'))
+
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({ rxList: [laughRxRow({ id: 'rxOther', mine: false, taken: false })] }))
+    const other = await mountOnRitualsLaugh()
+    vi.mocked(laughApi.laughRxTaken).mockRejectedValueOnce(new Error('药是给对方吃的，自己不能回执 ✅'))
+    await other.find('[data-testid="couple-laugh-rx-take-rxOther"]').trigger('click')
+    expect(laughApi.laughRxTaken).toHaveBeenCalledWith('rxOther')
+    expect(errorSpy).toHaveBeenCalledWith('药是给对方吃的，自己不能回执 ✅')
+    wrapper.unmount()
+    other.unmount()
+  })
+
+  it('欢笑银行·幽默风格图鉴：类型没点先挡；评自己提交 alice、评 TA 提交 bob；拿不到对方用户名时不偷偷兜成自评', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({ styles: [laughStyleRow({ id: 'st1' })] }))
+    const wrapper = await mountOnRitualsLaugh()
+    await wrapper.find('[data-testid="couple-laugh-style-submit"]').trigger('click')
+    expect(laughApi.laughStyle).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('五种里先点一种'))
+
+    await wrapper.find('[data-testid="couple-laugh-style-opt-COLD"]').trigger('click')
+    await wrapper.find('[data-testid="couple-laugh-style-note"]').setValue('一'.repeat(61))
+    await wrapper.find('[data-testid="couple-laugh-style-submit"]').trigger('click')
+    expect(laughApi.laughStyle).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('补一句最多 60 字'))
+
+    await wrapper.find('[data-testid="couple-laugh-style-note"]').setValue('一回家就开始讲谐音')
+    vi.mocked(laughApi.laughStyle).mockResolvedValue(laughVo({ styles: [laughStyleRow({ id: 'st1', style: 'COLD', styleLabel: '冷幽默', note: '一回家就开始讲谐音' })] }))
+    await wrapper.find('[data-testid="couple-laugh-style-submit"]').trigger('click')
+    await flushPromises()
+    // aboutUser 默认「评我自己」，用户名来自 auth store
+    expect(laughApi.laughStyle).toHaveBeenCalledWith('alice', 'COLD', '一回家就开始讲谐音')
+    expect((wrapper.find('[data-testid="couple-laugh-style-label-st1"]').element as HTMLElement).textContent).toContain('冷幽默')
+    expect((wrapper.find('[data-testid="couple-laugh-style-hint"]').element as HTMLElement).textContent).toContain('风格图鉴还没填满')
+
+    // 评 TA：aboutUser 取空间头部的对方用户名（LaughVO 不下发这个字段，已上报缺字段）
+    await wrapper.find('[data-testid="couple-laugh-style-about-partner"]').trigger('click')
+    await wrapper.find('[data-testid="couple-laugh-style-note"]').setValue('替 TA 补一句')
+    vi.mocked(laughApi.laughStyle).mockResolvedValue(laughVo({
+      styles: [laughStyleRow(), laughStyleRow({ id: 'st2', aboutUser: 'bob', rater: 'alice', selfRated: false, styleLabel: '谐音梗' })],
+    }))
+    await wrapper.find('[data-testid="couple-laugh-style-submit"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughStyle).toHaveBeenLastCalledWith('bob', 'COLD', '替 TA 补一句')
+    expect((wrapper.find('[data-testid="couple-laugh-style-quota"]').element as HTMLElement).textContent).toContain('我评了 2 格')
+    wrapper.unmount()
+
+    // 对方用户名拿不到（空间头部 partner.username 为空 + 服务端也没出现过别的用户名）：warning 且绝不打后端
+    const noName = overview({
+      space: {
+        ...(establishedOverview.space as NonNullable<CoupleOverview['space']>),
+        partner: { username: '', nickname: '', avatar: '', online: false, petName: null },
+      },
+      checkins: establishedOverview.checkins,
+    })
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({ styles: [] }))
+    const w2 = await mountOnRitualsLaugh(noName)
+    await w2.find('[data-testid="couple-laugh-style-opt-MIME"]').trigger('click')
+    await w2.find('[data-testid="couple-laugh-style-about-partner"]').trigger('click')
+    await w2.find('[data-testid="couple-laugh-style-submit"]').trigger('click')
+    expect(laughApi.laughStyle).toHaveBeenCalledTimes(2)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('还没拿到 TA 的用户名'))
+    w2.unmount()
+  })
+
+  it('欢笑银行·欢乐周报懒读：默认渲染聚合自带那份（周一锚吃服务端 week），点按钮才打 /week，失败中文直透，回不去时给提示', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({ weekReport: laughWeekVo({ summary: '聚合里的本周那份' }) }))
+    const wrapper = await mountOnRitualsLaugh()
+    expect((wrapper.find('[data-testid="couple-laugh-week-anchor"]').element as HTMLElement).textContent).toContain('2026-09-28')
+    expect((wrapper.find('[data-testid="couple-laugh-week-range"]').element as HTMLElement).textContent).toContain('2026-09-28 ~ 2026-10-04')
+    expect((wrapper.find('[data-testid="couple-laugh-week-summary"]').element as HTMLElement).textContent).toContain('聚合里的本周那份')
+    expect(laughApi.laughWeek).not.toHaveBeenCalled()
+
+    // 首屏不自动拉；点一下才懒读，读回来的是另一份（聚合不被覆盖）
+    vi.mocked(laughApi.laughWeek).mockResolvedValue(laughWeekVo({ week: '2026-10-05', fromDay: '2026-10-05', toDay: '2026-10-11', summary: '刚从 /week 读回来的那份', moments: 7 }))
+    await wrapper.find('[data-testid="couple-laugh-week-load"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughWeek).toHaveBeenCalledTimes(1)
+    expect((wrapper.find('[data-testid="couple-laugh-week-summary"]').element as HTMLElement).textContent).toContain('刚从 /week 读回来的那份')
+    expect((wrapper.find('[data-testid="couple-laugh-week-moments"]').element as HTMLElement).textContent).toContain('7')
+    expect(wrapper.find('[data-testid="couple-laugh-week-lazy"]').exists()).toBe(true)
+
+    // 失败：ElMessage.error 直透，界面留在原来那份
+    vi.mocked(laughApi.laughWeek).mockRejectedValueOnce(new Error('还没有建立情侣空间，先邀请一位好友吧'))
+    await wrapper.find('[data-testid="couple-laugh-week-load"]').trigger('click')
+    await flushPromises()
+    expect(errorSpy).toHaveBeenCalledWith('还没有建立情侣空间，先邀请一位好友吧')
+
+    await wrapper.find('[data-testid="couple-laugh-week-back"]').trigger('click')
+    expect((wrapper.find('[data-testid="couple-laugh-week-summary"]').element as HTMLElement).textContent).toContain('聚合里的本周那份')
+    await wrapper.find('[data-testid="couple-laugh-week-back"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('总览自带的本周'))
+    wrapper.unmount()
+  })
+
+  it('欢笑银行·年度笑榜懒读：默认聚合当年（year 是数字、冷场之王与 bestLine 全来自后端），年份格式先挡，查 2025 才打 /year?year=2025', async () => {
+    const warnSpy = vi.spyOn(ElMessage, 'warning')
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({ year: laughYearVo({ year: 2026, kingOfCold: 'bob', summary: '聚合里的当年那份' }) }))
+    const wrapper = await mountOnRitualsLaugh()
+    expect((wrapper.find('[data-testid="couple-laugh-year-num"]').element as HTMLElement).textContent).toContain('2026 年')
+    expect((wrapper.find('[data-testid="couple-laugh-year-king"]').element as HTMLElement).textContent).toContain('冷场之王 bob')
+    expect((wrapper.find('[data-testid="couple-laugh-year-best"]').element as HTMLElement).textContent).toContain('拖鞋事件')
+    expect((wrapper.find('[data-testid="couple-laugh-year-title"]').element as HTMLElement).textContent).toContain('彼此的快乐供应商')
+    expect(laughApi.laughYear).not.toHaveBeenCalled()
+
+    await wrapper.find('[data-testid="couple-laugh-year-input"]').setValue('25')
+    await wrapper.find('[data-testid="couple-laugh-year-load"]').trigger('click')
+    expect(laughApi.laughYear).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('年份写成 yyyy'))
+
+    vi.mocked(laughApi.laughYear).mockResolvedValue(laughYearVo({ year: 2025, title: '还在攒第一声笑', bestLine: '', summary: '2025 年那份' }))
+    await wrapper.find('[data-testid="couple-laugh-year-input"]').setValue('2025')
+    await wrapper.find('[data-testid="couple-laugh-year-load"]').trigger('click')
+    await flushPromises()
+    expect(laughApi.laughYear).toHaveBeenCalledWith('2025')
+    expect((wrapper.find('[data-testid="couple-laugh-year-num"]').element as HTMLElement).textContent).toContain('2025 年')
+    expect((wrapper.find('[data-testid="couple-laugh-year-best"]').element as HTMLElement).textContent).toContain('暂时选不出最好笑的一条')
+    expect(wrapper.find('[data-testid="couple-laugh-year-lazy"]').exists()).toBe(true)
+
+    vi.mocked(laughApi.laughYear).mockRejectedValueOnce(new Error('年份写成 yyyy'))
+    await wrapper.find('[data-testid="couple-laugh-year-load"]').trigger('click')
+    await flushPromises()
+    expect(errorSpy).toHaveBeenCalledWith('年份写成 yyyy')
+
+    await wrapper.find('[data-testid="couple-laugh-year-back"]').trigger('click')
+    expect((wrapper.find('[data-testid="couple-laugh-year-num"]').element as HTMLElement).textContent).toContain('2026 年')
+    await wrapper.find('[data-testid="couple-laugh-year-back"]').trigger('click')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('总览自带的当年'))
+    wrapper.unmount()
+  })
+
+  it('欢笑银行·整份替换只回填本人侧且不动懒读：写接口换新总览后，我的节目回填、一次性输入清空、懒读的另一年不被覆盖', async () => {
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({
+      rotationHint: '',
+      today: laughDailyRow({ mineOwner: true, ownerUser: 'alice', content: '我的节目', canServe: true, canJudge: false }),
+      moments: [laughMomentRow({ id: 'mo1', mine: true })],
+    }))
+    const wrapper = await mountOnRitualsLaugh()
+    // 先懒读另一年
+    vi.mocked(laughApi.laughYear).mockResolvedValue(laughYearVo({ year: 2023, summary: '2023 那份' }))
+    await wrapper.find('[data-testid="couple-laugh-year-input"]').setValue('2023')
+    await wrapper.find('[data-testid="couple-laugh-year-load"]').trigger('click')
+    await flushPromises()
+    expect((wrapper.find('[data-testid="couple-laugh-year-num"]').element as HTMLElement).textContent).toContain('2023 年')
+
+    // 写接口返回整份新总览（聚合里 year 是服务端当年 2026）：懒读那一份必须还在
+    vi.mocked(laughApi.laughJoke).mockResolvedValue(laughVo({
+      rotationHint: '',
+      today: laughDailyRow({ mineOwner: true, ownerUser: 'alice', content: '我的节目', canServe: true, canJudge: false }),
+      jokes: [laughJokeRow({ id: 'jNew', mine: true, content: '新丢的冷笑话' })],
+      year: laughYearVo({ year: 2026 }),
+    }))
+    await wrapper.find('[data-testid="couple-laugh-joke-input"]').setValue('新丢的冷笑话')
+    await wrapper.find('[data-testid="couple-laugh-joke-submit"]').trigger('click')
+    await flushPromises()
+    expect((wrapper.find('[data-testid="couple-laugh-year-num"]').element as HTMLElement).textContent).toContain('2023 年')
+    expect(wrapper.find('[data-testid="couple-laugh-joke-jNew"]').exists()).toBe(true)
+    expect((wrapper.find('[data-testid="couple-laugh-joke-input"]').element as HTMLInputElement).value).toBe('')
+    // 本人这一侧回填：今天是我值班 → 节目留在输入框里可改写
+    expect((wrapper.find('[data-testid="couple-laugh-daily-content"]').element as HTMLTextAreaElement).value).toBe('我的节目')
+    // 不是我的那一格绝不清空、也绝不回填到我的输入框
+    vi.mocked(laughApi.laughBank).mockResolvedValue(laughVo({ rotationHint: '', today: laughDailyRow({ mineOwner: false }) }))
+    const other = await mountOnRitualsLaugh()
+    expect((other.find('[data-testid="couple-laugh-daily-content"]').element as HTMLTextAreaElement).value).toBe('')
+    expect((other.find('[data-testid="couple-laugh-daily-owner-name"]').element as HTMLElement).textContent).toContain('bob')
+    wrapper.unmount()
+    other.unmount()
+  })
+
+  it('欢笑银行·十卡静默降级：接口 404（还没建立情侣空间）时不弹错误条，十张卡根与折叠钮都在、一律收起，两个懒读接口首屏不自动打', async () => {
+    const errorSpy = vi.spyOn(ElMessage, 'error')
+    vi.mocked(laughApi.laughBank).mockRejectedValue(new Error('还没有建立情侣空间，先邀请一位好友吧'))
+    mockedOverview.mockResolvedValue(establishedOverview)
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.find('#tab-rituals').trigger('click')
+    await flushPromises()
+    await wrapper.find('#tab-fun').trigger('click')
+    await flushPromises()
+
+    const keys = [
+      'couple-laugh-moment', 'couple-laugh-daily', 'couple-laugh-joke', 'couple-laugh-cringe',
+      'couple-laugh-attack', 'couple-laugh-guess', 'couple-laugh-rx', 'couple-laugh-style',
+      'couple-laugh-week', 'couple-laugh-year',
+    ]
+    keys.forEach((k) => {
+      expect(wrapper.find(`[data-testid="${k}"]`).exists()).toBe(true)
+      expect(wrapper.find(`[data-testid="${k}"]`).classes()).toContain('is-collapsed')
+      expect(wrapper.find(`[data-testid="couple-collapse-${k}"]`).exists()).toBe(true)
+    })
+    // 没数据时连输入口都不铺（点了也只会被「还没拿到总览」挡下），首屏不报错
+    expect(wrapper.find('[data-testid="couple-laugh-moment-submit"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-daily-submit"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-week-load"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-laugh-year-load"]').exists()).toBe(false)
+    expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('还没有建立情侣空间'))
+    expect(laughApi.laughWeek).not.toHaveBeenCalled()
+    expect(laughApi.laughYear).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 
