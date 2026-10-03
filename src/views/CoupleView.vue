@@ -199,6 +199,7 @@
                   <CoupleFunTalk />
                   <CouplePlay />
                   <CoupleTheater />
+                  <CoupleLaugh />
                 </div>
               </el-tab-pane>
             </el-tabs>
@@ -496,6 +497,7 @@ import CoupleDailyLife from '@/components/couple/CoupleDailyLife.vue'
 import CoupleMoodRelay from '@/components/couple/CoupleMoodRelay.vue'
 import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
 import CoupleTheater from '@/components/couple/CoupleTheater.vue'
+import CoupleLaugh from '@/components/couple/CoupleLaugh.vue'
 import CoupleBody from '@/components/couple/CoupleBody.vue'
 import CoupleRepair from '@/components/couple/CoupleRepair.vue'
 import CoupleLegacy from '@/components/couple/CoupleLegacy.vue'

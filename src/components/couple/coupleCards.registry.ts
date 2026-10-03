@@ -43,6 +43,17 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   { key: 'couple-theater-booth', label: '时空电话亭与黑话', tab: 'rituals', sub: 'fun' },
   { key: 'couple-theater-act', label: '每日奥斯卡与家长题', tab: 'rituals', sub: 'fun' },
   { key: 'couple-theater-house', label: '追剧客服颁奖礼', tab: 'rituals', sub: 'fun' },
+  // 😂 欢笑银行（F390-F399，rituals/fun 子页签）
+  { key: 'couple-laugh-moment', label: '笑点存档（现场证词）', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-laugh-daily', label: '每日一逗（值班判分）', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-laugh-joke', label: '冷笑话结冰榜', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-laugh-cringe', label: '社死往事（满一年转好笑）', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-laugh-attack', label: '快乐突袭与中弹', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-laugh-guess', label: '笑点预判默契考', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-laugh-rx', label: '大笑处方与服用回执', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-laugh-style', label: '幽默风格图鉴', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-laugh-week', label: '欢乐周报', tab: 'rituals', sub: 'fun' },
+  { key: 'couple-laugh-year', label: '年度笑榜（我们的喜剧奖）', tab: 'rituals', sub: 'fun' },
   // 🌱 养成
   { key: 'couple-challenge', label: '双人挑战赛', tab: 'growth' },
   { key: 'couple-coach', label: '成长搭子', tab: 'growth' },
