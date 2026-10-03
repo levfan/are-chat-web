@@ -241,6 +241,13 @@ import type {
   CoupleCatchYearVO,
   CoupleCatchSensitiveKind,
   CoupleCatchProtocolMode,
+  CoupleLaughVO,
+  CoupleLaughWeekVO,
+  CoupleLaughYearVO,
+  CoupleLaughVerdict,
+  CoupleLaughAttackKind,
+  CoupleLaughTargetKind,
+  CoupleLaughStyleCode,
   CouplePinVO,
 } from '@/types'
 
@@ -2602,4 +2609,134 @@ export const catchApi = {
    *  失败直透 ElMessage.error、首屏不自动拉 */
   catchYear: (year?: string) =>
     http.get<CoupleCatchYearVO>(year ? `/api/couple/catch/year?year=${year}` : '/api/couple/catch/year'),
+}
+
+/**
+ * F390-F399 欢笑银行（laughApi，基址 /api/couple/laugh）：3 个 GET + 14 个 POST = 17 个映射。
+ * GET /bank 是唯一的聚合读接口，14 个 POST 写接口全部原样返回整份 LaughVO
+ * （后端 CoupleLaughService.LaughVO 十七个字段，顺序见 types/index.ts 的 CoupleLaughVO），前端整体替换即十卡刷新；
+ * ⚠️ 与批次三十四不同：GET /week（F398）与 GET /year?year=（F399）**也各自在聚合里有一份**
+ * （build() 每个写接口都重算 weekReport 与 year），这两个懒读接口只是「点按钮再要一次」的独立读口，
+ * 结果另存一份 ref，不覆盖聚合、也不参与任何判定；失败直透 ElMessage.error、首屏不自动拉。
+ * 限流与错误码全部抄自后端 CoupleLaughService 与 CoupleLaugh* 实体常量
+ * （业务规则归后端，400/404 中文 message 直透 ElMessage，前端只可更严不可更松）：
+ * · F390 /moment：day 空串=今天、须 yyyy-MM-dd（400「发生的日子写成 yyyy-MM-dd」）、不能是将来
+ *   （400「笑点要是还没发生，就先别存 🤔」）；title 必填（400「这条笑点叫什么，起个名」）且 ≤30
+ *   （TITLE_MAX，400「名字最多 30 字」）；culprit ≤20（CULPRIT_MAX，400「谁干的最多 20 字」）可空；
+ *   scene ≤100（SCENE_MAX，400「现场还原最多 100 字」）可空；⚠️ funLevel 传 null 后端兜 3、
+ *   越界静默钳到 1-5（LEVEL_MIN/LEVEL_MAX，**不报错**），前端要求必须先选；
+ *   同人同「事发日」同名查重（按 equalsIgnoreCase，与 uk(space,day,from,title) 在 MariaDB *_ci 下的口径一致）
+ *   400「这条笑点已经存过了」；同人同「事发日」≥3 条（PER_DAY_MAX）400「一天最多存 3 条，笑也要节制 😂」
+ *   ⚠️ 减数用的是提交的那个 day 而不是今天，换着过去的日子提交就绕得过这句「每人每天 ≤3 条」的注释口径。
+ *   /moment/witness {id,witness}：⚠️ 只有对方能补（400「证词要对方补——自己夸现场没意思 🎤」）、
+ *   必填（400「现场证词写一句」）且 ≤100（WITNESS_MAX，400「证词最多 100 字」）、
+ *   补过再补是 **400**「这条已经有人补过证词了」（不同于 heal/hit/taken 的幂等静默）；
+ *   404「找不到这条笑点 😂」。
+ * · F391 /daily：⚠️ 只有周轮换算出的值班人能交（400「今天轮不到你——X 才是值班喜剧人 🎪」），
+ *   content 必填（400「今天打算用什么逗，写出来」）且 ≤100（CoupleLaughDaily.CONTENT_MAX，400「节目内容最多 100 字」）；
+ *   一天一格 upsert：没判分前再交一次=改写（只有首次那次推 laugh-daily），判过之后再交 400
+ *   「今天已经判过分了，节目就定格在这了」；⚠️ 聚合里没有任何「今天轮不轮到我」的布尔位
+ *   （LaughVO 没有 dutyUser/onDutyMine，today 为 null 时只剩 rotationHint 那句文案），前端挡不住抢班。
+ *   /daily/judge {id,verdict}：⚠️ 值班人自己不能判（400「自己逗的不能自己判，让 TA 来 🏅」）、
+ *   verdict 只 HAPPY/FLAT/FAKE 三个（后端 toUpperCase，白名单外 400「只能判三种：真笑了 / 没笑 / 强撑的笑」）、
+ *   已判过再点是**幂等静默**（直接返回整份、不重推）；404「找不到今天的节目单 🎪」。
+ * · F392 /joke：content 必填（400「冷笑话总得先有个冷句」）且 ≤80（CONTENT_MAX，400「冷笑话最多 80 字」）；
+ *   同人同内容**全历史**查重（uk(space,from_user,content)，equalsIgnoreCase）
+ *   400「这条已经丢过一次了，冷笑话不许重播」；同人**今天** ≥3 条（PER_USER_DAY_MAX，
+ *   400「今天已经丢了 3 条，够冷了 🧊」）。/joke/judge {id,frozen}：⚠️ 自己讲的不能自己判
+ *   （400「自己讲的不能自己判冰 🧊」）、已判再判是 **400**「这条已经判过了，结冰榜不许翻案」（非幂等）；
+ *   frozen 传 null 后端按 false；404「找不到这条冷笑话 🧊」。
+ * · F393 /cringe：day 空串=今天、须 yyyy-MM-dd（400「社死的日子写成 yyyy-MM-dd」）、不能是将来
+ *   （400「社死是过去发生的事，不能预约」）；content 必填（400「当时发生了什么，写下来」）且 ≤100
+ *   （CONTENT_MAX，400「社死现场最多 100 字」）；同人同一天（uk(space,day,from_user)）
+ *   400「那天已经交过一条了，一天一条 😖」。/cringe/heal {id}：⚠️ 只有对方能盖（400
+ *   「抱抱章要 TA 盖，自己抱抱不算 🫂」）、重复盖幂等静默；404「找不到这条社死往事 😖」。
+ *   ⚠️ turnedFunny/daysOld 是读时按 day 距今算的（满 HEAL_AFTER_DAYS=365 天才算转档），没有结算任务；
+ *   满一年后 canHeal 仍是 true（后端没有「转档了就不许再盖」的规则）。
+ * · F394 /attack：kind 白名单 PRAISE/MEME/MEMORY（400「突袭只有三种：一串夸奖 / 一个梗 / 一段回忆杀 💥」，
+ *   ⚠️ 传空串后端兜成 PRAISE 不报错，前端要求先选一种）；content 必填（400「突袭内容写一句」）且 ≤100
+ *   （CONTENT_MAX，400「突袭内容最多 100 字」）；每人每天一次（uk(space,from_user,day)，
+ *   400「今天已经突袭过一次了，明天再来 💥」）。/attack/hit {id}：⚠️ 只有收方能盖（400
+ *   「自己发的弹不能自己认 🎯」）、重复盖幂等静默；404「找不到这次突袭 💥」。
+ *   ⚠️ 规格里 F394 的「月度中弹榜」后端没有任何 VO 字段（attacks 列表被 LIST_ATTACK=14 钳住、
+ *   YearVO.hits 是当年），前端拿不到诚实的本月数，只做当年与逐条展示。
+ * · F395 /guess {jokeId,predict}：一条梗每人一票（uk(space,joke_id,from_user)），再交=改写自己那一票，
+ *   predict 传 null 后端按 false；⚠️ 后端**没有**归属校验（讲的人也能给自己那条投），界面只能吃
+ *   JokeVO.canGuess=「还没判冰」这一位（判冰前两边都能投，F395 要双判一致）；⚠️ 一致/不一致都不推 WS 事件、也没有默契台账
+ *   （Bank 的 guessTwinLine/guessDiffLine 全仓无调用点）；404「找不到这条冷笑话 🧊」。
+ * · F396 /rx {targetKind,targetId,note}：targetKind 只 MOMENT/CRINGE/ATTACK（⚠️ 空串没有兜底，
+ *   直接 400「处方只能指向笑点 / 社死往事 / 快乐突袭 💊」）；目标行必须是本空间的
+ *   （400「处方指向的那条已经不在这儿了 💊」）；每人每天一张（uk(space,from_user,day)，
+ *   400「今天的处方已经开过了，明天再复诊」）；note ≤60（NOTE_MAX，400「医嘱最多 60 字」）可空。
+ *   /rx/taken {id}：⚠️ 只有收方能回执（400「药是给对方吃的，自己不能回执 ✅」）、重复回执幂等静默；
+ *   404「找不到这张处方 💊」；⚠️ RxVO 没有 canTake 位，按钮只能由 mine+taken 两个服务端位推。
+ * · F397 /style {aboutUser,style,note}：aboutUser 空串后端兜成**操作人自己**、不是两人之一 400
+ *   「只能给你们俩评幽默风格 🎭」；style 只 PUN/COLD/SELF/ACTION/MIME 五个（后端 toUpperCase，白名单外
+ *   400「类型只有五种：谐音梗 / 冷幽默 / 自嘲派 / 动作派 / 模仿派」）；note ≤60（NOTE_MAX，
+ *   400「补一句最多 60 字」）可空；uk(space,about_user,rater) 再提交=改写，⚠️ 每次改写都推 laugh-style。
+ * · GET /week：无参，周一锚（后端 weekStart(previousOrSame(MONDAY))），七个计数全是**两人合计**；
+ *   ⚠️ WeekVO.week 与 fromDay 后端给同一个值。GET /year?year=：空=当年、须 yyyy 否则 400「年份写成 yyyy」；
+ *   数字按**事发日**归年直查原始表，不受 moments≤20/jokes≤20/cringes≤14/attacks≤14/rxList≤10 钳制
+ *   （guess 表没有 day 列，借被考那条冷笑话的发出日归年）。
+ * 未建空间一律 404「还没有建立情侣空间，先邀请一位好友吧」，组件侧 safeLoad 静默降级。
+ */
+export const laughApi = {
+  /** F390-F399 欢笑银行总览（GET /bank：十七个字段一次拉齐，含服务端本周 weekReport 与当年 year 两份榜单；
+   *  ⚠️ today 今天没人交节目时为 null、RxVO.targetTitle 查不到目标行时为 null，其余字符串后端恒给空串；
+   *  未建空间 404 前端静默降级） */
+  laughBank: () => http.get<CoupleLaughVO>('/api/couple/laugh/bank'),
+  /** F398 欢乐周报（GET /week：周一锚、七个计数两人合计、summary 是后端 Bank 整句。
+   *  ⚠️ 聚合里已经带了一份 weekReport，这是「点按钮再懒读一次」的独立接口，失败直透 ElMessage.error、首屏不自动拉 */
+  laughWeek: () => http.get<CoupleLaughWeekVO>('/api/couple/laugh/week'),
+  /** F399 年度欢笑榜（GET /year?year=：year 空串=当年、须 yyyy 否则 400「年份写成 yyyy」；数字按事发日归年、
+   *  直查原始表不受总览列表钳制，title/summary 是后端 Bank 整句。
+   *  ⚠️ 聚合里的 year 恒是服务端当年那份，这是「点按钮才懒读另一年」的独立接口，失败直透、首屏不自动拉 */
+  laughYear: (year?: string) =>
+    http.get<CoupleLaughYearVO>(year ? `/api/couple/laugh/year?year=${year}` : '/api/couple/laugh/year'),
+  /** F390 存一条笑点（day 空串=今天且不能是将来、title 必填 ≤30 字、culprit ≤20 字、scene ≤100 字、
+   *  funLevel 1-5 且 ⚠️ 后端 null 兜 3/越界静默钳制；同人同事发日同名 400、同事发日 ≥3 条 400），返回整份总览 */
+  laughMoment: (day: string, title: string, culprit: string, scene: string, funLevel: number) =>
+    http.postJson<CoupleLaughVO>('/api/couple/laugh/moment', { day, title, culprit, scene, funLevel }),
+  /** F390 对方补一份现场证词（⚠️ 只有对方能补、一条只补一次，补过再补是 400 不是幂等；witness 必填 ≤100 字），
+   *  返回整份总览 */
+  laughMomentWitness: (id: string, witness: string) =>
+    http.postJson<CoupleLaughVO>('/api/couple/laugh/moment/witness', { id, witness }),
+  /** F391 值班的人交今天的节目（⚠️ 轮不到你 400，聚合里没有「今天轮不轮到我」的位；content 必填 ≤100 字；
+   *  判分前再交一次=改写，判过后 400），返回整份总览 */
+  laughDaily: (content: string) => http.postJson<CoupleLaughVO>('/api/couple/laugh/daily', { content }),
+  /** F391 对方判分（⚠️ 值班人自己不能判；verdict 只 HAPPY/FLAT/FAKE；已判过再点是幂等静默），返回整份总览 */
+  laughDailyJudge: (id: string, verdict: CoupleLaughVerdict) =>
+    http.postJson<CoupleLaughVO>('/api/couple/laugh/daily/judge', { id, verdict }),
+  /** F392 丢一条冷笑话（content 必填 ≤80 字；同人同内容全历史查重、同人今天 ≥3 条 400），返回整份总览 */
+  laughJoke: (content: string) => http.postJson<CoupleLaughVO>('/api/couple/laugh/joke', { content }),
+  /** F392 对方判结没结冰（⚠️ 自己讲的不能自己判、已判再判 400「结冰榜不许翻案」非幂等；
+   *  frozen 传 null 后端按 false），返回整份总览 */
+  laughJokeJudge: (id: string, frozen: boolean) =>
+    http.postJson<CoupleLaughVO>('/api/couple/laugh/joke/judge', { id, frozen }),
+  /** F393 交一条社死往事（day 空串=今天且不能是将来、content 必填 ≤100 字；同人同一天只一条），返回整份总览 */
+  laughCringe: (day: string, content: string) =>
+    http.postJson<CoupleLaughVO>('/api/couple/laugh/cringe', { day, content }),
+  /** F393 对方盖「抱抱你」章（⚠️ 只有对方能盖；重复盖幂等静默；满一年转档后仍可补盖），返回整份总览 */
+  laughCringeHeal: (id: string) => http.postJson<CoupleLaughVO>('/api/couple/laugh/cringe/heal', { id }),
+  /** F394 发动一次快乐突袭（kind 三白名单、⚠️ 空串后端兜 PRAISE 所以前端要求先选；content 必填 ≤100 字；
+   *  每人每天一次），返回整份总览 */
+  laughAttack: (kind: CoupleLaughAttackKind, content: string) =>
+    http.postJson<CoupleLaughVO>('/api/couple/laugh/attack', { kind, content }),
+  /** F394 收方「中弹」盖章（⚠️ 自己发的弹自己认不了；重复盖幂等静默），返回整份总览 */
+  laughAttackHit: (id: string) => http.postJson<CoupleLaughVO>('/api/couple/laugh/attack/hit', { id }),
+  /** F395 预判对方会不会笑（一条梗每人一票、再交=改写自己那一票、predict 传 null 后端按 false；
+   *  界面闸门吃 JokeVO.canGuess（判过冰才收口，讲的人自己也投这一票）；一致不一致都不推事件、无默契台账），返回整份总览 */
+  laughGuess: (jokeId: string, predict: boolean) =>
+    http.postJson<CoupleLaughVO>('/api/couple/laugh/guess', { jokeId, predict }),
+  /** F396 开一张大笑处方（targetKind 三白名单、⚠️ 空串没有兜底直接 400；targetId 必须是本空间的行否则 400；
+   *  note ≤60 字可空；每人每天一张），返回整份总览 */
+  laughRx: (targetKind: CoupleLaughTargetKind, targetId: string, note: string) =>
+    http.postJson<CoupleLaughVO>('/api/couple/laugh/rx', { targetKind, targetId, note }),
+  /** F396 收方回执「已服用」（⚠️ 只有对方能回执；重复回执幂等静默；RxVO 无 canTake 位，按 mine+taken 推），
+   *  返回整份总览 */
+  laughRxTaken: (id: string) => http.postJson<CoupleLaughVO>('/api/couple/laugh/rx/taken', { id }),
+  /** F397 记一份幽默风格（aboutUser 只能是两人之一、⚠️ 空串后端兜成操作人自己；style 五白名单；
+   *  note ≤60 字可空；「谁评谁」一格，再提交=改写且每次都推 laugh-style），返回整份总览 */
+  laughStyle: (aboutUser: string, style: CoupleLaughStyleCode, note: string) =>
+    http.postJson<CoupleLaughVO>('/api/couple/laugh/style', { aboutUser, style, note }),
 }

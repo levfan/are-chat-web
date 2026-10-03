@@ -5291,3 +5291,242 @@ export interface CoupleCatchVO {
   myHistory: CoupleCatchDailyVO[]
   year: CoupleCatchYearVO
 }
+
+// ============ 批次三十五：欢笑银行（F390-F399，laughApi / CoupleLaugh.vue） ============
+// ⚠️ 字段名、顺序与可空性逐字对齐后端 CoupleLaughService 的 11 个 record（record 参数顺序 = wire 字段顺序）。
+// 字段名对不上只会表现为「卡片空白」，vue-tsc 与单测都照不出来——改后端或抄后端时务必逐字段再比一遍。
+// 可空口径（读 build() 源码逐字段确认）：真可空只有两处——
+//   ① LaughVO.today（后端 `todayRow == null ? null : new DailyVO(...)`，今天还没人交节目就是 null）；
+//   ② RxVO.targetTitle（后端这一位**没套 nz()**，safeTargetTitle 查不到目标行/跨空间时给 null，
+//      是这批唯一一个「字符串却可能为 null」的字段，界面上要按「这条查不到了」处理）。
+// 其余字符串一律经 nz() 恒空串、int/boolean 恒有值（MomentVO.funLevel 的 Java Integer 为 null 时后端兜 3）。
+// ⚠️ 与批次三十四不同：LaughVO 的聚合里**已经带了** weekReport（F398 本周）与 year（F399 当年）两份榜单
+// （后端 build() 每个写接口都重算一遍），GET /week 与 GET /year?year= 只是「点按钮再懒读一次」的独立读口，
+// 懒读结果另存一份 ref，绝不覆盖聚合里那两份，也不参与任何判定。
+
+/** F391 每日一逗判分（后端 CoupleLaughDaily.VERDICTS 三个；白名单外 400「只能判三种：真笑了 / 没笑 / 强撑的笑」） */
+export type CoupleLaughVerdict = 'HAPPY' | 'FLAT' | 'FAKE'
+
+/** F394 快乐突袭类型（后端 CoupleLaughAttack.KINDS 三个；⚠️ 请求传空串后端兜成 PRAISE，前端要求先选一种） */
+export type CoupleLaughAttackKind = 'PRAISE' | 'MEME' | 'MEMORY'
+
+/** F396 大笑处方指向（后端 CoupleLaughRx.TARGET_KINDS 三个；白名单外含空串一律 400，没有兜底） */
+export type CoupleLaughTargetKind = 'MOMENT' | 'CRINGE' | 'ATTACK'
+
+/** F397 幽默类型（后端 CoupleLaughStyle.STYLES 五个；白名单外 400「类型只有五种：谐音梗 / 冷幽默 / 自嘲派 / 动作派 / 模仿派」） */
+export type CoupleLaughStyleCode = 'PUN' | 'COLD' | 'SELF' | 'ACTION' | 'MIME'
+
+/**
+ * F390 一条笑点（uk(space,day,from_user,title)，每人每个「事发日」≤3 条 CoupleLaughMoment.PER_DAY_MAX）。
+ * mine=这条是我存的；witness/witnessBy 是对方补的现场证词（没补时都是空串，后端判「补没补」看 witness_by）；
+ * witnessed=已有人补过；canWitness=后端算好的「不是我的 + 还没人补」——⚠️ 补证词这一位只可能给对方，
+ * 所以我自己的行 canWitness 恒 false。
+ */
+export interface CoupleLaughMomentVO {
+  id: string
+  day: string
+  mine: boolean
+  title: string
+  culprit: string
+  scene: string
+  funLevel: number
+  witness: string
+  witnessBy: string
+  witnessed: boolean
+  canWitness: boolean
+}
+
+/**
+ * F391 某一天的节目单（uk(space,day) 一天一格，双人共写这一行；谁值班由后端按周轮换算，⚠️ 前端算不了）。
+ * mineOwner=今天值班的是我；ownerUser=值班人用户名；verdict/verdictLabel 后端**不等判完就下发**（空串=还没判，
+ * 判完互见靠的就是这两个字段恒定可见）；judged=已判分；canServe=值班人本人（判分前还能改写）；
+ * canJudge=不是值班人 **且节目非空**（判分归对方）。
+ */
+export interface CoupleLaughDailyVO {
+  id: string
+  day: string
+  mineOwner: boolean
+  ownerUser: string
+  content: string
+  verdict: string
+  verdictLabel: string
+  judged: boolean
+  canServe: boolean
+  canJudge: boolean
+}
+
+/**
+ * F392 一条冷笑话（uk(space,from_user,content) 一人一句只一行，每人每天 ≤3 条 PER_USER_DAY_MAX）。
+ * ⚠️ frozen 是「判没判」之外的第二位：后端没判时也存 0，所以「没结冰」与「还没人判」都表现为 frozen=false，
+ * 只能靠 judged 区分；judgedBy 空串=还没人判。
+ * canJudge=对方讲的且还没判；canGuess=对方讲的（⚠️ 后端 guessJoke **没有**归属校验，这条闸门只有 VO 给得出）。
+ */
+export interface CoupleLaughJokeVO {
+  id: string
+  day: string
+  mine: boolean
+  content: string
+  frozen: boolean
+  judged: boolean
+  judgedBy: string
+  canJudge: boolean
+  canGuess: boolean
+}
+
+/**
+ * F393 一条社死往事（uk(space,day,from_user) 同人同社死日只一行）。
+ * healed/healedBy=对方盖的「抱抱你」章；⚠️ turnedFunny 与 daysOld 是**读时按 day 距今算出来的**（满 365 天
+ * CoupleLaughCringe.HEAL_AFTER_DAYS 才算转档，不落库、没有结算任务）；
+ * canHeal=不是我的且还没盖章——⚠️ 满一年转档后这一位仍是 true（后端没有「转档了就不许再盖」的规则）。
+ */
+export interface CoupleLaughCringeVO {
+  id: string
+  day: string
+  mine: boolean
+  content: string
+  healed: boolean
+  healedBy: string
+  turnedFunny: boolean
+  daysOld: number
+  canHeal: boolean
+}
+
+/** F394 一次快乐突袭（uk(space,from_user,day) 每人每天一发）。kindLabel 由后端 Bank 下发。 */
+export interface CoupleLaughAttackVO {
+  id: string
+  day: string
+  mine: boolean
+  kind: string
+  kindLabel: string
+  content: string
+  hit: boolean
+  hitBy: string
+  canHit: boolean
+}
+
+/**
+ * F395 对某条冷笑话的预判（uk(space,joke_id,from_user) 一条梗每人一票，可改自己那一票）。
+ * ⚠️ 后端只在 jokes 列表（≤20 条 LIST_JOKE）里逐条 map 出 GuessVO，所以 jokeId 一定能回查 v.jokes；
+ * minePredicted/partnerPredicted=这一票我/TA 投过没有，predictsLaugh=投的是「TA 会笑」，
+ * twin=两票齐了且一致，predictCount=这条收到几票（0/1/2）。⚠️ 后端**没有** day 列，归年借被考那条梗的发出日。
+ */
+export interface CoupleLaughGuessVO {
+  jokeId: string
+  minePredicted: boolean
+  partnerPredicted: boolean
+  predictsLaugh: boolean
+  partnerPredictsLaugh: boolean
+  twin: boolean
+  predictCount: number
+}
+
+/**
+ * F396 一张大笑处方（uk(space,from_user,day) 每人每天一张）。
+ * targetKind/targetLabel=指向哪一类，targetId 指向本空间的行；
+ * ⚠️ targetTitle 是这批唯一一个可空字符串：后端 `safeTargetTitle()` 没套 nz()，
+ * 目标行查不到（跨空间/被删/targetId 空）时为 null。taken/takenBy=对方回执「已服用」（空串=还没服）。
+ * ⚠️ RxVO **没有** canTake 位，「能不能点已服用」只能由 mine+taken 两个服务端位推。
+ */
+export interface CoupleLaughRxVO {
+  id: string
+  day: string
+  mine: boolean
+  targetKind: string
+  targetLabel: string
+  targetId: string
+  targetTitle: string | null
+  note: string
+  taken: boolean
+  takenBy: string
+}
+
+/**
+ * F397 幽默风格一行（uk(space,about_user,rater) 「谁评谁」只一行，自评与互评各一行，可改写）。
+ * mine=这一行是我评的（rater==我）；selfRated=这一行是本人给自己评的（aboutUser==rater，与「我」无关）。
+ * styleLabel 由后端 Bank 下发。⚠️ 四格图鉴要拼「谁评谁」只能吃 aboutUser/rater 两个用户名。
+ */
+export interface CoupleLaughStyleVO {
+  id: string
+  aboutUser: string
+  rater: string
+  mine: boolean
+  selfRated: boolean
+  style: string
+  styleLabel: string
+  note: string
+}
+
+/**
+ * F398 欢乐周报（周一锚，全部读时算）。week 与 fromDay 后端给的是**同一个值**（那周的周一）。
+ * moments/served/happy/fake/frozen/hits/guesses 都是**两人合计**，不分你我；summary 是 Bank 整句。
+ */
+export interface CoupleLaughWeekVO {
+  week: string
+  fromDay: string
+  toDay: string
+  moments: number
+  served: number
+  happy: number
+  fake: number
+  frozen: number
+  hits: number
+  guesses: number
+  summary: string
+}
+
+/**
+ * F399 年度欢笑榜（⚠️ year 是 Java int → number，别抄批次二十五 post 的 string year）。
+ * 数字全部直查原始表按**事发日**归年（guess 借被考冷笑话的发出日），不受 moments≤20/jokes≤20/cringes≤14/
+ * attacks≤14/rxList≤10 的列表钳制；kingOfCold 是用户名或「还没人」，bestLine 可以是空串。
+ * 称号与 summary 全在后端 Bank（yearTitle 按 moments*2+hits*2+happy+frozen 分五档）。
+ */
+export interface CoupleLaughYearVO {
+  year: number
+  moments: number
+  laughs: number
+  dailyDone: number
+  happy: number
+  frozen: number
+  kingOfCold: string
+  cringe: number
+  cringeHealed: number
+  turns: number
+  attacks: number
+  hits: number
+  guessTwin: number
+  rxTaken: number
+  bestLine: string
+  title: string
+  summary: string
+}
+
+/**
+ * 欢笑银行总览（GET /api/couple/laugh/bank 一次拉齐 17 个字段；14 个 POST 写接口全部原样返回整份 LaughVO，
+ * 前端整体替换即十卡刷新）。
+ * day=服务端今天 yyyy-MM-dd、week=服务端那周的周一 yyyy-MM-dd——
+ * 所有「今天/本周/当年」判定一律吃这两个字段，不吃本地时钟。
+ * ⚠️ today 今天还没人交节目时为 null（此时**只能看 rotationHint 那句「今天轮到 X 上台逗」**，
+ * 聚合里没有任何「今天轮不轮到我」的布尔位，LaughVO 也没有 dutyUser）。
+ * rotationHint 非空 ⇔ today 为 null；styleHint 是 Bank 整句（比的是「我自评」与「TA 评我」两格）。
+ * myFrozen/partnerFrozen 是按人算的累计结冰数；turnedFunny 是全空间满一年的社死条数（读时算）。
+ * weekReport/year 已在聚合里（服务端本周与当年各一份），/week 与 /year?year= 只是另一次懒读。
+ */
+export interface CoupleLaughVO {
+  day: string
+  week: string
+  today: CoupleLaughDailyVO | null
+  moments: CoupleLaughMomentVO[]
+  jokes: CoupleLaughJokeVO[]
+  cringes: CoupleLaughCringeVO[]
+  turnedFunny: number
+  attacks: CoupleLaughAttackVO[]
+  guesses: CoupleLaughGuessVO[]
+  rxList: CoupleLaughRxVO[]
+  styles: CoupleLaughStyleVO[]
+  styleHint: string
+  rotationHint: string
+  myFrozen: number
+  partnerFrozen: number
+  weekReport: CoupleLaughWeekVO
+  year: CoupleLaughYearVO
+}
