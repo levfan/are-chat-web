@@ -3,7 +3,10 @@
  *
  * key = 功能卡组件根元素的 data-testid（跳转与高亮靠它定位 DOM），
  * label = 中文名（搜索按 label 包含匹配），
- * tab = 所属一级页签 name，sub = 所属子页签 name（未拆分的页签无 sub）。
+ * tab = 所属一级页签 name。
+ *
+ * 系统裁剪（docs/couple-trim-ranking.md 第四节）：情侣空间只保留 10 张卡，
+ * 页签从 11 个收敛到 3 个；原来带子页签的 5 个臃肿页签不再需要。
  */
 export interface CoupleCardEntry {
   key: string
@@ -13,159 +16,36 @@ export interface CoupleCardEntry {
 }
 
 export const COUPLE_CARDS: CoupleCardEntry[] = [
-  // 🫶 贴贴
-  { key: 'couple-bond', label: '贴贴宫格', tab: 'bond' },
-  { key: 'couple-game', label: '恋爱加成清单', tab: 'bond' },
-  // 🧗 人生关卡（F370-F379，promises 页签末尾）
-  { key: 'couple-quest-upcoming', label: '关卡预告（挂一场 Boss 战）', tab: 'promises' },
-  { key: 'couple-quest-battle', label: '出关战报与盖章', tab: 'promises' },
-  { key: 'couple-quest-overtime', label: '加班预报与留灯', tab: 'promises' },
-  { key: 'couple-quest-nurse', label: '生病陪护单', tab: 'promises' },
-  { key: 'couple-quest-pod', label: '考试周静音舱', tab: 'promises' },
-  { key: 'couple-quest-move', label: '搬家区块分工', tab: 'promises' },
-  { key: 'couple-quest-night', label: '新家第一晚', tab: 'promises' },
-  { key: 'couple-quest-valley', label: '低谷通行证', tab: 'promises' },
-  { key: 'couple-quest-win', label: '小胜利账本与成就墙', tab: 'promises' },
-  { key: 'couple-quest-report', label: '下次关口预约', tab: 'promises' },
-  // 🌅 小仪式
-  { key: 'couple-rituals', label: '早晚安打卡', tab: 'rituals', sub: 'ceremony' },
-  { key: 'couple-deep', label: '今日真心话', tab: 'rituals', sub: 'ceremony' },
-  { key: 'couple-fun-talk', label: '默契考验比划猜', tab: 'rituals', sub: 'fun' },
-  { key: 'couple-play', label: '趣味小游戏', tab: 'rituals', sub: 'fun' },
-  // 😂 欢笑银行（F390-F399，rituals/fun 子页签）
-  { key: 'couple-laugh-moment', label: '笑点存档（现场证词）', tab: 'rituals', sub: 'fun' },
-  { key: 'couple-laugh-daily', label: '每日一逗（值班判分）', tab: 'rituals', sub: 'fun' },
-  { key: 'couple-laugh-joke', label: '冷笑话结冰榜', tab: 'rituals', sub: 'fun' },
-  { key: 'couple-laugh-cringe', label: '社死往事（满一年转好笑）', tab: 'rituals', sub: 'fun' },
-  { key: 'couple-laugh-attack', label: '快乐突袭与中弹', tab: 'rituals', sub: 'fun' },
-  { key: 'couple-laugh-guess', label: '笑点预判默契考', tab: 'rituals', sub: 'fun' },
-  { key: 'couple-laugh-rx', label: '大笑处方与服用回执', tab: 'rituals', sub: 'fun' },
-  { key: 'couple-laugh-style', label: '幽默风格图鉴', tab: 'rituals', sub: 'fun' },
-  { key: 'couple-laugh-week', label: '欢乐周报', tab: 'rituals', sub: 'fun' },
-  { key: 'couple-laugh-year', label: '年度笑榜（我们的喜剧奖）', tab: 'rituals', sub: 'fun' },
-  // 🌱 养成
-  { key: 'couple-wish-board', label: '心愿互换板', tab: 'growth' },
-  // 🌙 注意力保护区（F360-F369，growth 页签末尾）
-  { key: 'couple-focus-night', label: '专注打卡', tab: 'growth' },
-  { key: 'couple-focus-slot', label: '专属时段', tab: 'growth' },
-  { key: 'couple-focus-queue', label: '攒一句话', tab: 'growth' },
-  { key: 'couple-focus-meal', label: '饭桌不低头', tab: 'growth' },
-  { key: 'couple-focus-gaze', label: '对视十秒', tab: 'growth' },
-  { key: 'couple-focus-unplug', label: '不插电半小时', tab: 'growth' },
-  { key: 'couple-focus-nudge', label: '走神温柔哨', tab: 'growth' },
-  { key: 'couple-focus-weekly', label: '专注周报', tab: 'growth' },
-  { key: 'couple-focus-detox', label: '数字排毒半天', tab: 'growth' },
-  { key: 'couple-focus-year', label: '注意力年报', tab: 'growth' },
-  // 🎁 惊喜
-  { key: 'couple-surprise', label: '刮刮乐与盲盒', tab: 'surprise' },
-  { key: 'couple-garden', label: '爱情花园', tab: 'surprise' },
-  // 💌 悄悄话
-  { key: 'couple-letters', label: '悄悄话信箱', tab: 'letters', sub: 'send' },
-  { key: 'couple-whisper-box', label: '匿名树洞与情话罐', tab: 'letters', sub: 'send' },
-  { key: 'couple-capsules', label: '时光胶囊', tab: 'letters', sub: 'send' },
-  // 👂 聆听者（F380-F389，letters/send 子页签）
-  { key: 'couple-catch-wish', label: '暗中心愿本', tab: 'letters', sub: 'send' },
-  { key: 'couple-catch-mine', label: '雷区探测器', tab: 'letters', sub: 'send' },
-  { key: 'couple-catch-safeword', label: '安全词与暂停复盘', tab: 'letters', sub: 'send' },
-  { key: 'couple-catch-sensitive', label: '敏感日历', tab: 'letters', sub: 'send' },
-  { key: 'couple-catch-thread', label: '「说到哪了」话头存档', tab: 'letters', sub: 'send' },
-  { key: 'couple-catch-say', label: '反话词典', tab: 'letters', sub: 'send' },
-  { key: 'couple-catch-protocol', label: '聆听方式协议', tab: 'letters', sub: 'send' },
-  { key: 'couple-catch-topic', label: '话题许愿池', tab: 'letters', sub: 'send' },
-  { key: 'couple-catch-daily', label: '今日一句话', tab: 'letters', sub: 'send' },
-  { key: 'couple-catch-year', label: '聆听者年报', tab: 'letters', sub: 'send' },
-  { key: 'couple-keepsake', label: '回忆收藏册', tab: 'letters', sub: 'collect' },
-  // 💗 心情
-  { key: 'couple-mood', label: '心情日记', tab: 'mood' },
-  // 🌈 关怀
-  { key: 'couple-care', label: '情绪天气与急救箱', tab: 'care', sub: 'rescue' },
-  { key: 'couple-comfort', label: '求抱抱', tab: 'care', sub: 'rescue' },
-  { key: 'couple-makeup', label: '和好与道歉券', tab: 'care', sub: 'rescue' },
-  { key: 'couple-cozy-today', label: '今日体温同步', tab: 'care', sub: 'rescue' },
-  { key: 'couple-cozy-monthly', label: '月度安眠小结', tab: 'care', sub: 'rescue' },
-  // 🎧 倾听与发声（F260-F269，care/rescue 子页签）
-  { key: 'couple-ls-slot', label: '倾听时段', tab: 'care', sub: 'rescue' },
-  { key: 'couple-ls-voice', label: '发声与语气', tab: 'care', sub: 'rescue' },
-  { key: 'couple-ls-misrewind', label: '误会倒带', tab: 'care', sub: 'rescue' },
-  { key: 'couple-ls-letter', label: '换位信与早想说', tab: 'care', sub: 'rescue' },
-  { key: 'couple-ls-care', label: '呵护台', tab: 'care', sub: 'rescue' },
-  // 📣 回音壁（F350-F359，care/rescue 子页签）
-  { key: 'couple-echo-deed', label: '好事簿（被爱的证据）', tab: 'care', sub: 'rescue' },
-  { key: 'couple-echo-juice', label: '鼓励语罐', tab: 'care', sub: 'rescue' },
-  { key: 'couple-echo-refill', label: '能量补给', tab: 'care', sub: 'rescue' },
-  { key: 'couple-echo-slow', label: '感谢慢递', tab: 'care', sub: 'rescue' },
-  { key: 'couple-echo-highlight', label: '高光重放', tab: 'care', sub: 'rescue' },
-  { key: 'couple-echo-receipt', label: '夸夸回执', tab: 'care', sub: 'rescue' },
-  { key: 'couple-echo-battery', label: '电量预报', tab: 'care', sub: 'rescue' },
-  { key: 'couple-echo-self', label: '写给低落的自己', tab: 'care', sub: 'rescue' },
-  { key: 'couple-echo-calendar', label: '被爱日历', tab: 'care', sub: 'rescue' },
-  { key: 'couple-echo-year', label: '回音壁年报', tab: 'care', sub: 'rescue' },
-  // 🗓️ 共享空间
-  { key: 'couple-countdowns', label: '倒数日', tab: 'shared', sub: 'daily' },
-  { key: 'couple-dine-today', label: '今晚饭桌', tab: 'shared', sub: 'daily' },
-  { key: 'couple-dine-week', label: '本周饭桌', tab: 'shared', sub: 'daily' },
-  { key: 'couple-dine-restaurant', label: '我们的餐厅', tab: 'shared', sub: 'daily' },
-  { key: 'couple-dine-year', label: '年度干饭账', tab: 'shared', sub: 'daily' },
-  // 🏭 二人制造厂（F270-F279，shared/daily 子页签）
-  { key: 'couple-fy-spin', label: '家务轮盘', tab: 'shared', sub: 'daily' },
-  { key: 'couple-fy-shop', label: '采买与冰箱', tab: 'shared', sub: 'daily' },
-  { key: 'couple-fy-errand', label: '跑腿与叫醒', tab: 'shared', sub: 'daily' },
-  { key: 'couple-fy-care', label: '服药与久坐', tab: 'shared', sub: 'daily' },
-  { key: 'couple-fy-books', label: '账本与月检', tab: 'shared', sub: 'daily' },
-  // 🏅 徽章
-  { key: 'couple-badges', label: '里程碑徽章墙', tab: 'badges' },
-  { key: 'couple-heatmap', label: '年度热力日历', tab: 'badges' },
-  // 📖 时光轴
-  { key: 'couple-on-this-day', label: '那年今天', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-firsts', label: '我们的第一次', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-heart-moments', label: '心动时刻', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-chronicle', label: '恋爱编年史', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-cere-almanac', label: '小日子黄历', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-cere-founded', label: '我们的小日子', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-cere-vault', label: '爱情保险柜与续约', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-cere-coupon', label: '愿望券本', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-cere-feel', label: '今日体感与年度加冕', tab: 'timeline', sub: 'flow' },
-  // 📚 我们百科（F280-F289，timeline/flow 子页签）
-  { key: 'couple-cx-codex', label: '百科词条', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-cx-quiz', label: '默契综艺', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-cx-top', label: 'TOP10 互猜', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-cx-dossier', label: '考据卷宗', tab: 'timeline', sub: 'flow' },
-  { key: 'couple-cx-soul', label: '灵魂与人格', tab: 'timeline', sub: 'flow' },
-  // 🏺 传世系统（F340-F349，timeline/legacy 子页签）
-  { key: 'couple-legacy-ten', label: '年度十问（跨年对照）', tab: 'timeline', sub: 'legacy' },
-  { key: 'couple-legacy-audit', label: '记忆库年审', tab: 'timeline', sub: 'legacy' },
-  { key: 'couple-legacy-speech', label: '续约发布会（发言与评分卡）', tab: 'timeline', sub: 'legacy' },
-  { key: 'couple-legacy-milestone', label: '里程碑倒推', tab: 'timeline', sub: 'legacy' },
-  { key: 'couple-legacy-fx', label: '恋爱汇率与年末结算', tab: 'timeline', sub: 'legacy' },
-  { key: 'couple-legacy-brand', label: '情侣品牌', tab: 'timeline', sub: 'legacy' },
-  { key: 'couple-legacy-review', label: '我们的一年（年度盘点）', tab: 'timeline', sub: 'legacy' },
-  { key: 'couple-legacy-list', label: '传世清单（双签封存）', tab: 'timeline', sub: 'legacy' },
-  { key: 'couple-legacy-draw', label: '周年抽奖箱', tab: 'timeline', sub: 'legacy' },
-  { key: 'couple-legacy-level', label: '空间等级与年度称号', tab: 'timeline', sub: 'legacy' },
+  // 🫶 今天 —— 每天进来点一下就走的四张
+  { key: 'couple-mood', label: '心情日记', tab: 'today' },
+  { key: 'couple-bond', label: '贴贴宫格', tab: 'today' },
+  { key: 'couple-comfort', label: '求抱抱', tab: 'today' },
+  { key: 'couple-catch-safeword', label: '安全词与暂停复盘', tab: 'today' },
+  // 🍚 过日子 —— 吃穿用度与加班、券本
+  { key: 'couple-dine-today', label: '今晚饭桌', tab: 'life' },
+  { key: 'couple-fy-spin', label: '家务轮盘', tab: 'life' },
+  { key: 'couple-quest-overtime', label: '加班预报与留灯', tab: 'life' },
+  { key: 'couple-cere-coupon', label: '愿望券本', tab: 'life' },
+  // 🎁 小惊喜 —— 拆封感与被爱的证据
+  { key: 'couple-surprise', label: '刮刮乐与盲盒', tab: 'gift' },
+  { key: 'couple-echo-deed', label: '好事簿', tab: 'gift' },
 ]
 
-/** 一级页签的展示名（搜索/收藏 chip 的补充说明用） */
+/** 一级页签的展示名（搜索框与收藏 chip 的分组标题用）。 */
 export const COUPLE_TAB_LABELS: Record<string, string> = {
-  bond: '🫶 贴贴',
-  promises: '🤝 约定',
-  rituals: '🌅 小仪式',
-  growth: '🌱 养成',
-  surprise: '🎁 惊喜',
-  letters: '💌 悄悄话',
-  mood: '💗 心情',
-  care: '🌈 关怀',
-  shared: '🗓️ 共享空间',
-  badges: '🏅 徽章',
-  timeline: '📖 时光轴',
+  today: '🫶 今天',
+  life: '🍚 过日子',
+  gift: '🎁 小惊喜',
 }
 
+/** 按 key 找卡（收藏 chip 与 ?card= 跳转用）。 */
 export function findCardByKey(key: string): CoupleCardEntry | undefined {
   return COUPLE_CARDS.find((c) => c.key === key)
 }
 
-/** label 包含匹配（忽略大小写与空格），返回全部命中卡 */
+/** 按中文名包含匹配搜卡（大小写与空格已忽略）。 */
 export function searchCoupleCards(keyword: string): CoupleCardEntry[] {
-  const q = keyword.trim().toLowerCase()
-  if (!q) return []
-  return COUPLE_CARDS.filter((c) => c.label.toLowerCase().includes(q) || c.key.toLowerCase().includes(q))
+  const kw = keyword.trim().toLowerCase()
+  if (!kw) return []
+  return COUPLE_CARDS.filter((c) => c.label.toLowerCase().includes(kw) || c.key.toLowerCase().includes(kw))
 }

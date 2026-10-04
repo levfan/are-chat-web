@@ -256,7 +256,7 @@
               @jump="jumpTo"
               @pin="onPinMessage"
               @unpin="onUnpinMessage"
-              @promise="onPromise"
+
               @heart="onHeart"
             />
           </template>
@@ -1181,21 +1181,6 @@ async function onRecall(msgId: string) {
   } catch (e) {
     ElMessage.warning(e instanceof Error ? e.message : '撤回失败')
   }
-}
-
-// ---------- 情侣空间：把聊天里的话记入约定 ----------
-
-/** 谁说的这句话，谁就是承诺人：我说的 → 我答应 TA；TA 说的 → TA 答应我 */
-function onPromise(message: ImMessage) {
-  if (!couple.established) {
-    ElMessage.info('先去「情侣空间」邀请好友建立空间，才能记约定哦')
-    return
-  }
-  couple.promiseDraft = {
-    content: message.content,
-    side: message.fromUser === auth.username ? 'me' : 'partner',
-  }
-  void router.push({ path: '/couple', query: { tab: 'promises' } })
 }
 
 // ---------- F36 心动时刻标记 ----------

@@ -73,10 +73,11 @@
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useCoupleStore } from '@/stores/couple'
+import type { CoupleSpaceTheme } from '@/types'
 
 const STICKER_MAX = 6
 
-const THEMES: { key: string; label: string; gradient: string }[] = [
+const THEMES: { key: CoupleSpaceTheme; label: string; gradient: string }[] = [
   { key: 'classic', label: '经典粉', gradient: 'linear-gradient(90deg,#ffe3e3,#ffd6e7)' },
   { key: 'cherry', label: '樱花', gradient: 'linear-gradient(90deg,#ffe1f0,#f9d1ff)' },
   { key: 'ocean', label: '海盐', gradient: 'linear-gradient(90deg,#d3f3ff,#cfe8ff)' },
@@ -103,7 +104,7 @@ const couple = useCoupleStore()
 const editVisible = ref(false)
 const saving = ref(false)
 const sloganDraft = ref('')
-const themeDraft = ref('classic')
+const themeDraft = ref<CoupleSpaceTheme>('classic')
 const picked = ref<string[]>([])
 
 function openEdit() {

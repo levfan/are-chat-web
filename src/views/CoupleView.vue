@@ -6,7 +6,7 @@
     <!-- 已建立：空间主页 -->
     <div v-else class="space-page" data-testid="couple-space">
       <!-- 头部：双方头像 + 在一起天数 + 关系操作（互道早安达成 → 当日专属背景自动点亮；否则用空间主题色） -->
-      <el-card shadow="never" class="panel header-card" :class="{ themed: morningUnlocked }"
+      <el-card shadow="never" class="panel header-card themed"
                :style="headerBackground">
         <div class="header-row">
           <div class="pair">
@@ -45,8 +45,8 @@
               <span class="stat-label">在一起的天数</span>
             </div>
             <div class="stat">
-              <span class="stat-num" data-testid="couple-header-streak">{{ couple.checkins?.streak ?? 0 }}</span>
-              <span class="stat-label">连续互道晚安</span>
+              <span class="stat-num" data-testid="couple-header-today-mood">{{ todayMoodLine }}</span>
+              <span class="stat-label">今天的心情（我 · TA）</span>
             </div>
             <div class="stat">
               <span class="stat-num" data-testid="couple-intimacy-score">{{ couple.intimacy?.score ?? 0 }}</span>
@@ -106,12 +106,6 @@
         </div>
       </el-card>
 
-      <!-- 主题解锁徽标条：早安点亮背景 / 晚安解锁贴纸 -->
-      <div v-if="morningUnlocked || nightUnlocked" class="theme-banner" data-testid="couple-theme-banner">
-        <span v-if="morningUnlocked">🌅 今日专属背景已点亮（{{ themeLabel }}）</span>
-        <span v-if="nightUnlocked">🌙 今日专属贴纸 {{ themeStickers[0] }} {{ themeStickers[1] }} 已解锁</span>
-      </div>
-
       <!-- F43 里程碑天数：今天是有意义的日子 -->
       <div v-if="milestone" class="milestone-banner" data-testid="couple-milestone-banner">
         🎉 今天是在一起第 <b>{{ milestone }}</b> 天！这个数字值得纪念 💕
@@ -124,9 +118,6 @@
 
       <!-- 空间个性化：我们的宣言 + 装扮入口（宣言/主题/贴纸墙） -->
       <CoupleProfile />
-
-      <!-- F95 今日看点：今天值得做的甜蜜小事 -->
-      <CoupleTodayBoard @goto="(tab: string) => (activeTab = tab)" />
 
       <!-- F98 新手引导：首次进入空间的三步漫游 -->
       <el-dialog
@@ -146,167 +137,33 @@
         </template>
       </el-dialog>
 
-      <!-- 逾期可爱提醒：全局常驻（不分页签），一键跳到约定页 -->
-      <el-alert
-        v-if="couple.overdueCount > 0"
-        type="warning"
-        :closable="false"
-        class="overdue-alert"
-        data-testid="couple-overdue-alert"
-      >
-        <template #title>
-          <span class="overdue-line">
-            😳 还有 {{ couple.overdueCount }} 件事你没做到哦~
-            <el-button link type="primary" size="small" data-testid="couple-overdue-goto" @click="activeTab = 'promises'">
-              去看看 →
-            </el-button>
-          </span>
-        </template>
-      </el-alert>
-
-      <!-- 三大功能 -->
+      <!-- 三大功能（裁剪后 11 页签收敛到 3 个） -->
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
-          <el-tab-pane label="🫶 贴贴" name="bond" lazy>
-            <TabExtras tab="bond" />
-            <div class="tab-stack">
-              <CoupleBond />
-              <CoupleGame />
-            </div>
-          </el-tab-pane>
-          <el-tab-pane label="🤝 约定" name="promises">
-            <TabExtras tab="promises" />
-            <div class="tab-stack">
-              <CoupleQuest />
-            </div>
-          </el-tab-pane>
-          <!-- F202 小仪式拆分：🌙 每日仪式 / 🎲 玩趣时间 -->
-          <el-tab-pane label="🌅 小仪式" name="rituals" lazy>
-            <TabExtras tab="rituals" />
-            <el-tabs v-model="subTabs.rituals" class="sub-tabs">
-              <el-tab-pane label="🌙 每日仪式" name="ceremony" lazy>
-                <div class="tab-stack">
-                  <CoupleRituals />
-                  <CoupleTruth />
-                </div>
-              </el-tab-pane>
-              <el-tab-pane label="🎲 玩趣时间" name="fun" lazy>
-                <div class="tab-stack">
-                  <CoupleFunTalk />
-                  <CouplePlay />
-                  <CoupleLaugh />
-                </div>
-              </el-tab-pane>
-            </el-tabs>
-          </el-tab-pane>
-          <el-tab-pane label="🌱 养成" name="growth" lazy>
-            <TabExtras tab="growth" />
-            <div class="tab-stack">
-              <CoupleWishBoard />
-              <CoupleFocus />
-            </div>
-          </el-tab-pane>
-          <el-tab-pane label="🎁 惊喜" name="surprise" lazy>
-            <TabExtras tab="surprise" />
-            <div class="tab-stack">
-              <CoupleSurprise />
-              <CoupleGarden />
-            </div>
-          </el-tab-pane>
-          <!-- F203 悄悄话拆分：💌 寄给你 / 🗃️ 收藏册 -->
-          <el-tab-pane :label="letterTabLabel" name="letters" lazy>
-            <TabExtras tab="letters" />
-            <el-tabs v-model="subTabs.letters" class="sub-tabs">
-              <el-tab-pane label="💌 寄给你" name="send" lazy>
-                <div class="tab-stack">
-                  <CoupleLetter />
-                  <CoupleWhisperBox />
-                  <CoupleCapsule />
-                  <CoupleCatch />
-                </div>
-              </el-tab-pane>
-              <el-tab-pane label="🗃️ 收藏册" name="collect" lazy>
-                <div class="tab-stack">
-                  <CoupleKeepsake />
-                </div>
-              </el-tab-pane>
-            </el-tabs>
-          </el-tab-pane>
-          <el-tab-pane label="💗 心情" name="mood" lazy>
-            <TabExtras tab="mood" />
+          <el-tab-pane label="🫶 今天" name="today">
+            <TabExtras tab="today" />
             <div class="tab-stack">
               <CoupleMood />
+              <CoupleBond />
+              <CoupleComfort />
+              <CoupleCatch />
             </div>
           </el-tab-pane>
-          <!-- F201 关怀拆分：🚑 情绪急救 / ✨ 默契亲密 -->
-          <el-tab-pane label="🌈 关怀" name="care" lazy>
-            <TabExtras tab="care" />
-            <el-tabs v-model="subTabs.care" class="sub-tabs">
-              <el-tab-pane label="🚑 情绪急救" name="rescue" lazy>
-                <div class="tab-stack">
-                  <CoupleCare />
-                  <CoupleComfort />
-                  <CoupleMakeup />
-                  <CoupleCozy />
-                  <CoupleListen />
-                  <CoupleEcho />
-                </div>
-              </el-tab-pane>
-              <el-tab-pane label="✨ 默契亲密" name="intimate" lazy>
-                <div class="tab-stack">
-                </div>
-              </el-tab-pane>
-            </el-tabs>
-          </el-tab-pane>
-          <!-- F200 共享空间拆分：🧾 过日子 / 🏪 经营所 -->
-          <el-tab-pane label="🗓️ 共享空间" name="shared" lazy>
-            <TabExtras tab="shared" />
-            <el-tabs v-model="subTabs.shared" class="sub-tabs">
-              <el-tab-pane label="🧾 过日子" name="daily" lazy>
-                <div class="tab-stack">
-                  <CoupleCountdown />
-                  <CoupleDining />
-                  <CoupleFactory />
-                </div>
-              </el-tab-pane>
-              <el-tab-pane label="🏪 经营所" name="manage" lazy>
-                <div class="tab-stack">
-                </div>
-              </el-tab-pane>
-            </el-tabs>
-          </el-tab-pane>
-          <el-tab-pane label="🏅 徽章" name="badges" lazy>
-            <TabExtras tab="badges" />
+          <el-tab-pane label="🍚 过日子" name="life" lazy>
+            <TabExtras tab="life" />
             <div class="tab-stack">
-              <CoupleBadges />
-              <CoupleHeatmap />
+              <CoupleDining />
+              <CoupleFactory />
+              <CoupleQuest />
+              <CoupleCeremony />
             </div>
           </el-tab-pane>
-          <!-- F204 时光轴拆分：⏳ 时光流 / 🏛️ 博物馆 -->
-          <el-tab-pane label="📖 时光轴" name="timeline" lazy>
-            <TabExtras tab="timeline" />
-            <el-tabs v-model="subTabs.timeline" class="sub-tabs">
-              <el-tab-pane label="⏳ 时光流" name="flow" lazy>
-                <div class="tab-stack">
-                  <CoupleOnThisDay />
-                  <CoupleFirsts />
-                  <CoupleHeartMoments />
-                  <CoupleChronicle />
-                  <CoupleCeremony />
-                  <CoupleCodex />
-                </div>
-              </el-tab-pane>
-              <el-tab-pane label="🏛️ 博物馆" name="museum" lazy>
-                <div class="tab-stack">
-                </div>
-              </el-tab-pane>
-              <!-- F340-F349 传世系统：十问/年审/发布会/倒推/汇率/品牌/盘点/清单/抽奖/等级，都堆在这一个子页签里 -->
-              <el-tab-pane label="🏺 传世系统" name="legacy" lazy>
-                <div class="tab-stack">
-                  <CoupleLegacy />
-                </div>
-              </el-tab-pane>
-            </el-tabs>
+          <el-tab-pane label="🎁 小惊喜" name="gift" lazy>
+            <TabExtras tab="gift" />
+            <div class="tab-stack">
+              <CoupleSurprise />
+              <CoupleEcho />
+            </div>
           </el-tab-pane>
         </el-tabs>
       </el-card>
@@ -402,49 +259,22 @@ import { todayBackground as getTodayBackground, todayStickers as getTodaySticker
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import CoupleSetup from '@/components/couple/CoupleSetup.vue'
 import CoupleBond from '@/components/couple/CoupleBond.vue'
-import CoupleRituals from '@/components/couple/CoupleRituals.vue'
-import CoupleCare from '@/components/couple/CoupleCare.vue'
-import CoupleCapsule from '@/components/couple/CoupleCapsule.vue'
-import CoupleCountdown from '@/components/couple/CoupleCountdown.vue'
-import CoupleBadges from '@/components/couple/CoupleBadges.vue'
-import CoupleOnThisDay from '@/components/couple/CoupleOnThisDay.vue'
 import CoupleProfile from '@/components/couple/CoupleProfile.vue'
-import CoupleGame from '@/components/couple/CoupleGame.vue'
-import CoupleHeartMoments from '@/components/couple/CoupleHeartMoments.vue'
-import CoupleFirsts from '@/components/couple/CoupleFirsts.vue'
-import CoupleLetter from '@/components/couple/CoupleLetter.vue'
 import CoupleMood from '@/components/couple/CoupleMood.vue'
-import CoupleChronicle from '@/components/couple/CoupleChronicle.vue'
-import CoupleKeepsake from '@/components/couple/CoupleKeepsake.vue'
-import CoupleTodayBoard from '@/components/couple/CoupleTodayBoard.vue'
-import CoupleHeatmap from '@/components/couple/CoupleHeatmap.vue'
 import CoupleSurprise from '@/components/couple/CoupleSurprise.vue'
-import CoupleGarden from '@/components/couple/CoupleGarden.vue'
 import CoupleComfort from '@/components/couple/CoupleComfort.vue'
-import CoupleMakeup from '@/components/couple/CoupleMakeup.vue'
-import CoupleCozy from '@/components/couple/CoupleCozy.vue'
-import CoupleListen from '@/components/couple/CoupleListen.vue'
-import CoupleTruth from '@/components/couple/CoupleTruth.vue'
-import CoupleWhisperBox from '@/components/couple/CoupleWhisperBox.vue'
-import CoupleWishBoard from '@/components/couple/CoupleWishBoard.vue'
 import CoupleCatch from '@/components/couple/CoupleCatch.vue'
 import CoupleDining from '@/components/couple/CoupleDining.vue'
 import CoupleFactory from '@/components/couple/CoupleFactory.vue'
 import CoupleCeremony from '@/components/couple/CoupleCeremony.vue'
-import CoupleCodex from '@/components/couple/CoupleCodex.vue'
-import CouplePlay from '@/components/couple/CouplePlay.vue'
-import CoupleFunTalk from '@/components/couple/CoupleFunTalk.vue'
-import CoupleLaugh from '@/components/couple/CoupleLaugh.vue'
-import CoupleLegacy from '@/components/couple/CoupleLegacy.vue'
 import CoupleEcho from '@/components/couple/CoupleEcho.vue'
-import CoupleFocus from '@/components/couple/CoupleFocus.vue'
 import CoupleQuest from '@/components/couple/CoupleQuest.vue'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()
 const route = useRoute()
 
-const activeTab = ref('promises')
+const activeTab = ref('today')
 const annivEditVisible = ref(false)
 const annivEditDate = ref<string | null>(null)
 const savingAnniv = ref(false)
@@ -453,15 +283,6 @@ const petEditName = ref('')
 const savingPet = ref(false)
 /** F41 通知中心 */
 const notifyVisible = ref(false)
-
-// ============ F200-F204 页签拆分：子页签状态 ============
-const subTabs = reactive<Record<'rituals' | 'letters' | 'care' | 'shared' | 'timeline', string>>({
-  rituals: 'ceremony',
-  letters: 'send',
-  care: 'rescue',
-  shared: 'daily',
-  timeline: 'flow',
-})
 
 // ============ F206 空间功能搜索 ============
 const searchQuery = ref('')
@@ -476,14 +297,11 @@ function onSearchEnter() {
   searchQuery.value = ''
 }
 
-/** 切到目标（子）页签 → 等面板挂载后滚动定位并闪烁高亮 1.5s */
+/** 切到目标页签 → 等面板挂载后滚动定位并闪烁高亮 1.5s */
 function jumpToCard(key: string) {
   const card = findCardByKey(key)
   if (!card) return
   activeTab.value = card.tab
-  if (card.sub && card.tab in subTabs) {
-    subTabs[card.tab as keyof typeof subTabs] = card.sub
-  }
   void nextTick(() => {
     window.setTimeout(() => {
       const el = document.querySelector(`[data-testid="${key}"]`)
@@ -537,17 +355,9 @@ watch(() => couple.established, (v) => { if (v) void loadPins() }, { immediate: 
 
 // ============ F208 页签首访气泡 ============
 const TAB_TIPS: Record<string, string> = {
-  bond: '🫶 贴贴区：宫格动作打卡、恋爱加成清单，每天贴一贴，心动值涨涨涨～',
-  promises: '🤝 约定区：互相立约、安全感账户和恋爱条约，说到做到最迷人～',
-  rituals: '🌅 仪式区：早晚安、真心话和趣味小游戏，日常仪式感拉满～',
-  growth: '🌱 养成区：挑战赛、成长搭子、共读追剧和心愿板，一起变更好～',
-  surprise: '🎁 惊喜区：刮刮乐、盲盒与爱情花园，甜蜜要慢慢拆～',
-  letters: '💌 悄悄话区：信箱、树洞、时光胶囊和情诗，把心意藏进文字里～',
-  mood: '💗 心情区：心情日记与情绪接力棒，TA 的心情你来接～',
-  care: '🌈 关怀区：情绪急救、求抱抱和默契亲密，难过的时候有我在～',
-  shared: '🗓️ 共享空间：双城、账本、倒数日和生活经营，把日子过成我们的～',
-  badges: '🏅 荣誉区：徽章墙、月报、周年报告和热力日历，回忆都是勋章～',
-  timeline: '📖 时光轴：那年今天、第一次清单和时光博物馆，我们的故事都在～',
+  today: '🫶 今天：记个心情、贴一贴、难过就求抱抱，吵架了有安全词兜底～',
+  life: '🍚 过日子：今晚吃什么、家务归谁、几点到家、想给 TA 一个什么愿望～',
+  gift: '🎁 小惊喜：每周刮一张券、攒一件 TA 为你做过的小事～',
 }
 const visibleTabTips = ref<Record<string, boolean>>({})
 
@@ -709,19 +519,21 @@ function formatNotifyTime(at: number) {
   return `${d.getMonth() + 1}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 悄悄话 tab 标题：有可拆未拆的信时带数量红点 */
-const letterTabLabel = computed(() =>
-  couple.letterUnread > 0 ? `💌 悄悄话 ${couple.letterUnread}` : '💌 悄悄话',
-)
-
-/** 今日专属主题：双方互道早安/晚安达成后自动点亮（色板按天轮换，同一天双方同一款） */
-const morningUnlocked = computed(() => !!couple.checkins?.me.morning && !!couple.checkins?.partner.morning)
-const nightUnlocked = computed(() => !!couple.checkins?.me.night && !!couple.checkins?.partner.night)
+/** 今日专属主题：早晚安打卡下线后不再做「解锁」门槛，色板与贴纸本来就按天轮换，天天都给 */
 const themeGradient = getTodayBackground()
 const themeLabel = todayThemeLabel()
 const themeStickers = getTodayStickers()
 
-/** F27 空间主题：早安主题优先，否则应用双方选定的空间主题渐变 */
+/** 头部第二格：今天双方的心情（谁没记就留白，比"连续互道晚安"更贴近还剩的 10 张卡） */
+const MOOD_EMOJI: Record<string, string> = {
+  HAPPY: '😄', CALM: '🙂', SAD: '😢', ANGRY: '😠', SICK: '🤒', TIRED: '😪',
+}
+const todayMoodLine = computed(() => {
+  const m = (k: string | null | undefined) => (k ? MOOD_EMOJI[k] ?? '·' : '·')
+  return `${m(couple.overview?.todayMine?.mood)} ${m(couple.overview?.todayPartner?.mood)}`
+})
+
+/** F27 空间主题：应用双方选定的空间主题渐变，没选过就走今日色板 */
 const THEME_GRADIENTS: Record<string, string> = {
   classic: 'linear-gradient(90deg, #fff0f0, #ffe3ec)',
   cherry: 'linear-gradient(90deg, #ffe8f3, #f8e6ff)',
@@ -730,9 +542,6 @@ const THEME_GRADIENTS: Record<string, string> = {
   night: 'linear-gradient(90deg, #313d5c, #4f4372)',
 }
 const headerBackground = computed(() => {
-  if (morningUnlocked.value) {
-    return { background: themeGradient }
-  }
   const theme = couple.space?.theme ?? 'classic'
   return { background: THEME_GRADIENTS[theme] ?? THEME_GRADIENTS.classic }
 })
@@ -795,7 +604,7 @@ async function onDissolve() {
 onMounted(() => {
   // 聊天「记入约定」跳转：?tab=promises 直接定位到约定页（growth 走查缺陷修复：补进白名单）
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
-  if (['bond', 'promises', 'rituals', 'growth', 'surprise', 'letters', 'mood', 'care', 'shared', 'badges', 'timeline'].includes(tab)) {
+  if (['today', 'life', 'gift'].includes(tab)) {
     activeTab.value = tab
   }
   // MainLayout 已在登录后 init 过：这里兜底刷新总览（邀请状态可能变化）

@@ -260,17 +260,6 @@
       >
         取消置顶
       </button>
-      <!-- 情侣空间：把这句话记入约定（仅已建立空间时显示） -->
-      <button
-        v-if="canPromise"
-        class="hover-btn"
-        type="button"
-        title="记入情侣约定"
-        data-testid="promise-btn"
-        @click="emit('promise', message)"
-      >
-        约定
-      </button>
       <!-- F36 心动时刻：标记这条消息，之后在情侣空间回顾 -->
       <button
         v-if="canHeart"
@@ -354,8 +343,6 @@ const emit = defineEmits<{
   unpin: []
   /** 48 点击引用块：定位原消息 */
   jump: [msgId: string]
-  /** 情侣空间：把这句话记入约定（谁说的就是谁的承诺） */
-  promise: [message: ImMessage]
   /** F36 心动时刻标记/取消标记 */
   heart: [message: ImMessage]
 }>()
@@ -364,11 +351,6 @@ const emit = defineEmits<{
 const im = useImStore()
 const couple = useCoupleStore()
 const senderName = computed(() => im.displayNameOf(props.message.fromUser))
-
-/** 情侣约定入口：仅文本消息 + 已建立情侣空间时展示，避免无关打扰 */
-const canPromise = computed(
-  () => couple.established && props.message.status === 'SENT' && props.message.msgType === 'text',
-)
 
 /** F36 心动时刻入口：已建立情侣空间 + 未撤回消息 */
 const canHeart = computed(() => couple.established && props.message.status === 'SENT')
