@@ -28,6 +28,11 @@ import type {
   CoupleQuestVO,
   CoupleCatchVO,
   CouplePinVO,
+  CoupleStreakBoardVO,
+  CoupleQuestionTodayVO,
+  CoupleQuestionHistoryVO,
+  CoupleWishBoardVO,
+  CoupleMemoryVO,
 } from '@/types'
 
 /** 情侣空间接口：邀请建立 → 双向约定 → 每日小仪式 → 共享空间 */
@@ -215,4 +220,61 @@ export const catchApi = {
   /** F382 给某次暂停补事后复盘（⚠️ 只有喊停本人能补；reflect 必填 ≤60 字），返回整份总览 */
   catchSafewordReflect: (id: string, reflect: string) =>
     http.postJson<CoupleCatchVO>('/api/couple/catch/safeword/reflect', { id, reflect }),
+}
+
+/**
+ * 连续互动打卡与七档解锁（streakApi，基址 /api/couple/streak）：
+ * 1 个 GET /board + 1 个 POST /makeup，写接口返回整份 StreakBoardVO 前端整体替换。
+ * 打卡由「双方当天都有互动」后端自动结算，前端没有「点一下打卡」这个按钮；
+ * 补签只补「昨天那格」（body 是 {day}），门槛三条件已由后端 canMakeup 位算好，前端不再自拼。
+ */
+export const streakApi = {
+  /** 打卡看板（今天日期/连击/最长/已确认天数/七档进度/近 14 格打卡条/补签额度与余额） */
+  streakBoard: () => http.get<CoupleStreakBoardVO>('/api/couple/streak/board'),
+  /** 补签某一天（day 为 yyyy-MM-dd；扣心动值、本月额度用尽或余额不足后端 400），返回整份看板 */
+  streakMakeup: (day: string) => http.postJson<CoupleStreakBoardVO>('/api/couple/streak/makeup', { day }),
+}
+
+/**
+ * 每日一问（questionApi，基址 /api/couple/question）：
+ * 1 个 GET /today + 1 个 POST /answer（都返回整份 TodayVO）+ 1 个 GET /history。
+ * 题目由后端按天定题，两人各答各的；答完之前都看不到 TA 的答案，bothAnswered 才是解锁位。
+ */
+export const questionApi = {
+  /** 今天这一问 + 我的作答 + 对方答案（双方都答了才下发） */
+  questionToday: () => http.get<CoupleQuestionTodayVO>('/api/couple/question/today'),
+  /** 答今天这一问（可改写自己的答案；超 answerMax 字后端 400），返回整份 TodayVO */
+  questionAnswer: (answer: string) =>
+    http.postJson<CoupleQuestionTodayVO>('/api/couple/question/answer', { answer }),
+  /** 回看最近 N 天的一问一答（1-90，后端默认 14），按 day 倒序 */
+  questionHistory: (days = 14) =>
+    http.get<CoupleQuestionHistoryVO>(`/api/couple/question/history?days=${days}`),
+}
+
+/**
+ * 愿望清单（wishApi，基址 /api/couple/wish）：1 个 GET /board + 6 个 POST，写接口一律返回整份
+ * WishBoardVO 前端整体替换。可准备/可兑现这些闸门全在后端（preparableFlag/canFulfillFlag），
+ * 前端照位渲染即可；条数超 limit、标题/备注超 titleMax/noteMax 都是后端 400 直透。
+ */
+export const wishApi = {
+  /** 清单看板（open/prepared/fulfilled 三档 + 未完成数 + 上限与字数闸门） */
+  wishBoard: () => http.get<CoupleWishBoardVO>('/api/couple/wish/board'),
+  /** 许一条愿望（ownerUsername 是为谁许的；title 必填 ≤titleMax，note 可空） */
+  wishAdd: (title: string, note: string | null, ownerUsername: string) =>
+    http.postJson<CoupleWishBoardVO>('/api/couple/wish/add', { title, note, ownerUsername }),
+  wishPrepare: (id: string) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/prepare', { id }),
+  wishUnprepare: (id: string) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/unprepare', { id }),
+  /** 兑现一条（只有被许的那位能点，后端 400 直透） */
+  wishFulfill: (id: string) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/fulfill', { id }),
+  /** 改一条愿望的备注（note 可空串=清掉） */
+  wishNote: (id: string, note: string | null) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/note', { id, note }),
+  wishRemove: (id: string) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/remove', { id }),
+}
+
+/**
+ * 百日隐藏回顾页（memoryApi，基址 /api/couple/memory）：只有 1 个 GET /page，整页一次拉齐。
+ * 这份是只读聚合，没有写接口；unlockedDay 为 null 表示百日档还没达成（页面「还没到」态）。
+ */
+export const memoryApi = {
+  memoryPage: () => http.get<CoupleMemoryVO>('/api/couple/memory/page'),
 }

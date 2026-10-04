@@ -1972,3 +1972,166 @@ export interface CoupleLaughYearVO {
   title: string
   summary: string
 }
+
+// ============ 连续互动打卡与七档解锁（streakApi / CoupleStreakBoardVO） ============
+// 字段名与顺序逐字对齐后端 CoupleStreakService 的 3 个 record（record 参数顺序 = wire 字段顺序）。
+// 日期一律是服务端 yyyy-MM-dd 字符串（前端不吃本地时钟）；「没有那一天」后端给 null 而不是空串。
+
+/**
+ * 七档解锁中的一档。key 按天数升序固定七个：
+ * bubble(3) / background(7) / nickname-glow(14) / pendant(21) / title(30) / custom-emoji(50) / easter-egg(100)。
+ * unlocked 吃的是 longestStreak（补签补回来的也算），unlockedDay 是达成那天，没解锁为 null。
+ */
+export interface CoupleStreakTierVO {
+  key: string
+  days: number
+  label: string
+  icon: string
+  detail: string
+  unlocked: boolean
+  unlockedDay: string | null
+}
+
+/** 打卡条上的一格（后端给最近 STRIP_DAYS 天，含今天；makeupFlag=这格是补签来的） */
+export interface CoupleStreakStripCellVO {
+  day: string
+  checked: boolean
+  makeupFlag: boolean
+  todayFlag: boolean
+}
+
+/**
+ * 打卡看板（GET /api/couple/streak/board；POST /makeup 原样返回整份，前端整体替换）。
+ * nextTierKey/nextTierLabel 满档时为 null；daysToNext 是距下一档还差几天。
+ * canMakeup 由后端算（昨天确实断了 + 本月补签还有额度 + 余额够），前端不要再自己拼这三个条件。
+ */
+export interface CoupleStreakBoardVO {
+  day: string
+  currentStreak: number
+  longestStreak: number
+  confirmedDays: number
+  checkedToday: boolean
+  missedYesterday: boolean
+  lastCheckinDay: string | null
+  tiers: CoupleStreakTierVO[]
+  nextTierKey: string | null
+  nextTierLabel: string | null
+  daysToNext: number
+  strip: CoupleStreakStripCellVO[]
+  makeupCost: number
+  makeupLeftThisMonth: number
+  balance: number
+  canMakeup: boolean
+}
+
+// ============ 每日一问（questionApi / CoupleQuestionTodayVO） ============
+// 逐字对齐后端 CoupleQuestionService 的 4 个 record。mine 没答是 null；
+// partnerAnswer 直接给答案原文（后端没下发对方那一行的时间戳）。
+
+/** 某人对今天这一问的作答（createdAt/updatedAt 是 epoch 毫秒，没写过为 null） */
+export interface CoupleQuestionAnswerVO {
+  username: string
+  answer: string
+  createdAt: number | null
+  updatedAt: number | null
+}
+
+/** 今日一问（GET /api/couple/question/today；POST /answer 原样返回整份）。index 是题号。 */
+export interface CoupleQuestionTodayVO {
+  day: string
+  index: number
+  question: string
+  mine: CoupleQuestionAnswerVO | null
+  partnerAnswer: string | null
+  answeredByMe: boolean
+  answeredByPartner: boolean
+  bothAnswered: boolean
+  answerMax: number
+}
+
+/** 一问历史的一行（双方都没答的行不会出现，myAnswer/partnerAnswer 至少一个非 null） */
+export interface CoupleQuestionHistoryItemVO {
+  day: string
+  question: string
+  myAnswer: string | null
+  partnerAnswer: string | null
+  bothAnswered: boolean
+}
+
+/** 一问历史列表（GET /api/couple/question/history?days=N，day 倒序） */
+export interface CoupleQuestionHistoryVO {
+  items: CoupleQuestionHistoryItemVO[]
+  answeredDays: number
+  bothAnsweredDays: number
+}
+
+// ============ 愿望清单（wishApi / CoupleWishBoardVO） ============
+// 逐字对齐后端 CoupleWishService 的 2 个 record。7 个 POST 全部原样返回整份看板，前端整体替换。
+// 四个位（preparableFlag/canFulfillFlag/...）都由后端算好下发，前端只读不自算。
+
+/**
+ * 一条愿望。ownerUser=许愿的人（想要它的那位）、creatorUser=把它记下来的那只手（可以是对方）；
+ * status 是**按请求者视角脱敏后**的三态：OPEN / PREPARED / FULFILLED——
+ * 对方给我标的「已准备」在我这里就是 OPEN，这是"偷偷"的全部实现，别在前端反推。
+ * mineFlag=我是这条愿望的主人（ownerUser 就是我）；
+ * preparedFlag=真状态是 PREPARED 且对我可见（=我是那个偷偷准备的人）；
+ * preparableFlag=对方许的愿、还没实现也没被标过 → 该我偷偷准备；
+ * canFulfillFlag=我自己许的愿且还没实现 → 只有我能点「我收到啦」（点了才公开）。
+ * preparedAt 对许愿人本人返回 null；fulfilledAt/created 是 epoch 毫秒，没发生为 null。
+ */
+export interface CoupleWishVO {
+  id: string
+  ownerUser: string
+  creatorUser: string
+  title: string
+  note: string | null
+  status: string
+  mineFlag: boolean
+  preparedFlag: boolean
+  preparableFlag: boolean
+  canFulfillFlag: boolean
+  preparedAt: number | null
+  fulfilledAt: number | null
+  created: number | null
+}
+
+/** 愿望清单看板（GET /api/couple/wish/board）：三档分好列表 + 未兑现数 + 上限与字数闸门 */
+export interface CoupleWishBoardVO {
+  open: CoupleWishVO[]
+  prepared: CoupleWishVO[]
+  fulfilled: CoupleWishVO[]
+  openCount: number
+  limit: number
+  titleMax: number
+  noteMax: number
+}
+
+// ============ 百日隐藏回顾页（memoryApi / CoupleMemoryVO） ============
+// 逐字对齐后端 CoupleMemoryService 的 2 个 record。daysTogether 是 Java long → number。
+
+/** 回顾时间轴上的一条（kind ∈ space / unlock / streak / question / wish） */
+export interface CoupleMemoryTimelineItemVO {
+  day: string
+  kind: string
+  title: string
+  detail: string
+}
+
+/**
+ * 回顾页整页数据（GET /api/couple/memory/page）。
+ * unlockedDay=最晚一档（easter-egg 百日）达成那天，还没达成时 null——卡片靠这一位决定「还没到」态。
+ * summary 是后端 RelationSummary 整句，前端不拼文案。
+ */
+export interface CoupleMemoryVO {
+  summary: string
+  daysTogether: number
+  confirmedDays: number
+  longestStreak: number
+  currentStreak: number
+  makeupDays: number
+  bothAnsweredDays: number
+  fulfilledWishes: number
+  intimacyTitle: string
+  unlockedDay: string | null
+  timeline: CoupleMemoryTimelineItemVO[]
+}
