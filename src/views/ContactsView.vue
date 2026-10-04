@@ -149,6 +149,14 @@
                     {{ friend.muted ? '关闭免打扰' : '免打扰' }}
                   </el-dropdown-item>
                   <el-dropdown-item command="pin">{{ friend.pinned ? '取消置顶' : '置顶会话' }}</el-dropdown-item>
+                  <!-- 邀请建空间：自己已经有空间时不给这个入口（后端也会 409 拦下） -->
+                  <el-dropdown-item
+                    v-if="!couple.established"
+                    command="invite"
+                    data-testid="contact-invite-item"
+                  >
+                    <el-icon><Promotion /></el-icon>邀请建立情侣空间
+                  </el-dropdown-item>
                   <el-dropdown-item command="delete" divided data-testid="contact-delete-item">
                     <el-icon><Delete /></el-icon>删除好友
                   </el-dropdown-item>
@@ -249,11 +257,13 @@ import {
   MoreFilled,
   MuteNotification,
   Plus,
+  Promotion,
   Search,
   User,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useImStore } from '@/stores/im'
+import { useCoupleStore } from '@/stores/couple'
 import { coupleApi } from '@/api/couple'
 import { friendApi, profileApi } from '@/api/im'
 import { formatChatTime, formatLastSeen } from '@/utils/imFormat'
@@ -262,6 +272,7 @@ import type { FriendBirthdayVO, FriendRelation, FriendSuggestion, FriendVO, User
 
 const auth = useAuthStore()
 const im = useImStore()
+const couple = useCoupleStore()
 const router = useRouter()
 
 const keyword = ref('')
@@ -523,6 +534,31 @@ async function onCommand(command: string, friend: FriendVO) {
   }
   if (command === 'pin') {
     await im.updateFriend(friend.id, { pinned: !friend.pinned })
+    return
+  }
+  if (command === 'invite') {
+    // 邀请建情侣空间：留言可空（后端限 100 字），TA 在同意的页面里能看到
+    let value: string | undefined
+    try {
+      ({ value } = await ElMessageBox.prompt(
+        `邀请 ${friend.remark?.trim() || friend.username} 一起开一个只属于你们的小家？`,
+        '邀请建立情侣空间',
+        {
+          inputPlaceholder: '留一句话给 TA（可留空，最多 100 字）',
+          inputPattern: /^[\s\S]{0,100}$/,
+          inputErrorMessage: '留言最长 100 个字',
+          confirmButtonText: '送出邀请',
+          cancelButtonText: '再想想',
+        },
+      ))
+    } catch {
+      return // 用户点了「再想想」
+    }
+    try {
+      await couple.invite(friend.username, value?.trim() || undefined)
+    } catch (e) {
+      ElMessage.error(e instanceof Error ? e.message : '邀请没送出去，刷新再试试')
+    }
     return
   }
   if (command === 'delete') {
