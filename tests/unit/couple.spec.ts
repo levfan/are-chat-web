@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
@@ -222,6 +223,39 @@ describe('裁剪后的空间骨架', () => {
     await flushPromises()
     const active = wrapper.find('.el-tabs__item.is-active')
     expect(active.text()).toContain('过日子')
+  })
+
+  it('mock 工厂必须覆盖 api/couple.ts 的每个方法，漏一项就红', () => {
+    // 判据从源码抽，不手数：源文件里每个 export const 分组的两空格缩进方法名，都必须在 mock 里是函数。
+    // 没有这条守卫时，「mock 漏了某个方法」只有在用例真去点那条路径时才会暴露，点不到就一直绿。
+    const src = readFileSync(process.cwd() + '/src/api/couple.ts', 'utf8').split(/\r?\n/)
+    const groups: Record<string, string[]> = {}
+    let cur: string | null = null
+    let depth = 0
+    for (const line of src) {
+      const open = line.match(/^export const (\w+)\s*=\s*\{/)
+      if (open) { cur = open[1]; groups[cur] = []; depth = 1; continue }
+      if (!cur) continue
+      for (const ch of line) { if (ch === '{') depth++; else if (ch === '}') depth-- }
+      const m = line.match(/^  ([a-zA-Z][\w]*)\s*[:(]/)
+      if (m) groups[cur].push(m[1])
+      if (depth <= 0) cur = null
+    }
+    const mocked: Record<string, Record<string, unknown>> = {
+      coupleApi, pinApi, diningApi, ceremonyApi, factoryApi, echoApi, questApi, catchApi,
+    }
+    const missing: string[] = []
+    let total = 0
+    for (const [name, methods] of Object.entries(groups)) {
+      const obj = mocked[name]
+      if (!obj) { missing.push(name + '（整个分组没出现在 mock 工厂里）'); continue }
+      for (const fn of methods) {
+        total++
+        if (typeof obj[fn] !== 'function') missing.push(name + '.' + fn)
+      }
+    }
+    expect(missing, 'mock 工厂缺：' + missing.join(', ')).toEqual([])
+    expect(total).toBe(57)
   })
 })
 
