@@ -24,7 +24,7 @@
 完整规则以 `agents.md`（根目录）与两个专项 skill 为准，此处只列骨架：
 
 1. **开工**：必读 `.agents/skills/are-chat-web-map/SKILL.md`（新功能标准链路/惯例/撞名备忘）；本 wiki 提供全景背景（见 [Home](Home.md)）。
-2. **编码**：新 VO 加 `Couple`+域前缀并先 grep `types`/`api` 防撞名；**不改默认页签 `promises`**；types 改动同步测试 mock（见 [测试](testing.md)）。
+2. **编码**：新 VO 加 `Couple`+域前缀并先 grep `types`/`api` 防撞名；**不改默认页签 `today`**；types 改动同步测试 mock（见 [测试](testing.md)）。
 3. **构建门禁**：提交前 `pnpm build` 必过；涉逻辑改动 `pnpm test` 全绿。
 4. **提交**：按改动性质分组，一 commit 一性质（依赖/组件页面/样式/文档）；信息格式 `type(scope): 中文描述`；每完成一个功能必须产生 commit。→ 细节见 `.agents/skills/git-commit/SKILL.md`
 5. **推送**：commit → `git pull --no-rebase` → push；失败保留本地 commit 并报告，**不 force push**。
@@ -35,7 +35,7 @@
 
 - 情侣功能**情绪价值优先**：一切功能先问"甜不甜、有没有被在乎的感觉"。
 - **不做照片/视频上传类功能**（对服务器部署资源要求高，长期禁止）。
-- **默认页签 `promises` 不改**（单测依赖，见 [测试](testing.md)）。
+- **默认页签 `today` 不改**（单测依赖，见 [测试](testing.md)）。
 - **新 VO 必须加 `Couple` 域前缀防撞名**（历史撞名处理备忘详见 map skill 第三节，如 `CoupleReunionLetterVO`/`CoupleLoveWeatherVO`/`coach*`/`spark*` 前缀的由来）。
 - 交互文案：可爱口语化 + emoji；错误提示直接透出后端 `e.message`（后端文案已是中文人话）。
 

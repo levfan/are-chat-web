@@ -37,10 +37,10 @@
 | `views/` | 5 个页面：Login/Chat/Contacts/Couple/Admin |
 | `layouts/MainLayout.vue` | 登录后壳：侧栏导航、WS 状态、调用 `im.init`/`couple.init`，登出时 `reset` |
 | `router/index.ts` | 路由表 + 守卫（requiresAuth / requiresAdmin）+ 页签标题 |
-| `components/couple/` | 情侣空间 50 个组件（清单见 [页面与路由](pages-routing.md)） |
+| `components/couple/` | 情侣空间 13 个组件 = 10 张卡 + `CoupleSetup`/`CoupleProfile` + `CoupleCollapsible` 卡壳；另 `coupleCards.registry.ts` 是 F206 搜索/F207 收藏的 10 卡索引表（清单见 [页面与路由](pages-routing.md)） |
 | `components/im/` | 聊天组件 8 个：`ImAvatar`/`MessageBubble`/`EmojiPicker`/`GlobalSearchPanel`/`ImageLightbox`/`NewMessageToast`/`ProfileDialog`/`PwaInstallGuide` |
-| `types/index.ts` | 全部 TS 类型（约 2500 行，情侣 VO 在专属区块） |
-| `utils/` | `coupleTheme.ts`（早晚安解锁主题/贴纸）、`effects.ts`（彩蛋指令）、`format.ts`、`sound.ts`、`notify.ts`、`pwa.ts`、`image.ts`、`settings.ts`、`theme.ts`、`favicon.ts`、`draggable-message-box.ts` |
+| `types/index.ts` | 全部 TS 类型（1974 行，情侣 VO 在专属区块） |
+| `utils/` | `effects.ts`（彩蛋指令）、`format.ts`、`imFormat.ts`、`sound.ts`、`notify.ts`、`pwa.ts`、`image.ts`、`settings.ts`、`theme.ts`、`favicon.ts`、`draggable-message-box.ts` |
 | `constants.ts` / `main.ts` / `style.css` / `App.vue` | 常量（如 `CURRENT_USER_KEY`、`APP_NAME`）与入口全局样式 |
 | `tests/unit/` | 7 个 Vitest spec 文件 |
 
@@ -59,18 +59,18 @@
 - `api/auth.ts` → `authApi`（登录/短信/注册申请/登出/me/改密/注销）、`adminApi`（审批/公告/待办数）
 - `api/im.ts` → `friendApi`、`messageApi`、`starsApi`、`profileApi`、`presenceApi`
 - `api/files.ts` → `filesApi`；`api/system.ts` → `presenceApi`/`systemApi`/`announcementApi`
-- `api/couple.ts` → **`coupleApi`**（主体，基址 `/api/couple`）、**`manageApi`**（F180-F189 生活经营，`/api/couple/manage`）、**`museumApi`**（F190-F199 时光博物馆，`/api/couple/museum`）、**`pinApi`**（F207 常用收藏，`/api/couple/pin`）四个并列对象
+- `api/couple.ts`（218 行）→ **8 个并列对象**：**`coupleApi`**（36 个方法，空间地基 + 心情 + 贴贴 + 求抱抱 + 刮刮乐盲盒，基址 `/api/couple`）、**`pinApi`**（2，F207 常用收藏）、**`diningApi`**（2，今晚饭桌）、**`ceremonyApi`**（3，愿望券本）、**`factoryApi`**（4，家务轮盘）、**`echoApi`**（3，好事簿）、**`questApi`**（3，加班预报与留灯）、**`catchApi`**（4，安全词与暂停复盘），合计 57 个方法与后端存活端点一一对应
 
-新接口按批次归属加进对应对象；独立功能批次（如 manage/museum）倾向新开分组对象而非继续膨胀 `coupleApi`。全量方法表见 [API 层](api-layer.md)。
+新接口按批次归属加进对应对象；独立功能域倾向新开分组对象而非继续膨胀 `coupleApi`。全量方法表见 [API 层](api-layer.md)。
 
 ## 数据放哪：store 模式 vs 组件自持模式
 
 | 模式 | 用法 | 适用 | 例子 |
 |---|---|---|---|
-| **couple store 集中式** | 状态 ref + `loadXxx`/操作函数进 `stores/couple.ts`，登记 `loadedLists` 键，`handleCoupleEvent` 加 case，`reset()` 清理，return 导出 | 需要 **WS 事件驱动提醒/刷新**、跨组件共享（头部心动值、通知红点、`?tab=` 定位等）的数据 | 绝大多数：promises/moods/bond/ritual/growth/secure/play/spark… |
-| **组件自持数据** | 组件内 `onMounted` 并发拉取 api，状态留在组件里，不进 store、不接 WS 事件 | 纯拉取展示、无实时联动需求、避免 store 继续膨胀的**新批次** | `CoupleManage.vue`（manageApi）、`CoupleMuseum.vue`（museumApi，未建空间静默降级） |
+| **couple store 集中式** | 状态 ref + `loadXxx`/操作函数进 `stores/couple.ts`，登记 `loaded` 键，`handleCoupleEvent` 加分支，`reset()` 清理，return 导出 | 需要 **WS 事件驱动提醒/刷新**、跨组件共享（头部心动值与今日心情、通知红点、邀请入口等）的数据 | 只有三域：`CoupleMood`（moods）、`CoupleBond`（bond）、`CoupleComfort`（comfort）；`CoupleProfile`/`CoupleSetup` 也读 store 但无独立域 |
+| **组件自持数据** | 组件内 `onMounted` safeLoad，状态留在组件里，写接口拿返回的整份聚合 VO 整体替换，不进 store、不接 WS 刷新 | 单卡自用、无跨页签联动需求 | `CoupleSurprise`（coupleApi 的四个惊喜方法）、`CoupleDining`、`CoupleFactory`、`CoupleQuest`、`CoupleCeremony`、`CoupleCatch`、`CoupleEcho` 共七张卡 |
 
-取舍逻辑：store 已超 3400 行，新批次若没有跨页签/事件联动需求，优先组件自持；一旦需要 `arechat:couple` 刷新或全局提醒，再迁移进 store（走 map skill 的「新功能标准链路」）。
+取舍逻辑：store 现在只有 370 行，是刻意压下来的结果——新需求若没有跨页签/事件联动需求，一律优先组件自持；一旦确实需要 `arechat:couple` 刷新或全局提醒，再迁移进 store（走 map skill 的「新功能标准链路」）。
 
 ---
 

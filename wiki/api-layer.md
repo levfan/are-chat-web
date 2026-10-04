@@ -1,107 +1,134 @@
 # API 层
 
 > 本页回答：`src/api/` 有哪些文件与分组对象、每个对象的方法与路径、与后端 `/api/couple/*` 路由的对应关系。
+> **2026-10-04 情侣空间裁剪后**：`couple.ts` 从 565 个方法 / 2096 行降到 **57 个方法 / 8 个分组对象 / 218 行**，
+> 与后端 57 个存活端点一一对齐（VO 字段由 `.tmp-audit/contract-check.mjs` 逐字段核过）。
 
-## 文件与分组对象总览
+## 非 couple 分组（未动）
 
-| 文件 | 导出对象 | base 路径 | 职责 |
+| 文件 | 导出对象 | base 路径 |
+|---|---|---|
+| `http.ts` | `http`、`ApiError` | — |
+| `auth.ts` | `authApi` / `adminApi` | `/api/auth` / `/api/admin` |
+| `im.ts` | `friendApi` / `messageApi` / `starsApi` / `profileApi` | `/api/friends` `/api/messages` `/api/stars` `/api/profile` |
+| `files.ts` | `filesApi` | `/api/files` |
+| `system.ts` | `presenceApi` / `systemApi` / `announcementApi` | `/api/presence` `/api/system` `/api/announcements` |
+
+## couple 分组对象（8 个 / 57 个方法）
+
+| 导出对象 | base 路径 | 方法数 | 职责 |
+|---|---|---:|---|
+| `coupleApi` | `/api/couple` | 36 | 空间地基（总览/邀请/纪念日/个性化/心动值/通知/运营看板）+ 心情日记 + 贴贴 + 求抱抱 + 刮刮乐与盲盒 |
+| `pinApi` | `/api/couple/pin` | 2 | F207 常用收藏 |
+| `diningApi` | `/api/couple/dining` | 2 | 卡 `couple-dine-today` 今晚饭桌 |
+| `ceremonyApi` | `/api/couple/ceremony` | 3 | 卡 `couple-cere-coupon` 愿望券本 |
+| `factoryApi` | `/api/couple/factory` | 4 | 卡 `couple-fy-spin` 家务轮盘 |
+| `echoApi` | `/api/couple/echo` | 3 | 卡 `couple-echo-deed` 好事簿 |
+| `questApi` | `/api/couple/quest` | 3 | 卡 `couple-quest-overtime` 加班预报与留灯 |
+| `catchApi` | `/api/couple/catch` | 4 | 卡 `couple-catch-safeword` 安全词与暂停复盘 |
+
+### 方法全列（按分组，路径省略各自的组 base 前缀后的完整路径照写）
+
+#### `coupleApi`
+
+| 方法 | HTTP | 路径 | 说明 |
 |---|---|---|---|
-| `http.ts` | `http`、`ApiError` | — | fetch 封装（见 [架构总览](architecture.md)） |
-| `auth.ts` | `authApi` | `/api/auth` | login/smsCode/register（提交审批申请）/registerStatus/logout/me/changePassword/deactivate |
-| `auth.ts` | `adminApi` | `/api/admin` | applications/approve/reject/pendingCount/users/setUserStatus/resetPassword/audit/announcements/publishAnnouncement/closeAnnouncement |
-| `im.ts` | `friendApi` | `/api/friends` | list/suggest/apply/incoming/outgoing/accept/reject/update/remove |
-| `im.ts` | `messageApi` | `/api/messages/{peer}` | history/send/markRead/recall/search/exportConversation/edit/toggleReaction/toggleStar/searchGlobal/pin/unpin/currentPin/clear/attachments/markHeart/heartMoments |
-| `im.ts` | `starsApi` | `/api/stars` | list（收藏消息） |
-| `im.ts` | `profileApi` | `/api/profile` | me/of/update/friendsBirthdays |
-| `files.ts` | `filesApi` | `/api/files` | upload（FormData 走 `http.postForm`） |
-| `system.ts` | `presenceApi` | `/api/presence` | online（在线人数） |
-| `system.ts` | `systemApi` | `/api/system` | health |
-| `system.ts` | `announcementApi` | `/api/announcements` | current/markRead |
-| `couple.ts` | **`coupleApi`** | `/api/couple` | 情侣空间主体（下表全列） |
-| `couple.ts` | **`manageApi`** | `/api/couple/manage` | F180-F189 生活经营（CoupleManage 自持调用） |
-| `couple.ts` | **`museumApi`** | `/api/couple/museum` | F190-F199 时光博物馆（CoupleMuseum 自持调用；写接口返回最新全量列表） |
-| `couple.ts` | **`pinApi`** | `/api/couple/pin` | F207 常用收藏：list/save（≤6 键全量覆盖，CoupleView 头部 chips 用） |
+| `overview` | GET | `/api/couple/overview` | — |
+| `invite` | POST | `/api/couple/invites` | 建立流程 |
+| `acceptInvite` | POST | `/api/couple/invites/{id}/accept` | — |
+| `rejectInvite` | POST | `/api/couple/invites/{id}/reject` | — |
+| `cancelInvite` | DELETE | `/api/couple/invites/{id}` | — |
+| `setAnniversary` | PUT | `/api/couple/anniversary` | 在一起纪念日（yyyy-MM-dd） |
+| `dissolve` | POST | `/api/couple/dissolve` | — |
+| `anniversaries` | GET | `/api/couple/anniversaries` | — |
+| `createAnniversary` | POST | `/api/couple/anniversaries` | — |
+| `deleteAnniversary` | DELETE | `/api/couple/anniversaries/{id}` | — |
+| `saveMood` | POST | `/api/couple/moods` | 记录/修改今天的心情（每人每天一条，重复提交视为修改） |
+| `moods` | GET | `/api/couple/moods?days={days}` | 双方最近 N 天的心情（1-90，默认 14），按日期新→旧 |
+| `intimacy` | GET | `/api/couple/intimacy` | — |
+| `sendAction` | POST | `/api/couple/bond/actions` | — |
+| `bondActions` | GET | `/api/couple/bond/actions?limit={limit}` | 最近动作流（新→旧，默认 50 条） |
+| `bondStats` | GET | `/api/couple/bond/stats` | 贴贴统计 |
+| `reactMood` | POST | `/api/couple/bond/mood-reactions` | 回应 TA 某天的心情（默认今天）：抱抱/亲亲/加油/摸摸头 |
+| `moodReactions` | GET | `/api/couple/bond/mood-reactions?day={day}` | 某天（默认今天）双方给彼此心情的回应 |
+| `setPetName` | PUT | `/api/couple/bond/pet-name` | 给 TA 设置专属爱称（空串清除） |
+| `updateProfile` | PUT | `/api/couple/profile` | — |
+| `notifyMine` | GET | `/api/couple/notify` | — |
+| `notifyReadAll` | POST | `/api/couple/notify/read-all` | F41 全部标记已读 |
+| `relationshipOf` | GET | `/api/couple/relationship-of/${encodeURIComponent(username)}` | F44 恋爱中徽章：某人是否在恋爱中 + 天数（仅其好友可查） |
+| `adminCoupleStats` | GET | `/api/couple/admin/stats` | F45 管理看板：情侣空间运营统计（仅管理员） |
+| `scratches` | GET | `/api/couple/surprise/scratches` | — |
+| `scratchCard` | POST | `/api/couple/surprise/scratches/{id}/scratch` | F50 刮开我的券 |
+| `redeemScratch` | POST | `/api/couple/surprise/scratches/{id}/redeem` | F50 送券人核销 |
+| `boxes` | GET | `/api/couple/surprise/boxes` | F51 盲盒列表 |
+| `createBox` | POST | `/api/couple/surprise/boxes` | F51 装一个盲盒（最早明天开箱） |
+| `openBox` | POST | `/api/couple/surprise/boxes/{id}/open` | F51 开盲盒 |
+| `comfortBoard` | GET | `/api/couple/care/comfort` | — |
+| `askComfort` | POST | `/api/couple/care/comfort` | F60 发出求抱抱 |
+| `comfortCards` | GET | `/api/couple/care/comfort/cards?feeling={feeling}` | F60 TA 的安慰话术卡（按感受随机 3 张） |
+| `handleComfort` | POST | `/api/couple/care/comfort/handle` | F60 回应 TA 的求抱抱 |
+| `chatTopics` | GET | `/api/couple/care/chat-topics` | F63 陪聊话题卡（随机 3 张） |
+| `moodSync` | GET | `/api/couple/care/mood-sync` | F64 情绪同步率 |
 
-## coupleApi 全量方法（按源码分区）
+#### `pinApi`
 
-约定：GET 查询、POST 动作、PUT 整体保存、DELETE 删除；路径省略前缀 `/api/couple`；一行内多个方法为同一资源组（列表/创建/操作/删除）。
+| 方法 | HTTP | 路径 | 说明 |
+|---|---|---|---|
+| `list` | GET | `/api/couple/pin` | 双方收藏的功能卡 key（mine/partner 各 ≤6 个） |
+| `save` | POST | `/api/couple/pin` | 全量覆盖保存我的收藏（超过 6 个后端 400；无空间 404 由调用方静默） |
 
-| 分区 | 方法与路径 | 一句话 |
-|---|---|---|
-| 总览 | `overview` GET `/overview` | 空间+邀请+打卡+逾期+信箱未读聚合 |
-| 建立流程 | `invite` POST `/invites`；`acceptInvite`/`rejectInvite` POST `/invites/{id}/accept|reject`；`cancelInvite` DELETE `/invites/{id}`；`setAnniversary` PUT `/anniversary`；`dissolve` POST `/dissolve` | 邀请→接受建空间/婉拒/撤回；设在一起纪念日；解除关系 |
-| 双向约定 | `promises` GET `/promises`；`createPromise` POST（side me/partner+dueAt）；`donePromise`/`undonePromise` POST `/promises/{id}/done|undone`；`deletePromise` DELETE | 我答应 TA / TA 答应我的待办 |
-| 每日小仪式 | `checkin` POST `/checkins`（kind 早/晚安）；`question` GET `/question`；`answerQuestion` POST `/question` | 打卡 + 今日一问拉题/作答 |
-| 共享空间 | `items` CRUD `/items`；`anniversaries` `createAnniversary`/`deleteAnniversary` `/anniversaries` | 共享清单（kind/title/note/dueDate）；纪念日历 |
-| 心情 | `saveMood` POST `/moods`（每人每天一条，重复=改）；`moods(days=14)` GET `/moods?days` | 心情日记与双方近 N 天心情 |
-| 时光轴 | `timeline(days=30)` GET `/timeline?days` | 「我们的故事」按天聚合 |
-| 心动值 | `intimacy` GET `/intimacy` | 心动值/恋爱等级/升级分解 |
-| 悄悄话信箱 | `createLetter` POST `/letters`（deliverAt 空=立即，7 天内=慢递）；`letters` GET；`openLetter` POST `/letters/{id}/open`；`deleteLetter` DELETE | 情书信箱 |
-| 一问历史 | `questionHistory(days=30)` GET `/questions/history` | 双方都答过的一问存档 |
-| 恋爱条约 | `createPact`/`pacts`/`acceptPact`/`deletePact` `/pacts` | 立约-签字生效 |
-| 异地城市 | `setCity` PUT `/cities`（null 清空）；`cityCard` GET `/cities` | 双方城市/时差/距离卡 |
-| 心愿基金 | `createFund`/`funds`/`depositFund`（单位分）/`deleteFund` `/funds` | 共同存钱目标 |
-| 贴贴 | `sendAction` POST `/bond/actions`；`bondActions(limit)` GET；`bondStats` GET `/bond/stats`；`reactMood` POST `/bond/mood-reactions`；`moodReactions(day)` GET；`setPetName` PUT `/bond/pet-name` | 动作宫格/统计/心情回应/专属爱称 |
-| 仪式升级 | `todayTask`/`recentTasks`/`doneTask` `/ritual/task(s)[/done]`；`tacitState`/`startTacit`/`answerTacit`/`tacitHistory` `/ritual/tacit*`；`drawLoveWord` `/ritual/love-word`；`fortune` `/ritual/fortune`；`goodnightStory` `/ritual/goodnight-story` | 甜蜜任务/默契考验/情话/运势/晚安故事 |
-| 情绪关怀 | `weather` `/care/weather`；`firstAid` `/care/first-aid`；`sendReconcile`/`reconciles`/`acceptReconcile` `/care/reconciles*`；`postPraise`/`praises`/`receivePraise` `/care/praises*`；`cycleCard` GET / `saveCycle` PUT `/care/cycle` | 情绪天气/急救箱/和好卡/夸夸墙/生理期 |
-| 纪念回忆 | `badges` `/memory/badges`；`onThisDay` `/memory/on-this-day`；`sealCapsule`/`capsules`/`openCapsule` `/memory/capsules*`；`addCountdown`/`countdowns`/`doneCountdown`/`deleteCountdown` `/memory/countdowns*` | 徽章墙/那年今天/时光胶囊/倒数日 |
-| 共同生活 | `/life/expenses*` `addExpense`/`monthExpenses`/`deleteExpense`；`/life/chores*` `addChore`(SINGLE/ALTERNATE)/`chores`/`doneChore`/`deleteChore`；`/life/date-plans*` `addDatePlan`/`datePlans`/`doneDatePlan`/`deleteDatePlan`；`/life/habits*` `addHabit`/`habits`/`checkinHabit`/`toggleHabit`/`deleteHabit`；`/life/ciphers*` `addCipher`/`ciphers`/`deleteCipher` | 记账（分）/家务/约会计划/共同习惯/暗号小本本 |
-| 个性化/月报 | `updateProfile` PUT `/profile`（slogan/theme/stickers）；`monthlyReport` `/memory/monthly-report?month`；`dataOverview` `/memory/data-overview` | 空间个性化 + 月报/数据总览 |
-| 游戏化 | `boost`/`heatmap`/`moodCurve`/`trafficLight` `/game/*` | 今日心动加成/12 周热力/心情曲线/恋爱红绿灯 |
-| 通知/关系/管理 | `notifyMine` `/notify`；`notifyReadAll` POST `/notify/read-all`；`relationshipOf` `/relationship-of/{username}`；`adminCoupleStats` `/admin/stats` | F41 通知中心 / F44 恋爱中徽章 / F45 管理统计 |
-| 第一次/互评 | `listFirsts`/`addFirst`/`removeFirst` `/memory/firsts*`；`reactAnswer` POST `/answers/{day}/react`；`listAnswerReactions` GET | F46 第一次清单 / F48 一问互评表情 |
-| 惊喜 F50-59 | `/surprise/scratches*` `scratches`/`scratchCard`/`redeemScratch`；`/surprise/boxes*` `boxes`/`createBox`/`openBox`；`/surprise/alarms*` `alarms`/`createAlarm`/`cancelAlarm`；`/surprise/misses` `missBoard`/`sendMiss`；`/surprise/confessions*` `confessions`/`createConfession`/`deleteConfession`；`/surprise/treasures*` `treasures`/`createTreasure`/`completeTreasure` | 刮刮乐/盲盒/心动闹钟/思念速递/告白重现/藏宝图 |
-| 花园 F54-56 | `garden` GET / `waterGarden` POST `/garden[/water]`；`roseBoard`/`sendRose` `/garden/roses`；`slipBoard`/`drawSlip` `/garden/slips` | 浇水养成/每日玫瑰（限 3）/幸运签 |
-| 懂我 F60-69 | `/care/comfort*` `comfortBoard`/`askComfort`/`comfortCards`/`handleComfort`；`chatTopics` `/care/chat-topics`；`moodSync` `/care/mood-sync`；`peaceReviews`/`savePeaceReview` `/makeup/reviews`；`sorryTickets`/`sendSorry`/`useSorry` `/makeup/sorry-tickets*`；`truthToday`/`answerTruth`/`truthHistory` `/talk/truth[/history]`；`whispers`/`askWhisper`/`answerWhisper` `/talk/whispers*`；`telepathyBoard`/`startTelepathy`/`answerTelepathy` `/talk/telepathy*`；`loveBank`/`depositLove` `/talk/love-bank` | 求抱抱/话题卡/同步率/矛盾复盘/道歉券/真心话/树洞/心灵感应/情话储蓄罐 |
-| 养成 F70-79 | `challenge`/`checkChallenge` `/growth/challenge[/check]`；`passbook`/`depositPassbook` `/growth/passbook`；`hundreds`/`createHundred`/`checkinHundred`/`breakHundred` `/growth/hundreds*`；`zodiacPair` `/growth/zodiac`；`wishes`/`makeWish`/`acceptWish`/`fulfillWish` `/growth/wishes*`；`travels`/`addTravel`/`visitTravel` `/growth/travels*`；`nextTimes`/`addNextTime`/`nudgeNextTime`/`fulfillNextTime` `/growth/next-times*`；`readPlans`/`createReadPlan`/`reportReadProgress` `/growth/read-plans*`；`watchlist`/`addWatch`/`updateWatch` `/growth/watchlist*`；`dictWords`/`addWord`/`removeWord` `/growth/dict*` | 挑战赛/恋爱存折/百日之约/星座/心愿互换/旅行地图/下次一定/共读/追剧/恋爱词典 |
-| 回忆资产 F80-89 | `chronicle` `/chronicle`；`archaeology` `/chronicle/archaeology`；`quiz` `/chronicle/quiz`；`anniversaryReport` `/chronicle/anniversary-report`；`birthdayLook` `/chronicle/birthday-look`；`quotes`/`saveQuote`/`removeQuote` `/keepsake/quotes*`；`tickets`/`saveTicket`/`removeTicket` `/keepsake/tickets*`；`songs`/`saveSong`/`removeSong` `/keepsake/songs*` | 编年史/考古卡/问答机/周年报告/生日回顾/语录册/票根墙/歌单 |
-| 体验 F90-99 | `todayBoard` `/today`；`yearHeatmap(year)` `/today/heatmap?year` | F95 今日看点 / F96 年度热力日历 |
-| 沟通 F100-109 | `translate` `/comm/translate`；`coolDowns`/`startCoolDown`/`softenCool` `/comm/cool-downs*`；`relays`/`tossRelay`/`catchRelay` `/comm/relays*`；`guesses`/`startGuess`/`clueGuess`/`doGuess` `/comm/guesses*`；`stories`/`startStory`/`addStoryLine`/`finishStory` `/comm/stories*`；`dictQuiz` `/comm/dict-quiz`；`synthSweet` `/comm/sweet-synth`；`apologies`/`sendApology`/`acceptApology` `/comm/apologies*`；`feelings`/`saveFeeling` `/comm/feelings`；`goodnightRadio` `/comm/goodnight-radio` | 翻译器/冷静角/情绪接力/比划猜/故事接龙/词典小考/情话合成/道歉三部曲/情绪词汇/晚安电台 |
-| 异地 F110-119 | `handhold`/`holdHand` `/distance/handhold`；`miss`/`lightMiss` `/distance/miss`；`routine`/`saveRoutine` `/distance/routine`；`reunionLetters`/`writeLetter`/`openReunionLetter` `/distance/letters*`；`cloudDates`/`addCloudDate`/`doneCloudDate` `/distance/cloud-dates*`；`safeties`/`pingSafety`(GO_OUT/ARRIVE) `/distance/safeties*`；`reunions`/`logReunion` `/distance/reunions*`；`energy` `/distance/energy`；`distanceReport` `/distance/report` | 隔空牵手/想念计量/作息表/见面信/云约会/平安卡/见面日记/能量瓶/异地报告 |
-| 确定感 F120-129 | `security`/`depositSecurity`/`acceptSecurity` `/secure/security*`；`checkup` `/secure/checkup`；`decade`/`saveDecade` `/secure/decade`；`visions`/`addVision` `/secure/visions`；`oaths`/`makeOath`/`stampOath` `/secure/oaths*`；`trust`/`depositTrust` `/secure/trust`；`rings` `/secure/rings`；`contracts`/`makeContract`/`checkContract` `/secure/contracts*`；`pet`/`adoptPet`/`carePet` `/secure/pet[/care]` | 安全感账户/恋爱体检/十年之约/愿景板/承诺博物馆/信任存折/年轮/双人契约/守护兽 |
-| 游戏 F130-139 | `survey`/`answerSurvey` `/play/survey`；`quizzes`/`makeQuiz`/`answerQuiz`/`judgeQuiz` `/play/quizzes*`；`heartbeat` `/play/heartbeat`；`tarot` `/play/tarot`；`loveWeather` `/play/weather`；`loveLesson` `/play/love-lesson`；`collectLoveWord` `/play/love-words`；`blindPick`/`submitBlindPick` `/play/blind`；`battle`/`joinBattle`/`voteBattle` `/play/battle[/vote]`；`arts`/`createArt` `/play/arts` | 一百问/出题考 TA/心动概率/塔罗/恋爱天气/情话课/周末盲选/情话 Battle/抽象画（seed） |
-| 陪伴 F140-149 | `themeSong` `/daily-life/theme-song`；`dreams`/`writeDream` `/daily-life/dreams`；`foods`/`addFood`/`checkinFood` `/daily-life/foods*`；`facts`/`addFact` `/daily-life/facts`；`soses`/`pingSos`/`holdSos` `/daily-life/soses*`；`dailyThree`/`saveDailyThree` `/daily-life/three`；`dailyPraise` `/daily-life/praise`；`customBadges`/`addBadge`/`issueBadge` `/daily-life/badges*`；`dashboard` `/daily-life/dashboard` | 今日主题曲/梦境手账/美食地图/使用手册/情绪 SOS/每日三问/夸夸+暗号/自定义成就/恋爱仪表盘 |
-| 成长 F150-159 | `coachHabits`/`coachCreateHabit`/`coachCheckinHabit` `/coach/habits*`；`thanks`/`addThanks` `/coach/thanks`；`feelFamilies` `/coach/feel-families`；`feelToday`/`saveFeel` `/coach/feel`；`weekStar`/`saveWeekStar` `/coach/week-star`；`readMinute`/`saveReadMinute` `/coach/read-minute`；`delays`/`addDelay`/`nagDelay`/`doneDelay` `/coach/delays*`；`morning` `/coach/morning`；`praiseBank`/`addPraiseBank` `/coach/praise-bank`；`yearKeyword(year)` `/coach/year-keyword` | 习惯搭子/感恩便签/情绪词表/本周高光/共读一分钟/拖延互助/早安能量站/优点存折/年度关键词（前缀 coach 防撞名） |
-| 文字浪漫 F160-169 | `poemChain`/`addPoemLine` `/poem/chain`；`poems3`/`addPoem3`/`likePoem3` `/poem/3lines*`；`morningNotes`/`sealMorningNote`/`readMorningNote` `/poem/morning-notes*`；`bottles`/`tossBottle`/`replyBottle` `/poem/bottles*`；`cipherNotes`/`makeCipherNote`/`crackCipherNote` `/poem/ciphers*`；`soul`/`answerSoul` `/poem/soul`；`journal`/`saveJournal` `/poem/journal`；`quote` `/poem/quote`；`letterTemplates` `/poem/letter-templates`；`stickers` `/poem/stickers` | 情诗接龙/三行情书/醒来第一条/漂流瓶/密码情书/灵魂一问/贴纸手账/语录机/情书模板/贴纸库 |
-| 默契亲密 F170-179 | `sparkQuiz` `/spark/love-lang/quiz`；`submitLoveLang`/`myLoveLang` `/spark/love-lang[/mine]`；`loveLangPair` `/spark/love-lang/pair`；`flashes`/`addFlash` `/spark/flashes`；`whatIf`/`answerWhatIf` `/spark/what-if`；`signals`/`addSignal` `/spark/signals`；`tap`/`tapToday` `/spark/tap[/today]`；`sparkDashboard` `/spark/dashboard`；`heartDays`/`markHeartDay` `/spark/heart-days`；`syncRank` `/spark/sync-rank`；`sparkWeekly` `/spark/weekly` | 爱语测评/对照卡/心动闪光/如果问答/动作暗语/同频按键/仪表盘/心动日历/排行榜/默契周报 |
+#### `diningApi`
 
-## manageApi（基址 `/api/couple/manage`，前缀类型 `CoupleManage*VO`）
+| 方法 | HTTP | 路径 | 说明 |
+|---|---|---|---|
+| `dineToday` | GET | `/api/couple/dining/today` | F210 今日饭桌：双方饭票 + 撞菜命中 + 裁决 + 话题打卡状态 |
+| `dineCastTicket` | POST | `/api/couple/dining/ticket` | F210 投/改今日饭票（每人每天一票，改票即覆盖），返回最新今日饭桌 |
 
-| 方法 | 路径 | 一句话 |
-|---|---|---|
-| `meetings`/`createMeeting`/`decideMeeting`/`closeMeeting` | `/meetings*` | F180 家庭会议：议题-结论-关闭 |
-| `host`/`saveHostPlan` | `/host[/plan]` | F181 本周主理人轮换 + 小计划 |
-| `skills`/`createSkill`/`takeSkill`/`doneSkill` | `/skills*` | F182 技能交换所（教 X 换学 Y） |
-| `monthReviews`/`saveMonthReview` | `/month-reviews` | F183 月度互评（stars 1-5 + 建议） |
-| `emergencyCards`/`saveEmergencyCard` | `/emergency-card(s)` | F184 家庭应急卡（联系人/钥匙/药品） |
-| `snapshots`/`saveSnapshot` | `/snapshots` | F185 情侣存档点（loveTemp 0-100） |
-| `points`/`earnPoints`/`redeemPoints` | `/points[/earn|/redeem]` | F186 家务积分账户/流水/兑换 |
-| `fiveYearPlans`/`createFiveYearPlan`/`claimFiveYearPlan`/`finishFiveYearPlan` | `/five-year-plans*` | F187 五年计划双轨（MINE/OURS） |
-| `annivPlans`/`createAnnivPlan`/`advanceAnnivPlan` | `/anniv-plans*` | F188 纪念日策划案（IDEA→LOCKED→DONE） |
-| `weekly` | `/weekly` | F189 经营周报 |
+#### `ceremonyApi`
 
-## museumApi（基址 `/api/couple/museum`，写接口返回最新全量列表）
+| 方法 | HTTP | 路径 | 说明 |
+|---|---|---|---|
+| `cereOverview` | GET | `/api/couple/ceremony/overview` | F230-F239 今日仪式总览：黄历宜忌/小日子/催办/保险柜/续约/愿望券/体感/加冕一次拉齐 |
+| `cereIssueCoupon` | POST | `/api/couple/ceremony/coupon` | — |
+| `cereUseCoupon` | POST | `/api/couple/ceremony/coupon/use` | F236 核销一张愿望券（OPEN→USED，已核销再核 400），返回整份总览 |
 
-| 方法 | 路径 | 一句话 |
-|---|---|---|
-| `listScenes`/`createScene` | `/scenes` | F190 三幕恋爱纪录片 |
-| `listExhibits`/`createExhibit` | `/exhibits` | F191 博物馆展品（捐物件+故事） |
-| `getLastYear` | `/last-year` | F192 去年今日对比镜 |
-| `getSilverLine` | `/silver-line` | F193 银发情话机今日一句 |
-| `getWords` | `/words` | F194 恋爱高频词 |
-| `getAchievements` | `/achievements` | F195 隐藏成就墙（GET 即解锁） |
-| `getRules`/`createRule`/`signRule` | `/rules*` | F196 家规宪法（条款/修正案/签字） |
-| `getDnd`/`saveDnd` | `/dnd` | F197 免打扰时段（HH:mm，couple store 用它静音） |
-| `getAnnualBook` | `/annual-book` | F199 年度记忆书 |
-| `getGreeting` | `/greeting` | F197 今日问候条（叠加免打扰状态） |
+#### `factoryApi`
 
-## 与后端对应关系
+| 方法 | HTTP | 路径 | 说明 |
+|---|---|---|---|
+| `fyBoard` | GET | `/api/couple/factory/board` | F270-F279 本周车间总览（十卡一次拉齐；未建空间 404 前端静默降级） |
+| `fySpin` | POST | `/api/couple/factory/spin` | F270 一转定分工（逗号/顿号分隔事项，2-8 条、每条 ≤40 字且不可重复；本周已转过后端 400），返回整份总览 |
+| `fySpinConfirm` | POST | `/api/couple/factory/spin/confirm` | F270 给天选之人的任务认账（双签生效；自己行点自己后端 400「自己的活自己认」），返回整份总览 |
+| `fySpinDone` | POST | `/api/couple/factory/spin/done` | F270 天选之人干完打勾（非本人行/对方还没认账时后端 400），返回整份总览 |
 
-- 前端 URL 与后端 `/api/couple/*` Controller 路由一一对应；dev server 将 `/api` 代理到 8080（见 [架构总览](architecture.md)）。
-- 响应统一 `{code,message,data}`，`data` 即各方法泛型 VO（类型全在 `src/types/index.ts` 情侣空间区块，命名 `Couple*VO`，新类型必须带 Couple 域前缀防撞名——撞名备忘见 map skill 第三节）。
-- 后端模块地图见 are-chat 仓库 `are-chat-map` skill；WS 推送由后端 `ImPushService.pushCoupleEvent(Both)` 发出（见 [WS 事件链路](ws-events.md)）。
-- **改 types 里任何 VO 字段必须同步 `tests/unit/couple.spec.ts` 的 mock 工厂**，否则 `pnpm build` 的 vue-tsc 检查失败（详见 [测试](testing.md)）。
+#### `echoApi`
 
----
+| 方法 | HTTP | 路径 | 说明 |
+|---|---|---|---|
+| `echoVault` | GET | `/api/couple/echo/vault` | F350-F359 回音壁总览（十板块一次拉齐：deeds/partnerDeeds 各限最近 30 条、juices/highlights 两人合计、 slowInFlight 按寄出日正序、slowArrived 只给最近 10 封、refill 未领取时是空包的今日态、 selfLetter 没在途信时为 null；未建空间 404 前端静默降级） |
+| `echoDeed` | POST | `/api/couple/echo/deed` | F350 记一件「TA 为我做的事」（content ≤80 字必填「好事总得写一句」，超 80 字 400；day 空串=今天且须 yyyy-MM-dd 否则 400「日期写成 yyyy-MM-dd」；同日同人同内容重复 400「这条已经记过了」；新增推双方），返回整份总览 |
+| `echoDeedStar` | POST | `/api/couple/echo/deed/star` | F350 给证据点「这条救过我」（⚠️ 只有记录人本人能点：id 不在本空间 400「这条不在好事簿里」、 点 TA 记的那条 400「只有记下这条的人能加星」；已加星再点幂等返回不重推），返回整份总览 |
 
-上一页：[状态管理](state-management.md) ｜ 下一页：[WS 事件链路](ws-events.md)
+#### `questApi`
+
+| 方法 | HTTP | 路径 | 说明 |
+|---|---|---|---|
+| `questBoard` | GET | `/api/couple/quest/board` | F370-F379 关卡总览（GET /board：十九个字段一次拉齐，⚠️ wall 恒是「服务端当年」那一份； myOvertime/partnerOvertime/myNurse/partnerNurse/myPod/partnerPod/moveNight/myValley/partnerValley 没数据时为 null，其余字符串后端恒给空串；未建空间 404 前端静默降级） |
+| `questOvertime` | POST | `/api/couple/quest/overtime` | — |
+| `questLamp` | POST | `/api/couple/quest/overtime/lamp` | F372 给对方留一张到家灯卡（id 是对方今晚那行预报的 id；⚠️ 只有对方能留、自己的行留不算， text 必填 ≤60 字；找不到那行是 404），返回整份总览 |
+
+#### `catchApi`
+
+| 方法 | HTTP | 路径 | 说明 |
+|---|---|---|---|
+| `catchBoard` | GET | `/api/couple/catch/board` | F380-F389 聆听者总览（GET /board：二十四个字段一次拉齐；⚠️ myWord/partnerWord/myProtocol/ partnerProtocol/myToday/partnerToday 没数据时为 null，其余字符串后端恒给空串；未建空间 404 前端静默降级） |
+| `catchSafeword` | POST | `/api/couple/catch/safeword` | — |
+| `catchSafewordUse` | POST | `/api/couple/catch/safeword/use` | F382 喊了一次暂停（⚠️ 后端无请求体，传 {}；还没约词 400、一天一人只记一次），返回整份总览 |
+| `catchSafewordReflect` | POST | `/api/couple/catch/safeword/reflect` | F382 给某次暂停补事后复盘（⚠️ 只有喊停本人能补；reflect 必填 ≤60 字），返回整份总览 |
+
+## 约定
+
+- 一律走 `http.ts` 的 `get / postJson / putJson / delete / postForm`，`withCredentials` 已内置；后端返回 `ApiResponse{code,message,data}`，解包后只给业务 `data`。
+- 后端业务失败是 400/404 + **中文 message**，组件侧一律 `ElMessage.error(e.message)` 直透，不在前端重写文案。
+- 写接口返回**整份聚合 VO**的（catch/ceremony/dining/echo/factory/quest），组件拿返回值整体替换本地状态，不再单独拉一次。
+- 新增方法前先看后端有没有这个端点：**判据是 `@*Mapping`，不是文档**。
