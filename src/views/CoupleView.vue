@@ -5,7 +5,7 @@
 
     <!-- 已建立：空间主页 -->
     <div v-else class="space-page" data-testid="couple-space">
-      <!-- 头部：双方头像 + 在一起天数 + 关系操作（互道早安达成 → 当日专属背景自动点亮；否则用空间主题色） -->
+      <!-- 头部：双方头像 + 在一起天数 + 今天双方心情 + 心动值 + 关系操作（背景取空间主题色） -->
       <el-card shadow="never" class="panel header-card themed"
                :style="headerBackground">
         <div class="header-row">
@@ -127,9 +127,9 @@
         data-testid="couple-guide-dialog"
       >
         <ol class="guide-list">
-          <li>🫶 <b>每天贴贴打卡</b>——早安晚安、求抱抱、双人挑战，坚持就有心动值</li>
-          <li>💌 <b>把心意藏起来</b>——时光胶囊、树洞、情话储蓄罐，惊喜要慢慢拆</li>
-          <li>📜 <b>回忆都会被记住</b>——编年史、考古卡、热力日历，日子越攒越甜</li>
+          <li>🫶 <b>今天</b>——记个心情、贴一贴，难过就求抱抱，吵架了有安全词兜底</li>
+          <li>🍚 <b>过日子</b>——今晚吃什么、家务归谁、几点到家、愿望券攒着给 TA 一个</li>
+          <li>🎁 <b>小惊喜</b>——每周刮一张券，把「TA 为我做的事」一件件记下来</li>
         </ol>
         <p class="anniv-tip">顶部页签随便逛，这条提示只出现一次～</p>
         <template #footer>
@@ -255,7 +255,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import { pinApi } from '@/api/couple'
 import { COUPLE_CARDS, findCardByKey, searchCoupleCards } from '@/components/couple/coupleCards.registry'
-import { todayBackground as getTodayBackground, todayStickers as getTodayStickers, todayThemeLabel } from '@/utils/coupleTheme'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import CoupleSetup from '@/components/couple/CoupleSetup.vue'
 import CoupleBond from '@/components/couple/CoupleBond.vue'
@@ -519,12 +518,7 @@ function formatNotifyTime(at: number) {
   return `${d.getMonth() + 1}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 今日专属主题：早晚安打卡下线后不再做「解锁」门槛，色板与贴纸本来就按天轮换，天天都给 */
-const themeGradient = getTodayBackground()
-const themeLabel = todayThemeLabel()
-const themeStickers = getTodayStickers()
-
-/** 头部第二格：今天双方的心情（谁没记就留白，比"连续互道晚安"更贴近还剩的 10 张卡） */
+/** 头部第二格：今天双方的心情（谁没记就留白） */
 const MOOD_EMOJI: Record<string, string> = {
   HAPPY: '😄', CALM: '🙂', SAD: '😢', ANGRY: '😠', SICK: '🤒', TIRED: '😪',
 }
@@ -602,7 +596,7 @@ async function onDissolve() {
 }
 
 onMounted(() => {
-  // 聊天「记入约定」跳转：?tab=promises 直接定位到约定页（growth 走查缺陷修复：补进白名单）
+  // 深链直达：?tab=today|life|gift 指定首屏页签，白名单外的值忽略
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
   if (['today', 'life', 'gift'].includes(tab)) {
     activeTab.value = tab
@@ -728,10 +722,6 @@ onMounted(() => {
 }
 .couple-search {
   width: 150px;
-}
-/* F200-F204 二级子页签 */
-.sub-tabs :deep(.el-tabs__header) {
-  margin-bottom: 12px;
 }
 /* F207 收藏面板 */
 .pin-panel .pin-hint {
