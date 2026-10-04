@@ -5,12 +5,22 @@
 
     <!-- 已建立：空间主页 -->
     <div v-else class="space-page" data-testid="couple-space">
-      <!-- 头部：双方头像 + 在一起天数 + 今天双方心情 + 心动值 + 关系操作（背景取空间主题色） -->
+      <!-- 头部：双方头像 + 在一起天数 + 今天双方心情 + 心动值 + 关系操作（背景取空间主题色，连满 7 天换会长的动态背景） -->
       <el-card shadow="never" class="panel header-card themed"
+               :class="{ 'bg-grown': bgStage > 0 }"
+               :data-bg-stage="bgStage || undefined"
+               :data-testid="bgStage > 0 ? 'couple-header-bg-stage' : undefined"
                :style="headerBackground">
+        <!-- 连满 7 天，背景里长出这棵一起养的电子植物：解锁的档位越高，它长得越高 -->
+        <span
+          v-if="bgStage > 0"
+          class="space-plant"
+          aria-hidden="true"
+          :data-testid="`couple-plant-stage-${bgStage}`"
+        >{{ PLANT_STAGES[bgStage - 1] }}</span>
         <div class="header-row">
           <div class="pair">
-            <ImAvatar :name="auth.username" :size="52" halo online />
+            <ImAvatar :name="auth.username" :size="52" halo online :pendant="pendantEmoji" />
             <span class="heart">💖</span>
             <ImAvatar
               :name="couple.space!.partner.username"
@@ -19,10 +29,15 @@
               :size="52"
               :online="couple.space!.partner.online"
               halo
+              :pendant="pendantEmoji"
               data-testid="couple-partner-avatar"
             />
             <div class="pair-names">
-              <span class="pair-name" data-testid="couple-partner-name">
+              <span
+                class="pair-name"
+                :class="{ 'couple-name-glow': titleGlowOn }"
+                data-testid="couple-partner-name"
+              >
                 {{ couple.space!.partner.petName || couple.space!.partner.nickname }}
               </span>
               <span class="pair-username">
@@ -37,6 +52,12 @@
                   🏷️ 爱称
                 </button>
               </span>
+              <!-- 连满 30 天才把恋爱等级称号挂到空间顶部；称号本身沿用心动值七级，不造第二套 -->
+              <span
+                v-if="titleBadge"
+                class="love-title"
+                data-testid="couple-love-title"
+              >{{ titleBadge.icon }} {{ titleBadge.title }}</span>
             </div>
           </div>
           <div class="stats">
@@ -50,7 +71,7 @@
             </div>
             <div class="stat">
               <span class="stat-num" data-testid="couple-intimacy-score">{{ couple.intimacy?.score ?? 0 }}</span>
-              <span class="stat-label">{{ couple.intimacy ? `${couple.intimacy.icon} ${couple.intimacy.title}` : '心动值' }}</span>
+              <span class="stat-label">{{ intimacyStatLabel }}</span>
             </div>
           </div>
           <div class="header-actions">
@@ -73,7 +94,7 @@
                 <p class="pin-hint">勾选最常逛的功能（最多 6 个），会置顶在每个页签开头～</p>
                 <el-checkbox-group v-model="pinDraft" class="pin-group">
                   <el-checkbox
-                    v-for="c in COUPLE_CARDS"
+                    v-for="c in searchableCards"
                     :key="c.key"
                     :value="c.key"
                     :disabled="pinDraft.length >= 6 && !pinDraft.includes(c.key)"
@@ -137,7 +158,7 @@
         </template>
       </el-dialog>
 
-      <!-- 三大功能（裁剪后 11 页签收敛到 3 个） -->
+      <!-- 三大功能 + 隐藏角落（裁剪后 11 页签收敛到 3 个，隐藏页签连满 100 天才出现） -->
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
           <el-tab-pane label="🫶 今天" name="today">
@@ -145,6 +166,8 @@
             <div class="tab-stack">
               <CoupleMood />
               <CoupleBond />
+              <CoupleStreak />
+              <CoupleQuestion />
               <CoupleComfort />
               <CoupleCatch />
             </div>
@@ -162,7 +185,13 @@
             <TabExtras tab="gift" />
             <div class="tab-stack">
               <CoupleSurprise />
+              <CoupleWish />
               <CoupleEcho />
+            </div>
+          </el-tab-pane>
+          <el-tab-pane v-if="secretTabOpen" label="🥚 隐藏角落" name="secret" lazy>
+            <div class="tab-stack">
+              <CoupleMemory />
             </div>
           </el-tab-pane>
         </el-tabs>
@@ -268,6 +297,11 @@ import CoupleFactory from '@/components/couple/CoupleFactory.vue'
 import CoupleCeremony from '@/components/couple/CoupleCeremony.vue'
 import CoupleEcho from '@/components/couple/CoupleEcho.vue'
 import CoupleQuest from '@/components/couple/CoupleQuest.vue'
+import CoupleStreak from '@/components/couple/CoupleStreak.vue'
+import CoupleQuestion from '@/components/couple/CoupleQuestion.vue'
+import CoupleWish from '@/components/couple/CoupleWish.vue'
+import CoupleMemory from '@/components/couple/CoupleMemory.vue'
+import { couplePendant } from '@/utils/coupleVisual'
 
 const auth = useAuthStore()
 const couple = useCoupleStore()
@@ -287,7 +321,7 @@ const notifyVisible = ref(false)
 const searchQuery = ref('')
 
 function onSearchEnter() {
-  const hits = searchCoupleCards(searchQuery.value)
+  const hits = searchCoupleCards(searchQuery.value, couple.unlockedTierKeys)
   if (!hits.length) {
     ElMessage.warning('没找到这个功能…换个词试试 🔍')
     return
@@ -320,6 +354,11 @@ const pinDraft = ref<string[]>([])
 const pinPanelVisible = ref(false)
 const savingPins = ref(false)
 const pinnedCards = computed(() => myPins.value.map(findCardByKey).filter(Boolean) as typeof COUPLE_CARDS)
+
+/** 收藏面板与搜索共用的候选：需要解锁档位的卡，没解锁就不该出现在可选项里。 */
+const searchableCards = computed(() =>
+  COUPLE_CARDS.filter((c) => !c.tier || couple.unlockedTierKeys.includes(c.tier)),
+)
 
 async function loadPins() {
   try {
@@ -540,6 +579,47 @@ const headerBackground = computed(() => {
   return { background: THEME_GRADIENTS[theme] ?? THEME_GRADIENTS.classic }
 })
 
+// ============ 连续互动打卡解锁的外观（判据一律来自后端 tiers，前端不自拼天数） ============
+
+/** 植物四阶段：背景解锁时是种子，之后每多解锁一档往上长一格。 */
+const PLANT_STAGES = ['🌱', '🌿', '🪴', '🌳'] as const
+
+/** 已解锁档位数（easter-egg 本身不算成长，它是另一个页签）。 */
+const unlockedCount = computed(() => couple.unlockedTierKeys.filter((k) => k !== 'easter-egg').length)
+
+/** 背景只在连满 7 天之后生长，阶段 1-4；没解锁就是 0（不渲染植物）。 */
+const bgStage = computed(() => {
+  if (!couple.tierUnlocked('background')) return 0
+  return Math.min(Math.max(unlockedCount.value - 1, 1), PLANT_STAGES.length)
+})
+
+/** 连满 30 天才把称号挂到顶部；称号内容沿用心动值七级，不另造一套。 */
+const titleBadge = computed(() => {
+  if (!couple.tierUnlocked('title') || !couple.intimacy) return null
+  return { icon: couple.intimacy.icon, title: couple.intimacy.title }
+})
+
+/** 称号已经单独成徽章时，心动值那一格回到「心动值」，同一个词不在头部出现两次。 */
+const intimacyStatLabel = computed(() => {
+  if (!couple.intimacy || titleBadge.value) return '心动值'
+  return `${couple.intimacy.icon} ${couple.intimacy.title}`
+})
+
+/** 连满 14 天，TA 的爱称开始发光（发光样式与聊天侧共用 style.css 的 .couple-name-glow）。 */
+const titleGlowOn = computed(() => couple.tierUnlocked('nickname-glow'))
+
+/**
+ * 连满 21 天，头像边上挂一对联动小挂件。
+ * 取法与聊天侧共用 `utils/coupleVisual` 的 couplePendant（按空间主题定款），
+ * 免得同一个人聊天列表挂 🔗、进了空间挂 🫂。
+ */
+const pendantEmoji = computed(() =>
+  couple.tierUnlocked('pendant') ? couplePendant(couple.space?.theme) : undefined,
+)
+
+/** 隐藏角落只在连满 100 天后存在（服务端同样有一道闸）。 */
+const secretTabOpen = computed(() => couple.tierUnlocked('easter-egg'))
+
 function openAnnivEdit() {
   annivEditDate.value = couple.space?.anniversary ?? null
   annivEditVisible.value = true
@@ -595,14 +675,19 @@ async function onDissolve() {
   }
 }
 
-onMounted(() => {
-  // 深链直达：?tab=today|life|gift 指定首屏页签，白名单外的值忽略
+onMounted(async () => {
+  // 深链直达：?tab=today|life|gift|secret 指定首屏页签，白名单外的值忽略
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
   if (['today', 'life', 'gift'].includes(tab)) {
     activeTab.value = tab
   }
   // MainLayout 已在登录后 init 过：这里兜底刷新总览（邀请状态可能变化）
-  void couple.init()
+  await couple.init()
+  if (tab === 'secret') {
+    // 隐藏页签要先知道解没解锁；init 里那次 loadStreak 是不等待发出的，这里显式取一次
+    await couple.loadStreak()
+    if (secretTabOpen.value) activeTab.value = 'secret'
+  }
   // 头部心动值 & 恋爱等级
   void couple.loadIntimacy()
 })
@@ -679,6 +764,77 @@ onMounted(() => {
 .pair-name {
   font-size: 16px;
   font-weight: 700;
+}
+/* 连满 30 天：恋爱等级称号挂到空间顶部 */
+.love-title {
+  margin-top: 4px;
+  align-self: flex-start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 108, 108, 0.35);
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 600;
+  color: #d24d5c;
+}
+/* 连满 7 天：背景开始缓慢流动，角落那棵一起养的植物随档位长高 */
+.header-card.bg-grown {
+  position: relative;
+  overflow: hidden;
+}
+.header-card.bg-grown::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: couple-bg-drift 14s linear infinite;
+}
+@keyframes couple-bg-drift {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+.space-plant {
+  position: absolute;
+  right: 14px;
+  bottom: 6px;
+  z-index: 1;
+  line-height: 1;
+  transform-origin: bottom center;
+  animation: couple-plant-sway 7s ease-in-out infinite;
+}
+.header-card[data-bg-stage='1'] .space-plant {
+  font-size: 22px;
+}
+.header-card[data-bg-stage='2'] .space-plant {
+  font-size: 30px;
+}
+.header-card[data-bg-stage='3'] .space-plant {
+  font-size: 38px;
+}
+.header-card[data-bg-stage='4'] .space-plant {
+  font-size: 46px;
+}
+@keyframes couple-plant-sway {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+/* 动效一律给「减少动态效果」的用户关掉，称号与植物本身不受影响 */
+@media (prefers-reduced-motion: reduce) {
+  .header-card.bg-grown::after,
+  .space-plant {
+    animation: none;
+  }
 }
 .pair-username {
   font-size: 12px;

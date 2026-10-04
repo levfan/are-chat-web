@@ -13,12 +13,19 @@ export interface CoupleCardEntry {
   label: string
   tab: string
   sub?: string
+  /**
+   * 需要解锁的连续打卡档位 key（见后端 StreakTier）。
+   * 带这个字段的卡在搜索里只对已解锁的人出现——没解锁时跳过去只会撞上一个空页签。
+   */
+  tier?: string
 }
 
 export const COUPLE_CARDS: CoupleCardEntry[] = [
-  // 🫶 今天 —— 每天进来点一下就走的四张
+  // 🫶 今天 —— 每天进来点一下就走的六张
   { key: 'couple-mood', label: '心情日记', tab: 'today' },
   { key: 'couple-bond', label: '贴贴宫格', tab: 'today' },
+  { key: 'couple-streak', label: '连续互动打卡', tab: 'today' },
+  { key: 'couple-question', label: '每日一问', tab: 'today' },
   { key: 'couple-comfort', label: '求抱抱', tab: 'today' },
   { key: 'couple-catch-safeword', label: '安全词与暂停复盘', tab: 'today' },
   // 🍚 过日子 —— 吃穿用度与加班、券本
@@ -29,6 +36,9 @@ export const COUPLE_CARDS: CoupleCardEntry[] = [
   // 🎁 小惊喜 —— 拆封感与被爱的证据
   { key: 'couple-surprise', label: '刮刮乐与盲盒', tab: 'gift' },
   { key: 'couple-echo-deed', label: '好事簿', tab: 'gift' },
+  { key: 'couple-wish', label: '愿望清单', tab: 'gift' },
+  // 🥚 隐藏角落 —— 连续 100 天才出现
+  { key: 'couple-memory', label: '百日回顾', tab: 'secret', tier: 'easter-egg' },
 ]
 
 /** 一级页签的展示名（搜索框与收藏 chip 的分组标题用）。 */
@@ -36,6 +46,7 @@ export const COUPLE_TAB_LABELS: Record<string, string> = {
   today: '🫶 今天',
   life: '🍚 过日子',
   gift: '🎁 小惊喜',
+  secret: '🥚 隐藏角落',
 }
 
 /** 按 key 找卡（收藏 chip 与 ?card= 跳转用）。 */
@@ -43,9 +54,13 @@ export function findCardByKey(key: string): CoupleCardEntry | undefined {
   return COUPLE_CARDS.find((c) => c.key === key)
 }
 
-/** 按中文名包含匹配搜卡（大小写与空格已忽略）。 */
-export function searchCoupleCards(keyword: string): CoupleCardEntry[] {
+/** 按中文名包含匹配搜卡（大小写与空格已忽略）；未解锁的卡不出现在结果里。 */
+export function searchCoupleCards(keyword: string, unlockedTiers: string[] = []): CoupleCardEntry[] {
   const kw = keyword.trim().toLowerCase()
   if (!kw) return []
-  return COUPLE_CARDS.filter((c) => c.label.toLowerCase().includes(kw) || c.key.toLowerCase().includes(kw))
+  return COUPLE_CARDS.filter(
+    (c) =>
+      (!c.tier || unlockedTiers.includes(c.tier)) &&
+      (c.label.toLowerCase().includes(kw) || c.key.toLowerCase().includes(kw)),
+  )
 }
