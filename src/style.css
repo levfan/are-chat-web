@@ -181,6 +181,82 @@ html[data-skin='ocean'] {
   --im-quote-bg: color-mix(in srgb, #06b6d4 10%, transparent);
 }
 
+/* ============ 情侣空间·只有彼此看得见的解锁特效（连续互动打卡档位） ============ */
+/* 令牌分浅/深两套，具体谁用由 .dm-area[data-couple-bubble] 与 .couple-name-glow 决定；
+   未解锁时这些选择器压根不出现，所以普通用户/旁人完全不受影响。 */
+:root {
+  --couple-bubble-me: linear-gradient(135deg, #ffb4cf, #ec5f92 52%, #a56cf0);
+  --couple-bubble-peer: #fff7fb;
+  --couple-bubble-peer-border: #f6d7e6;
+  --couple-bubble-ring: rgba(236, 95, 146, 0.3);
+  --couple-glow-a: #ec5f92;
+  --couple-glow-b: #8f4fd0;
+  --couple-glow-c: #d9822b;
+}
+html.dark {
+  --couple-bubble-me: linear-gradient(135deg, #d8679c, #b04f86 52%, #7c53c9);
+  --couple-bubble-peer: #271a21;
+  --couple-bubble-peer-border: #45263c;
+  --couple-bubble-ring: rgba(224, 103, 156, 0.34);
+  --couple-glow-a: #f48fb8;
+  --couple-glow-b: #b79bf0;
+  --couple-glow-c: #ffd08a;
+}
+
+/*
+ * 双人专属气泡（bubble 档）：只在「我和 TA 的那条会话」的 .dm-area 上挂 data 属性。
+ * 走自定义属性注入而不是改写 MessageBubble 的类，原因有二：
+ * ① 元素自身的变量声明必然压过 html[data-skin] 继承来的，二人会话里情侣气泡必胜，
+ *    而其它会话、其它人看到的仍是用户自己的皮肤；② 不复制气泡结构，也就不会漂移。
+ */
+.dm-area[data-couple-bubble='on'] {
+  --im-bubble-gradient: var(--couple-bubble-me);
+  --im-bubble-me: var(--xx-accent, #ec5f92);
+  --im-bubble-peer: var(--couple-bubble-peer);
+  --im-bubble-peer-border: var(--couple-bubble-peer-border);
+  --im-quote-bg: var(--couple-bubble-ring);
+}
+/* 一圈极细的描边把「这是我们俩的气泡」说出来：只加阴影，不碰尺寸/圆角/文字，
+   所以既不会有布局位移，也不必和 MessageBubble 里 .row.self .bubble 的圆角抢优先级。 */
+.dm-area[data-couple-bubble='on'] .row .bubble {
+  box-shadow: 0 0 0 1px var(--couple-bubble-ring);
+}
+
+/* 昵称特效（nickname-glow 档）：会话头/列表里 TA 的名字上挂 .couple-name-glow */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .couple-name-glow {
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    background-image: linear-gradient(
+      100deg,
+      var(--couple-glow-a),
+      var(--couple-glow-b) 42%,
+      var(--couple-glow-c) 62%,
+      var(--couple-glow-a)
+    );
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 0 10px var(--couple-bubble-ring);
+    animation: couple-name-shimmer 7s linear infinite;
+  }
+}
+/* 只有十几个字符在动，不是大面积常驻动画 */
+@keyframes couple-name-shimmer {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 220% 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .couple-name-glow {
+    animation: none;
+    text-shadow: none;
+  }
+}
+
 /* ============ 64 聊天背景（应用在 .dm-area 上，通过 --chat-bg 变量注入） ============ */
 .chat-bg-default {
   --chat-bg: var(--im-bg, #f7f8fa);

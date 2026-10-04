@@ -73,11 +73,15 @@
             :online="friend.online"
             :size="40"
             :status="friend.status"
+            :pendant="pendantOf(friend.username)"
             halo
           />
           <div class="conv-main">
             <div class="conv-row">
-              <span class="conv-name">{{ displayName(friend) }}</span>
+              <span
+                class="conv-name"
+                :class="{ 'couple-name-glow': nicknameGlowReady && friend.username === partnerUsername }"
+              >{{ displayName(friend) }}</span>
               <el-icon v-if="friend.muted" :size="13" class="mute-ico" title="免打扰">
                 <MuteNotification />
               </el-icon>
@@ -119,10 +123,16 @@
             :online="im.activeFriend?.online"
             :size="36"
             :status="im.activeFriend?.status"
+            :pendant="partnerPendant"
             halo
           />
           <div class="chat-title">
-            <span class="chat-name" data-testid="chat-title">{{ displayPeerName }}</span>
+            <span
+              class="chat-name"
+              :class="{ 'couple-name-glow': nicknameGlowOn }"
+              :title="displayPeerName"
+              data-testid="chat-title"
+            >{{ chatPeerName }}</span>
             <span class="chat-status" data-testid="peer-status">{{ peerStatusText }}</span>
           </div>
 
@@ -213,6 +223,7 @@
           ref="scrollBox"
           class="dm-area"
           :class="`chat-bg-${chatBg}`"
+          :data-couple-bubble="coupleBubbleOn ? 'on' : undefined"
           data-testid="dm-area"
           @scroll="onScroll"
           @dragenter.prevent="onDragEnter"
@@ -616,6 +627,7 @@ import { messagePreviewText, useImStore } from '@/stores/im'
 import { useCoupleStore } from '@/stores/couple'
 import { messageApi, profileApi, starsApi } from '@/api/im'
 import { currentBackground, currentPokeSuffix, currentSendKey } from '@/utils/settings'
+import { COUPLE_VISUAL_TIER, couplePendant, coupleVisualOn } from '@/utils/coupleVisual'
 import { detectEffect, detectEggCommand, floatHearts, playEffect } from '@/utils/effects'
 import { formatChatTime, formatDayLabel, formatLastSeen, highlightSegments } from '@/utils/imFormat'
 import type { HighlightSegment } from '@/utils/imFormat'
@@ -739,6 +751,44 @@ const displayPeerName = computed(() => {
   }
   return im.activeFriend.remark || im.activeFriend.nickname || im.activeFriend.username
 })
+
+// ---------- 情侣空间·只有彼此看得见的视觉解锁（气泡 / 昵称特效 / 挂件） ----------
+// 档位由后端打卡看板算好，这里只读 store：不加字段、不发请求、不写本地标记。
+
+const partnerUsername = computed(() => couple.space?.partner.username?.trim() ?? '')
+const partnerPetName = computed(() => couple.space?.partner.petName?.trim() ?? '')
+
+/** 这一档解没解锁（只看空间 + 档位，不看在跟谁聊） */
+function tierReady(key: string): boolean {
+  return couple.established && couple.tierUnlocked(key) && partnerUsername.value.length > 0
+}
+
+/** 这一档在当前会话要不要点亮：解锁 + 当前对象正是 TA */
+function tierOnThread(key: string): boolean {
+  return coupleVisualOn({
+    established: couple.established,
+    unlocked: couple.tierUnlocked(key),
+    activePeer: im.activePeer,
+    partnerUsername: partnerUsername.value,
+  })
+}
+
+/** 双人专属气泡：只体现在 .dm-area 的 data 属性上，换会话就没了 */
+const coupleBubbleOn = computed(() => tierOnThread(COUPLE_VISUAL_TIER.bubble))
+/** 昵称特效：会话头要求「正在和 TA 聊」，列表里 TA 那一行只认「这行是 TA」 */
+const nicknameGlowReady = computed(() => tierReady(COUPLE_VISUAL_TIER.nicknameGlow))
+const nicknameGlowOn = computed(() => nicknameGlowReady.value && im.activePeer.trim() === partnerUsername.value)
+/** 会话头展示的称呼：解锁后优先用我给 TA 起的专属爱称，没起就还是原来的展示名 */
+const chatPeerName = computed(() =>
+  nicknameGlowOn.value && partnerPetName.value ? partnerPetName.value : displayPeerName.value,
+)
+/** 双人挂件：会话头只认「正在和 TA 聊」，列表那一行按用户名逐行判断 */
+const pendantEmoji = computed(() => (tierReady(COUPLE_VISUAL_TIER.pendant) ? couplePendant(couple.space?.theme) : ''))
+const partnerPendant = computed(() => (tierOnThread(COUPLE_VISUAL_TIER.pendant) ? pendantEmoji.value : ''))
+/** 未解锁 = 空串 = ImAvatar 连节点都不渲染 */
+function pendantOf(username: string): string {
+  return username.trim() === partnerUsername.value ? pendantEmoji.value : ''
+}
 
 /** 资料卡主名：我的备注 > 对方昵称；设了备注时另起一行展示原始昵称 */
 const cardRemark = computed(() => im.activeFriend?.remark?.trim() || '')

@@ -12,6 +12,14 @@
   >
     <span class="initial">{{ initial }}</span>
     <span v-if="online !== undefined" class="dot" :class="dotClass" />
+    <!-- 情侣空间·双人挂件：不传 pendant 就一个节点也不渲染（全站头像共用本组件，默认零变化） -->
+    <span
+      v-if="pendant"
+      class="pendant"
+      :style="{ fontSize: `${pendantSize}px` }"
+      aria-hidden="true"
+      data-testid="avatar-pendant"
+    >{{ pendant }}</span>
   </div>
 </template>
 
@@ -32,6 +40,8 @@ const props = withDefaults(
     status?: string
     /** 71 是否显示呼吸光环（列表/会话头使用） */
     halo?: boolean
+    /** 情侣空间挂件档：一枚小挂坠（纯文字/emoji），空串 = 不渲染 */
+    pendant?: string
   }>(),
   {
     label: '',
@@ -40,11 +50,14 @@ const props = withDefaults(
     size: 40,
     status: '',
     halo: false,
+    pendant: '',
   },
 )
 
 const bg = computed(() => avatarColorByKey(props.color, props.name))
 const initial = computed(() => (props.label || props.name).trim().charAt(0).toUpperCase() || '?')
+/** 挂件随头像缩放，最小 9px 保证在 24px 头像上也看得清 */
+const pendantSize = computed(() => Math.max(9, Math.round(props.size * 0.34)))
 
 const statusValue = computed(() => props.status || (props.online ? 'online' : 'offline'))
 const haloOn = computed(() => props.halo && props.online === true)
@@ -93,5 +106,35 @@ const dotClass = computed(() => `s-${statusValue.value}`)
 }
 .dot.s-away {
   background: #9aa3b2;
+}
+/* 情侣空间·双人挂件（pendant 档）：绝对定位角标，不参与布局，未解锁时根本不渲染 */
+.pendant {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 1px;
+  border-radius: 50%;
+  background: var(--im-panel, #fff);
+  box-shadow: 0 0 0 1px var(--couple-bubble-ring, rgba(236, 95, 146, 0.3));
+  animation: couple-pendant-sway 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes couple-pendant-sway {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pendant {
+    animation: none;
+  }
 }
 </style>
