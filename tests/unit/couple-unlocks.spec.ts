@@ -150,9 +150,8 @@ function streakBoard(unlockedKeys: string[]): CoupleStreakBoardVO {
     nextTierLabel: null,
     daysToNext: 0,
     strip: [],
-    makeupCost: 1,
+    makeupWindowDays: 7,
     makeupLeftThisMonth: 0,
-    balance: 0,
     canMakeup: false,
   }
 }
@@ -167,12 +166,9 @@ function overview(days: number, petName: string | null, theme: CoupleSpaceTheme)
       days,
       slogan: null,
       theme,
-      stickers: null,
     },
     incoming: [],
     outgoing: [],
-    todayMine: null,
-    todayPartner: null,
   }
 }
 

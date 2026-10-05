@@ -6,10 +6,7 @@ import CoupleStreak from '@/components/couple/CoupleStreak.vue'
 import CoupleQuestion from '@/components/couple/CoupleQuestion.vue'
 import CoupleWish from '@/components/couple/CoupleWish.vue'
 import CoupleMemory from '@/components/couple/CoupleMemory.vue'
-import {
-  catchApi, ceremonyApi, coupleApi, diningApi, echoApi, factoryApi, memoryApi,
-  pinApi, questApi, questionApi, streakApi, wishApi,
-} from '@/api/couple'
+import { coupleApi, memoryApi, questionApi, streakApi, wishApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
@@ -32,34 +29,21 @@ import type {
  * 口径与 couple.spec.ts 一致：断言「真的发了哪个请求、带什么参数、界面按返回的哪一块更新」，
  * 尤其看后端的闸门位（canMakeup / bothAnswered / preparableFlag / canFulfillFlag / tierUnlocked）
  * 有没有被照位渲染——前端只镜像闸门，不自己另判一遍。
- * mock 工厂把 api/couple.ts 的 70 个方法逐个列出来（不用 Proxy 兜底），漏一个这里先红。
+ * mock 工厂把 api/couple.ts 存活的 26 个方法逐个列出来（不用 Proxy 兜底），漏一个这里先红。
  */
 
 vi.mock('@/api/couple', () => {
-  const emptyOverview = { space: null, incoming: [], outgoing: [], todayMine: null, todayPartner: null }
+  const emptyOverview = { space: null, incoming: [], outgoing: [] }
   return {
     coupleApi: {
       overview: vi.fn().mockResolvedValue(emptyOverview),
       invite: vi.fn(), acceptInvite: vi.fn(), rejectInvite: vi.fn(), cancelInvite: vi.fn(),
-      setAnniversary: vi.fn(), dissolve: vi.fn(), anniversaries: vi.fn().mockResolvedValue([]),
-      createAnniversary: vi.fn(), deleteAnniversary: vi.fn(),
-      saveMood: vi.fn(), moods: vi.fn().mockResolvedValue([]), intimacy: vi.fn(),
-      sendAction: vi.fn(), bondActions: vi.fn().mockResolvedValue([]), bondStats: vi.fn(),
-      reactMood: vi.fn(), moodReactions: vi.fn(), setPetName: vi.fn(), updateProfile: vi.fn(),
-      notifyMine: vi.fn().mockResolvedValue({ items: [], unread: 0 }), notifyReadAll: vi.fn(),
-      relationshipOf: vi.fn(), adminCoupleStats: vi.fn(),
-      scratches: vi.fn().mockResolvedValue([]), scratchCard: vi.fn(), redeemScratch: vi.fn(),
-      boxes: vi.fn().mockResolvedValue([]), createBox: vi.fn(), openBox: vi.fn(),
-      comfortBoard: vi.fn(), askComfort: vi.fn(), comfortCards: vi.fn().mockResolvedValue([]),
-      handleComfort: vi.fn(), chatTopics: vi.fn().mockResolvedValue([]), moodSync: vi.fn(),
+      setAnniversary: vi.fn(), dissolve: vi.fn(),
+      // 爱称也走这里：独立的 PUT /couple/bond/pet-name 已随贴贴卡下线
+      updateProfile: vi.fn(),
+      intimacy: vi.fn(), notifyMine: vi.fn().mockResolvedValue({ items: [], unread: 0 }),
+      notifyReadAll: vi.fn(), relationshipOf: vi.fn(), adminCoupleStats: vi.fn(),
     },
-    pinApi: { list: vi.fn().mockResolvedValue({ mine: [], partner: [] }), save: vi.fn() },
-    diningApi: { dineToday: vi.fn(), dineCastTicket: vi.fn() },
-    ceremonyApi: { cereOverview: vi.fn(), cereIssueCoupon: vi.fn(), cereUseCoupon: vi.fn() },
-    factoryApi: { fyBoard: vi.fn(), fySpin: vi.fn(), fySpinConfirm: vi.fn(), fySpinDone: vi.fn() },
-    questApi: { questBoard: vi.fn(), questOvertime: vi.fn(), questLamp: vi.fn() },
-    catchApi: { catchBoard: vi.fn(), catchSafeword: vi.fn(), catchSafewordUse: vi.fn(), catchSafewordReflect: vi.fn() },
-    echoApi: { echoVault: vi.fn(), echoDeed: vi.fn(), echoDeedStar: vi.fn() },
     streakApi: { streakBoard: vi.fn(), streakMakeup: vi.fn() },
     questionApi: { questionToday: vi.fn(), questionAnswer: vi.fn(), questionHistory: vi.fn() },
     wishApi: {
@@ -78,11 +62,10 @@ const space: CoupleSpaceVO = {
   days: 31,
   slogan: null,
   theme: 'classic',
-  stickers: null,
 }
 
 function overviewWithSpace(): CoupleOverview {
-  return { space, incoming: [], outgoing: [], todayMine: null, todayPartner: null }
+  return { space, incoming: [], outgoing: [] }
 }
 
 /** 七档里的一档（后端 TierVO 七个字段；unlockedDay 只有解锁了才有值） */
@@ -97,14 +80,14 @@ function stripCell(day: string, checked: boolean, makeup = false, today = false)
   return { day, checked, makeupFlag: makeup, todayFlag: today }
 }
 
-/** 打卡看板：字段全取后端缺量（补签 20 分 / 本月 3 次 / 余额 60 / 只给一格 strip） */
+/** 打卡看板：字段全取后端缺量（补签 7 天窗口 / 本月 3 次 / 不花钱 / 只给一格 strip） */
 function streakBoard(over: Partial<CoupleStreakBoardVO> = {}): CoupleStreakBoardVO {
   return {
     day: '2026-10-04', currentStreak: 5, longestStreak: 5, confirmedDays: 5,
     checkedToday: true, missedYesterday: false, lastCheckinDay: '2026-10-03',
     tiers: [tier('bubble', 3, true)], nextTierKey: 'background', nextTierLabel: '空间背景', daysToNext: 2,
     strip: [stripCell('2026-10-04', true, false, true)],
-    makeupCost: 20, makeupLeftThisMonth: 3, balance: 60, canMakeup: false,
+    makeupWindowDays: 7, makeupLeftThisMonth: 3, canMakeup: false,
     ...over,
   }
 }
@@ -204,7 +187,8 @@ describe('CoupleStreak 连续互动打卡', () => {
     await makeup.trigger('click')
     await flushPromises()
     expect(streakApi.streakMakeup).not.toHaveBeenCalled()
-    // 打卡由后端按「双方当天都贴过」自动结算：整张卡只有折叠钮 + 补签钮两颗，且没有一颗写着打卡
+    // 打卡由后端按「双方当天都答完每日一问」自动结算（ADR-0010 第 2 条）：
+    // 整张卡只有折叠钮 + 补签钮两颗，且没有一颗写着打卡
     expect(wrapper.find('[data-testid="couple-streak-checkin"]').exists()).toBe(false)
     const buttons = wrapper.findAll('button')
     expect(buttons).toHaveLength(2)
@@ -224,7 +208,9 @@ describe('CoupleStreak 连续互动打卡', () => {
     await flushPromises()
     expect(streakApi.streakMakeup).toHaveBeenCalledWith('2026-10-03')
     expect(useCoupleStore().streak?.currentStreak).toBe(4)
-    expect(ElMessage.success).toHaveBeenCalledWith('✍️ 补上了 2026-10-03，花了 20 分')
+    // 积分台账随裁剪一起下线：补签不花钱，成功提示里不能再出现「花了 N 分」
+    expect(ElMessage.success).toHaveBeenCalledWith('✍️ 补上了 2026-10-03，那一格又亮了')
+    expect(wrapper.find('[data-testid="couple-streak-makeup-quota"]').text()).toContain('补签不花分')
     expect(wrapper.find('[data-testid="couple-streak-makeup"]').attributes('disabled')).toBeDefined()
   })
 
@@ -681,10 +667,10 @@ describe('CoupleMemory 百日隐藏回顾页', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="couple-memory"]').exists()).toBe(true)
     expect(memoryApi.memoryPage).not.toHaveBeenCalled()
-    expect(wrapper.find('[data-testid="couple-memory-locked"]').text()).toContain('连续贴满 100 天才能打开')
+    expect(wrapper.find('[data-testid="couple-memory-locked"]').text()).toContain('连续打卡 100 天才能打开')
     expect(wrapper.find('[data-testid="couple-memory-summary"]').exists()).toBe(false)
     // store 里恰好有看板时顺手报一句还差几天，仍然不发请求
-    expect(wrapper.find('[data-testid="couple-memory-left"]').text()).toContain('还要再贴 95 天')
+    expect(wrapper.find('[data-testid="couple-memory-left"]').text()).toContain('还要再打 95 天')
     expect(streakApi.streakBoard).not.toHaveBeenCalled()
   })
 
