@@ -1,8 +1,9 @@
 # API 层
 
 > 本页回答：`src/api/` 有哪些文件与分组对象、每个对象的方法与路径、与后端 `/api/couple/*` 路由的对应关系。
-> **2026-10-04 情侣空间裁剪后**：`couple.ts` 从 565 个方法 / 2096 行降到 **57 个方法 / 8 个分组对象 / 218 行**，
-> 与后端 57 个存活端点一一对齐（VO 字段由 `.tmp-audit/contract-check.mjs` 逐字段核过）。
+> **2026-10-05 二轮裁剪后**：`couple.ts` 收敛到 **26 个方法 / 5 个分组对象 / 123 行**，与后端 26 个存活端点一一对齐
+> （判据见 `are-chat/docs/adr/0010-couple-trim-to-v8-features.md`；`tests/unit/couple.spec.ts` 的「api 契约守卫」
+> 用例逐方法断言 mock 工厂覆盖 + 总数为 26）。
 
 ## 非 couple 分组（未动）
 
@@ -14,121 +15,76 @@
 | `files.ts` | `filesApi` | `/api/files` |
 | `system.ts` | `presenceApi` / `systemApi` / `announcementApi` | `/api/presence` `/api/system` `/api/announcements` |
 
-## couple 分组对象（8 个 / 57 个方法）
+## couple 分组对象（5 个 / 26 个方法）
 
 | 导出对象 | base 路径 | 方法数 | 职责 |
 |---|---|---:|---|
-| `coupleApi` | `/api/couple` | 36 | 空间地基（总览/邀请/纪念日/个性化/心动值/通知/运营看板）+ 心情日记 + 贴贴 + 求抱抱 + 刮刮乐与盲盒 |
-| `pinApi` | `/api/couple/pin` | 2 | F207 常用收藏 |
-| `diningApi` | `/api/couple/dining` | 2 | 卡 `couple-dine-today` 今晚饭桌 |
-| `ceremonyApi` | `/api/couple/ceremony` | 3 | 卡 `couple-cere-coupon` 愿望券本 |
-| `factoryApi` | `/api/couple/factory` | 4 | 卡 `couple-fy-spin` 家务轮盘 |
-| `echoApi` | `/api/couple/echo` | 3 | 卡 `couple-echo-deed` 好事簿 |
-| `questApi` | `/api/couple/quest` | 3 | 卡 `couple-quest-overtime` 加班预报与留灯 |
-| `catchApi` | `/api/couple/catch` | 4 | 卡 `couple-catch-safeword` 安全词与暂停复盘 |
+| `coupleApi` | `/api/couple` | 13 | 地基：总览/邀请建立/纪念日/空间个性化/心动值/通知/恋爱徽章/运营看板 |
+| `streakApi` | `/api/couple/streak` | 2 | 卡 `couple-streak` 连续互动打卡 + 七档解锁 |
+| `questionApi` | `/api/couple/question` | 3 | 卡 `couple-question` 每日一问（它同时是打卡的触发源） |
+| `wishApi` | `/api/couple/wish` | 7 | 卡 `couple-wish` 愿望清单 |
+| `memoryApi` | `/api/couple/memory` | 1 | 卡 `couple-memory` 百日隐藏回顾页（100 天档） |
 
-### 方法全列（按分组，路径省略各自的组 base 前缀后的完整路径照写）
+**已随二轮裁剪整体下线、不得再写回**：`pinApi`（F207 常用收藏）、`diningApi`（饭桌）、`ceremonyApi`（愿望券本）、
+`factoryApi`（家务轮盘）、`echoApi`（好事簿）、`questApi`（加班留灯）、`catchApi`（安全词复盘），
+以及 `coupleApi` 里的 `saveMood/moods/bondStats/sendAction/reactMood/moodReactions/setPetName/anniversaries CRUD/scratches/boxes/comfort*/chatTopics/moodSync`。
 
-#### `coupleApi`
+### 方法全列
+
+#### `coupleApi`（13）
 
 | 方法 | HTTP | 路径 | 说明 |
 |---|---|---|---|
-| `overview` | GET | `/api/couple/overview` | — |
-| `invite` | POST | `/api/couple/invites` | 建立流程 |
-| `acceptInvite` | POST | `/api/couple/invites/{id}/accept` | — |
-| `rejectInvite` | POST | `/api/couple/invites/{id}/reject` | — |
-| `cancelInvite` | DELETE | `/api/couple/invites/{id}` | — |
-| `setAnniversary` | PUT | `/api/couple/anniversary` | 在一起纪念日（yyyy-MM-dd） |
-| `dissolve` | POST | `/api/couple/dissolve` | — |
-| `anniversaries` | GET | `/api/couple/anniversaries` | — |
-| `createAnniversary` | POST | `/api/couple/anniversaries` | — |
-| `deleteAnniversary` | DELETE | `/api/couple/anniversaries/{id}` | — |
-| `saveMood` | POST | `/api/couple/moods` | 记录/修改今天的心情（每人每天一条，重复提交视为修改） |
-| `moods` | GET | `/api/couple/moods?days={days}` | 双方最近 N 天的心情（1-90，默认 14），按日期新→旧 |
-| `intimacy` | GET | `/api/couple/intimacy` | — |
-| `sendAction` | POST | `/api/couple/bond/actions` | — |
-| `bondActions` | GET | `/api/couple/bond/actions?limit={limit}` | 最近动作流（新→旧，默认 50 条） |
-| `bondStats` | GET | `/api/couple/bond/stats` | 贴贴统计 |
-| `reactMood` | POST | `/api/couple/bond/mood-reactions` | 回应 TA 某天的心情（默认今天）：抱抱/亲亲/加油/摸摸头 |
-| `moodReactions` | GET | `/api/couple/bond/mood-reactions?day={day}` | 某天（默认今天）双方给彼此心情的回应 |
-| `setPetName` | PUT | `/api/couple/bond/pet-name` | 给 TA 设置专属爱称（空串清除） |
-| `updateProfile` | PUT | `/api/couple/profile` | — |
-| `notifyMine` | GET | `/api/couple/notify` | — |
+| `overview` | GET | `/api/couple/overview` | 未建空间时带待处理邀请（incoming/outgoing）；`OverviewVO` 只有 `space/incoming/outgoing` 三键 |
+| `invite` | POST | `/api/couple/invites` | 建立流程第一步：向好友发起邀请 |
+| `acceptInvite` | POST | `/api/couple/invites/{id}/accept` | 同意后空间建立，返回 `SpaceVO`；建空间当天自动算第 1 个打卡日 |
+| `rejectInvite` | POST | `/api/couple/invites/{id}/reject` | 婉拒发给自己的邀请 |
+| `cancelInvite` | DELETE | `/api/couple/invites/{id}` | 撤回自己发出的待处理邀请 |
+| `setAnniversary` | PUT | `/api/couple/anniversary` | 在一起纪念日（yyyy-MM-dd），唯一的日子（共同日历已删） |
+| `dissolve` | POST | `/api/couple/dissolve` | 解除情侣空间 |
+| `updateProfile` | PUT | `/api/couple/profile` | 空间个性化三合一：`{slogan?, theme?, petName?}`，**null=不改该项、空串=清除**；⚠️ 独立的 `PUT /couple/bond/pet-name` 已随贴贴卡下线，爱称只有这一条通道 |
+| `intimacy` | GET | `/api/couple/intimacy` | 心动值五项 breakdown：`daysTogether/checkinDays/longestStreak/answerDays/wishFulfilled` |
+| `notifyMine` | GET | `/api/couple/notify` | 通知中心（离线补看的落库副本） |
 | `notifyReadAll` | POST | `/api/couple/notify/read-all` | F41 全部标记已读 |
-| `relationshipOf` | GET | `/api/couple/relationship-of/${encodeURIComponent(username)}` | F44 恋爱中徽章：某人是否在恋爱中 + 天数（仅其好友可查） |
-| `adminCoupleStats` | GET | `/api/couple/admin/stats` | F45 管理看板：情侣空间运营统计（仅管理员） |
-| `scratches` | GET | `/api/couple/surprise/scratches` | — |
-| `scratchCard` | POST | `/api/couple/surprise/scratches/{id}/scratch` | F50 刮开我的券 |
-| `redeemScratch` | POST | `/api/couple/surprise/scratches/{id}/redeem` | F50 送券人核销 |
-| `boxes` | GET | `/api/couple/surprise/boxes` | F51 盲盒列表 |
-| `createBox` | POST | `/api/couple/surprise/boxes` | F51 装一个盲盒（最早明天开箱） |
-| `openBox` | POST | `/api/couple/surprise/boxes/{id}/open` | F51 开盲盒 |
-| `comfortBoard` | GET | `/api/couple/care/comfort` | — |
-| `askComfort` | POST | `/api/couple/care/comfort` | F60 发出求抱抱 |
-| `comfortCards` | GET | `/api/couple/care/comfort/cards?feeling={feeling}` | F60 TA 的安慰话术卡（按感受随机 3 张） |
-| `handleComfort` | POST | `/api/couple/care/comfort/handle` | F60 回应 TA 的求抱抱 |
-| `chatTopics` | GET | `/api/couple/care/chat-topics` | F63 陪聊话题卡（随机 3 张） |
-| `moodSync` | GET | `/api/couple/care/mood-sync` | F64 情绪同步率 |
+| `relationshipOf` | GET | `/api/couple/relationship-of/{username}` | F44 恋爱中徽章：某人是否在恋爱中 + 天数（仅其好友可查） |
+| `adminCoupleStats` | GET | `/api/couple/admin/stats` | F45 运营看板（仅管理员），字段含 `totalCheckinDays`/`totalAnswers`/`spacesCreatedThisMonth` |
 
-#### `pinApi`
+#### `streakApi`（2）
 
 | 方法 | HTTP | 路径 | 说明 |
 |---|---|---|---|
-| `list` | GET | `/api/couple/pin` | 双方收藏的功能卡 key（mine/partner 各 ≤6 个） |
-| `save` | POST | `/api/couple/pin` | 全量覆盖保存我的收藏（超过 6 个后端 400；无空间 404 由调用方静默） |
+| `streakBoard` | GET | `/api/couple/streak/board` | 打卡看板：15 个字段一次拉齐（tiers 七档 / strip 近 21 格 / `makeupWindowDays`/`makeupLeftThisMonth`/`canMakeup`）；**没有 `makeupCost`/`balance`**——积分台账已删，补签不花钱 |
+| `streakMakeup` | POST | `/api/couple/streak/makeup` | 补签某天（body `{day}`），返回整份看板；闸门（7 天窗口、本月 3 次、今天不许补）全由后端 `canMakeup` 位算好 |
 
-#### `diningApi`
-
-| 方法 | HTTP | 路径 | 说明 |
-|---|---|---|---|
-| `dineToday` | GET | `/api/couple/dining/today` | F210 今日饭桌：双方饭票 + 撞菜命中 + 裁决 + 话题打卡状态 |
-| `dineCastTicket` | POST | `/api/couple/dining/ticket` | F210 投/改今日饭票（每人每天一票，改票即覆盖），返回最新今日饭桌 |
-
-#### `ceremonyApi`
+#### `questionApi`（3）
 
 | 方法 | HTTP | 路径 | 说明 |
 |---|---|---|---|
-| `cereOverview` | GET | `/api/couple/ceremony/overview` | F230-F239 今日仪式总览：黄历宜忌/小日子/催办/保险柜/续约/愿望券/体感/加冕一次拉齐 |
-| `cereIssueCoupon` | POST | `/api/couple/ceremony/coupon` | — |
-| `cereUseCoupon` | POST | `/api/couple/ceremony/coupon/use` | F236 核销一张愿望券（OPEN→USED，已核销再核 400），返回整份总览 |
+| `questionToday` | GET | `/api/couple/question/today` | 今天这一问 + 我的作答 + 对方答案（`bothAnswered` 才下发） |
+| `questionAnswer` | POST | `/api/couple/question/answer` | 交卷/改写（≤`answerMax` 字后端 400），返回整份 TodayVO；**双方都答完时后端在这里触发打卡** |
+| `questionHistory` | GET | `/api/couple/question/history?days={days}` | 回看最近 N 天（1-90 默认 14） |
 
-#### `factoryApi`
-
-| 方法 | HTTP | 路径 | 说明 |
-|---|---|---|---|
-| `fyBoard` | GET | `/api/couple/factory/board` | F270-F279 本周车间总览（十卡一次拉齐；未建空间 404 前端静默降级） |
-| `fySpin` | POST | `/api/couple/factory/spin` | F270 一转定分工（逗号/顿号分隔事项，2-8 条、每条 ≤40 字且不可重复；本周已转过后端 400），返回整份总览 |
-| `fySpinConfirm` | POST | `/api/couple/factory/spin/confirm` | F270 给天选之人的任务认账（双签生效；自己行点自己后端 400「自己的活自己认」），返回整份总览 |
-| `fySpinDone` | POST | `/api/couple/factory/spin/done` | F270 天选之人干完打勾（非本人行/对方还没认账时后端 400），返回整份总览 |
-
-#### `echoApi`
+#### `wishApi`（7）
 
 | 方法 | HTTP | 路径 | 说明 |
 |---|---|---|---|
-| `echoVault` | GET | `/api/couple/echo/vault` | F350-F359 回音壁总览（十板块一次拉齐：deeds/partnerDeeds 各限最近 30 条、juices/highlights 两人合计、 slowInFlight 按寄出日正序、slowArrived 只给最近 10 封、refill 未领取时是空包的今日态、 selfLetter 没在途信时为 null；未建空间 404 前端静默降级） |
-| `echoDeed` | POST | `/api/couple/echo/deed` | F350 记一件「TA 为我做的事」（content ≤80 字必填「好事总得写一句」，超 80 字 400；day 空串=今天且须 yyyy-MM-dd 否则 400「日期写成 yyyy-MM-dd」；同日同人同内容重复 400「这条已经记过了」；新增推双方），返回整份总览 |
-| `echoDeedStar` | POST | `/api/couple/echo/deed/star` | F350 给证据点「这条救过我」（⚠️ 只有记录人本人能点：id 不在本空间 400「这条不在好事簿里」、 点 TA 记的那条 400「只有记下这条的人能加星」；已加星再点幂等返回不重推），返回整份总览 |
+| `wishBoard` | GET | `/api/couple/wish/board` | 清单看板（open/prepared/fulfilled 三档 + 上限与字数闸门） |
+| `wishAdd` | POST | `/api/couple/wish/add` | 许愿：`(title, note, ownerUsername)` |
+| `wishPrepare` | POST | `/api/couple/wish/prepare` | 偷偷标「已准备」（只有对方能标，对许愿人保密，不推任何事件） |
+| `wishUnprepare` | POST | `/api/couple/wish/unprepare` | 撤回「已准备」 |
+| `wishFulfill` | POST | `/api/couple/wish/fulfill` | 兑现（只有被许的那位能点） |
+| `wishNote` | POST | `/api/couple/wish/note` | 改备注（note 可空串=清掉） |
+| `wishRemove` | POST | `/api/couple/wish/remove` | 划掉一条 |
 
-#### `questApi`
-
-| 方法 | HTTP | 路径 | 说明 |
-|---|---|---|---|
-| `questBoard` | GET | `/api/couple/quest/board` | F370-F379 关卡总览（GET /board：十九个字段一次拉齐，⚠️ wall 恒是「服务端当年」那一份； myOvertime/partnerOvertime/myNurse/partnerNurse/myPod/partnerPod/moveNight/myValley/partnerValley 没数据时为 null，其余字符串后端恒给空串；未建空间 404 前端静默降级） |
-| `questOvertime` | POST | `/api/couple/quest/overtime` | — |
-| `questLamp` | POST | `/api/couple/quest/overtime/lamp` | F372 给对方留一张到家灯卡（id 是对方今晚那行预报的 id；⚠️ 只有对方能留、自己的行留不算， text 必填 ≤60 字；找不到那行是 404），返回整份总览 |
-
-#### `catchApi`
+#### `memoryApi`（1）
 
 | 方法 | HTTP | 路径 | 说明 |
 |---|---|---|---|
-| `catchBoard` | GET | `/api/couple/catch/board` | F380-F389 聆听者总览（GET /board：二十四个字段一次拉齐；⚠️ myWord/partnerWord/myProtocol/ partnerProtocol/myToday/partnerToday 没数据时为 null，其余字符串后端恒给空串；未建空间 404 前端静默降级） |
-| `catchSafeword` | POST | `/api/couple/catch/safeword` | — |
-| `catchSafewordUse` | POST | `/api/couple/catch/safeword/use` | F382 喊了一次暂停（⚠️ 后端无请求体，传 {}；还没约词 400、一天一人只记一次），返回整份总览 |
-| `catchSafewordReflect` | POST | `/api/couple/catch/safeword/reflect` | F382 给某次暂停补事后复盘（⚠️ 只有喊停本人能补；reflect 必填 ≤60 字），返回整份总览 |
+| `memoryPage` | GET | `/api/couple/memory/page` | 百日回顾整页一次拉齐；`unlockedDay` 为 null 表示还没连满 100 天（未解锁时后端 400 中文直透「连续打卡满 100 天才打开」） |
 
 ## 约定
 
 - 一律走 `http.ts` 的 `get / postJson / putJson / delete / postForm`，`withCredentials` 已内置；后端返回 `ApiResponse{code,message,data}`，解包后只给业务 `data`。
 - 后端业务失败是 400/404 + **中文 message**，组件侧一律 `ElMessage.error(e.message)` 直透，不在前端重写文案。
-- 写接口返回**整份聚合 VO**的（catch/ceremony/dining/echo/factory/quest），组件拿返回值整体替换本地状态，不再单独拉一次。
-- 新增方法前先看后端有没有这个端点：**判据是 `@*Mapping`，不是文档**。
+- 写接口返回**整份聚合 VO** 的（streak/question/wish），组件拿返回值整体替换本地状态，不再单独拉一次。
+- 新增方法前先看后端有没有这个端点：**判据是 `@*Mapping`，不是文档**；四张卡之外的功能已被 `docs/adr/0010` 判死，别顺着旧文档把它们加回来。

@@ -12,7 +12,7 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 - Vue 3 `<script setup lang="ts">` + Vite 8（Rolldown 打包内核）+ Pinia 4 + Vue Router 5 + Element Plus + TypeScript 6（`vue-tsc` 尚不吃 TS 7，勿升）
 - 测试：Vitest（jsdom），在 `tests/unit/`，命令 `pnpm test`；构建：`pnpm build`（含 vue-tsc 类型检查，何时必跑见第五节）
 - 版本号唯一来源 `package.json` 的 version（alpha → rc → stable 阶梯，升级独立 commit，规范见 `.agents/skills/version-release/SKILL.md`）
-- 规模快照（2026-10-05 v8 第一批后）：5 个主页面 / CoupleView **3 个常开页签 + 1 个隐藏页签**（today 今天、life 过日子、gift 小惊喜，均已无子页签；`secret` 隐藏角落只在连续贴满 100 天后由 `v-if` 出现）/ 情侣组件 **17 个 `.vue`**（14 张卡 + CoupleSetup + CoupleProfile + CoupleCollapsible 卡壳）+ 注册表 / registry **14 张卡**（`CoupleCardEntry` 新增可选 `tier` 字段：带 tier 的卡只对已解锁的人出现在搜索与收藏里）/ `api/couple.ts` **70 个方法·12 个 api 组·280 行** / `types/index.ts` 2137 行 / `stores/couple.ts` **454 行**（八域）/ `utils/coupleVisual.ts`（解锁门禁与专属贴纸生成，纯函数可单测）/ 单测基线 **143 用例·9 个文件**（`couple.spec.ts` 39 条含「mock 工厂必须覆盖 api 全部 70 方法」守卫；`couple-v8-cards.spec.ts` 36 条覆盖四张新卡；`couple-unlocks.spec.ts` 18 条覆盖四项视觉解锁）；后端配套见 are-chat-map（17 情侣 Controller / 70 情侣映射 / 22 张 couple_* 表 / 267 用例基线）
+- 规模快照（2026-10-05 情侣空间二轮裁剪后实测）：5 个主页面 / CoupleView **2 个常开页签 + 1 个隐藏页签**（today 今天、wish 愿望清单；`secret` 隐藏角落只在最长连续满 100 天后由 `v-if` 出现，860 行）/ 情侣组件 **7 个 `.vue`**（4 张卡 + CoupleSetup + CoupleProfile + CoupleCollapsible 卡壳）+ 注册表 **4 条卡** / `api/couple.ts` **26 个方法·5 个 api 组·123 行** / `types/index.ts` 1653 行 / `stores/couple.ts` **312 行** / `utils/coupleVisual.ts`（解锁门禁与专属贴纸生成，纯函数可单测）/ 单测基线 **162 用例·9 个文件**（`couple.spec.ts` 58 条含「api 契约守卫」；`couple-v8-cards.spec.ts` 36 条覆盖四张卡；`couple-unlocks.spec.ts` 18 条覆盖视觉解锁）；后端配套见 are-chat-map（7 情侣 Controller / 26 情侣端点 / 6 张 couple_* 表 / 410 用例基线）
 
 ## 二、目录地图与关键文件
 
@@ -23,45 +23,44 @@ are-chat-web/
 ├── package.json                      # ★ 版本号唯一来源（禁止在代码/文案/测试写死版本）
 ├── .env.*                            # 多环境变量（API 目标等）
 ├── src/
-│   ├── main.ts / App.vue / style.css # 挂载、全局壳、全局样式（暗色变量 --im-* 定义处）
+│   ├── main.ts / App.vue / style.css # 挂载、全局壳、全局样式（暗色变量 --im-* 与 --couple-* 定义处）
 │   ├── router/index.ts               # 路由表（/login、/、/chat、/contacts、/couple、/admin）
 │   ├── layouts/MainLayout.vue        # 登录后壳：侧栏 + 绑定 couple store init 的 WS 事件
 │   ├── views/                        # 5 页：LoginView / ChatView / ContactsView / CoupleView / AdminView
 │   ├── components/
-│   │   ├── couple/                   # ★ 情侣空间 17 个 .vue + 注册表（14 张卡 + Setup/Profile/Collapsible，页签树见第三节）
+│   │   ├── couple/                   # ★ 情侣空间 7 个 .vue + 注册表（4 张卡 + Setup/Profile/Collapsible，页签树见第三节）
 │   │   │   ├── CoupleCollapsible.vue # F205 折叠包装组件（新分区卡必须使用）
-│   │   │   └── coupleCards.registry.ts # 卡注册表：key=分区卡根 data-testid，F206 搜索/F207 收藏依赖
+│   │   │   └── coupleCards.registry.ts # 卡注册表：key=卡根 data-testid（?card= 深链与 e2e-live 巡检依赖；搜索/收藏已随 ADR-0010 下线）
 │   │   └── im/                       # 聊天组件 8 个（消息流/输入框/头像等）
-│   ├── api/                          # auth.ts / couple.ts(218 行) / im.ts / files.ts / system.ts / http.ts(封装层)
-│   ├── stores/                       # auth / im(WS 宿主) / couple(454 行，八域：总览与邀请·心情·心动值·贴贴·求抱抱·通知·**打卡解锁**·**每日一问**)
-│   ├── types/index.ts                # 全部 TS 类型按域分节（当前 1974 行；情侣死类型已删 203 个）
-│   ├── utils/                        # effects.ts(彩蛋指令)、format.ts/imFormat.ts、sound.ts、notify.ts、pwa.ts、settings.ts、theme.ts 等（coupleTheme.ts 已随早晚安打卡下线删除，主题只读 space.theme）
+│   ├── api/                          # auth.ts / couple.ts(123 行) / im.ts / files.ts / system.ts / http.ts(封装层)
+│   ├── stores/                       # auth / im(WS 宿主) / couple(312 行：总览与邀请·心动值·打卡解锁·每日一问·通知)
+│   ├── types/index.ts                # 全部 TS 类型按域分节（当前 1653 行；二轮裁剪删 50 个作废类型，历史孤儿约 100 个未动）
+│   ├── utils/                        # effects.ts(彩蛋指令)、format.ts/imFormat.ts、sound.ts、notify.ts、pwa.ts、settings.ts、theme.ts、coupleVisual.ts(解锁门禁+贴纸) 等
 │   └── constants.ts                  # 全局常量
-├── tests/unit/                       # 9 个文件（当前基线 143 用例；整页挂载用例成本高，vite.config.ts 已把 testTimeout 提到 20s）
+├── tests/unit/                       # 9 个文件（当前基线 162 用例；整页挂载用例成本高，vite.config.ts 已把 testTimeout 提到 20s）
 ├── AGENTS.md / docs/ / wiki/         # 仓库约束与文档（后端配套地图见 are-chat 仓库 are-chat-map skill）
 ```
 
-- **API 分组对象**（v8 后 `src/api/couple.ts` 共 12 组）：`coupleApi`（地基 + 心情/贴贴/求抱抱/通知 + 刮刮乐盲盒）/ `pinApi`（常用收藏）/ `diningApi`（今晚饭桌）/ `ceremonyApi`（愿望券本）/ `factoryApi`（家务轮盘）/ `echoApi`（好事簿）/ `questApi`（加班预报与留灯）/ `catchApi`（安全词）/ **`streakApi`（连续打卡与七档解锁，2 法）** / **`questionApi`（每日一问，3 法）** / **`wishApi`（愿望清单，7 法）** / **`memoryApi`（百日隐藏回顾，1 法）**。**判据**：这 70 个方法与后端 `@*Mapping` 抽出的 70 个存活情侣端点一一对上，新增方法时照此对齐，别把已下线端点再写回来。
+- **API 分组对象**（二轮裁剪后 `src/api/couple.ts` 共 5 组）：**`coupleApi`**（13 法：总览/邀请四连/纪念日/`updateProfile`(slogan·theme·petName 三合一)/intimacy/notify 两法/relationshipOf/adminCoupleStats）/ **`streakApi`**（连续打卡与七档解锁，2 法）/ **`questionApi`**（每日一问，3 法）/ **`wishApi`**（愿望清单，7 法）/ **`memoryApi`**（百日隐藏回顾，1 法）。**判据**：这 26 个方法与后端 `@*Mapping` 抽出的 26 个存活情侣端点一一对上，新增方法时照此对齐，别把已下线端点再写回来（守卫在 `couple.spec.ts`「api 契约守卫」，现读源码断言总数与死路径）。
 - **端口与联调**：前端 dev 5173 → 代理转发后端 8080；登录态走 Cookie(HttpSession)，`http.ts` 统一 `withCredentials`；WS 会话 `/ws/chat/{name}` 由 im store 维护，情侣事件经 `arechat:couple` 自定义事件转发。
-- **数据流（情侣空间两条路）**：① store 域——`stores/couple.ts` 现八域（总览与邀请、心情、心动值、贴贴、求抱抱、通知、**打卡解锁 streak**、**每日一问 question**），头部/铃铛/**ChatView 的解锁外观**读它，WS 只刷新 `loaded` 里已加载过的键；② 组件自持域——其余卡片（Dining/Factory/Quest/Ceremony/Catch/Echo/Surprise/**Wish**）在组件内 onMounted safeLoad，写接口返回整份聚合 VO 直接替换，不进 store。**两个例外有理由**：`streak` 与 `question` 必须进 store，因为 ChatView 的气泡/昵称光效/挂件/贴纸要读解锁态（`tierUnlocked(key)`），卡片自己持有就变成两份真相；`loadStreak`/`loadQuestion` 各带一个 in-flight 去重（实测一次进空间会打 3 次 `/streak/board`：init、页签兜底、卡片挂载），别以为合并请求是可有可无的优化。新卡默认照「组件自持」写，只有需要被别的页面读到的状态才上 store。
+- **数据流（情侣空间两条路）**：① store 域——`stores/couple.ts` 五域（总览与邀请、心动值、**打卡解锁 streak**、**每日一问 question**、通知），头部/铃铛/**ChatView 的解锁外观**读它；② 组件自持域——**Wish**（看板 + 六个写方法整份替换）与 **Memory**（只读整页）在组件内自持，不进 store。**streak 与 question 必须进 store**：ChatView 的气泡/昵称光效/挂件/贴纸要读解锁态（`tierUnlocked(key)`），卡片自己持有就变成两份真相；`loadStreak`/`loadQuestion` 各带 in-flight 去重，而**父级补拉前要先判数据在不在**（`if (!couple.question) void couple.loadQuestion()`）——去重只合并并发调用，串行的第二次是真请求（回归锁：`couple.spec.ts`「头部第二格……不再问后端要一次」）。新卡默认照「组件自持」写，只有需要被别的页面读到的状态才上 store。
 - **命令**：开发 `pnpm dev`；测试 `pnpm test`（vitest run）；构建门禁 `pnpm build`（vite build + vue-tsc --noEmit，提交前必过）。
 
-## 三、情侣空间前端全景（2026-10-04 裁剪后的现役口径）
+## 三、情侣空间前端全景（2026-10-05 二轮裁剪后的现役口径）
 
-`views/CoupleView.vue` 用 el-tabs 组织 **3 个页签**（`name` 即路由 `?tab=` 参数值，`today` 是默认页签且**不 lazy**，另两个 lazy）。子页签机制（F200-F204 的 5 组嵌套 pane）随卡片一起删除，`subTabs` 状态已不存在。
+`views/CoupleView.vue` 用 el-tabs 组织 **2 个常开页签 + 1 个隐藏页签**（`name` 即路由 `?tab=` 白名单成员，`today` 是默认页签且**不 lazy**，`wish` lazy；`secret` 由 `v-if="secretTabOpen"` 控制且不在深链白名单）。
 
-| 页签 name | 组件（按渲染顺序） | 内容 |
+| 页签 name | 组件 | 内容 |
 |---|---|---|
-| `today` 🫶 今天 | CoupleMood · CoupleBond · **CoupleStreak** · **CoupleQuestion** · CoupleComfort · CoupleCatch | 心情日记（含心情回应钮）／贴贴宫格（动作流+统计+里程碑+爱称）／**连续互动打卡（当前·最长·21 格打卡条·七档解锁墙·补签，没有「点一下打卡」按钮——双方当天都贴贴由后端自动确认）**／**每日一问（今天一题，我答完且 TA 也答完才互看，回看近 14 天）**／求抱抱（感受按钮+话术卡回应+陪聊话题卡+情绪同步率，23:00 有深夜陪伴兜底）／安全词与暂停复盘（约定词·喊停一天一人一次·复盘只归喊停本人） |
-| `life` 🍚 过日子 | CoupleDining · CoupleFactory · CoupleQuest · CoupleCeremony | 今晚饭桌（每人一票 + 后端按票池 stableHash 裁决，双方看到同一道）／家务轮盘（一转定分工、对方认账后本人才能打勾）／加班预报与留灯（灯卡只有对方能留）／愿望券本（花 10 分发一张券，对方核销） |
-| `gift` 🎁 小惊喜 | CoupleSurprise · **CoupleWish** · CoupleEcho | 刮刮乐（每周自动发券，送券人核销才 +5 分）与恋爱盲盒（到日才可拆、装盒人不能自拆）／**愿望清单（想要的先记下，对方可偷偷标「已准备」——许愿人这一侧永远看不到，分组与文案全吃后端下发的位）**／好事簿（记「TA 为我做的事」，被记的那位 +2 分，加星再 +1） |
-| `secret` 🥚 隐藏角落 | **CoupleMemory** | **连续贴满 100 天才出现的页签（`v-if="couple.tierUnlocked('easter-egg')"`）**：一句话总结 + 回顾时间轴。未解锁时组件自己也不发 `memoryPage()` 请求（双重设闸，后端同样会 400） |
+| `today` 🫶 今天 | **CoupleQuestion** · **CoupleStreak** | **每日一问（今天一题，我答完且 TA 也答完才互看，回看近 14 天；双方都答完即自动打卡）**／**连续互动打卡（当前·最长·21 格打卡条·七档解锁墙·补签，没有「点一下打卡」按钮——双方当天都答完每日一问由后端自动确认；补签不花钱，只受 7 天窗口与每月 3 次两道闸门）** |
+| `wish` 🌟 愿望清单 | **CoupleWish** | 想要的先记下，对方可偷偷标「已准备」——许愿人这一侧永远看不到；分组与文案全吃后端下发的位（preparableFlag/canFulfillFlag） |
+| `secret` 🥚 隐藏角落 | **CoupleMemory** | **最长连续满 100 天才出现的页签**：一句话总结 + 回顾时间轴。未解锁时组件自己也不发 `memoryPage()` 请求（双重设闸，后端同样 400） |
 
-头部区（v8 后带解锁外观）：双人头像（**21 天起挂联动挂件 `pendant`，取法与聊天侧共用 `utils/coupleVisual` 的 `couplePendant(theme)`，免得同一个人两处不同款**）+ 在一起天数 + 今天双方心情 + 心动值与恋爱等级（**30 天起称号另挂 `couple-love-title` 徽章，此时那一格回到「心动值」，同一个词不出现两次**）+ 爱称（**14 天起带 `.couple-name-glow`，与聊天页共用 style.css 的同一个类**）+ **7 天起头部有流动背景与角落一棵按解锁档数长高的电子植物（`couple-plant-stage-N`）** + 纪念日弹窗 + 爱称弹窗 + 通知铃铛（F41）+ F206 搜索（`couple-search`）+ F207 收藏（`pinApi`，≤6 个）+ F43/F47 里程碑与周年庆横幅 + F98 新手引导。头部背景底色仍只读 `space.theme`（`CoupleProfile` 里选），按天轮换的 `coupleTheme.ts` 已随早晚安打卡一起删除。
+头部区（带解锁外观）：双人头像（**21 天起挂联动挂件 `pendant`，取法与聊天侧共用 `utils/coupleVisual` 的 `couplePendant(theme)`，免得同一个人两处不同款**）+ 在一起天数（`couple-days`）+ **今天（一问 · 连续）**（`couple-header-today-question`，读 store 已加载的 question/streak，不再发请求）+ 心动值与恋爱等级（`couple-intimacy-score`；**30 天起称号另挂 `couple-love-title` 徽章**）+ 爱称（**14 天起带 `.couple-name-glow`，与聊天页共用 style.css 的同一个类**；改爱称走 `PUT /profile` 的 `petName`，空串=清除）+ **7 天起头部有流动背景与角落一棵按解锁档数长高的电子植物（`couple-plant-stage-N`）** + 通知铃铛（F41）+ 纪念日弹窗 + 爱称弹窗 + F43/F47 里程碑与周年庆横幅 + F98 新手引导（文案按四张卡重写）。**F206 搜索框与 F207 收藏 popover 已删**；头部背景底色只读 `space.theme`（`CoupleProfile` 里选，贴纸墙已删）。
 
-注册表 `coupleCards.registry.ts` 现役 14 条（`COUPLE_CARDS` = { key, label, tab, sub?, **tier?** }），F206/F207 全部以 key 为唯一标识；`COUPLE_TAB_LABELS` 四个页签。**加卡先改这张表，否则搜索与收藏点不到它**；带 `tier` 的卡只对已解锁的人出现在搜索与收藏面板里（`searchCoupleCards(keyword, unlockedTierKeys)` 与 `searchableCards` 都按这个过滤，不然跳过去会撞上一个不存在的页签）。
+注册表 `coupleCards.registry.ts` 现役 **4 条**（`COUPLE_CARDS` = { key, label, tab, tier? }；`couple-memory` 带 `tier: 'easter-egg'`），`COUPLE_TAB_LABELS` 三个页签。**加卡先改这张表，否则 e2e-live 巡检与 `?card=` 深链点不到它**。
 
-WS 事件：现役 44 个（后端 Service/Job 源码抽取），`stores/couple.ts` 的 `handleCoupleEvent` 只处理保留卡与地基相关的那些；卡片自持域的事件（dine-*/factory-spin-*/quest-*/ceremony-coupon-*/echo-deed-*/catch-safeword-*/scratch-*/box-*）**只进 notify 铃铛，不做数据刷新**——组件靠写接口返回的整份聚合 VO 更新，跨端推送进来时靠 `loadIntimacy()` + `loadNotifies()` 兜住。v8 新增 7 个：`streak-checkin` / `streak-unlocked` / `streak-makeup`（刷 `loadStreak()`）、`question-daily` / `question-answered`（刷 `loadQuestion()`）、`wish-added` / `wish-fulfilled`（只进铃铛）。**后端刻意没有 `wish-prepared`**：偷偷标记「已准备」不推任何事件，前端也不许自己从 `preparedAt` 反推出来。
+WS 事件：现役 **15 个**（后端 `pushCoupleEvent*` 抽取），`stores/couple.ts` 的 `handleCoupleEvent` 按族处理：建立流程 3 个与 `dissolved`/`anniversary-updated`/`space-themed`/`pet-name-changed` 重拉总览、`anniversary-reminder` 只进铃铛、`streak-*` 刷看板+心动值+铃铛、`question-*` 刷今日一问+铃铛、`wish-*` 只进铃铛（看板组件自持）。**不认识的旧事件一律忽略，别加兜底分支**。**后端刻意没有 `wish-prepared`**：偷偷标记「已准备」不推任何事件，前端也不许自己从 `preparedAt` 反推出来。
 
 ## 四、惯例与红线
 
@@ -69,7 +68,7 @@ WS 事件：现役 44 个（后端 Service/Job 源码抽取），`stores/couple.
 - 交互文案：情侣场景，可爱口语化 + emoji；错误提示直接 `ElMessage.error(e instanceof Error ? e.message : '兜底文案')`（后端 message 已是中文人话）
 - 样式：组件内 scoped；间距/圆角参考现有组件；主题色 `#f56c6c`（粉红），跟随暗色变量（`var(--im-muted)` 等）
 - 类型红线：`pnpm build` 会做 vue-tsc 检查——改了 types 里的接口（如给 VO 加字段），**必须同步改 tests/unit/couple.spec.ts 的 mock 工厂**，否则构建失败
-- 测试：`tests/unit/couple.spec.ts` 依赖默认页签 `today`（新增页签不要改默认值）；新组件核心交互应补用例；**动了 `src/api/couple.ts` 的方法集必须同步 mock 工厂**，否则「mock 工厂必须覆盖 api/couple.ts 的每个方法」那条守卫用例会红
+- 测试：`tests/unit/couple.spec.ts` 依赖默认页签 `today`（新增页签不要改默认值）；新组件核心交互应补用例；**动了 `src/api/couple.ts` 的方法集必须同步 mock 工厂**，否则「api 契约守卫」那条用例会红（它现读源码断言 26 个方法与死路径）
 - HTTP 封装在 `api/http.ts`：`http.get<T>(url)`、`http.postJson<T>(url, body)`、`http.putJson`、`http.delete`
 - **解锁外观一律问 store，不许自己算天数**：唯一入口是 `couple.tierUnlocked(key)`（key 是后端 `StreakTier` 的 wire 值：`bubble`/`background`/`nickname-glow`/`pendant`/`title`/`custom-emoji`/`easter-egg`，上线即冻结，改了等于没收已解锁用户的外观）。聊天侧的门禁函数、挂件取法与专属贴纸生成都在 `src/utils/coupleVisual.ts`（纯函数，`couple-unlocks.spec.ts` 逐条测过），CoupleView 与 ChatView 共用同一份，不要各写一份哈希。
 - 气泡皮肤走 `.dm-area[data-couple-bubble]` + `style.css` 里的 `--couple-*` 令牌，靠 CSS 自定义属性的元素级优先覆盖用户全局皮肤，**不改 MessageBubble 的 scoped 样式、也不加后端字段**；`prefers-reduced-motion: reduce` 下所有解锁动效必须关闭，且解锁信息不能只靠动效承载。
@@ -80,7 +79,7 @@ WS 事件：现役 44 个（后端 Service/Job 源码抽取），`stores/couple.
 规范全集在专项 skill（git-commit / version-release）里，本节只做流程串联与红线登记，不复述细节：
 
 1. **开工**：必读本 skill；提交拆分/架构师复审清单 → `.agents/skills/git-commit/SKILL.md`；升版/发版判级 → `.agents/skills/version-release/SKILL.md`；对应后端模块地图见 are-chat 仓库的 `are-chat-map` skill
-2. **编码**：走第三节「新功能标准链路」；加新卡抄现成结构——自持数据卡照 `CoupleEcho.vue`/`CoupleCatch.vue`（`CoupleCollapsible` + `onMounted` safeLoad + 写接口返回整份聚合 VO 整体替换），走 store 的卡照 `CoupleMood.vue`/`CoupleBond.vue`；新 VO 类型加 Couple+域前缀并先 grep 防撞名（见撞名备忘）；后端新事件须在前端 `stores/couple.ts` 的 `handleCoupleEvent` 加分支；不改默认页签 `today`
+2. **编码**：走第三节「数据流」；加新卡抄现成结构——自持数据卡照 `CoupleWish.vue`（`CoupleCollapsible` + `onMounted` safeLoad + 写接口返回整份聚合 VO 整体替换），走 store 的卡照 `CoupleStreak.vue`/`CoupleQuestion.vue`；新 VO 类型加 Couple+域前缀并先 grep 防撞名；后端新事件须在前端 `stores/couple.ts` 的 `handleCoupleEvent` 加分支；不改默认页签 `today`
 3. **构建**：提交前 `pnpm build`（含 vue-tsc）必过，改了逻辑跑 `pnpm test` 全绿；types 改动同步测试 mock 工厂（红线见第四节）
 4. **提交**：按改动性质分组（依赖/组件页面/样式/文档），一 commit 一性质；信息 `type(scope): 中文描述`
 5. **推送**：commit → `git pull --no-rebase` → push；失败保留本地 commit 并报告，不 force push
