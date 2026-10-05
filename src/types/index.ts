@@ -327,6 +327,7 @@ export interface CouplePartnerVO {
   petName: string | null
 }
 
+/** 空间主题五档后端白名单未变（CoupleSpace.THEMES）；装扮只剩宣言 + 主题两件事，贴纸墙随 v8 裁剪下线 */
 export type CoupleSpaceTheme = 'classic' | 'cherry' | 'ocean' | 'forest' | 'night'
 
 export interface CoupleSpaceVO {
@@ -341,13 +342,6 @@ export interface CoupleSpaceVO {
   slogan: string | null
   /** 空间主题（classic/cherry/ocean/forest/night） */
   theme: CoupleSpaceTheme
-  /** 贴纸墙佩戴的贴纸 key（逗号分隔，可空） */
-  stickers: string | null
-}
-
-export interface CoupleCheckinHalf {
-  morning: boolean
-  night: boolean
 }
 
 export interface CoupleOverview {
@@ -356,46 +350,9 @@ export interface CoupleOverview {
   incoming: CoupleInviteVO[]
   /** 发出的全部待处理邀请（新→旧） */
   outgoing: CoupleInviteVO[]
-  /** 今天我这边的心情（没记录为 null）——首页「TA 今天怎么样」的唯一即时信号 */
-  todayMine: CoupleMoodVO | null
-  /** 今天对方那边的心情（没记录为 null） */
-  todayPartner: CoupleMoodVO | null
-}
-export type CoupleItemKind = 'MOVIE' | 'FOOD' | 'TRIP' | 'TODO'
-
-export interface CoupleAnniversaryVO {
-  id: string
-  title: string
-  date: string
-  yearly: boolean
-  /** F127 大日子类型：NORMAL / LOVE / FAMILY / FRIEND / WORK */
-  kind: string
-  createdBy: string
-  created: number
 }
 
 // ============ 情侣空间：心情日记 / 时光轴 / 心动值 ============
-
-/** 心情键（后端白名单，共 8 种） */
-export type CoupleMoodKind = 'LOVE' | 'HAPPY' | 'CALM' | 'BUSY' | 'TIRED' | 'SICK' | 'SAD' | 'ANGRY'
-
-export interface CoupleMoodVO {
-  id: string
-  username: string
-  moodDay: string
-  mood: CoupleMoodKind
-  note: string
-  /** 后端 record 的字段名是 createdAt（契约比对脚本抓出来的旧笔误，前端原先写成 created） */
-  createdAt: number
-  updatedAt: number | null
-}
-
-/** 一天里双方的心情（谁没记录就是 null） */
-export interface CoupleMoodDayVO {
-  day: string
-  mine: CoupleMoodVO | null
-  partner: CoupleMoodVO | null
-}
 
 /** 时光轴事件：type = space/ritual/question/promise/item/anniversary */
 export interface CoupleTimelineEvent {
@@ -406,15 +363,16 @@ export interface CoupleTimelineEvent {
   at: number | null
 }
 
-/** 心动值明细 */
-/** 心动值明细：六项全部来自保留的 10 张卡（早晚安/每日一问/约定/清单 已随功能下线）。 */
+/**
+ * 心动值明细：五项全部来自现役功能（后端 CoupleService.IntimacyBreakdown）。
+ * 裁剪前那六项里的心情/贴贴/好事/留灯/复盘/积分已随功能一并下线。
+ */
 export interface CoupleIntimacyBreakdown {
-  moodDays: number
-  bondDays: number
-  deedCount: number
-  lampCount: number
-  reflectCount: number
-  pointEarned: number
+  daysTogether: number
+  checkinDays: number
+  longestStreak: number
+  answerDays: number
+  wishFulfilled: number
 }
 
 export interface CoupleIntimacyVO {
@@ -444,51 +402,6 @@ export interface CoupleFundDepositVO {
 }
 
 // ============ 情侣空间：贴贴互动 ============
-
-/** 贴贴动作类型 */
-export type CoupleActionKind =
-  | 'POKE'
-  | 'HUG'
-  | 'KISS'
-  | 'PAT'
-  | 'NUZZLE'
-  | 'TICKLE'
-  | 'MISS'
-
-export interface CoupleActionVO {
-  id: string
-  username: string
-  kind: CoupleActionKind
-  created: number
-}
-
-/** 单类贴贴动作统计 */
-export interface CoupleKindStat {
-  kind: CoupleActionKind
-  emoji: string
-  label: string
-  total: number
-  mine: number
-  partner: number
-  lastAt: number | null
-}
-
-export interface CoupleBondStatsVO {
-  kinds: CoupleKindStat[]
-  todayCount: number
-  todayMine: number
-  todayPartner: number
-}
-
-/** 心情回应类型 */
-export type CoupleMoodReactionKind = 'HUG' | 'KISS' | 'CHEER' | 'PAT'
-
-/** 某天双方给彼此心情的回应（谁还没回应就是 null） */
-export interface CoupleMoodReactionVO {
-  day: string
-  myReaction: CoupleMoodReactionKind | null
-  partnerReaction: CoupleMoodReactionKind | null
-}
 
 export interface CoupleTacitVO {
   id: string
@@ -584,13 +497,6 @@ export interface CoupleHeatCell {
   level: number
 }
 
-/** 心情曲线单日：双方心情分 1-5（没记 = null） */
-export interface CoupleMoodCurveDay {
-  day: string
-  mine: number | null
-  partner: number | null
-}
-
 // ============ 情侣空间：通知中心 / 生日 / 关系徽章 / 管理看板 ============
 
 /** F41 通知中心条目 */
@@ -625,45 +531,17 @@ export interface CoupleRelationshipVO {
   anniversary: string | null
 }
 
-/** F45 管理看板：情侣空间运营统计 */
+/** F45 管理看板：情侣空间运营统计（后端 CoupleAdminController.CoupleStatsVO） */
 export interface CoupleAdminStatsVO {
   activeSpaces: number
   dissolvedSpaces: number
   avgDays: number
-  totalLetters: number
-  totalActions: number
-  totalPromisesDone: number
-  totalCapsules: number
+  totalCheckinDays: number
+  totalAnswers: number
   spacesCreatedThisMonth: number
 }
 
 // ============ 情侣空间：惊喜与期待（F50-F59） ============
-
-/** F50 爱情刮刮乐：每周一张来自 TA 的奖励券 */
-export interface CoupleScratchVO {
-  id: string
-  weekKey: string
-  fromUser: string
-  prizeKind: string
-  /** 未刮开时对收券人隐藏 */
-  prizeText: string | null
-  scratched: boolean
-  redeemed: boolean
-  scratchedAt: number | null
-}
-
-/** F51 恋爱盲盒 */
-export interface CoupleBoxVO {
-  id: string
-  fromUser: string
-  kind: 'whisper' | 'task'
-  /** 未到开箱日且不是自己装的盒子，内容隐藏 */
-  content: string | null
-  openDay: string
-  opened: boolean
-  canOpen: boolean
-  created: number
-}
 
 /** F53 思念速递单条 */
 export interface CoupleMissVO {
@@ -694,37 +572,6 @@ export interface CoupleSlipVO {
 }
 
 // ============ 情侣空间：懂我与被接住（F60-F69） ============
-
-/** F60 求抱抱条目 */
-export interface CoupleComfortVO {
-  id: string
-  fromUser: string
-  day: string
-  feeling: string
-  feelingLabel: string
-  feelingEmoji: string
-  handled: boolean
-  handledNote: string | null
-  handledAt: number | null
-}
-
-/** F60 求抱抱看板 */
-export interface CoupleComfortBoardVO {
-  mine: CoupleComfortVO | null
-  partnerPending: CoupleComfortVO | null
-  history: CoupleComfortVO[]
-}
-
-/** F64 情绪同步率 */
-export interface CoupleMoodSyncVO {
-  bothDays: number
-  syncedDays: number
-  syncRate: number
-  todaySync: boolean
-  todayMoodMine: string | null
-  todayMoodPartner: string | null
-  streak: number
-}
 
 /** F68 心灵感应单轮 */
 export interface CoupleTelepathyRoundVO {
@@ -955,68 +802,7 @@ export interface CoupleWhatIfRowVO {
 
 // ============ 常用收藏（F207） ============
 
-/** 双方收藏的功能卡 key 列表（≤6 个，key 为功能卡 data-testid） */
-export interface CouplePinVO {
-  mine: string[]
-  partner: string[]
-}
-
 // ============ 两个人的饭桌（F210-F219） ============
-
-/** F210 饭票：每人每天一票，改票即覆盖 */
-export interface CoupleDineTicketVO {
-  fromUser: string
-  mine: boolean
-  dish: string
-  reason: string
-}
-
-/** 今日饭桌（保留卡 `couple-dine-today`）：双方饭票 + 撞菜命中 + 吃什么裁决。
- *  话题打卡/星评/踩雷/菜单/拿手菜/搭伙车/干饭账 随功能裁剪下线。 */
-export interface CoupleDineTodayVO {
-  day: string
-  mine: CoupleDineTicketVO | null
-  partner: CoupleDineTicketVO | null
-  hit: boolean
-  verdict: string | null
-}
-
-/** F212 本周饭桌菜单格（dish 空 = 该格是空的） */
-export interface CoupleDinePlanVO {
-  day: string
-  dish: string
-  updatedBy: string
-  mineLastEdit: boolean
-}
-
-/** F213 本周拿手菜（按人 upsert，score 1-5） */
-export interface CoupleDineHomecookVO {
-  fromUser: string
-  mine: boolean
-  dish: string
-  score: number
-}
-
-export type CoupleDineCartStatus = 'OPEN' | 'LOCKED'
-
-/** F214 搭伙车条目（双方各锁一次才 LOCKED；仅本人且未锁可删） */
-export interface CoupleDineCartVO {
-  id: string
-  fromUser: string
-  mine: boolean
-  item: string
-  qty: number
-  status: CoupleDineCartStatus
-  locked: string[]
-  canLock: boolean
-}
-
-/** F217 年度干饭账：最常点菜 top 项 */
-export interface CoupleDineDishTopVO {
-  dish: string
-  times: number
-  avgStars: number
-}
 
 // ============ 体温同步·作息与健康（F220-F229） ============
 
@@ -1092,65 +878,6 @@ export interface CoupleCozyHugVO {
 }
 
 // ============ 小日子·仪式感（F230-F239） ============
-
-/** F232 过法任务卡条目（markedToday=今天是否已打勾） */
-export interface CoupleCerRitualVO {
-  id: string
-  foundedId: string
-  content: string
-  markedToday: boolean
-}
-
-/** F235 续约长卷上的一句话 */
-export interface CoupleCerRenewLineVO {
-  anchorDay: string
-  fromUser: string
-  mine: boolean
-  line: string
-}
-
-/** F236 愿望券（status：OPEN 待核销 / USED 已兑现；ref 非空=保险柜里程碑 payout 券） */
-export interface CoupleCerCouponVO {
-  id: string
-  title: string
-  status: string
-  ref: string
-  issuer: string
-  usedBy: string | null
-  created: number | null
-}
-
-/** F239 当日体感「此刻感觉」一句话 */
-export interface CoupleCerRecapVO {
-  day: string
-  fromUser: string
-  mine: boolean
-  feeling: string
-}
-
-/** F238 年度加冕 top 项（marks=当年打勾数） */
-export interface CoupleCerCrownItemVO {
-  name: string
-  marks: number
-}
-
-/** 愿望券本总览（保留卡 `couple-cere-coupon`）：在途券 + 已核销券 + 本人积分余额。
- *  发券要扣积分，所以余额和单张成本必须一起下发；小日子/保险柜/续约/体感/史册/黄历已下线。 */
-export interface CoupleCerOverviewVO {
-  day: string
-  couponsOpen: CoupleCerCouponVO[]
-  couponsUsed: CoupleCerCouponVO[]
-  myBalance: number
-  couponCost: number
-}
-
-/** F237 小日子史册：一年一页 */
-export interface CoupleCerChroniclePageVO {
-  day: string
-  marked: number
-  ritualTotal: number
-  feelings: CoupleCerRecapVO[]
-}
 
 // ============ 倾听与发声（F260-F269） ============
 
@@ -1276,35 +1003,6 @@ export interface CoupleLsNameDayVO {
 }
 
 // ============ 二人制造厂（F270-F279） ============
-
-/** F273 快递单状态（SENT 待领养 / GRABBED 有接单侠了 / DONE 已送达销单） */
-export type CoupleFyParcelStatus = 'SENT' | 'GRABBED' | 'DONE'
-
-/** F270 家务轮盘的一格任务（mine=这活派给我；confirmed=对方已认账；done=干完划线） */
-export interface CoupleFySpinVO {
-  id: string
-  week: string
-  item: string
-  assignedUser: string
-  mine: boolean
-  confirmed: boolean
-  done: boolean
-}
-
-/**
- * F270-F279 本周车间总览（十卡一次拉齐）。
- * 除 board 读接口外，24 个 POST 写接口全部返回整份 BoardVO，前端整体替换即五卡刷新；
- * shopChampion 空串=本月还没有生活委员，owed/expiring/checkMiss 为空数组=没有欠账/临期/漏检。
- */
-/** 家务轮盘看板（保留卡 `couple-fy-spin`）：本周格子 + 前几周欠账 + 开场话术。
- *  采买/冰箱/快递/叫醒/服药/久坐/垫付/战利品/家安月检 随功能裁剪下线。 */
-export interface CoupleFyBoardVO {
-  day: string
-  week: string
-  spins: CoupleFySpinVO[]
-  owed: string[]
-  spinLine: string
-}
 
 // ============ 我们百科（F280-F289） ============
 
@@ -1548,66 +1246,6 @@ export interface CoupleLegacyLevelVO {
   line: string
 }
 
-// ============ 批次三十一：回音壁（F350-F359，echoApi / CoupleEcho.vue） ============
-// 字段与后端 CoupleEchoService 的 11 个 record 逐一对齐（record 参数顺序 = wire 字段顺序）。
-// 可空性按 Service 实际：只有 EchoVO.selfLetter 是对象可为 null（没有在途信时后端给 null），
-// 其余字符串一律经 nz() 下发空串（toXxx 全走 nz）、数字/布尔恒有值（created 为 null 时后端给 0）。
-// ⚠️ YearlyVO.year 是 Java int → number，不是字符串（和批次三十的 LegacyVO.year: string 不一样）。
-
-/**
- * F350 好事簿的一条证据。mine=我是记录人（后端按 fromUser==当前用户算）；
- * deeds 是我记的「TA 为我做的事」，partnerDeeds 是 TA 记的「我为 TA 做的事」，两边各限最近 30 条（DEED_PAGE）。
- * starred=「这条救过我」加星，只有记录人本人能点（后端 400「只有记下这条的人能加星」，已加星幂等返回）。
- */
-export interface CoupleEchoDeedVO {
-  id: string
-  fromUser: string
-  mine: boolean
-  content: string
-  day: string
-  starred: boolean
-  created: number
-}
-
-/** F352 鼓励语罐的一张纸条（idx=罐子槽位 1-5，删掉后槽位复用；juices 是两人合计，按 mine 分罐，每人 ≤5 条） */
-export interface CoupleEchoJuiceVO {
-  id: string
-  fromUser: string
-  mine: boolean
-  idx: number
-  content: string
-  created: number
-}
-
-/** F355 三行高光卡（moment=什么时候 ≤40 字 / did=TA 做了什么 ≤80 字 / feel=什么感觉 ≤80 字，每人 ≤12 条） */
-export interface CoupleEchoHighlightVO {
-  id: string
-  fromUser: string
-  mine: boolean
-  moment: string
-  did: string
-  feel: string
-  created: number
-}
-
-/** F358 给低落的自己的信的状态（后端 CoupleEchoSelfLetter.STATUS_SEALED/STATUS_READ） */
-export type CoupleEchoSelfStatus = 'SEALED' | 'READ'
-
-/**
- * F350-F359 回音壁总览（GET /api/couple/echo/vault 一次拉齐；12 个 POST 写接口全部返回整份 EchoVO，
- * 前端整体替换即十卡刷新）。⚠️ 只有 selfLetter 可 null（没在途信）；refill/yearly 是恒有值嵌套对象。
- * 被爱日历（F353）不在这份聚合里，走 GET /calendar?year= 懒领取。
- */
-/** 好事簿看板（保留卡 `couple-echo-deed`）：我记的证据 + TA 记的证据 + 两侧条数。
- *  鼓励语罐/能量补给/慢递/高光/回执/电量/写给低落的自己/日历/年报 随功能裁剪下线。 */
-export interface CoupleEchoVO {
-  day: string
-  deeds: CoupleEchoDeedVO[]
-  partnerDeeds: CoupleEchoDeedVO[]
-  mineCount: number
-  partnerCount: number
-}
-
 // ============ 批次三十二：注意力保护区（F360-F369，focusApi / CoupleFocus.vue） ============
 // 字段与后端 CoupleFocusService 的 6 个 record 逐一对齐（record 参数顺序 = wire 字段顺序）。
 // 可空性按 Service 实际：
@@ -1665,128 +1303,6 @@ export interface CoupleFocusSlotVO {
   mine: boolean
   confirmed: boolean
   created: number
-}
-
-// ============ 批次三十三：人生关卡（F370-F379，questApi / CoupleQuest.vue） ============
-// 字段名与顺序与后端 CoupleQuestService 的 13 个 record 逐一对齐（record 参数顺序 = wire 字段顺序）。
-// 可空口径（照后端 build()/toXxx() 源码，不是猜的）：QuestVO 里真可空只有
-//   myOvertime / partnerOvertime（今晚那一方没预报）、myNurse / partnerNurse（没在途单）、
-//   myPod / partnerPod（进过舱就有值，出舱后也在，见下方 PodVO 说明）、moveNight（从来没打过）、
-//   myValley / partnerValley（没在途通行证）；wall 恒有值（当年零计数也给你一整份）。
-// 其余字符串经后端 nz() 恒为空串（没写=空串而不是 null），数字/布尔恒有值，「没打过」一律给 0 或 false。
-
-/** F370 关卡类型（后端 CoupleQuestBattle.KINDS 六个，白名单外 400「关卡类型只能是…」） */
-export type CoupleQuestBattleKind = 'INTERVIEW' | 'REPORT' | 'DEFEND' | 'TALK' | 'CHECKUP' | 'OTHER'
-
-/** F371 战果（后端 CoupleQuestReport.RESULTS；白名单外 400「战果只有三种」） */
-export type CoupleQuestResult = 'WIN' | 'LOSE' | 'SURVIVE'
-
-/** F373 代记种类（后端 CoupleQuestCareMark.KINDS，只有这两种） */
-export type CoupleQuestCareKind = 'WATER' | 'MED'
-
-/**
- * F372 今晚的加班预报（uk(space,day,user)，每人每天一行、本人当天可改写）。
- * untilHour 后端 13-23 钳制（null 按缺省 20）；lamp/lampBy=留的那句灯卡和留灯的人，没留是空串。
- */
-export interface CoupleQuestOvertimeVO {
-  id: string
-  untilHour: number
-  note: string
-  mine: boolean
-  lamp: string
-  lampBy: string
-}
-
-/** F373 一次代记打卡（uk 是 nurse+day+kind+by_user，一天每种只记一次）。 */
-export interface CoupleQuestCareMarkVO {
-  day: string
-  kind: CoupleQuestCareKind
-  kindLabel: string
-  byUser: string
-  mine: boolean
-}
-
-/**
- * 关卡总览（GET /api/couple/quest/board 一次拉齐；27 个 POST 写接口全部原样返回整份 QuestVO，
- * 前端整体替换即十卡刷新）。⚠️ 唯一的例外是 GET /wall?year=：那是「点按钮才懒读另一份」的独立读接口，
- * 不进这份聚合（这份里的 wall 恒是服务端当年那一份）。
- * day=服务端今天 yyyy-MM-dd、weekStart=服务端那周的周一 yyyy-MM-dd ——
- * 所有倒数/是否本周的判定一律吃这两个字段，不吃本地时钟。
- */
-/** 加班预报与留灯看板（保留卡 `couple-quest-overtime`）：双方今天那行 + 能不能留灯。
- *  关卡预告/出关战报/陪护单/静音舱/搬家/低谷/小胜利/关口预约/成就墙 随功能裁剪下线。 */
-export interface CoupleQuestVO {
-  day: string
-  myOvertime: CoupleQuestOvertimeVO | null
-  partnerOvertime: CoupleQuestOvertimeVO | null
-  canLeaveLamp: boolean
-}
-
-// ============ 批次三十四：聆听者（F380-F389，catchApi / CoupleCatch.vue） ============
-// ⚠️ 字段名、顺序与可空性逐字对齐后端 CoupleCatchService 的 12 个 record（record 参数顺序 = wire 字段顺序）。
-// 字段名对不上只会表现为「卡片空白」，vue-tsc 与单测都照不出来——改后端或抄后端时务必逐字段再比一遍。
-// 可空口径（读 build() 源码逐字段确认）：真可空只有 CatchVO 的 myWord / partnerWord / myProtocol /
-// partnerProtocol / myToday / partnerToday 六个槽位（后端 `row == null ? null : ...`）；
-// 其余字符串一律经 nz() 恒空串、int/long 恒有值（getCreated()/getAvoided() 为 null 时后端兜 0）。
-
-/** F383 敏感日类型（后端 CoupleCatchSensitive.KINDS 四个；⚠️ 请求里传空串后端兜成 OTHER，不报错） */
-export type CoupleCatchSensitiveKind = 'PERIOD' | 'CHECK' | 'MEMORY' | 'OTHER'
-
-/** F386 聆听方式（后端 CoupleCatchProtocol.MODES 五个；白名单外 400「五种里选一个…」） */
-export type CoupleCatchProtocolMode = 'REASON' | 'RANT' | 'HUG' | 'FOOD' | 'SPACE'
-
-/** F387 话题状态（后端 CoupleCatchTopic.STATUS_PENDING/TAKEN/TALKED；⚠️ VO 不下发中文标签，前端只做文案镜像） */
-export type CoupleCatchTopicStatus = 'PENDING' | 'TAKEN' | 'TALKED'
-
-/**
- * F382 某一方的安全词（uk(space,from_user)，每人一格可改写，word ≤20、note ≤60）。
- * useCount=这个人**全历史**喊停次数（countBy 不限月份；⚠️ 规格 F382 说「月度统计」，月度数在
- * CatchVO.monthUses 且是两人合计，后端不下发分人的本月数）。
- * ⚠️ 后端不下发「我今天是否已经喊过」，前端只能从 uses（按 day 倒序、≤20 条）比对 mine+day===v.day。
- */
-export interface CoupleCatchSafewordVO {
-  id: string
-  mine: boolean
-  word: string
-  note: string
-  useCount: number
-}
-
-/**
- * F382 一次暂停使用（uk(space,day,user_name)，一天一人只记一次）。
- * word 取的是「喊的那个人当天的词」：我喊的用 myWord 的词、TA 喊的用 partnerWord 的词，
- * 那一方还没约词时后端给空串。reflect=事后复盘（空串=还没补，只有喊停本人能补）。
- */
-export interface CoupleCatchUseVO {
-  id: string
-  day: string
-  mine: boolean
-  word: string
-  reflect: string
-}
-
-/**
- * 聆听者总览（GET /api/couple/catch/board 一次拉齐；19 个 POST 写接口全部原样返回整份 CatchVO，
- * 前端整体替换即十卡刷新）。⚠️ 唯一的例外是 GET /year?year=：那是「点按钮才懒读另一年」的独立读接口，
- * 不进这份聚合（这份里的 year 恒是服务端当年那一份）。
- * day=服务端今天 yyyy-MM-dd、week=服务端那周的周一 yyyy-MM-dd ——
- * 所有倒数/本月/今日判定一律吃这两个字段，不吃本地时钟。
- * protocolHint/dailyHint 是后端 Bank 整句（dailyHint 空串=TA 今天写了或之前没写过）。
- * wishQuotaLeft=替 TA 记的格子还剩几个（⚠️ 后端的减数是 findByOwner 全量含已兑现，兑现并不释放格子）。
- * monthUses=本月两人合计喊停次数；sensitives 只给 day>=今天；myThreads/partnerThreads 只给 OPEN。
- */
-/** 安全词看板（保留卡 `couple-catch-safeword`）：双方的词 + 暂停记录 + 本月合计 + 今天两人喊没喊。
- *  暗中心愿本/雷区/敏感日历/话头/反话/协议/话题池/今日一句话/年报 随功能裁剪下线。
- *  usedTodayMine/usedTodayPartner 是本轮补上的本人位（以前前端只能按 uses 列表自己比 day，判漏就界面说谎）。 */
-export interface CoupleCatchVO {
-  day: string
-  week: string
-  myWord: CoupleCatchSafewordVO | null
-  partnerWord: CoupleCatchSafewordVO | null
-  uses: CoupleCatchUseVO[]
-  monthUses: number
-  usedTodayMine: boolean
-  usedTodayPartner: boolean
 }
 
 /**
@@ -2003,7 +1519,8 @@ export interface CoupleStreakStripCellVO {
 /**
  * 打卡看板（GET /api/couple/streak/board；POST /makeup 原样返回整份，前端整体替换）。
  * nextTierKey/nextTierLabel 满档时为 null；daysToNext 是距下一档还差几天。
- * canMakeup 由后端算（昨天确实断了 + 本月补签还有额度 + 余额够），前端不要再自己拼这三个条件。
+ * canMakeup 由后端算（昨天确实断了 + 在 7 天窗口里 + 本月还有额度），前端不要再自己拼这三个条件。
+ * 积分台账随裁剪一起下线，补签不花钱。
  */
 export interface CoupleStreakBoardVO {
   day: string
@@ -2018,9 +1535,8 @@ export interface CoupleStreakBoardVO {
   nextTierLabel: string | null
   daysToNext: number
   strip: CoupleStreakStripCellVO[]
-  makeupCost: number
+  makeupWindowDays: number
   makeupLeftThisMonth: number
-  balance: number
   canMakeup: boolean
 }
 

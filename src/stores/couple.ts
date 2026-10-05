@@ -3,18 +3,9 @@ import { computed, ref } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import { coupleApi, questionApi, streakApi } from '@/api/couple'
 import type {
-  CoupleActionKind,
-  CoupleActionVO,
-  CoupleBondStatsVO,
-  CoupleComfortBoardVO,
-  CoupleComfortVO,
   CoupleInviteVO,
-  CoupleMoodDayVO,
-  CoupleMoodKind,
-  CoupleMoodReactionKind,
-  CoupleMoodReactionVO,
-  CoupleMoodSyncVO,
-  CoupleMoodVO,
+  CoupleOverview,
+  CoupleIntimacyVO,
   CoupleNotifyVO,
   CoupleQuestionTodayVO,
   CoupleSpaceTheme,
@@ -23,13 +14,13 @@ import type {
 } from '@/types'
 
 /**
- * 情侣空间 store（系统裁剪后只剩 10 张卡的域）。
+ * 情侣空间 store（v8 二轮裁剪后只剩「地基 + 两张要被别处读走的卡」的域）。
  *
- * 保留在此的是「多个组件/头部共用、且要靠 WS 推送刷新」的数据：
- * 总览与邀请、心情日记、心动值、贴贴、求抱抱、通知中心，外加连续互动打卡看板与每日一问
- * （解锁态要被 ChatView 直接读走，档位在头部也要用，所以进 store 而不是组件自持）。
- * 其余六张卡（今晚饭桌/家务轮盘/加班预报/愿望券本/好事簿/刮刮乐盲盒）在组件内自持数据，
- * 写接口返回整份聚合 VO 直接整体替换，不进这里——沿用批次十七以后的既定做法，别把 store 再撑回去。
+ * 留在这里的：总览与邀请、心动值、通知中心、连续互动打卡看板（streak）、每日一问（question）。
+ * streak / question 上 store 是有理由的——解锁态要被 ChatView 与 CoupleView 头部直接读走
+ * （`tierUnlocked(key)`），卡片自己持有就变成两份真相；愿望清单与百日回顾由组件自持。
+ * 已下线的域（心情日记 / 贴贴 / 求抱抱 / 情绪同步）不再留壳：后端既没有对应的端点，
+ * 也没有 WS 生产者，留一个空 ref 只会让人以为还有数据。
  *
  * WS 推送（type=couple）由 im store 转成 `arechat:couple` 自定义事件，这里统一消费。
  */
@@ -48,25 +39,12 @@ function bindGlobalListener() {
 }
 
 export const useCoupleStore = defineStore('couple', () => {
-  const overview = ref<import('@/types').CoupleOverview | null>(null)
-  const moods = ref<CoupleMoodDayVO[]>([])
-  const moodReaction = ref<CoupleMoodReactionVO | null>(null)
-  const intimacy = ref<import('@/types').CoupleIntimacyVO | null>(null)
-  const bondActions = ref<CoupleActionVO[]>([])
-  const bondStats = ref<CoupleBondStatsVO | null>(null)
-  const comfortBoard = ref<CoupleComfortBoardVO | null>(null)
-  const moodSync = ref<CoupleMoodSyncVO | null>(null)
+  const overview = ref<CoupleOverview | null>(null)
+  const intimacy = ref<CoupleIntimacyVO | null>(null)
   const streak = ref<CoupleStreakBoardVO | null>(null)
   const question = ref<CoupleQuestionTodayVO | null>(null)
   const notifies = ref<CoupleNotifyVO[]>([])
   const notifyUnread = ref(0)
-
-  /** 已加载过的列表：WS 只刷新加载过的，没人看过就不发这次请求 */
-  const loaded = ref<Record<'moods' | 'bond' | 'comfort', boolean>>({
-    moods: false,
-    bond: false,
-    comfort: false,
-  })
 
   const space = computed<CoupleSpaceVO | null>(() => overview.value?.space ?? null)
   const established = computed(() => !!space.value)
@@ -126,8 +104,24 @@ export const useCoupleStore = defineStore('couple', () => {
     await loadOverview()
   }
 
-  async function updateProfile(body: { slogan?: string | null; theme?: CoupleSpaceTheme | null; stickers?: string | null }) {
-    await coupleApi.updateProfile(body)
+  /**
+   * 空间个性化：宣言 / 主题 / 爱称都走同一个 `PUT /api/couple/profile`。
+   * 独立的 pet-name 端点已随贴贴卡下线，爱称只有这一条通道——`null` 是不改该项，空串才是清除。
+   *
+   * 写接口原样返回整份 SpaceVO，所以直接并回总览那棵树，不必再发一次 overview；
+   * space 是 computed，改它只能换掉整棵 overview。
+   */
+  async function updateProfile(body: {
+    slogan?: string | null
+    theme?: CoupleSpaceTheme | null
+    petName?: string | null
+  }) {
+    const saved = await coupleApi.updateProfile(body)
+    const tree = overview.value
+    if (tree?.space) {
+      overview.value = { ...tree, space: saved }
+      return
+    }
     await loadOverview()
   }
 
@@ -135,44 +129,6 @@ export const useCoupleStore = defineStore('couple', () => {
     await coupleApi.dissolve()
     reset()
     await loadOverview()
-  }
-
-  // ========== 心情日记 ==========
-
-  async function loadMoods(days = 14) {
-    loaded.value.moods = true
-    moods.value = await coupleApi.moods(days)
-  }
-
-  async function saveMood(mood: CoupleMoodKind, note?: string) {
-    const saved: CoupleMoodVO = await coupleApi.saveMood(mood, note)
-    // 后端每人每天一条：改写今天那一行，不新增
-    const day = saved.moodDay
-    const idx = moods.value.findIndex((d) => d.day === day)
-    const row = idx >= 0 ? moods.value[idx] : { day, mine: null, partner: null }
-    const next: CoupleMoodDayVO = { ...row, mine: saved }
-    if (idx >= 0) {
-      moods.value = [next, ...moods.value.filter((d) => d.day !== day)]
-    } else {
-      moods.value = [next, ...moods.value]
-    }
-    if (overview.value) {
-      overview.value = { ...overview.value, todayMine: saved }
-    }
-    void loadMoodReaction(day)
-  }
-
-  async function loadMoodReaction(day?: string) {
-    try {
-      moodReaction.value = await coupleApi.moodReactions(day)
-    } catch {
-      moodReaction.value = null
-    }
-  }
-
-  async function reactMood(reaction: CoupleMoodReactionKind, day?: string) {
-    moodReaction.value = await coupleApi.reactMood(reaction, day)
-    ElMessage.success('回应送到了 🫶')
   }
 
   // ========== 心动值 ==========
@@ -229,56 +185,6 @@ export const useCoupleStore = defineStore('couple', () => {
     return questionInFlight
   }
 
-  // ========== 贴贴 ==========
-
-  async function loadBond() {
-    loaded.value.bond = true
-    const [actions, stats] = await Promise.all([coupleApi.bondActions(), coupleApi.bondStats()])
-    bondActions.value = actions
-    bondStats.value = stats
-  }
-
-  async function sendAction(kind: CoupleActionKind) {
-    bondStats.value = await coupleApi.sendAction(kind)
-    await loadBond()
-  }
-
-  async function setPetName(name: string | null) {
-    const saved = await coupleApi.setPetName(name)
-    // space 是 overview 的派生值，改爱称要写回总览那棵树，不能直接给 computed 赋值
-    if (overview.value?.space) {
-      overview.value = {
-        ...overview.value,
-        space: { ...overview.value.space, partner: { ...overview.value.space.partner, petName: saved } },
-      }
-    }
-    ElMessage.success(name ? `爱称改成了「${name}」🏷️` : '爱称已清空')
-  }
-
-  // ========== 求抱抱 ==========
-
-  async function loadComfort() {
-    loaded.value.comfort = true
-    try {
-      const [board, sync] = await Promise.all([coupleApi.comfortBoard(), coupleApi.moodSync()])
-      comfortBoard.value = board
-      moodSync.value = sync
-    } catch {
-      comfortBoard.value = null
-      moodSync.value = null
-    }
-  }
-
-  async function askComfort(feeling: string) {
-    comfortBoard.value = await coupleApi.askComfort(feeling)
-  }
-
-  async function giveComfort(note: string) {
-    await coupleApi.handleComfort(note)
-    ElMessage.success('抱抱送出去了 🤗')
-    await loadComfort()
-  }
-
   // ========== 通知中心 ==========
 
   async function loadNotifies() {
@@ -306,7 +212,7 @@ export const useCoupleStore = defineStore('couple', () => {
       return
     }
     const e = msg.event
-    // 建立流程四类：动的是总览本身，必须重拉
+    // 建立流程三类：动的是总览本身，必须重拉
     if (e === 'invite' || e === 'invite-accepted' || e === 'invite-rejected') {
       notify('💕 情侣空间', msg.detail)
       void loadOverview()
@@ -318,41 +224,29 @@ export const useCoupleStore = defineStore('couple', () => {
       void loadOverview()
       return
     }
-    if (e === 'anniversary-updated' || e === 'anniversary-reminder' || e === 'space-themed') {
+    // 空间本体：日子改了、主题换了，重拉总览；倒数提醒由定时任务发，只弹提醒
+    if (e === 'anniversary-updated') {
       notify('📅 我们的日子', msg.detail)
       void loadOverview()
       return
     }
-    if (e === 'birthday-card' || e === 'birthday-eve') {
-      notify('🎂 生日', msg.detail)
+    if (e === 'space-themed') {
+      notify('✨ 小空间装扮', msg.detail)
+      void loadOverview()
+      return
+    }
+    if (e === 'anniversary-reminder') {
+      notify('📅 我们的日子', msg.detail)
       void loadNotifies()
       return
     }
-    // 心情与贴贴
-    if (e === 'mood-changed') {
-      if (loaded.value.moods) void loadMoods()
-      void loadMoodReaction()
-      void loadIntimacy()
+    // 爱称改的是 space.partner.petName（头部与聊天页都读它），后端在 updateProfile 里推这一条
+    if (e === 'pet-name-changed') {
+      notify('🏷️ 专属爱称', msg.detail)
+      void loadOverview()
       return
     }
-    if (e === 'mood-reacted') {
-      notify('🫶 心情回应', msg.detail)
-      void loadMoodReaction()
-      return
-    }
-    if (e === 'bond-action' || e === 'bond-milestone' || e === 'pet-name-changed') {
-      if (e !== 'pet-name-changed') notify('🫶 贴贴', msg.detail)
-      if (loaded.value.bond) void loadBond()
-      void loadIntimacy()
-      return
-    }
-    // 求抱抱
-    if (e === 'comfort-sent' || e === 'comfort-given' || e === 'night-care') {
-      notify('🫂 求抱抱', msg.detail)
-      if (loaded.value.comfort) void loadComfort()
-      return
-    }
-    // 连续互动打卡：补签动余额、解锁动档位，看板/心动值/角标一起重拉
+    // 连续互动打卡：答完今天问答就亮格，解锁动档位——看板/心动值/角标一起重拉
     if (e === 'streak-checkin' || e === 'streak-unlocked' || e === 'streak-makeup') {
       notify('🔥 连续互动', msg.detail)
       void loadStreak()
@@ -360,7 +254,7 @@ export const useCoupleStore = defineStore('couple', () => {
       void loadNotifies()
       return
     }
-    // 每日一问：定题与作答都只影响今天这一问
+    // 每日一问：定题与作答都只影响今天这一问（双方都答完时后端紧跟着推 streak-checkin）
     if (e === 'question-daily' || e === 'question-answered') {
       notify('💬 每日一问', msg.detail)
       void loadQuestion()
@@ -373,35 +267,16 @@ export const useCoupleStore = defineStore('couple', () => {
       void loadNotifies()
       return
     }
-    // 其余六张卡由组件自持数据，这里只弹提醒并同步心动值/通知角标
-    const cardEvents = [
-      'catch-safeword', 'catch-safeword-use', 'catch-safeword-reflect',
-      'dine-ticket', 'dine-hit', 'factory-spin-open', 'factory-spin-confirm',
-      'factory-spin-item-done', 'factory-spin-clear', 'quest-overtime', 'quest-lamp',
-      'ceremony-coupon', 'ceremony-coupon-used', 'echo-deed-added', 'echo-deed-starred',
-      'scratch-scratched', 'scratch-redeemed', 'box-received', 'box-opened', 'anniversaries-changed',
-    ]
-    if (cardEvents.includes(e)) {
-      if (e !== 'anniversaries-changed') notify('💝 情侣空间', msg.detail)
-      void loadIntimacy()
-      void loadNotifies()
-    }
+    // 其余事件（已下线卡片的老推送）不再认识：不发请求、不弹提醒
   }
 
   function reset() {
     overview.value = null
-    moods.value = []
-    moodReaction.value = null
     intimacy.value = null
-    bondActions.value = []
-    bondStats.value = null
-    comfortBoard.value = null
-    moodSync.value = null
     streak.value = null
     question.value = null
     notifies.value = []
     notifyUnread.value = 0
-    loaded.value = { moods: false, bond: false, comfort: false }
   }
 
   return {
@@ -411,13 +286,7 @@ export const useCoupleStore = defineStore('couple', () => {
     incomingInvites,
     outgoingInvites,
     unlockedTierKeys,
-    moods,
-    moodReaction,
     intimacy,
-    bondActions,
-    bondStats,
-    comfortBoard,
-    moodSync,
     streak,
     question,
     notifies,
@@ -431,24 +300,13 @@ export const useCoupleStore = defineStore('couple', () => {
     setAnniversary,
     updateProfile,
     dissolve,
-    loadMoods,
-    saveMood,
-    loadMoodReaction,
-    reactMood,
     loadIntimacy,
     loadStreak,
     loadQuestion,
     tierUnlocked,
-    loadBond,
-    sendAction,
-    setPetName,
-    loadComfort,
-    askComfort,
-    giveComfort,
     loadNotifies,
     readAllNotifies,
     handleCoupleEvent,
     reset,
-
   }
 })

@@ -9,9 +9,12 @@ import CoupleCollapsible from './CoupleCollapsible.vue'
 /**
  * 连续互动打卡与七档解锁（卡根 `couple-streak`）。
  *
- * 打卡是后端按「双方当天都贴过」自动结算的，所以这张卡**没有**「点一下打卡」按钮，
- * 唯一的写口是补签；看板归 store（头部与 ChatView 要直接读解锁态），
+ * 打卡口径只有一条：**双方当天都答完每日一问**，由后端在第二个人交卷时自动结算，
+ * 所以这张卡**没有**「点一下打卡」按钮，唯一的写口是补签；看板归 store（头部与 ChatView 要直接读解锁态），
  * 补签返回的整份看板原样替换 store 里那一份，本地不再留第二份真相。
+ *
+ * 2026-10-05 二轮裁剪把积分台账随愿望券本一起删了：补签不再花钱，
+ * 稀缺性只剩「7 天窗口 + 每自然月 3 次」这两条，全在后端 canMakeup 位里合好。
  */
 const couple = useCoupleStore()
 const board = computed(() => couple.streak)
@@ -36,9 +39,9 @@ async function onMakeup() {
   if (!v) {
     return
   }
-  // 三道闸门（昨天真断了 / 本月有额度 / 余额够）后端已经合成一个 canMakeup 位，前端只照位放行
+  // 闸门（昨天真断了 / 在 7 天窗口里 / 本月还有额度）后端已经合成一个 canMakeup 位，前端只照位放行
   if (!v.canMakeup) {
-    ElMessage.warning('现在还不能补签——看看下面的额度与余额吧 🫧')
+    ElMessage.warning('现在还不能补——补签只有「7 天窗口 + 每月 3 次」这两道限制 🫧')
     return
   }
   if (!v.missedYesterday) {
@@ -53,7 +56,7 @@ async function onMakeup() {
   making.value = true
   try {
     couple.streak = await streakApi.streakMakeup(day)
-    ElMessage.success(`✍️ 补上了 ${day}，花了 ${v.makeupCost} 分`)
+    ElMessage.success(`✍️ 补上了 ${day}，那一格又亮了`)
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '补签没成功')
   } finally {
@@ -72,7 +75,7 @@ onMounted(() => {
 <template>
   <CoupleCollapsible class="streak-card" testid="couple-streak" :empty="!board">
     <template #title>
-      🔥 连续互动打卡 <span class="sub">贴一贴就自动算一天，断了能补</span>
+      🔥 连续互动打卡 <span class="sub">两个人都答完今天那一问，这一格就自己亮了</span>
     </template>
 
     <p v-if="board" class="counts" data-testid="couple-streak-count">
@@ -80,7 +83,7 @@ onMounted(() => {
     </p>
 
     <p v-if="board" class="today" :class="{ lit: board.checkedToday }" data-testid="couple-streak-today">
-      {{ board.checkedToday ? '✅ 今天这一格已经亮了，明儿见' : '🫧 今天还空着——不用找按钮，双方各贴一下它就自己亮了' }}
+      {{ board.checkedToday ? '✅ 今天这一格已经亮了，明儿见' : '🫧 今天还空着——不用找按钮，两个人各答完每日一问它就自己亮了' }}
     </p>
     <p v-if="board?.lastCheckinDay" class="hint" data-testid="couple-streak-last">
       最近亮着的一天：{{ board.lastCheckinDay }}
@@ -123,10 +126,10 @@ onMounted(() => {
         把昨天那一格补回来 ✍️
       </el-button>
       <span class="hint" data-testid="couple-streak-makeup-quota">
-        补一次 {{ board.makeupCost }} 分 · 本月还能补 {{ board.makeupLeftThisMonth }} 次 · 我的余额 {{ board.balance }} 分
+        补签不花分 · 只能补最近 {{ board.makeupWindowDays }} 天里的缺口 · 本月还能补 {{ board.makeupLeftThisMonth }} 次
       </span>
       <span v-if="!board.canMakeup" class="hint off" data-testid="couple-streak-makeup-off">
-        {{ board.missedYesterday ? '昨天断了，但额度或余额还不够补 🥲' : '昨天没断，这一格没什么可补的 😌' }}
+        {{ board.missedYesterday ? '昨天断了，但 7 天窗口或本月 3 次的额度不够补了 🥲' : '昨天没断，这一格没什么可补的 😌' }}
       </span>
     </div>
   </CoupleCollapsible>

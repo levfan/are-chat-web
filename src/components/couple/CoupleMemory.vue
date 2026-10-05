@@ -7,7 +7,7 @@ import type { CoupleMemoryVO } from '@/types'
 import CoupleCollapsible from './CoupleCollapsible.vue'
 
 /**
- * 百日隐藏回顾页（卡根 `couple-memory`）：连续贴满 100 天（easter-egg 档）才解锁。
+ * 百日隐藏回顾页（卡根 `couple-memory`）：连续打卡 100 天（easter-egg 档）才解锁。
  *
  * 双重设闸：外层 CoupleView 不挂载它，本卡自己也挡一次——
  * 只有 `couple.tierUnlocked('easter-egg')` 为真才去敲 /api/couple/memory/page，
@@ -65,14 +65,14 @@ onMounted(() => {
 <template>
   <CoupleCollapsible class="memory-card" testid="couple-memory">
     <template #title>
-      🥚 百日隐藏回顾 <span class="sub">连续贴满 100 天才有的那一页</span>
+      🥚 百日隐藏回顾 <span class="sub">连续打卡 100 天才有的那一页</span>
     </template>
 
     <template v-if="!unlocked">
       <p class="locked" data-testid="couple-memory-locked">
-        🔒 连续贴满 100 天才能打开——这一页先锁着，等你们自己把它贴出来 🥚
+        🔒 连续打卡 100 天才能打开——两个人都答完当天那一问就算一天，这一页先锁着 🥚
       </p>
-      <p v-if="daysToOpen !== null" class="hint" data-testid="couple-memory-left">现在还要再贴 {{ daysToOpen }} 天 💪</p>
+      <p v-if="daysToOpen !== null" class="hint" data-testid="couple-memory-left">现在还要再打 {{ daysToOpen }} 天 💪</p>
     </template>
 
     <template v-else>
@@ -81,11 +81,11 @@ onMounted(() => {
       </p>
       <p v-if="page" class="summary" data-testid="couple-memory-summary">{{ page.summary }}</p>
       <p v-else-if="!loading" class="empty" data-testid="couple-memory-empty">
-        这一页还没写出来——先去连续贴满 100 天 🥚
+        这一页还没写出来——先去连续打卡 100 天 🥚
       </p>
 
       <p v-if="page" class="stats" data-testid="couple-memory-stats">
-        在一起 {{ page.daysTogether }} 天 · 贴了 {{ page.confirmedDays }} 天 · 最长连击 {{ page.longestStreak }} 天 ·
+        在一起 {{ page.daysTogether }} 天 · 打卡 {{ page.confirmedDays }} 天 · 最长连击 {{ page.longestStreak }} 天 ·
         补签 {{ page.makeupDays }} 次 · 一起答完 {{ page.bothAnsweredDays }} 题 · 实现 {{ page.fulfilledWishes }} 个愿望 ·
         称号「{{ page.intimacyTitle }}」
       </p>

@@ -5,7 +5,7 @@
 
     <!-- 已建立：空间主页 -->
     <div v-else class="space-page" data-testid="couple-space">
-      <!-- 头部：双方头像 + 在一起天数 + 今天双方心情 + 心动值 + 关系操作（背景取空间主题色，连满 7 天换会长的动态背景） -->
+      <!-- 头部：双方头像 + 在一起天数 + 今天问答与连击 + 心动值 + 关系操作（背景取空间主题色，连满 7 天换会长的动态背景） -->
       <el-card shadow="never" class="panel header-card themed"
                :class="{ 'bg-grown': bgStage > 0 }"
                :data-bg-stage="bgStage || undefined"
@@ -66,8 +66,13 @@
               <span class="stat-label">在一起的天数</span>
             </div>
             <div class="stat">
-              <span class="stat-num" data-testid="couple-header-today-mood">{{ todayMoodLine }}</span>
-              <span class="stat-label">今天的心情（我 · TA）</span>
+              <!-- 这一格只读已加载好的问答位与看板连击，不为它多发一次请求；「—」是没拉到，不等于没答 -->
+              <span
+                class="stat-num today-line"
+                data-testid="couple-header-today-question"
+                :title="todayQuestionTitle"
+              >{{ todayQuestionLine }}</span>
+              <span class="stat-label">今天（一问 · 连续）</span>
             </div>
             <div class="stat">
               <span class="stat-num" data-testid="couple-intimacy-score">{{ couple.intimacy?.score ?? 0 }}</span>
@@ -75,43 +80,6 @@
             </div>
           </div>
           <div class="header-actions">
-            <!-- F206 空间功能搜索：按功能卡名命中 → 切页签并滚动定位 -->
-            <el-input
-              v-model="searchQuery"
-              size="small"
-              clearable
-              placeholder="🔍 找功能…"
-              class="couple-search"
-              data-testid="couple-search"
-              @keyup.enter="onSearchEnter"
-            />
-            <!-- F207 常用收藏：pin ≤6 张功能卡，置顶在各页签开头 -->
-            <el-popover v-model:visible="pinPanelVisible" placement="bottom-end" :width="280" trigger="click" :teleported="false">
-              <template #reference>
-                <el-button size="small" plain data-testid="couple-pin-open">⭐ 常用</el-button>
-              </template>
-              <div class="pin-panel" data-testid="couple-pin-panel">
-                <p class="pin-hint">勾选最常逛的功能（最多 6 个），会置顶在每个页签开头～</p>
-                <el-checkbox-group v-model="pinDraft" class="pin-group">
-                  <el-checkbox
-                    v-for="c in searchableCards"
-                    :key="c.key"
-                    :value="c.key"
-                    :disabled="pinDraft.length >= 6 && !pinDraft.includes(c.key)"
-                    :data-testid="`couple-pin-opt-${c.key}`"
-                    class="pin-item"
-                  >
-                    {{ c.label }}
-                  </el-checkbox>
-                </el-checkbox-group>
-                <div class="pin-foot">
-                  <span class="pin-count" data-testid="couple-pin-count">{{ pinDraft.length }}/6</span>
-                  <el-button size="small" type="primary" :loading="savingPins" data-testid="couple-pin-save" @click="onSavePins">
-                    保存
-                  </el-button>
-                </div>
-              </div>
-            </el-popover>
             <el-badge :value="couple.notifyUnread" :hidden="couple.notifyUnread <= 0" :max="99">
               <el-button size="small" plain data-testid="couple-notify-bell" @click="openNotifies">
                 🔔 通知
@@ -148,9 +116,10 @@
         data-testid="couple-guide-dialog"
       >
         <ol class="guide-list">
-          <li>🫶 <b>今天</b>——记个心情、贴一贴，难过就求抱抱，吵架了有安全词兜底</li>
-          <li>🍚 <b>过日子</b>——今晚吃什么、家务归谁、几点到家、愿望券攒着给 TA 一个</li>
-          <li>🎁 <b>小惊喜</b>——每周刮一张券，把「TA 为我做的事」一件件记下来</li>
+          <li>🫶 <b>今天</b>——先答掉今天那一问，两个人都答完这一天就算打卡了</li>
+          <li>🔥 <b>连续</b>——连着答完的天数攒成连续，满七天这屏会长出会动的背景，往后一档档还有爱称发光、挂件、称号</li>
+          <li>🌟 <b>愿望清单</b>——想要的先记下来，对方能偷偷标「已准备」，许愿这一侧永远看不到</li>
+          <li>🥚 <b>隐藏角落</b>——连续满 100 天，页签里会多出一个只给你们俩看的回顾页</li>
         </ol>
         <p class="anniv-tip">顶部页签随便逛，这条提示只出现一次～</p>
         <template #footer>
@@ -158,35 +127,20 @@
         </template>
       </el-dialog>
 
-      <!-- 三大功能 + 隐藏角落（裁剪后 11 页签收敛到 3 个，隐藏页签连满 100 天才出现） -->
+      <!-- 四张卡三个页签：今天两张（一问 + 打卡）、愿望清单一张、隐藏角落满 100 天才出现 -->
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
           <el-tab-pane label="🫶 今天" name="today">
             <TabExtras tab="today" />
             <div class="tab-stack">
-              <CoupleMood />
-              <CoupleBond />
-              <CoupleStreak />
               <CoupleQuestion />
-              <CoupleComfort />
-              <CoupleCatch />
+              <CoupleStreak />
             </div>
           </el-tab-pane>
-          <el-tab-pane label="🍚 过日子" name="life" lazy>
-            <TabExtras tab="life" />
+          <el-tab-pane label="🌟 愿望清单" name="wish" lazy>
+            <TabExtras tab="wish" />
             <div class="tab-stack">
-              <CoupleDining />
-              <CoupleFactory />
-              <CoupleQuest />
-              <CoupleCeremony />
-            </div>
-          </el-tab-pane>
-          <el-tab-pane label="🎁 小惊喜" name="gift" lazy>
-            <TabExtras tab="gift" />
-            <div class="tab-stack">
-              <CoupleSurprise />
               <CoupleWish />
-              <CoupleEcho />
             </div>
           </el-tab-pane>
           <el-tab-pane v-if="secretTabOpen" label="🥚 隐藏角落" name="secret" lazy>
@@ -275,28 +229,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import type { VNode } from 'vue'
+import { computed, defineComponent, h, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { EditPen } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
-import { pinApi } from '@/api/couple'
-import { COUPLE_CARDS, findCardByKey, searchCoupleCards } from '@/components/couple/coupleCards.registry'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import CoupleSetup from '@/components/couple/CoupleSetup.vue'
-import CoupleBond from '@/components/couple/CoupleBond.vue'
 import CoupleProfile from '@/components/couple/CoupleProfile.vue'
-import CoupleMood from '@/components/couple/CoupleMood.vue'
-import CoupleSurprise from '@/components/couple/CoupleSurprise.vue'
-import CoupleComfort from '@/components/couple/CoupleComfort.vue'
-import CoupleCatch from '@/components/couple/CoupleCatch.vue'
-import CoupleDining from '@/components/couple/CoupleDining.vue'
-import CoupleFactory from '@/components/couple/CoupleFactory.vue'
-import CoupleCeremony from '@/components/couple/CoupleCeremony.vue'
-import CoupleEcho from '@/components/couple/CoupleEcho.vue'
-import CoupleQuest from '@/components/couple/CoupleQuest.vue'
 import CoupleStreak from '@/components/couple/CoupleStreak.vue'
 import CoupleQuestion from '@/components/couple/CoupleQuestion.vue'
 import CoupleWish from '@/components/couple/CoupleWish.vue'
@@ -317,85 +258,10 @@ const savingPet = ref(false)
 /** F41 通知中心 */
 const notifyVisible = ref(false)
 
-// ============ F206 空间功能搜索 ============
-const searchQuery = ref('')
-
-function onSearchEnter() {
-  const hits = searchCoupleCards(searchQuery.value, couple.unlockedTierKeys)
-  if (!hits.length) {
-    ElMessage.warning('没找到这个功能…换个词试试 🔍')
-    return
-  }
-  jumpToCard(hits[0].key)
-  searchQuery.value = ''
-}
-
-/** 切到目标页签 → 等面板挂载后滚动定位并闪烁高亮 1.5s */
-function jumpToCard(key: string) {
-  const card = findCardByKey(key)
-  if (!card) return
-  activeTab.value = card.tab
-  void nextTick(() => {
-    window.setTimeout(() => {
-      const el = document.querySelector(`[data-testid="${key}"]`)
-      if (!(el instanceof HTMLElement)) return
-      if (typeof el.scrollIntoView === 'function') {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-      el.classList.add('couple-card-flash')
-      window.setTimeout(() => el.classList.remove('couple-card-flash'), 1500)
-    }, 60)
-  })
-}
-
-// ============ F207 常用收藏（pin ≤6） ============
-const myPins = ref<string[]>([])
-const pinDraft = ref<string[]>([])
-const pinPanelVisible = ref(false)
-const savingPins = ref(false)
-const pinnedCards = computed(() => myPins.value.map(findCardByKey).filter(Boolean) as typeof COUPLE_CARDS)
-
-/** 收藏面板与搜索共用的候选：需要解锁档位的卡，没解锁就不该出现在可选项里。 */
-const searchableCards = computed(() =>
-  COUPLE_CARDS.filter((c) => !c.tier || couple.unlockedTierKeys.includes(c.tier)),
-)
-
-async function loadPins() {
-  try {
-    const vo = await pinApi.list()
-    myPins.value = vo?.mine ?? []
-    pinDraft.value = [...myPins.value]
-  } catch {
-    // 无空间/网络异常：静默
-  }
-}
-
-async function onSavePins() {
-  if (pinDraft.value.length > 6) {
-    ElMessage.warning('最多收藏 6 个功能卡哦 ⭐')
-    return
-  }
-  savingPins.value = true
-  try {
-    const vo = await pinApi.save(pinDraft.value)
-    myPins.value = vo?.mine ?? [...pinDraft.value]
-    pinDraft.value = [...myPins.value]
-    ElMessage.success('常用功能已保存 ⭐')
-    pinPanelVisible.value = false
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '保存失败')
-  } finally {
-    savingPins.value = false
-  }
-}
-
-watch(() => couple.established, (v) => { if (v) void loadPins() }, { immediate: true })
-
 // ============ F208 页签首访气泡 ============
 const TAB_TIPS: Record<string, string> = {
-  today: '🫶 今天：记个心情、贴一贴、难过就求抱抱，吵架了有安全词兜底～',
-  life: '🍚 过日子：今晚吃什么、家务归谁、几点到家、想给 TA 一个什么愿望～',
-  gift: '🎁 小惊喜：每周刮一张券、攒一件 TA 为你做过的小事～',
+  today: '🫶 今天：答一答今天这一问，两个人都答完就算打卡一天，连上去就长解锁～',
+  wish: '🌟 愿望清单：想要的先记下，对方可以偷偷标「已准备」——许愿的人这一侧永远看不到～',
 }
 const visibleTabTips = ref<Record<string, boolean>>({})
 
@@ -418,62 +284,38 @@ function closeTabTip(tab: string) {
 
 watch(activeTab, (t) => maybeShowTabTip(t))
 
-// 空间建立后：加载常用收藏 + 首个可见页签（默认或路由直达）的首访提示
+// 空间建立后：给首个可见页签（默认或路由直达）挂上首访提示
 watch(
   () => couple.established,
   (v) => {
     if (!v) return
-    void loadPins()
     maybeShowTabTip(activeTab.value)
   },
   { immediate: true },
 )
 
-/** 每个一级页签内容顶部：F208 首访提示条 + F207「我的常用」chip 横排 */
+/** 每个一级页签内容顶部：F208 首访提示条（F207 常用 chip 随收藏功能一起下线） */
 const TabExtras = defineComponent({
   name: 'TabExtras',
   props: { tab: { type: String, required: true } },
   setup(props) {
     return () => {
-      const nodes: VNode[] = []
-      if (visibleTabTips.value[props.tab]) {
-        nodes.push(
-          h('div', { class: 'tab-tip', 'data-testid': 'couple-tab-tip' }, [
-            h('span', TAB_TIPS[props.tab]),
-            h(
-              'button',
-              {
-                type: 'button',
-                class: 'tab-tip-close',
-                'data-testid': 'couple-tab-tip-close',
-                onClick: () => closeTabTip(props.tab),
-              },
-              '×',
-            ),
-          ]),
-        )
-      }
-      if (pinnedCards.value.length) {
-        nodes.push(
-          h('div', { class: 'tab-pins', 'data-testid': 'couple-pins' }, [
-            h('span', { class: 'tab-pins-label' }, '⭐ 我的常用'),
-            ...pinnedCards.value.map((c) =>
-              h(
-                'button',
-                {
-                  type: 'button',
-                  class: 'tab-pin-chip',
-                  'data-testid': `couple-pin-chip-${c.key}`,
-                  onClick: () => jumpToCard(c.key),
-                },
-                c.label,
-              ),
-            ),
-          ]),
-        )
-      }
-      if (!nodes.length) return null
-      return h('div', { class: 'tab-extras' }, nodes)
+      if (!visibleTabTips.value[props.tab]) return null
+      return h('div', { class: 'tab-extras' }, [
+        h('div', { class: 'tab-tip', 'data-testid': 'couple-tab-tip' }, [
+          h('span', TAB_TIPS[props.tab]),
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'tab-tip-close',
+              'data-testid': 'couple-tab-tip-close',
+              onClick: () => closeTabTip(props.tab),
+            },
+            '×',
+          ),
+        ]),
+      ])
     }
   },
 })
@@ -518,28 +360,27 @@ function closeGuide() {
   guideVisible.value = false
 }
 
-/** F94 通知分类筛选 */
-type NotifyFilter = 'all' | 'task' | 'emotion' | 'memory' | 'system'
+/** F94 通知分类筛选：分类按后端存活的 13 个情侣事件前缀重排（已下线卡片的那些前缀不再有条目） */
+type NotifyFilter = 'all' | 'streak' | 'question' | 'wish' | 'space'
 const notifyFilter = ref<NotifyFilter>('all')
 const NOTIFY_FILTERS: { key: NotifyFilter; label: string }[] = [
   { key: 'all', label: '全部' },
-  { key: 'task', label: '任务约定' },
-  { key: 'emotion', label: '情绪贴贴' },
-  { key: 'memory', label: '养成回忆' },
-  { key: 'system', label: '系统提醒' },
+  { key: 'question', label: '每日一问' },
+  { key: 'streak', label: '打卡解锁' },
+  { key: 'wish', label: '愿望清单' },
+  { key: 'space', label: '空间与日子' },
 ]
-const TASK_EVENTS = ['task-', 'promise-', 'pact-', 'countdown-', 'chore-', 'dateplan-', 'habit-']
-const EMOTION_EVENTS = ['mood-', 'bond-', 'comfort', 'peace-', 'sorry-', 'praise-', 'reconcile', 'night-care', 'poke']
-const MEMORY_EVENTS = ['challenge-', 'passbook', 'hundred-', 'wish-', 'travel-', 'nexttime-', 'read-', 'watch-', 'dict-', 'quote-', 'ticket-', 'song-', 'capsule-', 'truth-', 'whisper-', 'telepathy-', 'love-bank', 'scratch-', 'box-', 'garden-', 'rose-', 'treasure-', 'confession-', 'fortune-']
+const RULES: Record<Exclude<NotifyFilter, 'all'>, string[]> = {
+  question: ['question-'],
+  streak: ['streak-'],
+  wish: ['wish-'],
+  space: ['invite', 'dissolved', 'space-themed', 'anniversary'],
+}
 const filteredNotifies = computed(() => {
   if (notifyFilter.value === 'all') {
     return couple.notifies
   }
-  const rules =
-    notifyFilter.value === 'task' ? TASK_EVENTS
-      : notifyFilter.value === 'emotion' ? EMOTION_EVENTS
-        : notifyFilter.value === 'memory' ? MEMORY_EVENTS
-          : ['birthday', 'milestone', 'notify-ignored']
+  const rules = RULES[notifyFilter.value]
   return couple.notifies.filter((n) => rules.some((prefix) => n.event.startsWith(prefix)))
 })
 
@@ -557,13 +398,28 @@ function formatNotifyTime(at: number) {
   return `${d.getMonth() + 1}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 头部第二格：今天双方的心情（谁没记就留白） */
-const MOOD_EMOJI: Record<string, string> = {
-  HAPPY: '😄', CALM: '🙂', SAD: '😢', ANGRY: '😠', SICK: '🤒', TIRED: '😪',
-}
-const todayMoodLine = computed(() => {
-  const m = (k: string | null | undefined) => (k ? MOOD_EMOJI[k] ?? '·' : '·')
-  return `${m(couple.overview?.todayMine?.mood)} ${m(couple.overview?.todayPartner?.mood)}`
+/**
+ * 头部第二格：今天那一问答完没有 + 当前连续天数。
+ *
+ * 一律现读已经加载好的两块——`couple.question`（今天页签那张卡或 WS 拉回）与
+ * `couple.streak`（登录后 init 顺带拉的看板），这一格自己不发请求。
+ * 没拉到就是「—」，不等于「没答」，所以再挂一句 title 说清是哪种空态。
+ */
+const todayQuestionLine = computed(() => {
+  const answered = couple.question ? (couple.question.answeredByMe ? '✅ 已答' : '○ 待答') : '—'
+  const streak = couple.streak ? `连 ${couple.streak.currentStreak} 天` : '—'
+  return `${answered} · ${streak}`
+})
+
+const todayQuestionTitle = computed(() => {
+  const q = couple.question
+  const s = couple.streak
+  return [
+    q
+      ? `今天这一问：我${q.answeredByMe ? '已答' : '还没答'} · TA${q.answeredByPartner ? '已答' : '还没答'}`
+      : '今天的每日一问还没拉到',
+    s ? `当前连续 ${s.currentStreak} 天（两个人都答完当天那一问就算一天）` : '打卡看板还没拉到',
+  ].join('；')
 })
 
 /** F27 空间主题：应用双方选定的空间主题渐变，没选过就走今日色板 */
@@ -634,7 +490,9 @@ async function onSavePet() {
   savingPet.value = true
   try {
     const name = petEditName.value.trim()
-    await couple.setPetName(name || null)
+    // 爱称只有 PUT /api/couple/profile 这一条通道（独立的 bond/pet-name 随贴贴卡下线）：
+    // 空串 = 清除，其余两个字段不传就是不改；改完由 store 重拉总览生效
+    await couple.updateProfile({ petName: name || '' })
     ElMessage.success(name ? `爱称已更新：「${name}」🏷️` : '爱称已清除')
     petEditVisible.value = false
   } catch (e) {
@@ -676,9 +534,9 @@ async function onDissolve() {
 }
 
 onMounted(async () => {
-  // 深链直达：?tab=today|life|gift|secret 指定首屏页签，白名单外的值忽略
+  // 深链直达：?tab=today|wish|secret 指定首屏页签，白名单外的值忽略
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
-  if (['today', 'life', 'gift'].includes(tab)) {
+  if (['today', 'wish'].includes(tab)) {
     activeTab.value = tab
   }
   // MainLayout 已在登录后 init 过：这里兜底刷新总览（邀请状态可能变化）
@@ -689,7 +547,12 @@ onMounted(async () => {
     if (secretTabOpen.value) activeTab.value = 'secret'
   }
   // 头部心动值 & 恋爱等级
+  if (!couple.established) return
   void couple.loadIntimacy()
+  // 头部第二格读的是 couple.question：落在 wish/secret 页签时今天那张卡没挂载，这里补一次。
+  // 但要先看数据在不在——今天页签里卡片已经先请求过并落地了，再发一次就是白打一趟；
+  // 它还在飞的时候 store 的并发去重会把两次调用合成一个请求。
+  if (!couple.question) void couple.loadQuestion()
 })
 </script>
 
@@ -866,6 +729,11 @@ onMounted(async () => {
   font-weight: 700;
   color: #f56c6c;
 }
+/* 第二格是一句话不是单个数字，字号收一档免得把头部三格挤散 */
+.stat-num.today-line {
+  font-size: 15px;
+  white-space: nowrap;
+}
 .stat-label {
   font-size: 11px;
   color: var(--im-muted, #8f959e);
@@ -875,55 +743,6 @@ onMounted(async () => {
   gap: 8px;
   margin-left: auto;
   align-items: center;
-}
-.couple-search {
-  width: 150px;
-}
-/* F207 收藏面板 */
-.pin-panel .pin-hint {
-  margin: 0 0 8px;
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-}
-.pin-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  max-height: 260px;
-  overflow-y: auto;
-}
-.pin-item {
-  margin-right: 0;
-}
-.pin-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-}
-.pin-count {
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-}
-.pin-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  max-height: 260px;
-  overflow-y: auto;
-}
-.pin-item {
-  margin-right: 0;
-}
-.pin-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-}
-.pin-count {
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
 }
 .btn-ico {
   margin-right: 2px;
@@ -1008,22 +827,7 @@ onMounted(async () => {
 </style>
 
 <style>
-/* F206/F207 跳转高亮：外部按 data-testid 找到卡片根元素后加的临时 class（非 scoped 才能作用到子组件） */
-.couple-card-flash {
-  border-radius: 12px;
-  animation: couple-card-flash-kf 0.5s ease-in-out 3;
-}
-@keyframes couple-card-flash-kf {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(245, 108, 108, 0);
-    outline: 2px solid rgba(245, 108, 108, 0);
-  }
-  50% {
-    box-shadow: 0 0 12px 2px rgba(245, 108, 108, 0.45);
-    outline: 2px solid rgba(245, 108, 108, 0.85);
-  }
-}
-/* F208 首访提示条 + F207 常用 chip 行（TabExtras 为局部渲染组件，scoped 触不到） */
+/* F208 首访提示条（TabExtras 为局部渲染组件，scoped 触不到） */
 .couple-page .tab-extras {
   display: flex;
   flex-direction: column;
@@ -1051,30 +855,6 @@ onMounted(async () => {
   padding: 2px 4px;
 }
 .couple-page .tab-tip-close:hover {
-  color: #f56c6c;
-}
-.couple-page .tab-pins {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.couple-page .tab-pins-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #ad6800;
-}
-.couple-page .tab-pin-chip {
-  border: 1px solid #f3d19e;
-  border-radius: 999px;
-  background: #fff8e6;
-  padding: 3px 10px;
-  font-size: 12px;
-  color: #b8860b;
-  cursor: pointer;
-}
-.couple-page .tab-pin-chip:hover {
-  border-color: #f56c6c;
   color: #f56c6c;
 }
 </style>

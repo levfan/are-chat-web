@@ -201,20 +201,12 @@
               <span class="stat-label">已解散</span>
             </div>
             <div class="stat-card">
-              <span class="stat-num">{{ coupleStats.totalActions }}</span>
-              <span class="stat-label">累计贴贴次数</span>
+              <span class="stat-num">{{ coupleStats.totalCheckinDays }}</span>
+              <span class="stat-label">累计打卡人天</span>
             </div>
             <div class="stat-card">
-              <span class="stat-num">{{ coupleStats.totalLetters }}</span>
-              <span class="stat-label">累计悄悄话</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num">{{ coupleStats.totalPromisesDone }}</span>
-              <span class="stat-label">完成的约定</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num">{{ coupleStats.totalCapsules }}</span>
-              <span class="stat-label">时光胶囊</span>
+              <span class="stat-num">{{ coupleStats.totalAnswers }}</span>
+              <span class="stat-label">累计每日一问作答</span>
             </div>
           </div>
           <el-empty v-else description="点击「刷新」加载情侣空间运营数据" :image-size="60" />
