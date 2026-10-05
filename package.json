@@ -1,7 +1,7 @@
 {
   "name": "are-chat-web",
   "private": true,
-  "version": "1.7.0-alpha.1",
+  "version": "1.7.0-alpha.2",
   "type": "module",
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
