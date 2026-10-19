@@ -1,7 +1,7 @@
 # 状态管理（Pinia Stores）
 
 > 本页回答：项目有哪些 store、couple store 的数据模型与刷新机制、WS 事件如何分发、init/reset 生命周期由谁调用。
-> **2026-10-20 删掉百日回顾后 couple store 仍是 312 行、6 个数据 ref**：总览与邀请、心动值、打卡看板、每日一问、通知（外加派生出的解锁档位）。
+> **2026-10-20 删除通知中心后 couple store 是 281 行、4 个数据 ref**：总览与邀请、心动值、打卡看板、每日一问（外加派生出的解锁档位）。
 
 ## Store 清单（`src/stores/`）
 
@@ -9,7 +9,7 @@
 |---|---|---|---|
 | `useAuthStore` | `auth.ts`（88 行） | 小 | 登录态：`username`（初值读 sessionStorage `CURRENT_USER_KEY`）、`role: 'USER'|'ADMIN'`、`loginAt`、`isLoggedIn`/`isAdmin` computed；`login`/`verify`（服务端确认会话，尽力而为）/`logout`/`clearLocal`；`register` 已废弃为直接抛错（注册改审批制，走 `authApi.register` 提交申请） |
 | `useImStore` | `im.ts`（937 行） | 中 | IM 全域：好友/申请、会话与消息、**WebSocket 连接管理**（`ws(s)://location.host/ws/chat/{username}`，25s heart 心跳）、草稿 localStorage、未读/置顶/收藏/回复/撤回/表态/戳一戳等；WS push 按 `type` 分发（见 [WS 事件链路](ws-events.md)），其中 `type==='couple'` 转发为 `arechat:couple` 自定义事件 |
-| `useCoupleStore` | `couple.ts`（312 行） | 小 | 只留「多组件共用 + 要靠 WS 刷新」的域：总览与邀请、心动值、打卡看板、每日一问、通知中心；`arechat:couple` 事件的统一消费者 |
+| `useCoupleStore` | `couple.ts`（281 行） | 小 | 只留「多组件共用 + 要靠 WS 刷新」的域：总览与邀请、心动值、打卡看板、每日一问；`arechat:couple` 事件的统一消费者 |
 
 ## couple store 核心概念
 
@@ -19,7 +19,7 @@
 - 派生 computed（全部从 overview 读）：
   - `space = overview?.space ?? null`（情侣空间实体），`established = !!space`（CoupleView 据此渲染 CoupleSetup 还是主界面）
   - `incomingInvites` / `outgoingInvites`（待处理邀请列表）——驱动导航红点与头部提示
-- 其余状态 ref 共 5 个：`intimacy`（心动值）、`streak`（打卡看板，六档解锁态从它的 `tiers` 里筛）、`question`（今日一问）、`notifies` / `notifyUnread`（通知）。末尾统一 `return {...}` 导出。
+- 其余状态 ref 共 3 个：`intimacy`（心动值）、`streak`（打卡看板，六档解锁态从它的 `tiers` 里筛）、`question`（今日一问）。末尾统一 `return {...}` 导出。
 - `unlockedTierKeys` / `tierUnlocked(key)`：**只认看板 `tiers` 里 `unlocked` 的行**，前端没有第二份解锁标记可兜底——看板没拉到就等于没解锁。
 
 ### 写接口的回显与去重（两处实测过的细节）
@@ -32,7 +32,7 @@
 `function handleCoupleEvent(event: Event)`：
 
 - 入参是 `CustomEvent<{ event, username, detail }>`；`detail` 是后端拼好的中文人话文案。
-- 用 `if` 链按事件名分组（不是 switch），**15 个事件名**按族处理，逐组的刷新口径见 [WS 事件链路](ws-events.md)；`wish-*` 的看板由组件自持，store 只弹提醒 + 同步角标。
+- 用 `if` 链按事件名分组（不是 switch），**15 个事件名**按族处理，逐组的刷新口径见 [WS 事件链路](ws-events.md)；`wish-*` 的看板由组件自持，store 只弹提醒。
 - **没有兜底分支**：不认识的事件直接忽略（旧卡片的 30 来个事件后端已不再发，加兜底等于把下线功能接回来）。
 - `notify()` 内部用 `ElNotification`（top-right，duration 8000）。
 - 全局监听只绑一次：模块级 `globalListenerBound` 标志 + `bindGlobalListener()` 里 `window.addEventListener('arechat:couple', e => useCoupleStore().handleCoupleEvent(e))`——回调内动态解析当前活跃 pinia 的实例，多实例/测试场景安全。

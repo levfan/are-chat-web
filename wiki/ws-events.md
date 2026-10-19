@@ -13,7 +13,7 @@
                  └─ couple store 全局一次性监听（bindGlobalListener，模块级标志只绑一次）
                       └─ handleCoupleEvent(event)  按事件名分支（现役 15 个情侣 WS 事件）：
                            ① notify(标题, 中文文案)  ← ElNotification top-right 8s
-                           ② 按事件归属重拉对应数据（loadOverview / loadStreak / loadQuestion / loadNotifies）
+                           ② 按事件归属重拉对应数据（loadOverview / loadStreak / loadQuestion）
                                 └─ 组件 computed 依赖 store ref → 自动重渲染
 ```
 
@@ -47,10 +47,10 @@
 | 空间本体 | `anniversary-updated` | notify「📅 我们的日子」+ `loadOverview()` |
 | 空间本体 | `space-themed` | notify「✨ 小空间装扮」+ `loadOverview()`（与日子分开弹：改主题不是改日子） |
 | 空间本体 | `pet-name-changed` | notify「🏷️ 专属爱称」+ `loadOverview()`（爱称写入口在 `PUT /profile`，推送单独成条，见 ADR-0010 第 12 条） |
-| 定时任务 | `anniversary-reminder` | notify「📅 我们的日子」+ `loadNotifies()`（只补角标，总览没变） |
-| 连续互动打卡 | `streak-checkin` `streak-unlocked` `streak-makeup` | notify「🔥 连续互动」+ `loadStreak()` + `loadIntimacy()` + `loadNotifies()` |
-| 每日一问 | `question-daily` `question-answered` | notify「💬 每日一问」+ `loadQuestion()` + `loadNotifies()` |
-| 愿望清单 | `wish-added` `wish-fulfilled` | notify「🌟 愿望清单」+ `loadNotifies()`（看板由组件自持，靠写接口返回值更新） |
+| 定时任务 | `anniversary-reminder` | notify「📅 我们的日子」 |
+| 连续互动打卡 | `streak-checkin` `streak-unlocked` `streak-makeup` | notify「🔥 连续互动」+ `loadStreak()` + `loadIntimacy()` |
+| 每日一问 | `question-daily` `question-answered` | notify「💬 每日一问」+ `loadQuestion()` |
+| 愿望清单 | `wish-added` `wish-fulfilled` | notify「🌟 愿望清单」（看板由组件自持，靠写接口返回值更新） |
 
 > 刻意**不存在**的事件：`wish-prepared` / `wish-unprepared`。「偷偷准备」对许愿人保密是产品规则，
 > 后端 `CoupleWishServiceTest.markingPreparedPushesNothingAtAll` 用 `verifyNoInteractions(push)` 锁死——

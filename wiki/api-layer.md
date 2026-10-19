@@ -1,9 +1,9 @@
 # API 层
 
 > 本页回答：`src/api/` 有哪些文件与分组对象、每个对象的方法与路径、与后端 `/api/couple/*` 路由的对应关系。
-> **2026-10-20 删掉百日回顾后**：`couple.ts` 收敛到 **25 个方法 / 4 个分组对象 / 114 行**，与后端 25 个存活端点一一对齐
+> **2026-10-20 删除通知中心与运营看板后**：`couple.ts` 收敛到 **22 个方法 / 4 个分组对象 / 105 行**，与后端 22 个存活端点一一对齐
 > （判据见 `are-chat/docs/adr/0010-couple-trim-to-v8-features.md`；`tests/unit/couple.spec.ts` 的「api 契约守卫」
-> 用例逐方法断言 mock 工厂覆盖 + 总数为 25）。
+> 用例逐方法断言 mock 工厂覆盖 + 总数为 22）。
 
 ## 非 couple 分组（未动）
 
@@ -11,26 +11,29 @@
 |---|---|---|
 | `http.ts` | `http`、`ApiError` | — |
 | `auth.ts` | `authApi` / `adminApi` | `/api/auth` / `/api/admin` |
-| `im.ts` | `friendApi` / `messageApi` / `starsApi` / `profileApi` | `/api/friends` `/api/messages` `/api/stars` `/api/profile` |
+| `im.ts` | `friendApi` / `messageApi` / `profileApi` | `/api/friends` `/api/messages` `/api/profile` |
+
+> 聊天侧的 `starsApi`（消息收藏）与 `messageApi.searchGlobal`（全局搜索）已在 2026-10-20 随入口一起下线；好友 `tag` 字段（分组）也已删除，`friendApi.update` 只剩 `remark/pinned/muted/blocked`。
 | `files.ts` | `filesApi` | `/api/files` |
 | `system.ts` | `presenceApi` / `systemApi` / `announcementApi` | `/api/presence` `/api/system` `/api/announcements` |
 
-## couple 分组对象（4 个 / 25 个方法）
+## couple 分组对象（4 个 / 22 个方法）
 
 | 导出对象 | base 路径 | 方法数 | 职责 |
 |---|---|---:|---|
-| `coupleApi` | `/api/couple` | 13 | 地基：总览/邀请建立/纪念日/空间个性化/心动值/通知/恋爱徽章/运营看板 |
+| `coupleApi` | `/api/couple` | 10 | 地基：总览/邀请建立/纪念日/空间个性化/心动值/恋爱徽章 |
 | `streakApi` | `/api/couple/streak` | 2 | 卡 `couple-streak` 连续互动打卡 + 六档解锁 |
 | `questionApi` | `/api/couple/question` | 3 | 卡 `couple-question` 每日一问（它同时是打卡的触发源） |
 | `wishApi` | `/api/couple/wish` | 7 | 卡 `couple-wish` 愿望清单 |
 
 **已随裁剪整体下线、不得再写回**：`pinApi`（F207 常用收藏）、`memoryApi`（百日隐藏回顾页）、`diningApi`（饭桌）、`ceremonyApi`（愿望券本）、
 `factoryApi`（家务轮盘）、`echoApi`（好事簿）、`questApi`（加班留灯）、`catchApi`（安全词复盘），
-以及 `coupleApi` 里的 `saveMood/moods/bondStats/sendAction/reactMood/moodReactions/setPetName/anniversaries CRUD/scratches/boxes/comfort*/chatTopics/moodSync`。
+以及 `coupleApi` 里的 `saveMood/moods/bondStats/sendAction/reactMood/moodReactions/setPetName/anniversaries CRUD/scratches/boxes/comfort*/chatTopics/moodSync`
+与 `notifyMine/notifyReadAll/adminCoupleStats`（通知中心与 F45 运营看板）。
 
 ### 方法全列
 
-#### `coupleApi`（13）
+#### `coupleApi`（10）
 
 | 方法 | HTTP | 路径 | 说明 |
 |---|---|---|---|
@@ -43,10 +46,7 @@
 | `dissolve` | POST | `/api/couple/dissolve` | 解除情侣空间 |
 | `updateProfile` | PUT | `/api/couple/profile` | 空间个性化三合一：`{slogan?, theme?, petName?}`，**null=不改该项、空串=清除**；⚠️ 独立的 `PUT /couple/bond/pet-name` 已随贴贴卡下线，爱称只有这一条通道 |
 | `intimacy` | GET | `/api/couple/intimacy` | 心动值五项 breakdown：`daysTogether/checkinDays/longestStreak/answerDays/wishFulfilled` |
-| `notifyMine` | GET | `/api/couple/notify` | 通知中心（离线补看的落库副本） |
-| `notifyReadAll` | POST | `/api/couple/notify/read-all` | F41 全部标记已读 |
 | `relationshipOf` | GET | `/api/couple/relationship-of/{username}` | F44 恋爱中徽章：某人是否在恋爱中 + 天数（仅其好友可查） |
-| `adminCoupleStats` | GET | `/api/couple/admin/stats` | F45 运营看板（仅管理员），字段含 `totalCheckinDays`/`totalAnswers`/`spacesCreatedThisMonth` |
 
 #### `streakApi`（2）
 

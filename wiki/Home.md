@@ -4,7 +4,7 @@
 
 ## 30 秒简介
 
-`are-chat-web` 是一个 **Vue 3 单页前端**，为 IM 聊天应用「小帆船」提供 Web 端：私聊（IM）、通讯录（好友合并）、管理后台，以及体量最大的 **情侣空间**（2026-10-20 删掉百日回顾后：2 个页签、3 张功能卡、6 个专属组件、25 个 `/api/couple/*` 接口、15 个 WS 事件）。后端是独立的 Spring Boot 仓库（are-chat），前端只做展示与交互，所有数据经 REST + WebSocket 获取。
+`are-chat-web` 是一个 **Vue 3 单页前端**，为 IM 聊天应用「小帆船」提供 Web 端：私聊（IM）、通讯录（好友合并）、管理后台，以及体量最大的 **情侣空间**（2026-10-20 删除通知中心后：2 个页签、3 张功能卡、6 个专属组件、22 个 `/api/couple/*` 接口、15 个 WS 事件）。后端是独立的 Spring Boot 仓库（are-chat），前端只做展示与交互，所有数据经 REST + WebSocket 获取。同日裁掉的还有消息收藏、全局搜索、快捷短语与好友分组，后台则只保留审批/用户/公告三个页签。
 
 - 当前版本：`package.json` version（唯一版本源，禁止在代码/文案/测试里写死）
 - 测试：Vitest（`tests/unit/`，jsdom）；构建含 `vue-tsc --noEmit` 类型检查
@@ -16,8 +16,8 @@
 |---|---|
 | [架构总览](architecture.md) | 技术栈、命令、目录地图、http.ts 封装、api 分组对象模式、store vs 组件自持数据 |
 | [页面与路由](pages-routing.md) | 路由表、每个 View 职责、CoupleView 的 2 个页签与挂载组件序列 |
-| [状态管理](state-management.md) | Pinia stores 清单；couple store 的 overview/space、`loaded` 惰性刷新、事件分发、init/reset 生命周期 |
-| [API 层](api-layer.md) | `src/api/` 文件与 4 个 couple 分组对象（`coupleApi`/`streakApi`/`questionApi`/`wishApi`）全量 25 方法表、与后端路由对应 |
+| [状态管理](state-management.md) | Pinia stores 清单；couple store 的 overview/space、in-flight 合并、事件分发、init/reset 生命周期 |
+| [API 层](api-layer.md) | `src/api/` 文件与 4 个 couple 分组对象（`coupleApi`/`streakApi`/`questionApi`/`wishApi`）全量 22 方法表、与后端路由对应 |
 | [WS 事件链路](ws-events.md) | 后端 push → im store 转发 `arechat:couple` → couple store 分发 → 组件刷新；15 个事件名全列 |
 | [测试](testing.md) | Vitest 配置、tests/unit 覆盖范围、`vi.mock` 全量显式 mock 模式、types 与 mock 同步的坑 |
 | [开发指南](dev-guide.md) | 环境、常用命令、硬性流程摘要、产品红线 |
