@@ -1,7 +1,7 @@
 # 状态管理（Pinia Stores）
 
 > 本页回答：项目有哪些 store、couple store 的数据模型与刷新机制、WS 事件如何分发、init/reset 生命周期由谁调用。
-> **2026-10-05 二轮裁剪后 couple store 收敛到 312 行、6 个数据 ref**：总览与邀请、心动值、打卡看板、每日一问、通知（外加派生出的解锁档位）。
+> **2026-10-20 删掉百日回顾后 couple store 仍是 312 行、6 个数据 ref**：总览与邀请、心动值、打卡看板、每日一问、通知（外加派生出的解锁档位）。
 
 ## Store 清单（`src/stores/`）
 
@@ -19,7 +19,7 @@
 - 派生 computed（全部从 overview 读）：
   - `space = overview?.space ?? null`（情侣空间实体），`established = !!space`（CoupleView 据此渲染 CoupleSetup 还是主界面）
   - `incomingInvites` / `outgoingInvites`（待处理邀请列表）——驱动导航红点与头部提示
-- 其余状态 ref 共 5 个：`intimacy`（心动值）、`streak`（打卡看板，七档解锁态从它的 `tiers` 里筛）、`question`（今日一问）、`notifies` / `notifyUnread`（通知）。末尾统一 `return {...}` 导出。
+- 其余状态 ref 共 5 个：`intimacy`（心动值）、`streak`（打卡看板，六档解锁态从它的 `tiers` 里筛）、`question`（今日一问）、`notifies` / `notifyUnread`（通知）。末尾统一 `return {...}` 导出。
 - `unlockedTierKeys` / `tierUnlocked(key)`：**只认看板 `tiers` 里 `unlocked` 的行**，前端没有第二份解锁标记可兜底——看板没拉到就等于没解锁。
 
 ### 写接口的回显与去重（两处实测过的细节）
@@ -49,7 +49,7 @@
 
 ## 组件自持数据模式（不进 store 的卡）
 
-`CoupleWish`（`wishApi` 的看板与六个写方法）在组件内自持状态：写接口返回**整份 `WishBoardVO`**，组件拿返回值整体替换本地状态；WS 只弹提醒不刷数据；未建空间（404）静默降级。`CoupleStreak` / `CoupleQuestion` / `CoupleMemory` 的初始拉取走 store（解锁态要被 ChatView 与头部共用），后续写操作同样整份替换。新需求优先走组件自持，只有需要跨组件共享或事件驱动刷新时才进 store。
+`CoupleWish`（`wishApi` 的看板与六个写方法）在组件内自持状态：写接口返回**整份 `WishBoardVO`**，组件拿返回值整体替换本地状态；WS 只弹提醒不刷数据；未建空间（404）静默降级。`CoupleStreak` / `CoupleQuestion` 的初始拉取走 store（解锁态要被 ChatView 与头部共用），后续写操作同样整份替换。新需求优先走组件自持，只有需要跨组件共享或事件驱动刷新时才进 store。
 
 ---
 

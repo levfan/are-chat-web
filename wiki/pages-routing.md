@@ -1,7 +1,7 @@
 # 页面与路由
 
 > 本页回答：有哪些路由、每个 View 干什么、CoupleView 的页签各挂哪些组件（按当前代码实况）。
-> **2026-10-05 二轮裁剪后 CoupleView 是 2 个常开页签 + 1 个隐藏页签**：`today` 今天、`wish` 愿望清单、`secret` 隐藏角落（连满 100 天才出现）。
+> **2026-10-20 删掉百日回顾后 CoupleView 是 2 个页签**：`today` 今天、`wish` 愿望清单。
 
 ## 路由表（`src/router/index.ts`，history 模式）
 
@@ -28,7 +28,7 @@
 | `CoupleView.vue` | 情侣空间全页（下节详列） |
 | `AdminView.vue` | 管理员后台：审批注册、发公告、看待办数与情侣空间统计 |
 
-## CoupleView 结构（`src/views/CoupleView.vue`，860 行）
+## CoupleView 结构（`src/views/CoupleView.vue`，845 行）
 
 未建空间时整页只渲染 `CoupleSetup.vue`（邀请建立流程）。已建立时自上而下：
 
@@ -36,10 +36,10 @@
    **F206 搜索框与 F207「⭐ 常用」收藏 popover 已随二轮裁剪删除**（后端 `couple_user_pin` 表和端点都没了）。
 2. 横幅：F43 里程碑天数（`couple-milestone-banner`）、F47 空间周年庆（`couple-space-birthday`）
 3. `CoupleProfile`（我们的宣言 / 空间主题；**贴纸墙已删**——`couple_space.stickers` 列随 ADR-0010 第 6 条下线）
-4. F98 新手引导弹窗（`couple-guide-dialog`/`couple-guide-done`，localStorage 键 `arechat_couple_guide_seen`，只出现一次；文案按四张卡重写）
+4. F98 新手引导弹窗（`couple-guide-dialog`/`couple-guide-done`，localStorage 键 `arechat_couple_guide_seen`，只出现一次；文案按三张卡重写）
 5. `el-tabs v-model="activeTab"`，默认 `activeTab = 'today'`
 
-**页签定位**：`onMounted` 读 `?tab=`，白名单为 `today, wish`（`secret` 由解锁态决定，不在深链白名单里）；白名单外的值忽略；随后调 `couple.init()` 兜底刷新总览、`loadIntimacy()` 拉头部心动值、`question` 缺失时补拉一次今日一问。
+**页签定位**：`onMounted` 读 `?tab=`，白名单为 `today, wish`；白名单外的值忽略；随后调 `couple.init()` 兜底刷新总览、`loadIntimacy()` 拉头部心动值、`question` 缺失时补拉一次今日一问。
 
 ## 页签与挂载组件序列（按代码顺序）
 
@@ -47,13 +47,12 @@
 |---|---|---|---|---|---|
 | 1 | today | 🫶 今天 | **否（默认页签，勿改，测试依赖）** | CoupleQuestion → CoupleStreak | `couple-question` / `couple-streak` |
 | 2 | wish | 🌟 愿望清单 | 是 | CoupleWish | `couple-wish` |
-| 3 | secret | 🥚 隐藏角落 | 是，`v-if="secretTabOpen"`（最长连续 ≥100 天才出现） | CoupleMemory | `couple-memory` |
 
-数据口径分两类：Question/Streak 走 `stores/couple.ts`（头部与 ChatView 共用、要靠 WS 刷新）；Wish 组件内自持（写接口返回整份 `WishBoardVO` 整体替换），Memory 只读整页拉取。原 `life`/`gift` 两个页签及其六张卡、两级子页签机制、`TabExtras` 的首访提示与收藏 chip 行都随二轮裁剪删除。
+数据口径分两类：Question/Streak 走 `stores/couple.ts`（头部与 ChatView 共用、要靠 WS 刷新）；Wish 组件内自持（写接口返回整份 `WishBoardVO` 整体替换）。原 `life`/`gift` 两个页签及其六张卡、两级子页签机制、`TabExtras` 的首访提示与收藏 chip 行都随二轮裁剪删除，`secret` 百日回顾页签也随后下线。
 
-**卡索引表**：`src/components/couple/coupleCards.registry.ts` 的 `COUPLE_CARDS` 现在只有 **4 条**（key=卡根 testid、label 中文名、tab 一级页签；`couple-memory` 带 `tier: 'easter-egg'`）。这张表不再服务搜索/收藏（那两个功能没了），只剩两个消费者：`?card=` 深链定位与 `e2e-live/couple-audit.spec.ts` 实时巡检的覆盖率核对。`COUPLE_TAB_LABELS` 三个：`today`/`wish`/`secret`。
+**卡索引表**：`src/components/couple/coupleCards.registry.ts` 的 `COUPLE_CARDS` 现在只有 **3 条**（key=卡根 testid、label 中文名、tab 一级页签）。这张表不再服务搜索/收藏（那两个功能没了），只剩两个消费者：`?card=` 深链定位与 `e2e-live/couple-audit.spec.ts` 实时巡检的覆盖率核对。`COUPLE_TAB_LABELS` 两个：`today`/`wish`。
 
-组件清单共 7 个 `.vue`（`src/components/couple/`）：上表 4 个卡组件 + `CoupleSetup.vue`（未建空间整页替代）+ `CoupleProfile.vue`（头部区个性化）+ `CoupleCollapsible.vue`（F205 折叠卡壳）。
+组件清单共 6 个 `.vue`（`src/components/couple/`）：上表 3 个卡组件 + `CoupleSetup.vue`（未建空间整页替代）+ `CoupleProfile.vue`（头部区个性化）+ `CoupleCollapsible.vue`（F205 折叠卡壳）。
 
 ---
 
