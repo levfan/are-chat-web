@@ -21,8 +21,8 @@
 
 | 文件 | 用例数 | 覆盖 |
 |---|---|---|
-| `couple.spec.ts` | 54 | 挂载整个 `CoupleView`（`mountView()` + `openTab()` 按文案点页签，因为 el-tabs 导航项没有 data-testid）：2 个页签与 3 张卡根、老页签（life/gift）不再出现、未建空间只出邀请入口且一个卡片接口都不敲、爱称走 `PUT /profile` 的 petName（空串=清除）、装扮只交 slogan/theme 且再无贴纸墙、注册表 3 条、**api 契约守卫（mock 工厂覆盖全部 20 方法 + 存活分组清单 + 已下线路径按段判死）**、三张卡主链路、心动值头部、解锁态派生、WS 15 个事件的逐个刷新口径 |
-| `couple-v8-cards.spec.ts` | 30 | 三张卡逐个：打卡（补签交 board.day 前一天、canMakeup/missedYesterday 双闸门、进度墙、21 格打卡条）、每日一问（bothAnswered 才互看、answerMax 吃后端下发）、愿望清单（「已准备」对许愿人保密、preparableFlag/canFulfillFlag 双位、闸门全吃后端数字、400 直透）、三卡同挂接口全挂也不抛 |
+| `couple.spec.ts` | 54 | 挂载整个 `CoupleView`（`mountView()` + `openTab()` 按文案点页签，因为 el-tabs 导航项没有 data-testid）：2 个页签与 3 张卡根、老页签（life/gift）不再出现、未建空间只出邀请入口且一个卡片接口都不敲、爱称走 `PUT /profile` 的 petName（空串=清除）、宣言编辑只交 slogan 且主题网格/贴纸墙都不在、注册表 3 条、**api 契约守卫（mock 工厂覆盖全部 20 方法 + 存活分组清单 + 已下线路径按段判死）**、三张卡主链路、心动值头部、解锁态派生、WS 15 个事件的逐个刷新口径 |
+| `couple-v8-cards.spec.ts` | 29 | 三张卡逐个：打卡（补签交 board.day 前一天、canMakeup/missedYesterday 双闸门、一行解锁摘要、21 格打卡条）、每日一问（bothAnswered 才互看、answerMax 吃后端下发）、愿望清单（「已准备」对许愿人保密、preparableFlag/canFulfillFlag 双位、闸门全吃后端数字、表单只剩标题、400 直透）、三卡同挂接口全挂也不抛 |
 | `couple-unlocks.spec.ts` | 18 | 聊天侧视觉解锁：挂件 prop、`coupleVisualOn` 门禁（未建空间/未解锁/对象不是 TA 都不生效）、ChatView 三档联挂、专属贴纸包生成器（确定性、红线=纯 unicode 无图片） |
 | `im.spec.ts` | 21 | im store：会话、消息、未读、WS 推送处理等 |
 | `LoginView.spec.ts` | 8 | 登录、注册审批申请流（register/registerStatus） |
@@ -31,7 +31,7 @@
 | `http.spec.ts` | 4 | http.ts 封装：code 判错、401 清登录态、ApiError |
 | `format.spec.ts` | 4 | utils/format：formatBytes/formatTime |
 
-合计 **151 用例 / 9 个 spec 文件**（`pnpm test` 基线，2026-10-20 实测 `Test Files 9 passed / Tests 151 passed`）。
+合计 **150 用例 / 9 个 spec 文件**（`pnpm test` 基线，2026-10-20 五轮裁剪后实测 `Test Files 9 passed / Tests 150 passed`）。
 
 ## 全量显式 mock 模式（couple.spec.ts 开头）
 

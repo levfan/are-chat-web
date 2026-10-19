@@ -38,9 +38,9 @@
 | `layouts/MainLayout.vue` | 登录后壳：侧栏导航、WS 状态、调用 `im.init`/`couple.init`，登出时 `reset` |
 | `router/index.ts` | 路由表 + 守卫（requiresAuth / requiresAdmin）+ 页签标题 |
 | `components/couple/` | 情侣空间 6 个组件 = 3 张卡（Question/Streak/Wish）+ `CoupleSetup`/`CoupleProfile` + `CoupleCollapsible` 卡壳；另 `coupleCards.registry.ts` 是 3 卡索引表（`?card=` 深链与 e2e-live 巡检用，不再服务搜索/收藏——那两个功能已随 ADR-0010 下线；清单见 [页面与路由](pages-routing.md)） |
-| `components/im/` | 聊天组件 6 个：`ImAvatar`/`MessageBubble`/`EmojiPicker`/`ImageLightbox`/`ProfileDialog`/`PwaInstallGuide` |
+| `components/im/` | 聊天组件 5 个：`ImAvatar`/`MessageBubble`/`EmojiPicker`/`ImageLightbox`/`ProfileDialog` |
 | `types/index.ts` | 全部 TS 类型（1549 行，情侣 VO 在专属区块；裁剪删掉 50 个作废类型） |
-| `utils/` | `effects.ts`（彩蛋指令）、`format.ts`、`imFormat.ts`、`sound.ts`、`notify.ts`、`pwa.ts`、`image.ts`、`settings.ts`、`theme.ts`、`favicon.ts`、`draggable-message-box.ts` |
+| `utils/` | `effects.ts`（彩蛋指令）、`format.ts`、`imFormat.ts`、`sound.ts`、`notify.ts`、`image.ts`、`settings.ts`、`theme.ts`、`favicon.ts`、`draggable-message-box.ts` |
 | `constants.ts` / `main.ts` / `style.css` / `App.vue` | 常量（如 `CURRENT_USER_KEY`、`APP_NAME`）与入口全局样式 |
 | `tests/unit/` | 9 个 Vitest spec 文件 |
 

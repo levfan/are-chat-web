@@ -12,7 +12,7 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 - Vue 3 `<script setup lang="ts">` + Vite 8（Rolldown 打包内核）+ Pinia 4 + Vue Router 5 + Element Plus + TypeScript 6（`vue-tsc` 尚不吃 TS 7，勿升）
 - 测试：Vitest（jsdom），在 `tests/unit/`，命令 `pnpm test`；构建：`pnpm build`（含 vue-tsc 类型检查，何时必跑见第五节）
 - 版本号唯一来源 `package.json` 的 version（alpha → rc → stable 阶梯，升级独立 commit，规范见 `.agents/skills/version-release/SKILL.md`）
-- 规模快照（2026-10-20 四轮裁剪后实测）：5 个主页面 / CoupleView **2 个页签**（today 今天、wish 愿望清单）/ 情侣组件 **6 个 `.vue`**（3 张卡 + CoupleSetup + CoupleProfile + CoupleCollapsible 卡壳）+ 注册表 **3 条卡** / `api/couple.ts` **20 个方法·4 个 api 组·99 行** / `types/index.ts` 1549 行 / `stores/couple.ts` **281 行** / `utils/coupleVisual.ts`（解锁门禁与专属贴纸生成，纯函数可单测）/ 单测基线 **151 用例·9 个文件**（`couple.spec.ts` 54 条含「api 契约守卫」；`couple-v8-cards.spec.ts` 30 条覆盖三张卡；`couple-unlocks.spec.ts` 18 条覆盖视觉解锁）；后端配套见 are-chat-map（4 情侣 Controller / 20 情侣端点 / 6 张 couple_* 表，其中 `couple_notify` 已无代码 / 404 用例基线）
+- 规模快照（2026-10-20 五轮裁剪后实测）：5 个主页面 / CoupleView **2 个页签**（today 今天、wish 愿望清单）/ 情侣组件 **6 个 `.vue`**（3 张卡 + CoupleSetup + CoupleProfile + CoupleCollapsible 卡壳）+ 注册表 **3 条卡** / `api/couple.ts` **20 个方法·4 个 api 组·99 行** / `types/index.ts` 1549 行 / `stores/couple.ts` **281 行** / `utils/coupleVisual.ts`（解锁门禁与专属贴纸生成，纯函数可单测）/ 单测基线 **150 用例·9 个文件**（`couple.spec.ts` 54 条含「api 契约守卫」；`couple-v8-cards.spec.ts` 29 条覆盖三张卡；`couple-unlocks.spec.ts` 18 条覆盖视觉解锁）；后端配套见 are-chat-map（4 情侣 Controller / 20 情侣端点 / 6 张 couple_* 表，其中 `couple_notify` 已无代码 / 404 用例基线）
 
 ## 二、目录地图与关键文件
 
@@ -31,13 +31,13 @@ are-chat-web/
 │   │   ├── couple/                   # ★ 情侣空间 6 个 .vue + 注册表（3 张卡 + Setup/Profile/Collapsible，页签树见第三节）
 │   │   │   ├── CoupleCollapsible.vue # F205 折叠包装组件（新分区卡必须使用）
 │   │   │   └── coupleCards.registry.ts # 卡注册表：key=卡根 data-testid（?card= 深链与 e2e-live 巡检依赖；搜索/收藏已随 ADR-0010 下线）
-│   │   └── im/                       # 聊天组件 6 个（消息流/输入框/头像等；GlobalSearchPanel、NewMessageToast 已删）
+│   │   └── im/                       # 聊天组件 5 个（消息流/输入框/头像等；GlobalSearchPanel、NewMessageToast、PwaInstallGuide 已删）
 │   ├── api/                          # auth.ts / couple.ts(99 行) / im.ts / files.ts / system.ts / http.ts(封装层)
 │   ├── stores/                       # auth / im(WS 宿主) / couple(281 行：总览与邀请·心动值·打卡解锁·每日一问)
 │   ├── types/index.ts                # 全部 TS 类型按域分节（当前 1549 行；裁剪删 50 个作废类型，历史孤儿约 100 个未动）
-│   ├── utils/                        # effects.ts(彩蛋指令)、format.ts/imFormat.ts、sound.ts、notify.ts、pwa.ts、settings.ts、theme.ts、coupleVisual.ts(解锁门禁+贴纸) 等
+│   ├── utils/                        # effects.ts(彩蛋指令)、format.ts/imFormat.ts、sound.ts、notify.ts、settings.ts、theme.ts、coupleVisual.ts(解锁门禁+贴纸) 等
 │   └── constants.ts                  # 全局常量
-├── tests/unit/                       # 9 个文件（当前基线 151 用例；整页挂载用例成本高，vite.config.ts 已把 testTimeout 提到 20s）
+├── tests/unit/                       # 9 个文件（当前基线 150 用例；整页挂载用例成本高，vite.config.ts 已把 testTimeout 提到 20s）
 ├── AGENTS.md / docs/ / wiki/         # 仓库约束与文档（后端配套地图见 are-chat 仓库 are-chat-map skill）
 ```
 
@@ -52,16 +52,16 @@ are-chat-web/
 
 | 页签 name | 组件 | 内容 |
 |---|---|---|
-| `today` 🫶 今天 | **CoupleQuestion** · **CoupleStreak** | **每日一问（今天一题，我答完且 TA 也答完才互看；双方都答完即自动打卡）**／**连续互动打卡（当前·最长·21 格打卡条·六档解锁墙·补签，没有「点一下打卡」按钮——双方当天都答完每日一问由后端自动确认；补签不花钱，只受 7 天窗口与每月 3 次两道闸门）** |
-| `wish` 🌟 愿望清单 | **CoupleWish** | 想要的先记下，对方可偷偷标「已准备」——许愿人这一侧永远看不到；分组与文案全吃后端下发的位（preparableFlag/canFulfillFlag） |
+| `today` 🫶 今天 | **CoupleQuestion** · **CoupleStreak** | **每日一问（今天一题，我答完且 TA 也答完才互看；双方都答完即自动打卡）**／**连续互动打卡（当前·最长·21 格打卡条·一行解锁摘要·补签，没有「点一下打卡」按钮——双方当天都答完每日一问由后端自动确认；补签不花钱，只受 7 天窗口与每月 3 次两道闸门）** |
+| `wish` 🌟 愿望清单 | **CoupleWish** | 想要的先记下，对方可偷偷标「已准备」——许愿人这一侧永远看不到；分组与文案全吃后端下发的位（preparableFlag/canFulfillFlag）；表单只剩标题，备注与许愿对象选择已删 |
 
-头部区（带解锁外观）：双人头像（**21 天起挂联动挂件 `pendant`，取法与聊天侧共用 `utils/coupleVisual` 的 `couplePendant(theme)`，免得同一个人两处不同款**）+ 在一起天数（`couple-days`）+ 心动值与恋爱等级（`couple-intimacy-score`；**30 天起称号另挂 `couple-love-title` 徽章**）+ 爱称（**14 天起带 `.couple-name-glow`，与聊天页共用 style.css 的同一个类**；改爱称走 `PUT /profile` 的 `petName`，空串=清除）+ **7 天起头部有流动背景与角落一棵按解锁档数长高的电子植物（`couple-plant-stage-N`）** + 纪念日弹窗 + 爱称弹窗 + F43 里程碑横幅 + F98 新手引导（文案按三张卡重写）。**F206 搜索框与 F207 收藏 popover 已删**；**F41 通知铃铛、F47 空间周年庆横幅、F208 页签首访提示条也在 2026-10-20 删除**（WS 提醒仍用右上角 `ElNotification` 弹出）；头部背景底色只读 `space.theme`（`CoupleProfile` 里选，贴纸墙已删）。
+头部区（带解锁外观）：双人头像（**21 天起挂联动挂件 `pendant`，取法与聊天侧共用 `utils/coupleVisual` 的 `couplePendant(theme)`，免得同一个人两处不同款**）+ 在一起天数（`couple-days`）+ 心动值与恋爱等级（`couple-intimacy-score`；**30 天起称号另挂 `couple-love-title` 徽章**）+ 爱称（**14 天起带 `.couple-name-glow`，与聊天页共用 style.css 的同一个类**；改爱称走 `PUT /profile` 的 `petName`，空串=清除）+ **7 天起头部有流动背景与角落一棵按解锁档数长高的电子植物（`couple-plant-stage-N`）** + 纪念日弹窗 + 爱称弹窗 + F43 里程碑横幅。**F206 搜索框与 F207 收藏 popover 已删**；**F41 通知铃铛、F47 空间周年庆横幅、F208 页签首访提示条、F98 新手引导弹窗也在 2026-10-20 删除**（WS 提醒仍用右上角 `ElNotification` 弹出）；头部背景底色只读 `space.theme`，主题选择网格已删，`CoupleProfile` 只剩一句可编辑宣言（`ElMessageBox.prompt`）。
 
 注册表 `coupleCards.registry.ts` 现役 **3 条**（`COUPLE_CARDS` = { key, label, tab }），`COUPLE_TAB_LABELS` 两个页签。**加卡先改这张表，否则 e2e-live 巡检与 `?card=` 深链点不到它**。
 
 WS 事件：现役 **15 个**（后端 `pushCoupleEvent*` 抽取），`stores/couple.ts` 的 `handleCoupleEvent` 按族处理：建立流程 3 个与 `dissolved`/`anniversary-updated`/`space-themed`/`pet-name-changed` 重拉总览、`anniversary-reminder` 只弹提醒、`streak-*` 刷看板+心动值、`question-*` 刷今日一问、`wish-*` 只弹提醒（看板组件自持）。**不认识的旧事件一律忽略，别加兜底分支**。**后端刻意没有 `wish-prepared`**：偷偷标记「已准备」不推任何事件，前端也不许自己从 `preparedAt` 反推出来。
 
-聊天页现役口径（2026-10-20 四轮）：**消息收藏/全局搜索（Ctrl+K）/快捷短语/字数统计/好友分组标签/会话筛选条/一键全部已读/会话菜单里的资料与备注入口/聊天背景/聊天字号/拍一拍自定义后缀/浮动消息卡片已删**，保留转发/编辑/撤回/表态/戳一戳（默认文案）/会话内搜索/文件发送/浏览器系统通知；联系人页不再有快捷账号与逐行「发消息」钮（整行可点），置顶/免打扰仍走右键菜单；设置弹窗只剩皮肤、发送键、免打扰时段；后台只保留审批/用户/公告三个页签（审计日志与情侣运营看板已删）。
+聊天页现役口径（2026-10-20 五轮）：**消息收藏/全局搜索（Ctrl+K）/快捷短语/字数统计/好友分组标签/会话筛选条/一键全部已读/会话菜单里的资料与备注入口/聊天背景/聊天字号/拍一拍自定义后缀/拍一拍发送入口/浮动消息卡片/移动端 PWA 安装横幅已删**（历史 poke 消息仍按灰字展示），保留转发/编辑/撤回/表态/会话内搜索/文件发送/浏览器系统通知；联系人页不再有快捷账号与逐行「发消息」钮（整行可点），置顶/免打扰仍走右键菜单；设置弹窗只剩皮肤、发送键、免打扰时段；后台只保留审批/用户/公告三个页签（审计日志与情侣运营看板已删）。
 
 ## 四、惯例与红线
 
