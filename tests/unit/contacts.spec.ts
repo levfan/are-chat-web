@@ -221,12 +221,12 @@ describe('ContactsView 通讯录（好友功能合并）', () => {
     expect(wrapper.findAll('[data-testid="contact-item"]').length).toBe(0)
   })
 
-  it('点击发消息跳转会话并预选 peer', async () => {
+  it('点击联系人跳转会话并预选 peer', async () => {
     mockedFriendsList.mockResolvedValue([friend({ id: 'f1', username: 'carol' })])
     const wrapper = mountView()
     await flushPromises()
 
-    await wrapper.find('[data-testid="contact-chat-carol"]').trigger('click')
+    await wrapper.find('[data-testid="contact-item"]').trigger('click')
     expect(push).toHaveBeenCalledWith({ path: '/chat', query: { peer: 'carol' } })
   })
 

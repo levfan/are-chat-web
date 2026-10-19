@@ -221,16 +221,6 @@ export const useImStore = defineStore('im', () => {
     await loadFriends()
   }
 
-  /** 50 一键全部已读：把所有有未读的会话标记已读 */
-  async function markAllRead() {
-    const targets = friends.value.filter((f) => f.unread > 0)
-    await Promise.all(targets.map((f) => messageApi.markRead(f.username).catch(() => {})))
-    for (const friend of targets) {
-      friend.unread = 0
-    }
-    await loadFriends()
-  }
-
   async function removeFriend(id: string) {
     const target = friends.value.find((f) => f.id === id)
     await friendApi.remove(id)
@@ -542,18 +532,6 @@ export const useImStore = defineStore('im', () => {
                 playMessageTone()
               }
               const preview = messagePreviewText(msg.msgType, msg.content)
-              // 70 浮动卡片：非当前会话来消息时右上角滑入
-              window.dispatchEvent(
-                new CustomEvent('arechat:toast', {
-                  detail: {
-                    peer,
-                    name: displayNameOf(msg.from),
-                    body: preview,
-                    avatar: friend.username,
-                    at: msg.created,
-                  },
-                }),
-              )
               // 45 桌面通知：页面不可见时弹出，点击聚焦并跳转会话
               showNotification({
                 title: displayNameOf(msg.from),
@@ -848,7 +826,6 @@ export const useImStore = defineStore('im', () => {
     rejectRequest,
     updateFriend,
     removeFriend,
-    markAllRead,
     openConversation,
     loadMoreHistory,
     sendText,

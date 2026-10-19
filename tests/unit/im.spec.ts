@@ -382,16 +382,6 @@ describe('im store', () => {
     expect(im.searchResults).toHaveLength(0)
   })
 
-  it('markAllRead 清零所有未读', async () => {
-    const im = await initStore()
-    im.friends[0].unread = 4
-
-    await im.markAllRead()
-
-    expect(mockedMarkRead).toHaveBeenCalledWith(PEER)
-    expect(im.friends[0].unread).toBe(0)
-  })
-
   it('好友操作失败时错误向上抛出', async () => {
     const im = await initStore()
     vi.mocked(friendApi.apply).mockRejectedValue(new Error('你们已经是好友了'))

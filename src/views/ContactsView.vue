@@ -95,6 +95,7 @@
           :key="friend.id"
           class="contact-item"
           data-testid="contact-item"
+          @click="goChat(friend.username)"
         >
           <ImAvatar
             :name="friend.username"
@@ -108,8 +109,6 @@
             <div class="contact-name">
               {{ displayName(friend) }}
               <span v-if="friend.remark" class="contact-origin">{{ friend.username }}</span>
-              <el-tag v-if="friend.pinned" size="small" type="warning" effect="plain">置顶</el-tag>
-              <el-tag v-if="friend.muted" size="small" type="info" effect="plain">免打扰</el-tag>
             </div>
             <div v-if="friend.online" class="contact-status online" data-testid="contact-online">
               {{ presenceLabel(friend) }}
@@ -118,16 +117,7 @@
               {{ formatLastSeen(friend.lastSeenAt, false) }}
             </div>
           </div>
-          <div class="contact-actions">
-            <el-button
-              type="primary"
-              size="small"
-              plain
-              :data-testid="`contact-chat-${friend.username}`"
-              @click="goChat(friend.username)"
-            >
-              发消息
-            </el-button>
+          <div class="contact-actions" @click.stop>
             <el-dropdown trigger="click" @command="(cmd: string) => onCommand(cmd, friend)">
               <el-button size="small" class="more-btn" :data-testid="`contact-more-${friend.username}`">
                 <el-icon><MoreFilled /></el-icon>
@@ -140,11 +130,6 @@
                   <el-dropdown-item command="remark" data-testid="contact-remark-item">
                     <el-icon><EditPen /></el-icon>设置备注
                   </el-dropdown-item>
-                  <el-dropdown-item command="mute">
-                    <el-icon><MuteNotification v-if="!friend.muted" /><Bell v-else /></el-icon>
-                    {{ friend.muted ? '关闭免打扰' : '免打扰' }}
-                  </el-dropdown-item>
-                  <el-dropdown-item command="pin">{{ friend.pinned ? '取消置顶' : '置顶会话' }}</el-dropdown-item>
                   <!-- 邀请建空间：自己已经有空间时不给这个入口（后端也会 409 拦下） -->
                   <el-dropdown-item
                     v-if="!couple.established"
@@ -188,20 +173,6 @@
           </div>
         </template>
       </el-autocomplete>
-      <!-- 候选账号一键填充（输入为空时的快捷入口） -->
-      <div v-if="!applyName && suggestAccounts.length > 0" class="account-row" data-testid="account-suggestions">
-        <span class="account-label">可添加：</span>
-        <button
-          v-for="name in suggestAccounts"
-          :key="name"
-          type="button"
-          class="account-chip"
-          :data-testid="`account-chip-${name}`"
-          @click="applyName = name"
-        >
-          {{ name }}
-        </button>
-      </div>
       <el-input
         v-model="applyNote"
         type="textarea"
@@ -246,11 +217,9 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Bell,
   Delete,
   EditPen,
   MoreFilled,
-  MuteNotification,
   Plus,
   Promotion,
   Search,
@@ -289,23 +258,6 @@ const relationshipBadge = ref<number | null>(null)
 
 const pendingOutgoing = computed(() => im.outgoing.filter((r) => r.status === 'PENDING'))
 
-/** 兜底账号（后端不可用时提示用）；正常情况下来自 /api/friends/suggest 的真实注册用户 */
-const FALLBACK_ACCOUNTS = ['alice', 'bob', 'carol']
-const suggestAccounts = computed(() => {
-  const fromServer = lastSuggestions.value
-    .filter((s) => s.relation === 'available')
-    .map((s) => s.username)
-  const names = fromServer.length > 0 ? fromServer : FALLBACK_ACCOUNTS
-  return names
-    .filter(
-      (name) =>
-        name !== auth.username &&
-        !im.friends.some((f) => f.username === name) &&
-        !pendingOutgoing.value.some((r) => r.toUser === name),
-    )
-    .slice(0, 3)
-})
-
 // ---------- 输入联想：候选用户名 + 与我的关系 ----------
 
 interface SuggestionItem {
@@ -329,7 +281,6 @@ function relationLabel(relation: FriendRelation): string {
   return RELATION_TEXT[relation] ?? ''
 }
 
-/** el-autocomplete 的候选抓取：优先走后端，后端不可用时退回本地体验账号表 */
 async function fetchSuggestions(query: string, cb: (items: SuggestionItem[]) => void) {
   const kw = query.trim()
   const toItems = (list: FriendSuggestion[]): SuggestionItem[] =>
@@ -341,11 +292,7 @@ async function fetchSuggestions(query: string, cb: (items: SuggestionItem[]) => 
     lastSuggestions.value = list
     cb(toItems(list))
   } catch {
-    const fallback: FriendSuggestion[] = FALLBACK_ACCOUNTS.filter(
-      (name) => name.includes(kw.toLowerCase()) && name !== auth.username,
-    ).map((name) => ({ username: name, phone: '', relation: 'available' as FriendRelation }))
-    lastSuggestions.value = fallback
-    cb(toItems(fallback))
+    cb([])
   }
 }
 
@@ -503,19 +450,6 @@ async function onCommand(command: string, friend: FriendVO) {
     }
     return
   }
-  if (command === 'mute') {
-    try {
-      await im.updateFriend(friend.id, { muted: !friend.muted })
-      ElMessage.success(friend.muted ? '已关闭免打扰' : '已开启免打扰')
-    } catch (e) {
-      ElMessage.error(e instanceof Error ? e.message : '操作失败')
-    }
-    return
-  }
-  if (command === 'pin') {
-    await im.updateFriend(friend.id, { pinned: !friend.pinned })
-    return
-  }
   if (command === 'invite') {
     // 邀请建情侣空间：留言可空（后端限 100 字），TA 在同意的页面里能看到
     let value: string | undefined
@@ -670,6 +604,7 @@ onMounted(() => {
   padding: 10px 4px;
   border-bottom: 1px dashed var(--el-border-color-lighter);
   transition: background 0.12s ease;
+  cursor: pointer;
 }
 .contact-item:hover {
   background: var(--im-hover, #f7f8fa);
@@ -722,14 +657,6 @@ onMounted(() => {
 .apply-note {
   margin-top: 10px;
 }
-/* 体验账号一键填充 */
-.account-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
 /* 联想候选行 */
 .suggest-row {
   display: flex;
@@ -768,24 +695,6 @@ onMounted(() => {
 }
 .apply-input {
   width: 100%;
-}
-.account-label {
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-}
-.account-chip {
-  border: 1px solid var(--im-border, #e6e8eb);
-  background: var(--im-panel, #fff);
-  color: var(--im-text-2, #51565f);
-  font-size: 12px;
-  padding: 2px 10px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all 0.14s ease;
-}
-.account-chip:hover {
-  border-color: var(--xx-accent, #ec5f92);
-  color: var(--xx-accent, #ec5f92);
 }
 .profile-card {
   display: flex;

@@ -137,8 +137,6 @@
     </el-main>
   </el-container>
   <ProfileDialog v-model="profileVisible" />
-  <!-- 70 新消息浮动卡片 -->
-  <NewMessageToast :items="toasts" @open="onToastOpen" @close="dismissToast" />
   <!-- 98 移动端「添加到桌面」横幅：可安装时出现，点 × 后不再打扰 -->
   <transition name="pwa-slide">
     <div v-if="showPwaBanner" class="pwa-banner" data-testid="pwa-banner">
@@ -184,10 +182,9 @@ import { formatTime } from '@/utils/format'
 import { APP_NAME, CURRENT_USER_LOCAL_KEY } from '@/constants'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import ProfileDialog from '@/components/im/ProfileDialog.vue'
-import NewMessageToast from '@/components/im/NewMessageToast.vue'
 import PwaInstallGuide from '@/components/im/PwaInstallGuide.vue'
 import { isIOS, pwaInstallable, pwaStandalone, promptInstall } from '@/utils/pwa'
-import type { AnnouncementVO, ToastItem } from '@/types'
+import type { AnnouncementVO } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -415,46 +412,6 @@ function onOpenPeer(event: Event) {
   }
 }
 
-// 70 新消息浮动卡片：右上角滑入，5 秒自动消失，点击跳转会话
-let toastSeq = 0
-const toasts = ref<ToastItem[]>([])
-const toastTimers = new Map<number, number>()
-
-function onToastEvent(event: Event) {
-  const detail = (event as CustomEvent<Omit<ToastItem, 'id'>>).detail
-  if (!detail?.peer) {
-    return
-  }
-  // 同一会话只保留最新一条
-  const existing = toasts.value.find((t) => t.peer === detail.peer)
-  if (existing) {
-    existing.body = detail.body
-    const timer = toastTimers.get(existing.id)
-    if (timer) {
-      clearTimeout(timer)
-    }
-    toastTimers.set(existing.id, window.setTimeout(() => dismissToast(existing.id), 5000))
-    return
-  }
-  toastSeq += 1
-  const item: ToastItem = { id: toastSeq, ...detail }
-  toasts.value = [...toasts.value, item].slice(-3)
-  toastTimers.set(item.id, window.setTimeout(() => dismissToast(item.id), 5000))
-}
-
-function dismissToast(id: number) {
-  toasts.value = toasts.value.filter((t) => t.id !== id)
-  const timer = toastTimers.get(id)
-  if (timer) {
-    clearTimeout(timer)
-    toastTimers.delete(id)
-  }
-}
-
-function onToastOpen(peer: string) {
-  onOpenPeer(new CustomEvent('arechat:open-peer', { detail: peer }))
-}
-
 onMounted(() => {
   // 53 尽力刷新会话信息（登录时间等），失败不影响本地登录态
   void auth.verify()
@@ -475,7 +432,6 @@ onMounted(() => {
   }
   window.addEventListener('storage', onStorageChange)
   window.addEventListener('arechat:open-peer', onOpenPeer as EventListener)
-  window.addEventListener('arechat:toast', onToastEvent as EventListener)
   window.addEventListener('resize', onViewportChange)
   // 88 WS 公告推送
   window.addEventListener('arechat:announcement', onAnnouncementEvent as EventListener)
@@ -492,13 +448,8 @@ onUnmounted(() => {
   if (idleTimer !== null) {
     clearTimeout(idleTimer)
   }
-  for (const timer of toastTimers.values()) {
-    clearTimeout(timer)
-  }
-  toastTimers.clear()
   window.removeEventListener('storage', onStorageChange)
   window.removeEventListener('arechat:open-peer', onOpenPeer as EventListener)
-  window.removeEventListener('arechat:toast', onToastEvent as EventListener)
   window.removeEventListener('resize', onViewportChange)
   window.removeEventListener('arechat:announcement', onAnnouncementEvent as EventListener)
   for (const evt of ['mousemove', 'keydown', 'click', 'touchstart']) {

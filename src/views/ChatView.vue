@@ -6,38 +6,6 @@
         <span class="conv-title">消息</span>
         <el-badge v-if="im.totalUnread > 0" :value="im.totalUnread" :max="99" />
       </div>
-      <!-- 50 只看未读/全部已读 -->
-      <div class="conv-filters" data-testid="conv-filters">
-        <button
-          type="button"
-          class="filter-chip"
-          :class="{ active: !onlyUnread }"
-          data-testid="filter-all"
-          @click="onlyUnread = false"
-        >
-          全部
-        </button>
-        <button
-          type="button"
-          class="filter-chip"
-          :class="{ active: onlyUnread }"
-          data-testid="filter-unread"
-          @click="toggleUnreadFilter"
-        >
-          只看未读{{ unreadFriendsCount > 0 ? ` ${unreadFriendsCount}` : '' }}
-        </button>
-        <el-button
-          v-if="unreadFriendsCount > 0"
-          link
-          type="primary"
-          size="small"
-          class="read-all"
-          data-testid="mark-all-read"
-          @click="onMarkAllRead"
-        >
-          全部已读
-        </el-button>
-      </div>
       <el-input
         v-model="keyword"
         placeholder="搜索好友"
@@ -144,17 +112,11 @@
             </button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">
-                  <el-icon><User /></el-icon>资料卡
-                </el-dropdown-item>
                 <el-dropdown-item command="mute">
                   <el-icon><MuteNotification v-if="!im.activeFriend?.muted" /><Bell v-else /></el-icon>
                   {{ im.activeFriend?.muted ? '关闭免打扰' : '会话免打扰' }}
                 </el-dropdown-item>
                 <el-dropdown-item command="pin">{{ im.activeFriend?.pinned ? '取消置顶' : '置顶会话' }}</el-dropdown-item>
-                <el-dropdown-item command="remark">
-                  <el-icon><EditPen /></el-icon>设置备注
-                </el-dropdown-item>
                 <!-- 85 清空聊天记录 -->
                 <el-dropdown-item command="clear-history">
                   <el-icon><Brush /></el-icon>清空聊天记录
@@ -192,7 +154,6 @@
         <div
           ref="scrollBox"
           class="dm-area"
-          :class="`chat-bg-${chatBg}`"
           :data-couple-bubble="coupleBubbleOn ? 'on' : undefined"
           data-testid="dm-area"
           @scroll="onScroll"
@@ -364,20 +325,6 @@
       </div>
     </section>
 
-    <!-- 资料卡 -->
-    <el-dialog v-model="profileVisible" title="资料卡" width="360px" draggable>
-      <div v-loading="profileLoading" class="profile-card" data-testid="profile-card">
-        <template v-if="peerProfile">
-          <ImAvatar :name="peerProfile.username" :color="peerProfile.avatar" :size="72" />
-          <div class="card-name">{{ cardDisplayName }}</div>
-          <div v-if="cardRemark" class="card-nickname">昵称：{{ peerProfile.nickname }}</div>
-          <div class="card-username">@{{ peerProfile.username }}</div>
-          <div class="card-signature">{{ peerProfile.signature || '暂无签名' }}</div>
-          <div class="card-meta">{{ peerStatusText }}</div>
-        </template>
-      </div>
-    </el-dialog>
-
     <!-- 转发消息 -->
     <el-dialog v-model="forwardVisible" title="转发消息" width="360px" draggable>
       <div class="forward-body">
@@ -427,7 +374,6 @@ import {
   CircleClose,
   Close,
   Delete,
-  EditPen,
   FolderOpened,
   MuteNotification,
   Paperclip,
@@ -437,13 +383,12 @@ import {
   Setting,
   TopRight,
   UploadFilled,
-  User,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { messagePreviewText, useImStore } from '@/stores/im'
 import { useCoupleStore } from '@/stores/couple'
-import { messageApi, profileApi } from '@/api/im'
-import { currentBackground, currentPokeSuffix, currentSendKey } from '@/utils/settings'
+import { messageApi } from '@/api/im'
+import { currentSendKey } from '@/utils/settings'
 import { COUPLE_VISUAL_TIER, couplePendant, coupleVisualOn } from '@/utils/coupleVisual'
 import { detectEffect, detectEggCommand, floatHearts, playEffect } from '@/utils/effects'
 import { formatChatTime, formatDayLabel, formatLastSeen, highlightSegments } from '@/utils/imFormat'
@@ -452,7 +397,7 @@ import ImAvatar from '@/components/im/ImAvatar.vue'
 import EmojiPicker from '@/components/im/EmojiPicker.vue'
 import MessageBubble from '@/components/im/MessageBubble.vue'
 import ImageLightbox from '@/components/im/ImageLightbox.vue'
-import type { ImMessage, UserProfileVO } from '@/types'
+import type { ImMessage } from '@/types'
 
 const auth = useAuthStore()
 const im = useImStore()
@@ -476,17 +421,10 @@ const dragOver = ref(false)
 const lightboxOpen = ref(false)
 const lightboxUrl = ref('')
 
-// 50 只看未读
-const onlyUnread = ref(false)
-
 const searchVisible = ref(false)
 const searchKeyword = ref('')
 const searched = ref(false)
 const searchInput = ref<{ focus: () => void } | null>(null)
-
-const profileVisible = ref(false)
-const profileLoading = ref(false)
-const peerProfile = ref<UserProfileVO | null>(null)
 
 // 35 回到底部：离开底部时显示悬浮按钮并累计新消息
 const atBottom = ref(true)
@@ -499,19 +437,12 @@ const forwardVisible = ref(false)
 const forwardChoice = ref('')
 const forwardFrom = ref<ImMessage | null>(null)
 
-const unreadFriendsCount = computed(() => im.friends.filter((f) => f.unread > 0).length)
-
-function toggleUnreadFilter() {
-  onlyUnread.value = !onlyUnread.value
-}
-
 const filteredFriends = computed(() => {
-  const list = onlyUnread.value ? im.friends.filter((f) => f.unread > 0) : im.friends
   const kw = keyword.value.trim()
   if (!kw) {
-    return list
+    return im.friends
   }
-  return list.filter(
+  return im.friends.filter(
     (f) => f.username.includes(kw) || f.remark.includes(kw) || (f.nickname ?? '').includes(kw),
   )
 })
@@ -565,10 +496,6 @@ const partnerPendant = computed(() => (tierOnThread(COUPLE_VISUAL_TIER.pendant) 
 function pendantOf(username: string): string {
   return username.trim() === partnerUsername.value ? pendantEmoji.value : ''
 }
-
-/** 资料卡主名：我的备注 > 对方昵称；设了备注时另起一行展示原始昵称 */
-const cardRemark = computed(() => im.activeFriend?.remark?.trim() || '')
-const cardDisplayName = computed(() => cardRemark.value || peerProfile.value?.nickname || '')
 
 const peerStatusText = computed(() => {
   const friend = im.activeFriend
@@ -941,13 +868,13 @@ async function onRetry(localId: string) {
   }
 }
 
-// 67 拍一拍：带上个人自定义后缀（设置面板可改）
+// 67 拍一拍
 async function onPoke() {
   if (!im.activePeer) {
     return
   }
   try {
-    await im.sendPoke(im.activePeer, currentPokeSuffix())
+    await im.sendPoke(im.activePeer)
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '拍一拍失败')
   }
@@ -1063,15 +990,6 @@ async function confirmForward() {
   }
 }
 
-async function onMarkAllRead() {
-  try {
-    await im.markAllRead()
-    ElMessage.success('已全部标为已读')
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '操作失败')
-  }
-}
-
 // ---------- 拉黑 ----------
 
 async function toggleBlock(blocked: boolean) {
@@ -1133,20 +1051,6 @@ async function onMenuCommand(command: string) {
     await clearHistory()
     return
   }
-  if (command === 'profile') {
-    profileVisible.value = true
-    profileLoading.value = true
-    peerProfile.value = null
-    try {
-      peerProfile.value = await profileApi.of(friend.username)
-    } catch (e) {
-      ElMessage.error(e instanceof Error ? e.message : '资料卡加载失败')
-      profileVisible.value = false
-    } finally {
-      profileLoading.value = false
-    }
-    return
-  }
   if (command === 'mute') {
     await im.updateFriend(friend.id, { muted: !friend.muted })
     ElMessage.success(friend.muted ? '已关闭免打扰' : '已开启免打扰')
@@ -1154,19 +1058,6 @@ async function onMenuCommand(command: string) {
   }
   if (command === 'pin') {
     await im.updateFriend(friend.id, { pinned: !friend.pinned })
-    return
-  }
-  if (command === 'remark') {
-    try {
-      const { value } = await ElMessageBox.prompt('设置备注名', '备注', {
-        inputValue: friend.remark,
-        inputPattern: /^.{0,32}$/,
-        inputErrorMessage: '最长 32 个字',
-      })
-      await im.updateFriend(friend.id, { remark: value?.trim() ?? '' })
-    } catch {
-      // 用户取消
-    }
     return
   }
   if (command === 'delete') {
@@ -1180,13 +1071,7 @@ async function onMenuCommand(command: string) {
   }
 }
 
-// ---------- 64/65 外观同步 & 对方回应的飘心 ----------
-
-const chatBg = ref(currentBackground())
-
-function syncAppearance() {
-  chatBg.value = currentBackground()
-}
+// ---------- 65 对方回应的飘心 ----------
 
 function onPeerReaction(event: Event) {
   const detail = (event as CustomEvent<{ msgId: string; emoji: string; by: string }>).detail
@@ -1239,8 +1124,6 @@ watch(
 
 onMounted(async () => {
   window.addEventListener('keydown', onGlobalKeydown)
-  // 64 皮肤/背景在个人中心即时切换后同步到这里
-  window.addEventListener('arechat:appearance', syncAppearance)
   // 65 对方给我回应时飘心
   window.addEventListener('arechat:reaction', onPeerReaction as EventListener)
   await im.init(auth.username)
@@ -1252,7 +1135,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeydown)
-  window.removeEventListener('arechat:appearance', syncAppearance)
   window.removeEventListener('arechat:reaction', onPeerReaction as EventListener)
 })
 </script>
@@ -1415,9 +1297,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  /* 64 聊天背景由 .chat-bg-* 提供的 --chat-bg 决定 */
-  background: var(--chat-bg, var(--im-bg, #f7f8fa));
-  transition: background 0.25s ease;
+  background: var(--im-bg, #f7f8fa);
 }
 .day-sep {
   align-self: center;
@@ -1605,32 +1485,6 @@ onUnmounted(() => {
   gap: 10px;
   margin-top: 6px;
 }
-/* ---- 50 会话筛选 ---- */
-.conv-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 16px 8px;
-  align-items: center;
-}
-.filter-chip {
-  border: 1px solid var(--im-border, #e6e8eb);
-  background: var(--im-panel, #fff);
-  color: var(--im-text-2, #51565f);
-  font-size: 11px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  cursor: pointer;
-  line-height: 16px;
-}
-.filter-chip.active {
-  border-color: var(--xx-accent, #ec5f92);
-  color: var(--xx-accent, #ec5f92);
-  background: var(--xx-accent-soft, rgba(51, 112, 255, 0.08));
-}
-.read-all {
-  margin-left: auto;
-}
 /* 61 搜索命中关键词 */
 .hit-mark {
   background: var(--xx-accent-soft, rgba(51, 112, 255, 0.18));
@@ -1661,38 +1515,6 @@ onUnmounted(() => {
 .empty-sub a:hover {
   text-decoration: underline;
 }
-/* ---- 资料卡 ---- */
-.profile-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 0 4px;
-  min-height: 180px;
-}
-.card-name {
-  font-size: 18px;
-  font-weight: 600;
-}
-.card-nickname {
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-  margin-top: -4px;
-}
-.card-username {
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-}
-.card-signature {
-  font-size: 13px;
-  color: var(--im-text-2, #51565f);
-  text-align: center;
-}
-.card-meta {
-  font-size: 12px;
-  color: var(--xx-accent, #ec5f92);
-}
-
 /* ============ 手机端适配（≤768px：单面板布局） ============ */
 /* 返回按钮：桌面隐藏，触屏窄屏显示 */
 .back-btn {

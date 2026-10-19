@@ -1,4 +1,4 @@
-/** 外观与行为设置：皮肤 × 6、聊天背景 × 5、聊天字号 × 3、发送快捷键、拍一拍后缀。 */
+/** 外观与行为设置：皮肤 × 6、发送快捷键、免打扰时段。 */
 
 export interface SkinOption {
   id: string
@@ -19,40 +19,11 @@ export const SKINS: SkinOption[] = [
   { id: 'ocean', label: '海洋青', color: '#06b6d4', gradient: 'linear-gradient(135deg, #22d3ee, #0891b2)' },
 ]
 
-export interface ChatBackground {
-  id: string
-  label: string
-}
-
-/** 64 聊天背景（CSS 类名与 id 对应） */
-export const CHAT_BACKGROUNDS: ChatBackground[] = [
-  { id: 'default', label: '默认' },
-  { id: 'night', label: '静谧夜空' },
-  { id: 'sakura', label: '樱花漫舞' },
-  { id: 'mint', label: '薄荷微光' },
-  { id: 'paper', label: '素笺纸纹' },
-]
-
-export interface FontOption {
-  id: string
-  label: string
-  px: number
-}
-
-export const FONTS: FontOption[] = [
-  { id: 'standard', label: '标准', px: 14 },
-  { id: 'large', label: '大', px: 15.5 },
-  { id: 'huge', label: '特大', px: 17 },
-]
-
 /** 52 发送快捷键策略：Enter 直接发送，或 Ctrl/Cmd+Enter 发送（Enter 换行） */
 export type SendKeyMode = 'enter' | 'ctrl-enter'
 
 const SKIN_KEY = 'arechat.skin'
-const FONT_KEY = 'arechat.fontsize'
 const SEND_KEY_KEY = 'arechat.sendkey'
-const BG_KEY = 'arechat.chatbg'
-const POKE_KEY = 'arechat.pokesuffix'
 
 function safeGet(key: string): string | null {
   try {
@@ -75,23 +46,8 @@ export function currentSkin(): string {
   return SKINS.some((s) => s.id === id) ? (id as string) : 'sakura'
 }
 
-export function currentFont(): string {
-  const id = safeGet(FONT_KEY)
-  return FONTS.some((f) => f.id === id) ? (id as string) : 'standard'
-}
-
 export function currentSendKey(): SendKeyMode {
   return safeGet(SEND_KEY_KEY) === 'ctrl-enter' ? 'ctrl-enter' : 'enter'
-}
-
-export function currentBackground(): string {
-  const id = safeGet(BG_KEY)
-  return CHAT_BACKGROUNDS.some((b) => b.id === id) ? (id as string) : 'default'
-}
-
-/** 67 拍一拍自定义后缀（如「的小脑袋」，最长 100 字） */
-export function currentPokeSuffix(): string {
-  return safeGet(POKE_KEY) ?? ''
 }
 
 // ============ 91 免打扰时段（安静时段） ============
@@ -155,43 +111,21 @@ export function skinColor(id: string): string {
   return SKINS.find((s) => s.id === id)?.color ?? SKINS[0].color
 }
 
-/** 应用到 <html data-skin data-font data-chatbg>（CSS 按属性切主题） */
-export function applyAppearance(
-  skin = currentSkin(),
-  font = currentFont(),
-  background = currentBackground(),
-) {
+/** 应用到 <html data-skin>（CSS 按属性切主题） */
+export function applyAppearance(skin = currentSkin()) {
   if (typeof document === 'undefined') {
     return
   }
   document.documentElement.dataset.skin = skin
-  document.documentElement.dataset.font = font
-  document.documentElement.dataset.chatbg = background
-  // 通知已挂载的页面（聊天区背景等）立即同步
-  window.dispatchEvent(new CustomEvent('arechat:appearance'))
 }
 
 export function saveSkin(id: string) {
   safeSet(SKIN_KEY, id)
-  applyAppearance(id, currentFont(), currentBackground())
-}
-
-export function saveFont(id: string) {
-  safeSet(FONT_KEY, id)
-  applyAppearance(currentSkin(), id, currentBackground())
-}
-
-export function saveBackground(id: string) {
-  safeSet(BG_KEY, id)
-  applyAppearance(currentSkin(), currentFont(), id)
+  applyAppearance(id)
 }
 
 export function saveSendKey(mode: SendKeyMode) {
   safeSet(SEND_KEY_KEY, mode)
-}
-
-export function savePokeSuffix(suffix: string) {
-  safeSet(POKE_KEY, suffix.trim().slice(0, 100))
 }
 
 /** 兼容旧调用名：强调色 = 皮肤主色 */

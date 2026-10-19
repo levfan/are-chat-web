@@ -85,26 +85,6 @@
             <el-radio-button value="light">浅色</el-radio-button>
             <el-radio-button value="dark">深色</el-radio-button>
           </el-radio-group>
-
-          <div class="setting-title">聊天背景</div>
-          <div class="bg-grid">
-            <button
-              v-for="bg in CHAT_BACKGROUNDS"
-              :key="bg.id"
-              type="button"
-              class="bg-option"
-              :class="[`bg-preview-${bg.id}`, { picked: draftBg === bg.id }]"
-              data-testid="chatbg-option"
-              @click="pickBackground(bg.id)"
-            >
-              <span class="bg-label">{{ bg.label }}</span>
-            </button>
-          </div>
-
-          <div class="setting-title">聊天字号</div>
-          <el-radio-group v-model="draftFont" size="small" data-testid="font-select" @change="(v) => pickFont(String(v))">
-            <el-radio-button v-for="font in FONTS" :key="font.id" :value="font.id">{{ font.label }}</el-radio-button>
-          </el-radio-group>
         </div>
       </el-tab-pane>
 
@@ -116,16 +96,6 @@
             <el-radio-button value="enter">Enter 发送</el-radio-button>
             <el-radio-button value="ctrl-enter">Ctrl+Enter 发送</el-radio-button>
           </el-radio-group>
-
-          <div class="setting-title">拍一拍后缀</div>
-          <el-input
-            v-model="draftPokeSuffix"
-            size="small"
-            maxlength="100"
-            placeholder="例如：的小脑袋（拍一拍时展示）"
-            data-testid="poke-suffix-input"
-            @change="pickPokeSuffix"
-          />
 
           <!-- 91 免打扰时段 -->
           <div class="setting-title">免打扰时段</div>
@@ -155,34 +125,6 @@
       <!-- 账号：安全与客户端 -->
       <el-tab-pane label="账号" name="account">
         <div class="profile-form">
-          <!-- 98 添加到桌面：常驻入口 -->
-          <div class="setting-title">添加到桌面</div>
-          <div class="pwa-row">
-            <template v-if="pwaStandalone">
-              <span class="pwa-hint" data-testid="pwa-installed">✅ 已安装为桌面应用</span>
-            </template>
-            <template v-else-if="pwaInstallable">
-              <span class="pwa-hint">安装后像原生 App 一样全屏打开</span>
-              <el-button size="small" type="primary" plain data-testid="pwa-install" @click="onInstallClick">
-                📲 立即安装
-              </el-button>
-            </template>
-            <template v-else-if="isIos">
-              <span class="pwa-hint">iPhone / iPad 需手动添加</span>
-              <el-button size="small" data-testid="pwa-guide" @click="pwaGuideVisible = true">📲 添加到桌面</el-button>
-            </template>
-            <template v-else-if="!pwaSecure">
-              <span class="pwa-hint" data-testid="pwa-insecure">HTTP 访问无法一键安装（需 HTTPS），可手动添加</span>
-              <el-button size="small" data-testid="pwa-guide" @click="pwaGuideVisible = true">📲 手动添加</el-button>
-            </template>
-            <template v-else>
-              <span class="pwa-hint" data-testid="pwa-unsupported">当前浏览器不支持一键安装（小米/华为等自带浏览器），可手动添加</span>
-              <el-button size="small" data-testid="pwa-guide" @click="pwaGuideVisible = true">📲 手动添加</el-button>
-            </template>
-          </div>
-
-          <el-divider class="divider" />
-
           <!-- 80 修改密码 -->
           <div class="setting-title">修改密码</div>
           <el-input
@@ -237,9 +179,6 @@
       </el-button>
     </template>
 
-    <!-- 98 iOS 添加到桌面引导（与移动端横幅共用组件） -->
-    <PwaInstallGuide v-model="pwaGuideVisible" />
-
     <!-- 89 注销账号确认弹窗 -->
     <el-dialog v-model="deactivateVisible" title="注销账号" width="380px" draggable append-to-body>
       <el-alert
@@ -276,18 +215,10 @@ import { authApi } from '@/api/auth'
 import { AVATAR_COLORS, isAvatarColorKey } from '@/utils/imFormat'
 import { formatChatTime } from '@/utils/imFormat'
 import {
-  CHAT_BACKGROUNDS,
-  FONTS,
   SKINS,
-  currentBackground,
-  currentPokeSuffix,
-  currentFont,
   currentQuietHours,
   currentSendKey,
   currentSkin,
-  saveBackground,
-  saveFont,
-  savePokeSuffix,
   saveQuietHours,
   saveSendKey,
   saveSkin,
@@ -296,9 +227,7 @@ import {
 } from '@/utils/settings'
 import { notificationEnabled, setNotificationEnabled } from '@/utils/notify'
 import { getThemeMode, setThemeMode, type ThemeMode } from '@/utils/theme'
-import { isIOS, isSecure, pwaInstallable, pwaStandalone, promptInstall } from '@/utils/pwa'
 import ImAvatar from './ImAvatar.vue'
-import PwaInstallGuide from './PwaInstallGuide.vue'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
@@ -315,10 +244,7 @@ const draftSignature = ref('')
 const draftBirthday = ref<string | null>(null)
 // 外观/行为设置草稿（即时生效，不占用保存按钮）
 const draftSkin = ref(currentSkin())
-const draftBg = ref(currentBackground())
-const draftFont = ref(currentFont())
 const draftSendKey = ref<SendKeyMode>(currentSendKey())
-const draftPokeSuffix = ref(currentPokeSuffix())
 const draftNotify = ref(notificationEnabled())
 const notifyHint = ref('')
 // 99 界面主题（跟随系统/浅色/深色）
@@ -331,21 +257,9 @@ const activeTab = ref<'profile' | 'appearance' | 'chat' | 'account'>('profile')
 const appVersion = __APP_VERSION__
 const buildTime = __BUILD_TIME__
 
-// 98 添加到桌面
-const isIos = isIOS()
-const pwaSecure = isSecure()
-const pwaGuideVisible = ref(false)
-
 /** 头像预览字：跟随昵称（与好友看到的展示名一致），未设置时回落用户名 */
 const avatarLabel = computed(() => draftNickname.value.trim() || auth.username)
 
-/** 一键安装（安卓/桌面 Chromium）；iOS 走引导层 */
-async function onInstallClick() {
-  const outcome = await promptInstall()
-  if (outcome === 'accepted') {
-    ElMessage.success('已添加到桌面 💕')
-  }
-}
 // 91 免打扰时段
 const draftQuiet = reactive<QuietHours>(currentQuietHours())
 
@@ -376,10 +290,7 @@ watch(
       draftSignature.value = im.myProfile.signature
       draftBirthday.value = im.myProfile.birthday ?? null
       draftSkin.value = currentSkin()
-      draftBg.value = currentBackground()
-      draftFont.value = currentFont()
       draftSendKey.value = currentSendKey()
-      draftPokeSuffix.value = currentPokeSuffix()
       draftNotify.value = notificationEnabled()
       draftTheme.value = getThemeMode()
       Object.assign(draftQuiet, currentQuietHours())
@@ -392,21 +303,6 @@ watch(visible, (value) => emit('update:modelValue', value))
 function pickSkin(id: string) {
   draftSkin.value = id
   saveSkin(id)
-}
-
-/** 64 切换聊天背景（即时生效） */
-function pickBackground(id: string) {
-  draftBg.value = id
-  saveBackground(id)
-}
-
-/** 67 拍一拍后缀（即时生效） */
-function pickPokeSuffix(value: string) {
-  savePokeSuffix(value)
-}
-
-function pickFont(id: string) {
-  saveFont(id)
 }
 
 /** 99 切换界面主题（即时生效并持久化） */
@@ -610,49 +506,6 @@ async function onSave() {
   right: 6px;
 }
 
-/* ---- 64 聊天背景缩略 ---- */
-.bg-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-}
-.bg-option {
-  height: 40px;
-  border: 2px solid var(--im-border, #e6e8eb);
-  border-radius: 8px;
-  cursor: pointer;
-  padding: 3px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-.bg-option.picked {
-  border-color: var(--xx-accent, #ec5f92);
-}
-.bg-label {
-  font-size: 10px;
-  color: var(--im-text-2, #51565f);
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 4px;
-  padding: 0 3px;
-}
-.bg-preview-default {
-  background: #f7f8fa;
-}
-.bg-preview-night {
-  background: linear-gradient(160deg, #1b2440, #3d3a63);
-}
-.bg-preview-sakura {
-  background: linear-gradient(160deg, #fff5f9, #ffd9e8);
-}
-.bg-preview-mint {
-  background: linear-gradient(160deg, #f2fbf7, #d8f2ff);
-}
-.bg-preview-paper {
-  background:
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 7px),
-    #fdfcf7;
-}
 .notify-row {
   display: flex;
   align-items: center;
@@ -684,17 +537,6 @@ async function onSave() {
 }
 .danger-title {
   color: var(--el-color-danger, #f56c6c);
-}
-/* ---- 98 添加到桌面 ---- */
-.pwa-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.pwa-hint {
-  font-size: 12px;
-  color: var(--xx-text-2, #51565f);
 }
 .session-info {
   font-size: 12px;

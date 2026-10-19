@@ -55,7 +55,6 @@ declare module 'vue' {
     ImageLightbox: typeof import('./components/im/ImageLightbox.vue')['default']
     ImAvatar: typeof import('./components/im/ImAvatar.vue')['default']
     MessageBubble: typeof import('./components/im/MessageBubble.vue')['default']
-    NewMessageToast: typeof import('./components/im/NewMessageToast.vue')['default']
     ProfileDialog: typeof import('./components/im/ProfileDialog.vue')['default']
     PwaInstallGuide: typeof import('./components/im/PwaInstallGuide.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
