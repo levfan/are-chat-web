@@ -39,8 +39,7 @@ vi.mock('@/api/couple', () => {
       setAnniversary: vi.fn(), dissolve: vi.fn(),
       // 爱称也走这里：独立的 PUT /couple/bond/pet-name 已随贴贴卡下线
       updateProfile: vi.fn(),
-      intimacy: vi.fn(), notifyMine: vi.fn().mockResolvedValue({ items: [], unread: 0 }),
-      notifyReadAll: vi.fn(), relationshipOf: vi.fn(), adminCoupleStats: vi.fn(),
+      intimacy: vi.fn(), relationshipOf: vi.fn(),
     },
     streakApi: { streakBoard: vi.fn(), streakMakeup: vi.fn() },
     questionApi: { questionToday: vi.fn(), questionAnswer: vi.fn(), questionHistory: vi.fn() },

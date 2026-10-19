@@ -80,11 +80,6 @@
             </div>
           </div>
           <div class="header-actions">
-            <el-badge :value="couple.notifyUnread" :hidden="couple.notifyUnread <= 0" :max="99">
-              <el-button size="small" plain data-testid="couple-notify-bell" @click="openNotifies">
-                🔔 通知
-              </el-button>
-            </el-badge>
             <el-button size="small" plain data-testid="couple-anniv-edit" @click="openAnnivEdit">
               <el-icon class="btn-ico"><EditPen /></el-icon>纪念日
             </el-button>
@@ -98,11 +93,6 @@
       <!-- F43 里程碑天数：今天是有意义的日子 -->
       <div v-if="milestone" class="milestone-banner" data-testid="couple-milestone-banner">
         🎉 今天是在一起第 <b>{{ milestone }}</b> 天！这个数字值得纪念 💕
-      </div>
-
-      <!-- F47 空间周年庆 -->
-      <div v-if="spaceBirthday" class="milestone-banner space-birthday" data-testid="couple-space-birthday">
-        🎂 我们的空间 <b>{{ spaceBirthday }}</b> 周岁啦！感谢有 TA 陪伴的每一天 🎈
       </div>
 
       <!-- 空间个性化：我们的宣言 + 装扮入口（宣言/主题/贴纸墙） -->
@@ -130,14 +120,12 @@
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
           <el-tab-pane label="🫶 今天" name="today">
-            <TabExtras tab="today" />
             <div class="tab-stack">
               <CoupleQuestion />
               <CoupleStreak />
             </div>
           </el-tab-pane>
           <el-tab-pane label="🌟 愿望清单" name="wish" lazy>
-            <TabExtras tab="wish" />
             <div class="tab-stack">
               <CoupleWish />
             </div>
@@ -165,41 +153,6 @@
         </template>
       </el-dialog>
 
-      <!-- F41 通知中心弹窗（F94 增加分类筛选） -->
-      <el-dialog v-model="notifyVisible" title="🔔 空间动态通知" width="400px" draggable data-testid="couple-notify-dialog">
-        <div class="notify-toolbar">
-          <span class="notify-unread" data-testid="couple-notify-unread">{{ couple.notifyUnread }} 条未读</span>
-          <el-button size="small" round data-testid="couple-notify-readall" @click="onReadAll">全部已读</el-button>
-        </div>
-        <div class="notify-filters" data-testid="couple-notify-filters">
-          <el-check-tag
-            v-for="f in NOTIFY_FILTERS"
-            :key="f.key"
-            :checked="notifyFilter === f.key"
-            :data-testid="`couple-notify-filter-${f.key}`"
-            @change="notifyFilter = f.key"
-          >
-            {{ f.label }}
-          </el-check-tag>
-        </div>
-        <el-empty v-if="!filteredNotifies.length" description="这一类还没有动态～" :image-size="60" />
-        <div v-else class="notify-list">
-          <div
-            v-for="n in filteredNotifies"
-            :key="n.id"
-            class="notify-item"
-            :class="{ unread: !n.read }"
-            :data-testid="`couple-notify-${n.event}`"
-          >
-            <span class="notify-dot">{{ n.read ? '·' : '🔵' }}</span>
-            <div class="notify-body">
-              <p class="notify-detail">{{ n.detail }}</p>
-              <span class="notify-time">{{ formatNotifyTime(n.created) }} · {{ n.actor === 'system' ? '小助手' : 'TA' }}</span>
-            </div>
-          </div>
-        </div>
-      </el-dialog>
-
       <!-- 专属爱称弹窗 -->
       <el-dialog v-model="petEditVisible" title="给 TA 起个专属爱称" width="360px" draggable data-testid="couple-pet-dialog">
         <el-input
@@ -223,7 +176,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { EditPen } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -248,70 +201,6 @@ const savingAnniv = ref(false)
 const petEditVisible = ref(false)
 const petEditName = ref('')
 const savingPet = ref(false)
-/** F41 通知中心 */
-const notifyVisible = ref(false)
-
-// ============ F208 页签首访气泡 ============
-const TAB_TIPS: Record<string, string> = {
-  today: '🫶 今天：答一答今天这一问，两个人都答完就算打卡一天，连上去就长解锁～',
-  wish: '🌟 愿望清单：想要的先记下，对方可以偷偷标「已准备」——许愿的人这一侧永远看不到～',
-}
-const visibleTabTips = ref<Record<string, boolean>>({})
-
-function maybeShowTabTip(tab: string) {
-  if (!(tab in TAB_TIPS)) return
-  if (!couple.established) return
-  const key = `arechat_couple_tab_tip_${tab}`
-  if (localStorage.getItem(key)) return
-  try {
-    localStorage.setItem(key, '1')
-  } catch {
-    // 隐私模式等写入失败不影响展示
-  }
-  visibleTabTips.value = { ...visibleTabTips.value, [tab]: true }
-}
-
-function closeTabTip(tab: string) {
-  visibleTabTips.value = { ...visibleTabTips.value, [tab]: false }
-}
-
-watch(activeTab, (t) => maybeShowTabTip(t))
-
-// 空间建立后：给首个可见页签（默认或路由直达）挂上首访提示
-watch(
-  () => couple.established,
-  (v) => {
-    if (!v) return
-    maybeShowTabTip(activeTab.value)
-  },
-  { immediate: true },
-)
-
-/** 每个一级页签内容顶部：F208 首访提示条（F207 常用 chip 随收藏功能一起下线） */
-const TabExtras = defineComponent({
-  name: 'TabExtras',
-  props: { tab: { type: String, required: true } },
-  setup(props) {
-    return () => {
-      if (!visibleTabTips.value[props.tab]) return null
-      return h('div', { class: 'tab-extras' }, [
-        h('div', { class: 'tab-tip', 'data-testid': 'couple-tab-tip' }, [
-          h('span', TAB_TIPS[props.tab]),
-          h(
-            'button',
-            {
-              type: 'button',
-              class: 'tab-tip-close',
-              'data-testid': 'couple-tab-tip-close',
-              onClick: () => closeTabTip(props.tab),
-            },
-            '×',
-          ),
-        ]),
-      ])
-    }
-  },
-})
 
 /** F43 里程碑天数：命中 100/200/365/520/666/888/1000/1314/2000 时今天值得庆祝 */
 const MILESTONE_DAYS = [100, 200, 365, 520, 666, 888, 1000, 1314, 2000]
@@ -319,25 +208,6 @@ const milestone = computed(() => {
   const days = couple.space?.days
   return days && MILESTONE_DAYS.includes(days) ? days : null
 })
-
-/** F47 空间周年庆：今天是空间建立的同月同日且满 1 年 */
-const spaceBirthday = computed(() => {
-  const created = couple.space?.created
-  if (!created) return null
-  const birth = new Date(created)
-  const now = new Date()
-  const years = now.getFullYear() - birth.getFullYear()
-  if (years < 1) return null
-  if (now.getMonth() === birth.getMonth() && now.getDate() === birth.getDate()) {
-    return years
-  }
-  return null
-})
-
-function openNotifies() {
-  void couple.loadNotifies()
-  notifyVisible.value = true
-}
 
 /** F98 新手引导：每个浏览器只出现一次 */
 const GUIDE_KEY = 'arechat_couple_guide_seen'
@@ -351,44 +221,6 @@ onMounted(() => {
 
 function closeGuide() {
   guideVisible.value = false
-}
-
-/** F94 通知分类筛选：分类按后端存活的 13 个情侣事件前缀重排（已下线卡片的那些前缀不再有条目） */
-type NotifyFilter = 'all' | 'streak' | 'question' | 'wish' | 'space'
-const notifyFilter = ref<NotifyFilter>('all')
-const NOTIFY_FILTERS: { key: NotifyFilter; label: string }[] = [
-  { key: 'all', label: '全部' },
-  { key: 'question', label: '每日一问' },
-  { key: 'streak', label: '打卡解锁' },
-  { key: 'wish', label: '愿望清单' },
-  { key: 'space', label: '空间与日子' },
-]
-const RULES: Record<Exclude<NotifyFilter, 'all'>, string[]> = {
-  question: ['question-'],
-  streak: ['streak-'],
-  wish: ['wish-'],
-  space: ['invite', 'dissolved', 'space-themed', 'anniversary'],
-}
-const filteredNotifies = computed(() => {
-  if (notifyFilter.value === 'all') {
-    return couple.notifies
-  }
-  const rules = RULES[notifyFilter.value]
-  return couple.notifies.filter((n) => rules.some((prefix) => n.event.startsWith(prefix)))
-})
-
-async function onReadAll() {
-  try {
-    await couple.readAllNotifies()
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '操作失败')
-  }
-}
-
-function formatNotifyTime(at: number) {
-  const d = new Date(at)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getMonth() + 1}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 /**
@@ -753,93 +585,6 @@ onMounted(async () => {
 }
 .milestone-banner b {
   font-size: 18px;
-  color: #f56c6c;
-}
-/* F41 通知中心 */
-.notify-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-/* F94 通知分类筛选条 */
-.notify-filters {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-.notify-unread {
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-}
-.notify-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 320px;
-  overflow-y: auto;
-}
-.notify-item {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--el-fill-color-lighter, #fafafa);
-}
-.notify-item.unread {
-  background: #fff5f5;
-}
-.notify-dot {
-  font-size: 10px;
-  flex-shrink: 0;
-}
-.notify-body {
-  min-width: 0;
-}
-.notify-detail {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  word-break: break-all;
-}
-.notify-time {
-  font-size: 11px;
-  color: var(--im-muted, #8f959e);
-}
-</style>
-
-<style>
-/* F208 首访提示条（TabExtras 为局部渲染组件，scoped 触不到） */
-.couple-page .tab-extras {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.couple-page .tab-tip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-  background: var(--el-fill-color-lighter, #fafafa);
-}
-.couple-page .tab-tip-close {
-  border: none;
-  background: transparent;
-  font-size: 14px;
-  line-height: 1;
-  color: var(--im-muted, #8f959e);
-  cursor: pointer;
-  padding: 2px 4px;
-}
-.couple-page .tab-tip-close:hover {
   color: #f56c6c;
 }
 </style>

@@ -2,7 +2,6 @@ import { http } from './http'
 import type {
   AdminAnnouncementVO,
   AdminApplicationVO,
-  AdminAuditVO,
   AdminUserVO,
   ApplicationStatusVO,
   LoginResult,
@@ -59,8 +58,7 @@ export const adminApi = {
       `/api/admin/users/${encodeURIComponent(username)}/reset-password`,
       { password: password ?? '' },
     ),
-  audit: (limit = 100) => http.get<AdminAuditVO[]>(`/api/admin/audit?limit=${limit}`),
-  announcements: () => http.get<AdminAnnouncementVO[]>(`/api/admin/announcements`),
+  announcements: () => http.get<AdminAnnouncementVO[]>('/api/admin/announcements'),
   publishAnnouncement: (content: string) =>
     http.postJson<AdminAnnouncementVO>('/api/admin/announcements', { content }),
   closeAnnouncement: (id: string) => http.postJson<void>(`/api/admin/announcements/${id}/close`, {}),

@@ -162,56 +162,6 @@
           </el-table-column>
         </el-table>
       </el-tab-pane>
-
-      <!-- ============ 93 审计日志 ============ -->
-      <el-tab-pane label="审计日志" name="audit">
-        <el-button size="small" :loading="loadingAudit" @click="loadAudit">刷新</el-button>
-        <el-table :data="audits" size="small" data-testid="admin-audit-table">
-          <el-table-column prop="actor" label="操作人" width="110" />
-          <el-table-column prop="action" label="动作" width="130">
-            <template #default="{ row }">{{ auditLabel(row.action) }}</template>
-          </el-table-column>
-          <el-table-column prop="target" label="对象" width="120" />
-          <el-table-column prop="detail" label="详情" min-width="240" show-overflow-tooltip />
-          <el-table-column label="时间" min-width="150">
-            <template #default="{ row }">{{ formatTime(row.created) }}</template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
-
-      <!-- ============ F45 情侣空间运营看板 ============ -->
-      <el-tab-pane label="情侣看板" name="couple" lazy>
-        <div class="couple-stats" data-testid="admin-couple-stats">
-          <el-button size="small" :loading="loadingCoupleStats" @click="loadCoupleStats">刷新</el-button>
-          <div v-if="coupleStats" class="stats-grid">
-            <div class="stat-card">
-              <span class="stat-num">{{ coupleStats.activeSpaces }}</span>
-              <span class="stat-label">存续中的空间</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num">{{ coupleStats.spacesCreatedThisMonth }}</span>
-              <span class="stat-label">本月新建立</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num">{{ coupleStats.avgDays }}</span>
-              <span class="stat-label">平均在一起天数</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num">{{ coupleStats.dissolvedSpaces }}</span>
-              <span class="stat-label">已解散</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num">{{ coupleStats.totalCheckinDays }}</span>
-              <span class="stat-label">累计打卡人天</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-num">{{ coupleStats.totalAnswers }}</span>
-              <span class="stat-label">累计每日一问作答</span>
-            </div>
-          </div>
-          <el-empty v-else description="点击「刷新」加载情侣空间运营数据" :image-size="60" />
-        </div>
-      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -220,38 +170,20 @@
 import { onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { adminApi } from '@/api/auth'
-import { coupleApi } from '@/api/couple'
 import { useImStore } from '@/stores/im'
 import type {
   AdminAnnouncementVO,
   AdminApplicationVO,
-  AdminAuditVO,
   AdminUserVO,
-  CoupleAdminStatsVO,
 } from '@/types'
 
 const im = useImStore()
-const tab = ref<'applications' | 'users' | 'announcements' | 'audit'>('applications')
+const tab = ref<'applications' | 'users' | 'announcements'>('applications')
 
 const applications = ref<AdminApplicationVO[]>([])
 const applicationFilter = ref('PENDING')
 const loadingApps = ref(false)
 const pendingCount = ref(0)
-
-// ============ F45 情侣空间运营看板 ============
-const coupleStats = ref<CoupleAdminStatsVO | null>(null)
-const loadingCoupleStats = ref(false)
-
-async function loadCoupleStats() {
-  loadingCoupleStats.value = true
-  try {
-    coupleStats.value = await coupleApi.adminCoupleStats()
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '看板加载失败')
-  } finally {
-    loadingCoupleStats.value = false
-  }
-}
 
 const users = ref<AdminUserVO[]>([])
 const userKeyword = ref('')
@@ -260,9 +192,6 @@ const loadingUsers = ref(false)
 const announcements = ref<AdminAnnouncementVO[]>([])
 const announcementDraft = ref('')
 const publishing = ref(false)
-
-const audits = ref<AdminAuditVO[]>([])
-const loadingAudit = ref(false)
 
 onMounted(() => {
   void loadApplications()
@@ -289,19 +218,6 @@ function userStatusLabel(status: string) {
 
 function userStatusTag(status: string) {
   return status === 'ACTIVE' ? 'success' : status === 'DISABLED' ? 'danger' : 'info'
-}
-
-function auditLabel(action: string) {
-  const map: Record<string, string> = {
-    APPROVE: '通过注册申请',
-    REJECT: '拒绝注册申请',
-    ENABLE: '启用账号',
-    DISABLE: '禁用账号',
-    RESET_PASSWORD: '重置密码',
-    ANNOUNCE: '发布公告',
-    CLOSE_ANNOUNCEMENT: '关闭公告',
-  }
-  return map[action] ?? action
 }
 
 async function loadApplications() {
@@ -335,17 +251,6 @@ async function loadAnnouncements() {
     announcements.value = await adminApi.announcements()
   } catch {
     // 静默
-  }
-}
-
-async function loadAudit() {
-  loadingAudit.value = true
-  try {
-    audits.value = await adminApi.audit()
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '审计日志加载失败')
-  } finally {
-    loadingAudit.value = false
   }
 }
 
@@ -494,8 +399,6 @@ watch(tab, (value) => {
     void loadUsers()
   } else if (value === 'announcements' && announcements.value.length === 0) {
     void loadAnnouncements()
-  } else if (value === 'audit' && audits.value.length === 0) {
-    void loadAudit()
   }
 })
 </script>
@@ -547,30 +450,5 @@ watch(tab, (value) => {
 }
 .announce-editor .el-button {
   align-self: flex-start;
-}
-/* F45 情侣空间运营看板 */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 14px 8px;
-  border-radius: 10px;
-  background: var(--el-fill-color-lighter, #fafafa);
-}
-.stat-num {
-  font-size: 24px;
-  font-weight: 700;
-  color: #f56c6c;
-}
-.stat-label {
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
 }
 </style>

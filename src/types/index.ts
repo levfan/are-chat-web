@@ -62,15 +62,6 @@ export interface AdminUserVO {
   lastLoginAt?: number | null
 }
 
-export interface AdminAuditVO {
-  id: string
-  actor: string
-  action: string
-  target: string
-  detail: string
-  created: number
-}
-
 /** 88 全站公告 */
 export interface AnnouncementVO {
   id: string
@@ -119,7 +110,6 @@ export interface FriendVO {
   /** 对方昵称（来自 user_profile），展示优先级：备注 > 昵称 > 用户名 */
   nickname?: string | null
   remark: string
-  tag: string
   pinned: boolean
   muted: boolean
   blocked: boolean
@@ -181,15 +171,6 @@ export interface FilePayload {
   url: string
 }
 
-/** 81 全局消息搜索命中 */
-export interface GlobalSearchHit {
-  id: string
-  peer: string
-  content: string
-  fromUser: string
-  created: number
-}
-
 /** 84 会话内置顶消息 */
 export interface PinVO {
   msgId: string
@@ -223,20 +204,8 @@ export interface ImMessage {
   read?: boolean
   /** 发送后编辑过 */
   edited?: boolean
-  /** 我是否收藏了这条消息 */
-  starred?: boolean
   /** 消息表情回应 */
   reactions?: ImReaction[]
-  created: number
-}
-
-/** 收藏夹条目 */
-export interface ImStarVO {
-  msgId: string
-  peer: string
-  content: string
-  msgType: string
-  status: string
   created: number
 }
 
@@ -486,23 +455,7 @@ export interface CoupleHeatCell {
   level: number
 }
 
-// ============ 情侣空间：通知中心 / 生日 / 关系徽章 / 管理看板 ============
-
-/** F41 通知中心条目 */
-export interface CoupleNotifyVO {
-  id: string
-  event: string
-  /** 触发人（system = 定时任务） */
-  actor: string | null
-  detail: string
-  read: boolean
-  created: number
-}
-
-export interface CoupleNotifyListVO {
-  items: CoupleNotifyVO[]
-  unread: number
-}
+// ============ 情侣空间：生日 / 关系徽章 ============
 
 /** F42 好友生日条目：daysUntil 为今年生日的剩余天数（今天 = 0） */
 export interface FriendBirthdayVO {
@@ -518,16 +471,6 @@ export interface CoupleRelationshipVO {
   inRelationship: boolean
   days: number | null
   anniversary: string | null
-}
-
-/** F45 管理看板：情侣空间运营统计（后端 CoupleAdminController.CoupleStatsVO） */
-export interface CoupleAdminStatsVO {
-  activeSpaces: number
-  dissolvedSpaces: number
-  avgDays: number
-  totalCheckinDays: number
-  totalAnswers: number
-  spacesCreatedThisMonth: number
 }
 
 // ============ 情侣空间：惊喜与期待（F50-F59） ============

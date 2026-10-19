@@ -68,9 +68,7 @@ vi.mock('@/api/couple', () => ({
     setAnniversary: vi.fn(), dissolve: vi.fn(),
     updateProfile: vi.fn().mockResolvedValue(null),
     intimacy: vi.fn().mockResolvedValue(FIX.emptyIntimacy),
-    notifyMine: vi.fn().mockResolvedValue({ items: [], unread: 0 }),
-    notifyReadAll: vi.fn(),
-    relationshipOf: vi.fn(), adminCoupleStats: vi.fn(),
+    relationshipOf: vi.fn(),
   },
   streakApi: {
     streakBoard: vi.fn().mockResolvedValue(FIX.emptyStreakBoard),
@@ -182,7 +180,6 @@ beforeEach(() => {
       petName: body.petName == null ? space.partner.petName : (body.petName.trim() || null),
     },
   }))
-  vi.mocked(coupleApi.notifyMine).mockResolvedValue({ items: [], unread: 0 })
   vi.mocked(streakApi.streakBoard).mockResolvedValue(boardWithTiers([]))
   vi.mocked(streakApi.streakMakeup).mockResolvedValue(boardWithTiers([]))
   vi.mocked(questionApi.questionToday).mockResolvedValue(emptyQuestion)
@@ -400,9 +397,9 @@ describe('api 契约守卫', () => {
     expect(Object.keys(groups).sort()).toEqual(
       ['coupleApi', 'questionApi', 'streakApi', 'wishApi'],
     )
-    // 25 = 二轮裁剪后再删掉百日回顾一条：
-    // coupleApi 13（地基 8 + 心动值 1 + 通知 2 + 旁支读取 2）+ streak 2 + question 3 + wish 7
-    expect(total).toBe(25)
+    // 22 = 二轮裁剪后再删收藏/全局搜索/通知中心/运营看板：
+    // coupleApi 10（地基 8 + 心动值 1 + 旁支读取 1）+ streak 2 + question 3 + wish 7
+    expect(total).toBe(22)
   })
 
   it('已下线的卡片端点在 api/couple.ts 与 store 里一个字都搜不到', () => {
@@ -417,8 +414,8 @@ describe('api 契约守卫', () => {
       expect(paths.filter((p) => p.split('/').includes(dead.replace(/^\//, ''))),
         `api/couple.ts 还在打 ${dead}`).toEqual([])
     }
-    // 存活的 25 个路径逐个落在白名单里，一个多余的都没有
-    expect(paths).toHaveLength(25)
+    // 存活的 22 个路径逐个落在白名单里，一个多余的都没有
+    expect(paths).toHaveLength(22)
     for (const dead of ['stickers', 'makeupCost', 'moodSync', 'comfortBoard', 'bondStats', 'setPetName']) {
       expect(store, `stores/couple.ts 里还留着 ${dead}`).not.toContain(dead)
       expect(api, `api/couple.ts 里还留着 ${dead}`).not.toContain(dead)
@@ -627,39 +624,35 @@ describe('情侣空间 WS 事件的刷新口径', () => {
     expect(streakApi.streakBoard).not.toHaveBeenCalled()
   })
 
-  it('anniversary-reminder 是定时任务发的倒数，只弹提醒 + 同步角标，不动总览', async () => {
+  it('anniversary-reminder 是定时任务发的倒数，只弹提醒，不动总览', async () => {
     const store = useCoupleStore()
     expect(await fire(store, 'anniversary-reminder')).toBe(true)
-    expect(coupleApi.notifyMine).toHaveBeenCalledTimes(1)
     expect(coupleApi.overview).not.toHaveBeenCalled()
   })
 
   for (const name of ['streak-checkin', 'streak-unlocked', 'streak-makeup']) {
-    it(`${name} 重拉打卡看板 + 心动值 + 通知，并弹一条提醒`, async () => {
+    it(`${name} 重拉打卡看板 + 心动值，并弹一条提醒`, async () => {
       const store = useCoupleStore()
       expect(await fire(store, name)).toBe(true)
       expect(streakApi.streakBoard).toHaveBeenCalledTimes(1)
       expect(coupleApi.intimacy).toHaveBeenCalledTimes(1)
-      expect(coupleApi.notifyMine).toHaveBeenCalledTimes(1)
       expect(questionApi.questionToday).not.toHaveBeenCalled()
     })
   }
 
   for (const name of ['question-daily', 'question-answered']) {
-    it(`${name} 重拉今日一问 + 通知，并弹一条提醒`, async () => {
+    it(`${name} 重拉今日一问，并弹一条提醒`, async () => {
       const store = useCoupleStore()
       expect(await fire(store, name)).toBe(true)
       expect(questionApi.questionToday).toHaveBeenCalledTimes(1)
-      expect(coupleApi.notifyMine).toHaveBeenCalledTimes(1)
       expect(streakApi.streakBoard).not.toHaveBeenCalled()
     })
   }
 
   for (const name of ['wish-added', 'wish-fulfilled']) {
-    it(`${name} 只同步通知角标（清单看板归组件自持），并弹一条提醒`, async () => {
+    it(`${name} 只弹一条提醒（清单看板归组件自持）`, async () => {
       const store = useCoupleStore()
       expect(await fire(store, name)).toBe(true)
-      expect(coupleApi.notifyMine).toHaveBeenCalledTimes(1)
       expect(wishApi.wishBoard).not.toHaveBeenCalled()
       expect(streakApi.streakBoard).not.toHaveBeenCalled()
       expect(questionApi.questionToday).not.toHaveBeenCalled()
@@ -671,7 +664,6 @@ describe('情侣空间 WS 事件的刷新口径', () => {
     expect(await fire(store, 'something-new')).toBe(false)
     expect(streakApi.streakBoard).not.toHaveBeenCalled()
     expect(questionApi.questionToday).not.toHaveBeenCalled()
-    expect(coupleApi.notifyMine).not.toHaveBeenCalled()
   })
 
   /** 后端已删掉生产者的事件（ADR-0010：44 种收缩到 14 种）在这里必须完全惰性 */
@@ -686,7 +678,6 @@ describe('情侣空间 WS 事件的刷新口径', () => {
       expect(await fire(store, name)).toBe(false)
       expect(coupleApi.overview).not.toHaveBeenCalled()
       expect(coupleApi.intimacy).not.toHaveBeenCalled()
-      expect(coupleApi.notifyMine).not.toHaveBeenCalled()
       expect(streakApi.streakBoard).not.toHaveBeenCalled()
       expect(questionApi.questionToday).not.toHaveBeenCalled()
     })

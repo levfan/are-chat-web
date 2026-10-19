@@ -6,7 +6,6 @@ import type {
   CoupleInviteVO,
   CoupleOverview,
   CoupleIntimacyVO,
-  CoupleNotifyVO,
   CoupleQuestionTodayVO,
   CoupleSpaceTheme,
   CoupleSpaceVO,
@@ -16,7 +15,7 @@ import type {
 /**
  * 情侣空间 store（v8 二轮裁剪后只剩「地基 + 两张要被别处读走的卡」的域）。
  *
- * 留在这里的：总览与邀请、心动值、通知中心、连续互动打卡看板（streak）、每日一问（question）。
+ * 留在这里的：总览与邀请、心动值、连续互动打卡看板（streak）、每日一问（question）。
  * streak / question 上 store 是有理由的——解锁态要被 ChatView 与 CoupleView 头部直接读走
  * （`tierUnlocked(key)`），卡片自己持有就变成两份真相；愿望清单由组件自持。
  * 已下线的域（心情日记 / 贴贴 / 求抱抱 / 情绪同步）不再留壳：后端既没有对应的端点，
@@ -43,8 +42,6 @@ export const useCoupleStore = defineStore('couple', () => {
   const intimacy = ref<CoupleIntimacyVO | null>(null)
   const streak = ref<CoupleStreakBoardVO | null>(null)
   const question = ref<CoupleQuestionTodayVO | null>(null)
-  const notifies = ref<CoupleNotifyVO[]>([])
-  const notifyUnread = ref(0)
 
   const space = computed<CoupleSpaceVO | null>(() => overview.value?.space ?? null)
   const established = computed(() => !!space.value)
@@ -185,24 +182,6 @@ export const useCoupleStore = defineStore('couple', () => {
     return questionInFlight
   }
 
-  // ========== 通知中心 ==========
-
-  async function loadNotifies() {
-    try {
-      const list = await coupleApi.notifyMine()
-      notifies.value = list.items ?? []
-      notifyUnread.value = list.unread ?? 0
-    } catch {
-      notifies.value = []
-      notifyUnread.value = 0
-    }
-  }
-
-  async function readAllNotifies() {
-    await coupleApi.notifyReadAll()
-    await loadNotifies()
-  }
-
   // ========== WS 分发 ==========
 
   /** 处理一条情侣空间推送：弹提醒 + 按需刷新已加载的数据 */
@@ -237,7 +216,6 @@ export const useCoupleStore = defineStore('couple', () => {
     }
     if (e === 'anniversary-reminder') {
       notify('📅 我们的日子', msg.detail)
-      void loadNotifies()
       return
     }
     // 爱称改的是 space.partner.petName（头部与聊天页都读它），后端在 updateProfile 里推这一条
@@ -251,20 +229,17 @@ export const useCoupleStore = defineStore('couple', () => {
       notify('🔥 连续互动', msg.detail)
       void loadStreak()
       void loadIntimacy()
-      void loadNotifies()
       return
     }
     // 每日一问：定题与作答都只影响今天这一问（双方都答完时后端紧跟着推 streak-checkin）
     if (e === 'question-daily' || e === 'question-answered') {
       notify('💬 每日一问', msg.detail)
       void loadQuestion()
-      void loadNotifies()
       return
     }
-    // 愿望清单的看板由组件自持，这里只弹提醒并同步角标
+    // 愿望清单的看板由组件自持，这里只弹提醒
     if (e === 'wish-added' || e === 'wish-fulfilled') {
       notify('🌟 愿望清单', msg.detail)
-      void loadNotifies()
       return
     }
     // 其余事件（已下线卡片的老推送）不再认识：不发请求、不弹提醒
@@ -275,8 +250,6 @@ export const useCoupleStore = defineStore('couple', () => {
     intimacy.value = null
     streak.value = null
     question.value = null
-    notifies.value = []
-    notifyUnread.value = 0
   }
 
   return {
@@ -289,8 +262,6 @@ export const useCoupleStore = defineStore('couple', () => {
     intimacy,
     streak,
     question,
-    notifies,
-    notifyUnread,
     init,
     loadOverview,
     invite,
@@ -304,8 +275,6 @@ export const useCoupleStore = defineStore('couple', () => {
     loadStreak,
     loadQuestion,
     tierUnlocked,
-    loadNotifies,
-    readAllNotifies,
     handleCoupleEvent,
     reset,
   }

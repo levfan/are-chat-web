@@ -1,10 +1,8 @@
 import { http } from './http'
 import type {
-  CoupleAdminStatsVO,
   CoupleIntimacyVO,
   CoupleInviteVO,
   CoupleOverview,
-  CoupleNotifyListVO,
   CoupleRelationshipVO,
   CoupleSpaceTheme,
   CoupleSpaceVO,
@@ -48,17 +46,10 @@ export const coupleApi = {
   // ---------- 心动值与恋爱等级 ----------
   intimacy: () => http.get<CoupleIntimacyVO>('/api/couple/intimacy'),
 
-  // ---------- 通知中心 ----------
-  notifyMine: () => http.get<CoupleNotifyListVO>('/api/couple/notify'),
-  /** F41 全部标记已读 */
-  notifyReadAll: () => http.postJson<void>('/api/couple/notify/read-all', {}),
-
   // ---------- 旁支读取 ----------
   /** F44 恋爱中徽章：某人是否在恋爱中 + 天数（仅其好友可查） */
   relationshipOf: (username: string) =>
     http.get<CoupleRelationshipVO>(`/api/couple/relationship-of/${encodeURIComponent(username)}`),
-  /** F45 管理看板：情侣空间运营统计（仅管理员） */
-  adminCoupleStats: () => http.get<CoupleAdminStatsVO>('/api/couple/admin/stats'),
 }
 
 // ============ 连续互动打卡与六档解锁 ============
