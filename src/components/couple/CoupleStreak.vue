@@ -3,7 +3,6 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { streakApi } from '@/api/couple'
 import { useCoupleStore } from '@/stores/couple'
-import type { CoupleStreakTierVO } from '@/types'
 import CoupleCollapsible from './CoupleCollapsible.vue'
 
 /**
@@ -19,6 +18,7 @@ import CoupleCollapsible from './CoupleCollapsible.vue'
 const couple = useCoupleStore()
 const board = computed(() => couple.streak)
 const making = ref(false)
+const unlockedCount = computed(() => board.value?.tiers.filter((t) => t.unlocked).length ?? 0)
 
 /** 看板里今天（服务端 yyyy-MM-dd）的前一天：纯字符串算法，不吃本地时钟也不被时区带偏 */
 function previousDay(day: string): string {
@@ -27,11 +27,6 @@ function previousDay(day: string): string {
     return ''
   }
   return new Date(at - 86_400_000).toISOString().slice(0, 10)
-}
-
-/** 还差几天：一律拿后端下发的当前连击去比档位天数，向下取 0 */
-function daysLeft(tier: CoupleStreakTierVO): number {
-  return Math.max(0, tier.days - (board.value?.currentStreak ?? 0))
 }
 
 async function onMakeup() {
@@ -94,27 +89,9 @@ onMounted(() => {
       </span>
     </div>
 
-    <p v-if="board?.nextTierKey" class="next" data-testid="couple-streak-next">
-      下一档「{{ board.nextTierLabel }}」还差 {{ board.daysToNext }} 天 🎈
+    <p v-if="board" class="next" data-testid="couple-streak-next">
+      已解锁 {{ unlockedCount }} / {{ board.tiers.length }} 档<template v-if="board.nextTierKey"> · 下一档「{{ board.nextTierLabel }}」还差 {{ board.daysToNext }} 天 🎈</template>
     </p>
-
-    <section v-if="board" class="tiers">
-      <h5 class="line-title">🧱 六档解锁进度墙</h5>
-      <ul class="tier-list">
-        <li v-for="t in board.tiers" :key="t.key" class="tier" :class="{ locked: !t.unlocked }"
-            :data-testid="`couple-streak-tier-${t.key}`">
-          <span class="icon">{{ t.icon }}</span>
-          <span class="tier-body">
-            <b class="tier-label">{{ t.label }} <em class="days">{{ t.days }} 天</em></b>
-            <em class="detail">{{ t.detail }}</em>
-          </span>
-          <span v-if="t.unlocked" class="ok" :data-testid="`couple-streak-tier-${t.key}-done`">
-            {{ t.unlockedDay }} 解锁 🎉
-          </span>
-          <span v-else class="left" :data-testid="`couple-streak-tier-${t.key}-left`">还差 {{ daysLeft(t) }} 天</span>
-        </li>
-      </ul>
-    </section>
 
     <div v-if="board" class="makeup">
       <el-button type="primary" plain :loading="making" :disabled="!board.canMakeup"
@@ -147,19 +124,6 @@ onMounted(() => {
 .cell.on { border-style: solid; border-color: #d9480f; background: rgba(217, 72, 15, 0.12); }
 .cell.makeup { border-color: #f3d19e; }
 .cell.today { outline: 1px solid #d9480f; }
-.tiers { margin-top: 10px; }
-.line-title { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: #d9480f; }
-.tier-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.tier { display: flex; align-items: baseline; gap: 8px; font-size: 13px; flex-wrap: wrap;
-        border-bottom: 1px dashed var(--im-border, #eee); padding-bottom: 4px; }
-.tier.locked { opacity: 0.55; }
-.tier .icon { font-size: 15px; }
-.tier-body { display: flex; flex-direction: column; gap: 2px; flex: 1 1 200px; }
-.tier-label { font-size: 13px; }
-.tier-label .days { font-size: 11px; font-style: normal; color: var(--im-muted, #909399); margin-left: 4px; }
-.tier .detail { font-size: 12px; font-style: normal; color: var(--im-muted, #909399); }
-.tier .ok { font-size: 12px; color: #d9480f; }
-.tier .left { font-size: 12px; color: var(--im-muted, #909399); }
 .makeup { margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .makeup .off { color: #c45656; }
 </style>

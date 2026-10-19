@@ -5,7 +5,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
 import { coupleApi, questionApi, streakApi, wishApi } from '@/api/couple'
 import { COUPLE_CARDS, COUPLE_TAB_LABELS, findCardByKey } from '@/components/couple/coupleCards.registry'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import type {
@@ -284,26 +284,25 @@ describe('专属爱称走 updateProfile', () => {
   })
 })
 
-/** 装扮：宣言 + 主题两件事，贴纸墙与 space.stickers 一起没了 */
-describe('空间装扮 CoupleProfile', () => {
-  it('保存只交 slogan 与 theme，弹窗里再没有贴纸墙', async () => {
+/** 宣言：只剩一句可编辑，主题选择与贴纸墙一起下线 */
+describe('空间宣言 CoupleProfile', () => {
+  it('点「改宣言」弹输入框，保存只交 slogan', async () => {
     const wrapper = mountView()
     await flushPromises()
+    const prompt = vi.spyOn(ElMessageBox, 'prompt').mockResolvedValue({
+      value: '吵不散，骂不走', action: 'confirm',
+    } as never)
     await wrapper.find('[data-testid="couple-profile-edit"]').trigger('click')
     await flushPromises()
-    await wrapper.find('[data-testid="couple-slogan-input"]').setValue('吵不散，骂不走')
-    await wrapper.find('[data-testid="couple-theme-cherry"]').trigger('click')
-    await wrapper.find('[data-testid="couple-profile-save"]').trigger('click')
-    await flushPromises()
 
-    const body = vi.mocked(coupleApi.updateProfile).mock.calls.at(-1)?.[0] as Record<string, unknown>
-    expect(body.slogan).toBe('吵不散，骂不走')
-    expect(body.theme).toBe('cherry')
-    // 装扮弹窗只管这两件事：没有 sticker 键，也不该顺手把爱称一起改掉
-    expect(Object.keys(body).sort()).toEqual(['slogan', 'theme'])
+    expect(prompt).toHaveBeenCalled()
+    expect(coupleApi.updateProfile).toHaveBeenCalledWith({ slogan: '吵不散，骂不走' })
+    expect(useCoupleStore().space?.slogan).toBe('吵不散，骂不走')
+    expect(wrapper.find('[data-testid="couple-slogan-text"]').text()).toBe('吵不散，骂不走')
+    // 主题选择与贴纸墙都不在页面上了
+    expect(wrapper.find('[data-testid^="couple-theme-"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid^="couple-sticker-"]').exists()).toBe(false)
-    // 改完头部背景立刻跟着换（同一棵树，不必等 overview 再拉一次）
-    expect(useCoupleStore().space?.theme).toBe('cherry')
+    prompt.mockRestore()
   })
 })
 
@@ -434,7 +433,7 @@ describe('三张卡的主链路', () => {
     expect(wrapper.find('[data-testid="couple-streak-makeup-quota"]').text()).toContain('7 天')
   })
 
-  it('愿望清单：点开页签才拉看板，许愿交的是 wishAdd(标题, 备注, owner)', async () => {
+  it('愿望清单：点开页签才拉看板，许愿交的是 wishAdd(标题, 无备注, 自己)', async () => {
     const wrapper = mountView()
     await flushPromises()
     await openTab(wrapper, '愿望清单')

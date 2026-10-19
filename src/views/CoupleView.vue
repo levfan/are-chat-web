@@ -5,7 +5,7 @@
 
     <!-- 已建立：空间主页 -->
     <div v-else class="space-page" data-testid="couple-space">
-      <!-- 头部：双方头像 + 在一起天数 + 今天问答与连击 + 心动值 + 关系操作（背景取空间主题色，连满 7 天换会长的动态背景） -->
+      <!-- 头部：双方头像 + 在一起天数 + 心动值 + 关系操作（背景取空间主题色，连满 7 天换会长的动态背景） -->
       <el-card shadow="never" class="panel header-card themed"
                :class="{ 'bg-grown': bgStage > 0 }"
                :data-bg-stage="bgStage || undefined"
@@ -86,26 +86,8 @@
         🎉 今天是在一起第 <b>{{ milestone }}</b> 天！这个数字值得纪念 💕
       </div>
 
-      <!-- 空间个性化：我们的宣言 + 装扮入口（宣言/主题/贴纸墙） -->
+      <!-- 空间个性化：我们的宣言 -->
       <CoupleProfile />
-
-      <!-- F98 新手引导：首次进入空间的三步漫游 -->
-      <el-dialog
-        v-model="guideVisible"
-        title="💝 欢迎来到你们的小天地"
-        width="380px"
-        data-testid="couple-guide-dialog"
-      >
-        <ol class="guide-list">
-          <li>🫶 <b>今天</b>——先答掉今天那一问，两个人都答完这一天就算打卡了</li>
-          <li>🔥 <b>连续</b>——连着答完的天数攒成连续，满七天这屏会长出会动的背景，往后一档档还有爱称发光、挂件、称号</li>
-          <li>🌟 <b>愿望清单</b>——想要的先记下来，对方能偷偷标「已准备」，许愿这一侧永远看不到</li>
-        </ol>
-        <p class="anniv-tip">顶部页签随便逛，这条提示只出现一次～</p>
-        <template #footer>
-          <el-button type="primary" data-testid="couple-guide-done" @click="closeGuide">开始探索 💕</el-button>
-        </template>
-      </el-dialog>
 
       <!-- 三张卡两个页签：今天两张（一问 + 打卡）、愿望清单一张 -->
       <el-card shadow="never" class="panel">
@@ -199,20 +181,6 @@ const milestone = computed(() => {
   const days = couple.space?.days
   return days && MILESTONE_DAYS.includes(days) ? days : null
 })
-
-/** F98 新手引导：每个浏览器只出现一次 */
-const GUIDE_KEY = 'arechat_couple_guide_seen'
-const guideVisible = ref(false)
-onMounted(() => {
-  if (!localStorage.getItem(GUIDE_KEY) && couple.space) {
-    guideVisible.value = true
-    localStorage.setItem(GUIDE_KEY, '1')
-  }
-})
-
-function closeGuide() {
-  guideVisible.value = false
-}
 
 /** F27 空间主题：应用双方选定的空间主题渐变，没选过就走今日色板 */
 const THEME_GRADIENTS: Record<string, string> = {

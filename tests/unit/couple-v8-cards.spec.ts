@@ -218,32 +218,16 @@ describe('CoupleStreak 连续互动打卡', () => {
     expect(ElMessage.warning).toHaveBeenCalledWith('昨天没断，这一格不用补 😌')
   })
 
-  it('进度墙：已解锁显示 unlockedDay，未解锁灰显并显示「还差 N 天」', async () => {
+  it('解锁信息收成一行：已解锁档数 + 下一档差值', async () => {
     establish()
     vi.mocked(streakApi.streakBoard).mockResolvedValue(streakBoard({
-      currentStreak: 5,
       tiers: [tier('bubble', 3, true), tier('background', 7, false), tier('title', 30, false)],
+      nextTierKey: 'background', nextTierLabel: '空间背景', daysToNext: 2,
     }))
     const wrapper = mountCard(CoupleStreak)
     await flushPromises()
-    expect(wrapper.find('[data-testid="couple-streak-tier-bubble-done"]').text()).toContain('2026-09-20')
-    expect(wrapper.find('[data-testid="couple-streak-tier-background-left"]').text()).toBe('还差 2 天')
-    expect(wrapper.find('[data-testid="couple-streak-tier-title-left"]').text()).toBe('还差 25 天')
-    expect(wrapper.find('[data-testid="couple-streak-tier-bubble-left"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="couple-streak-tier-background"]').classes()).toContain('locked')
-    expect(wrapper.find('[data-testid="couple-streak-tier-bubble"]').classes()).not.toContain('locked')
-  })
-
-  it('差值向下取 0：currentStreak 冲过档位天数也写不出负数', async () => {
-    establish()
-    vi.mocked(streakApi.streakBoard).mockResolvedValue(streakBoard({
-      currentStreak: 40,
-      tiers: [tier('custom-emoji', 50, false), tier('pendant', 21, false)],
-    }))
-    const wrapper = mountCard(CoupleStreak)
-    await flushPromises()
-    expect(wrapper.find('[data-testid="couple-streak-tier-custom-emoji-left"]').text()).toBe('还差 10 天')
-    expect(wrapper.find('[data-testid="couple-streak-tier-pendant-left"]').text()).toBe('还差 0 天')
+    expect(wrapper.find('[data-testid="couple-streak-next"]').text())
+      .toContain('已解锁 1 / 3 档 · 下一档「空间背景」还差 2 天')
   })
 
   it('打卡条一格不少地照后端给的格子渲染（21 格，补签那格单独标出来）', async () => {
@@ -488,9 +472,9 @@ describe('CoupleWish 愿望清单', () => {
     expect(wishApi.wishUnprepare).toHaveBeenCalledWith('w-p')
   })
 
-  it('添加的闸门全吃后端下发的数字：空标题、超 titleMax、超 noteMax、条数到 limit 都不发请求', async () => {
+  it('添加的闸门全吃后端下发的数字：空标题、超 titleMax、条数到 limit 都不发请求', async () => {
     establish()
-    vi.mocked(wishApi.wishBoard).mockResolvedValue(wishBoard({ titleMax: 4, noteMax: 5, openCount: 30, limit: 30 }))
+    vi.mocked(wishApi.wishBoard).mockResolvedValue(wishBoard({ titleMax: 4, openCount: 30, limit: 30 }))
     const wrapper = mountCard(CoupleWish)
     await flushPromises()
     const submit = wrapper.find('[data-testid="couple-wish-submit"]')
@@ -507,20 +491,13 @@ describe('CoupleWish 愿望清单', () => {
     expect(ElMessage.warning).toHaveBeenCalledWith('一条愿望最多 4 字')
 
     await wrapper.find('[data-testid="couple-wish-title-input"]').setValue('看日出')
-    await wrapper.find('[data-testid="couple-wish-note-input"]').setValue('带上泳圈和西瓜')
-    await submit.trigger('click')
-    await flushPromises()
-    expect(wishApi.wishAdd).not.toHaveBeenCalled()
-    expect(ElMessage.warning).toHaveBeenCalledWith('补充说明最多 5 字')
-
-    await wrapper.find('[data-testid="couple-wish-note-input"]').setValue('带泳圈')
     await submit.trigger('click')
     await flushPromises()
     expect(wishApi.wishAdd).not.toHaveBeenCalled()
     expect(ElMessage.warning).toHaveBeenCalledWith('清单最多同时挂 30 条，先实现几条再加吧 ✨')
   })
 
-  it('默认给自己许（ownerUsername 是我的 username），选了「给 TA」交出去的是对方的 username', async () => {
+  it('表单只剩一句标题：提交的是「给自己许」，备注与许愿对象不再上屏', async () => {
     establish()
     vi.mocked(wishApi.wishBoard).mockResolvedValue(wishBoard())
     const wrapper = mountCard(CoupleWish)
@@ -529,13 +506,8 @@ describe('CoupleWish 愿望清单', () => {
     await wrapper.find('[data-testid="couple-wish-submit"]').trigger('click')
     await flushPromises()
     expect(wishApi.wishAdd).toHaveBeenLastCalledWith('想喝那家的豆浆', null, 'alice')
-
-    await wrapper.find('[data-testid="couple-wish-owner-partner"] input').setValue(true)
-    await wrapper.find('[data-testid="couple-wish-title-input"]').setValue('陪 TA 逛一次展')
-    await wrapper.find('[data-testid="couple-wish-note-input"]').setValue('周六下午')
-    await wrapper.find('[data-testid="couple-wish-submit"]').trigger('click')
-    await flushPromises()
-    expect(wishApi.wishAdd).toHaveBeenLastCalledWith('陪 TA 逛一次展', '周六下午', 'bob')
+    expect(wrapper.find('[data-testid="couple-wish-note-input"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="couple-wish-owner"]').exists()).toBe(false)
   })
 
   it('划掉只给记录人', async () => {

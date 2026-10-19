@@ -13,6 +13,7 @@ import CoupleCollapsible from './CoupleCollapsible.vue'
  * 「偷偷」这件事后端已经做完了一半：许愿人那一份的 status 会回显成 OPEN、preparedAt 置 null，
  * 所以前端只吃 status / preparedFlag / preparableFlag / canFulfillFlag / mineFlag 这些位，
  * 绝不拿 preparedAt 反推，也绝不替许愿人露出任何「对方已经备好」的痕迹。
+ * 表单只留一句标题，备注与许愿对象不再上屏，愿望默认记给自己。
  * 看板由本卡自持（WS 的 wish-* 事件只进铃铛），写接口返回整份看板直接整体替换。
  */
 const couple = useCoupleStore()
@@ -20,23 +21,9 @@ const auth = useAuthStore()
 
 const board = ref<CoupleWishBoardVO | null>(null)
 const title = ref('')
-const note = ref('')
-const pickedOwner = ref('')
 const sending = ref(false)
 
 const myName = computed(() => auth.username)
-const partnerUsername = computed(() => couple.space?.partner?.username ?? '')
-const partnerLabel = computed(() => {
-  const p = couple.space?.partner
-  return p?.petName || p?.nickname || p?.username || 'TA'
-})
-/** 没手动选就是「给我自己许」——后端 ownerUser 留空也是这个口径，这里替它填上 */
-const owner = computed({
-  get: () => pickedOwner.value || myName.value,
-  set: (v: string) => {
-    pickedOwner.value = v
-  },
-})
 
 async function refresh() {
   try {
@@ -71,19 +58,13 @@ async function onAdd() {
     ElMessage.warning(`一条愿望最多 ${v.titleMax} 字`)
     return
   }
-  const n = note.value.trim()
-  if (n.length > v.noteMax) {
-    ElMessage.warning(`补充说明最多 ${v.noteMax} 字`)
-    return
-  }
   if (v.openCount >= v.limit) {
     ElMessage.warning(`清单最多同时挂 ${v.limit} 条，先实现几条再加吧 ✨`)
     return
   }
   sending.value = true
-  await write(() => wishApi.wishAdd(t, n || null, owner.value), '🌟 记进清单了', '加不上这条愿望')
+  await write(() => wishApi.wishAdd(t, null, myName.value), '🌟 记进清单了', '加不上这条愿望')
   title.value = ''
-  note.value = ''
   sending.value = false
 }
 
@@ -174,14 +155,6 @@ onMounted(() => {
     <div v-if="board" class="form">
       <el-input v-model="title" :maxlength="board.titleMax" placeholder="想要的那件事…"
                 data-testid="couple-wish-title-input" @keyup.enter="onAdd" />
-      <el-input v-model="note" :maxlength="board.noteMax" placeholder="补一句说明（可不填）"
-                data-testid="couple-wish-note-input" @keyup.enter="onAdd" />
-      <el-radio-group v-model="owner" data-testid="couple-wish-owner">
-        <el-radio :value="myName" data-testid="couple-wish-owner-self">给我自己 🙋</el-radio>
-        <el-radio v-if="partnerUsername" :value="partnerUsername" data-testid="couple-wish-owner-partner">
-          给 {{ partnerLabel }} 💝
-        </el-radio>
-      </el-radio-group>
       <el-button type="primary" :loading="sending" data-testid="couple-wish-submit" @click="onAdd">
         记一条 🌟
       </el-button>

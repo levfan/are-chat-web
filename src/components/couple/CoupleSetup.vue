@@ -32,16 +32,10 @@
       </div>
     </el-card>
 
-    <!-- 引导：三步建立情侣空间 -->
     <el-card shadow="never" class="panel">
       <template #header>
         <span class="head-title">💕 情侣空间</span>
       </template>
-      <el-steps :active="couple.outgoingInvites.length ? 2 : 0" align-center class="steps">
-        <el-step title="选择一个好友" description="从通讯录挑一位 TA" />
-        <el-step title="发起建立邀请" description="附上一句真心话" />
-        <el-step title="对方同意开启" description="共同的小家就建好啦" />
-      </el-steps>
       <div class="guide-actions">
         <el-button type="primary" data-testid="couple-invite-open" @click="dialogVisible = true">
           <el-icon class="btn-ico"><MagicStick /></el-icon>邀请好友建立情侣空间
@@ -230,9 +224,6 @@ async function onCancel(invite: CoupleInviteVO) {
 .head-title {
   font-weight: 600;
   font-size: 15px;
-}
-.steps {
-  margin: 12px 0 4px;
 }
 .guide-actions {
   display: flex;
