@@ -26,8 +26,6 @@ vi.mock('@/api/im', () => ({
     search: vi.fn(),
     edit: vi.fn(),
     toggleReaction: vi.fn(),
-    toggleStar: vi.fn(),
-    searchGlobal: vi.fn(),
     pin: vi.fn(),
     unpin: vi.fn(),
     currentPin: vi.fn(),
@@ -38,9 +36,6 @@ vi.mock('@/api/im', () => ({
     update: vi.fn(),
     of: vi.fn(),
     friendsBirthdays: vi.fn(),
-  },
-  starsApi: {
-    list: vi.fn(),
   },
 }))
 
@@ -67,7 +62,6 @@ vi.mock('@/api/auth', () => ({
     users: vi.fn(),
     setUserStatus: vi.fn(),
     resetPassword: vi.fn(),
-    audit: vi.fn(),
     announcements: vi.fn(),
     publishAnnouncement: vi.fn(),
     closeAnnouncement: vi.fn(),
@@ -107,7 +101,6 @@ function friend(partial: Partial<FriendVO>): FriendVO {
     id: partial.username ?? 'f',
     username: 'user',
     remark: '',
-    tag: '',
     pinned: false,
     muted: false,
     blocked: false,

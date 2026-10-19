@@ -20,9 +20,6 @@
         <span class="meta-name">{{ senderName }}</span>
         <span>{{ formatChatTime(message.created) }}</span>
         <span v-if="message.edited" class="meta-mark">已编辑</span>
-        <el-icon v-if="message.starred" class="star-mark" :size="12" data-testid="starred-mark">
-          <StarFilled />
-        </el-icon>
       </div>
       <div class="bubble" data-testid="dm-bubble" @dblclick="onBubbleDblClick" @click="onBubbleTap">
         <!-- 引用块（48 点击定位原消息） -->
@@ -153,9 +150,6 @@
       <div v-else-if="self && canReceipt" class="receipt" data-testid="read-mark" :class="{ read: message.read }">
         {{ message.read ? '已读' : '未读' }}
         <span v-if="message.edited" class="meta-mark">已编辑</span>
-        <el-icon v-if="message.starred" class="star-mark" :size="12" data-testid="starred-mark">
-          <StarFilled />
-        </el-icon>
       </div>
     </div>
 
@@ -211,16 +205,6 @@
       >
         编辑
       </button>
-      <button
-        v-if="canStar"
-        class="hover-btn"
-        type="button"
-        :title="message.starred ? '取消收藏' : '收藏'"
-        data-testid="star-btn"
-        @click="emit('star', message)"
-      >
-        {{ message.starred ? '已收藏' : '收藏' }}
-      </button>
       <!-- 84 会话内置顶/取消置顶（由父组件维护置顶状态） -->
       <button
         v-if="message.status === 'SENT' && pinnedMsgId !== message.id"
@@ -261,7 +245,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Document, Download, Loading, StarFilled, WarningFilled } from '@element-plus/icons-vue'
+import { Document, Download, Loading, WarningFilled } from '@element-plus/icons-vue'
 import type { FriendCardPayload, FilePayload, ImMessage, ImReaction, LocationPayload } from '@/types'
 import { formatChatTime, parseLinks } from '@/utils/imFormat'
 import { floatHearts } from '@/utils/effects'
@@ -304,7 +288,6 @@ const emit = defineEmits<{
   react: [emoji: string, message: ImMessage]
   forward: [message: ImMessage]
   edit: [message: ImMessage]
-  star: [message: ImMessage]
   /** 84 置顶 / 取消置顶 */
   pin: [message: ImMessage]
   unpin: []
@@ -400,11 +383,6 @@ const canReply = computed(
     (props.message.msgType === 'text' || props.message.msgType === 'image' || props.message.msgType === 'file'),
 )
 const canForward = computed(
-  () =>
-    props.message.status === 'SENT' &&
-    (props.message.msgType === 'text' || props.message.msgType === 'image' || props.message.msgType === 'file'),
-)
-const canStar = computed(
   () =>
     props.message.status === 'SENT' &&
     (props.message.msgType === 'text' || props.message.msgType === 'image' || props.message.msgType === 'file'),
@@ -549,9 +527,6 @@ const quoteText = computed(() => {
 .meta-mark {
   font-size: 11px;
   color: var(--im-muted, #8f959e);
-}
-.star-mark {
-  color: var(--el-color-warning, #e6a23c);
 }
 .bubble {
   background: var(--im-bubble-peer, #fff);

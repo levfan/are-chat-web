@@ -4,10 +4,8 @@ import type {
   FriendRequestVO,
   FriendSuggestion,
   FriendVO,
-  GlobalSearchHit,
   ImMessage,
   ImMsgType,
-  ImStarVO,
   PinVO,
   UserProfileVO,
 } from '@/types'
@@ -26,7 +24,7 @@ export const friendApi = {
   outgoing: () => http.get<FriendRequestVO[]>('/api/friends/requests/outgoing'),
   accept: (id: string) => http.postJson<void>(`/api/friends/requests/${id}/accept`, {}),
   reject: (id: string) => http.postJson<void>(`/api/friends/requests/${id}/reject`, {}),
-  update: (id: string, patch: { remark?: string; pinned?: boolean; muted?: boolean; tag?: string; blocked?: boolean }) =>
+  update: (id: string, patch: { remark?: string; pinned?: boolean; muted?: boolean; blocked?: boolean }) =>
     http.putJson<void>(`/api/friends/${id}`, patch),
   remove: (id: string) => http.delete<void>(`/api/friends/${id}`),
 }
@@ -46,19 +44,12 @@ export const messageApi = {
   edit: (msgId: string, content: string) => http.putJson<ImMessage>(`/api/messages/${enc(msgId)}`, { content }),
   toggleReaction: (msgId: string, emoji: string) =>
     http.postJson<void>(`/api/messages/${enc(msgId)}/reactions`, { emoji }),
-  toggleStar: (msgId: string) => http.postJson<void>(`/api/messages/${enc(msgId)}/star`, {}),
-  /** 81 全局消息搜索：跨会话搜文本消息 */
-  searchGlobal: (q: string) => http.get<GlobalSearchHit[]>(`/api/messages/search/global?q=${enc(q)}`),
   /** 84 会话内置顶消息 */
   pin: (peer: string, msgId: string) => http.postJson<PinVO>(`/api/messages/${enc(peer)}/pin`, { msgId }),
   unpin: (peer: string) => http.delete<void>(`/api/messages/${enc(peer)}/pin`),
   currentPin: (peer: string) => http.get<PinVO | null>(`/api/messages/${enc(peer)}/pin`),
   /** 85 清空当前会话全部聊天记录（后端会删除双方消息） */
   clear: (peer: string) => http.delete<{ deleted: number }>(`/api/messages/${enc(peer)}`),
-}
-
-export const starsApi = {
-  list: () => http.get<ImStarVO[]>('/api/stars'),
 }
 
 export const profileApi = {

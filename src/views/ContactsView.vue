@@ -108,7 +108,6 @@
             <div class="contact-name">
               {{ displayName(friend) }}
               <span v-if="friend.remark" class="contact-origin">{{ friend.username }}</span>
-              <el-tag v-if="friend.tag" size="small" effect="plain" data-testid="friend-tag">{{ friend.tag }}</el-tag>
               <el-tag v-if="friend.pinned" size="small" type="warning" effect="plain">置顶</el-tag>
               <el-tag v-if="friend.muted" size="small" type="info" effect="plain">免打扰</el-tag>
             </div>
@@ -140,9 +139,6 @@
                   </el-dropdown-item>
                   <el-dropdown-item command="remark" data-testid="contact-remark-item">
                     <el-icon><EditPen /></el-icon>设置备注
-                  </el-dropdown-item>
-                  <el-dropdown-item command="tag">
-                    <el-icon><Collection /></el-icon>{{ friend.tag ? '修改分组' : '设置分组' }}
                   </el-dropdown-item>
                   <el-dropdown-item command="mute">
                     <el-icon><MuteNotification v-if="!friend.muted" /><Bell v-else /></el-icon>
@@ -251,7 +247,6 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Bell,
-  Collection,
   Delete,
   EditPen,
   MoreFilled,
@@ -503,21 +498,6 @@ async function onCommand(command: string, friend: FriendVO) {
       })
       await im.updateFriend(friend.id, { remark: value?.trim() ?? '' })
       ElMessage.success('备注已保存，全站名称已同步更新')
-    } catch {
-      // 用户取消
-    }
-    return
-  }
-  if (command === 'tag') {
-    // 44 分组标签：0-16 字，留空清除
-    try {
-      const { value } = await ElMessageBox.prompt('设置分组标签（留空清除）', '分组', {
-        inputValue: friend.tag,
-        inputPattern: /^.{0,16}$/,
-        inputErrorMessage: '分组最长 16 个字',
-      })
-      await im.updateFriend(friend.id, { tag: value?.trim() ?? '' })
-      ElMessage.success(value?.trim() ? `已加入「${value.trim()}」分组` : '已清除分组')
     } catch {
       // 用户取消
     }

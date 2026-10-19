@@ -216,7 +216,7 @@ export const useImStore = defineStore('im', () => {
     await loadRequests()
   }
 
-  async function updateFriend(id: string, patch: { remark?: string; pinned?: boolean; muted?: boolean; tag?: string; blocked?: boolean }) {
+  async function updateFriend(id: string, patch: { remark?: string; pinned?: boolean; muted?: boolean; blocked?: boolean }) {
     await friendApi.update(id, patch)
     await loadFriends()
   }
@@ -457,22 +457,6 @@ export const useImStore = defineStore('im', () => {
       await messageApi.toggleReaction(msgId, emoji)
     } catch (e) {
       target.reactions = previous
-      throw e
-    }
-  }
-
-  /** 收藏/取消收藏 toggle（乐观更新） */
-  async function toggleStar(msgId: string) {
-    const target = findMessage(msgId)
-    if (!target) {
-      return
-    }
-    const previous = target.starred ?? false
-    target.starred = !previous
-    try {
-      await messageApi.toggleStar(msgId)
-    } catch (e) {
-      target.starred = previous
       throw e
     }
   }
@@ -879,7 +863,6 @@ export const useImStore = defineStore('im', () => {
     setDraft,
     clearDraft,
     toggleReaction,
-    toggleStar,
     editMessage,
     forwardMessage,
     pinMessage,

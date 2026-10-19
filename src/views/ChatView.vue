@@ -6,14 +6,14 @@
         <span class="conv-title">消息</span>
         <el-badge v-if="im.totalUnread > 0" :value="im.totalUnread" :max="99" />
       </div>
-      <!-- 44 分组筛选 + 50 只看未读/全部已读 -->
+      <!-- 50 只看未读/全部已读 -->
       <div class="conv-filters" data-testid="conv-filters">
         <button
           type="button"
           class="filter-chip"
-          :class="{ active: activeTag === '' && !onlyUnread }"
+          :class="{ active: !onlyUnread }"
           data-testid="filter-all"
-          @click="selectFilter('')"
+          @click="onlyUnread = false"
         >
           全部
         </button>
@@ -25,17 +25,6 @@
           @click="toggleUnreadFilter"
         >
           只看未读{{ unreadFriendsCount > 0 ? ` ${unreadFriendsCount}` : '' }}
-        </button>
-        <button
-          v-for="tag in tagOptions"
-          :key="tag"
-          type="button"
-          class="filter-chip"
-          :class="{ active: activeTag === tag }"
-          data-testid="filter-tag"
-          @click="selectFilter(tag)"
-        >
-          {{ tag }}
         </button>
         <el-button
           v-if="unreadFriendsCount > 0"
@@ -166,9 +155,6 @@
                 <el-dropdown-item command="remark">
                   <el-icon><EditPen /></el-icon>设置备注
                 </el-dropdown-item>
-                <el-dropdown-item command="stars">
-                  <el-icon><Collection /></el-icon>收藏夹
-                </el-dropdown-item>
                 <!-- 85 清空聊天记录 -->
                 <el-dropdown-item command="clear-history">
                   <el-icon><Brush /></el-icon>清空聊天记录
@@ -247,7 +233,6 @@
               @react="onReact"
               @forward="openForward"
               @edit="startEdit"
-              @star="onStar"
               @jump="jumpTo"
               @pin="onPinMessage"
               @unpin="onUnpinMessage"
@@ -345,26 +330,7 @@
               </template>
               <EmojiPicker @select="onPickEmoji" />
             </el-popover>
-            <el-popover placement="top-start" :width="220" trigger="click">
-              <template #reference>
-                <button type="button" class="tool-btn" title="快捷短语" data-testid="phrase-btn">
-                  <el-icon :size="17"><Memo /></el-icon>
-                </button>
-              </template>
-              <div class="phrase-list">
-                <button
-                  v-for="phrase in QUICK_PHRASES"
-                  :key="phrase"
-                  type="button"
-                  class="phrase-item"
-                  data-testid="phrase-item"
-                  @click="onPickPhrase(phrase)"
-                >
-                  {{ phrase }}
-                </button>
-              </div>
-            </el-popover>
-            <span class="tip">Enter 发送，Shift+Enter 换行，可粘贴/拖拽文件（Ctrl+K 全局搜索）</span>
+            <span class="tip">Enter 发送，Shift+Enter 换行，可粘贴/拖拽文件</span>
           </div>
           <el-input
             v-model="draft"
@@ -379,13 +345,6 @@
             @paste="onPaste"
           />
           <div class="composer-actions">
-            <span
-              class="char-count"
-              :class="{ near: draft.length > 1800 }"
-              data-testid="char-count"
-            >
-              {{ draft.length }}/2000
-            </span>
             <el-button
               type="primary"
               data-testid="dm-send-btn"
@@ -449,25 +408,6 @@
       </template>
     </el-dialog>
 
-    <!-- 收藏夹 -->
-    <el-dialog v-model="starsVisible" title="收藏夹" width="420px" draggable>
-      <div v-loading="starsLoading" class="stars-body" data-testid="stars-list">
-        <p v-if="!starsLoading && starList.length === 0" class="stars-empty">还没有收藏任何消息</p>
-        <div v-for="star in starList" :key="star.msgId" class="star-item" data-testid="star-item">
-          <div class="star-line">
-            <span class="star-peer">{{ im.displayNameOf(star.peer) }}</span>
-            <span class="star-time">{{ formatChatTime(star.created) }}</span>
-          </div>
-          <span class="star-content">
-            {{ star.status === 'RECALLED' ? '[已撤回]' : star.msgType === 'image' ? '[图片]' : star.content }}
-          </span>
-        </div>
-      </div>
-    </el-dialog>
-
-    <!-- 81 全局消息搜索（Ctrl+K）：跨会话搜文本 -->
-    <GlobalSearchPanel v-model="globalSearchVisible" :self-name="auth.username" @open="onGlobalSearchOpen" />
-
     <!-- 95 附件图片预览灯箱 -->
     <ImageLightbox v-model="lightboxOpen" :src="lightboxUrl" />
   </div>
@@ -486,13 +426,9 @@ import {
   ChatDotRound,
   CircleClose,
   Close,
-  Collection,
   Delete,
-  Document,
-  Download,
   EditPen,
   FolderOpened,
-  Memo,
   MuteNotification,
   Paperclip,
   Picture,
@@ -506,7 +442,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { messagePreviewText, useImStore } from '@/stores/im'
 import { useCoupleStore } from '@/stores/couple'
-import { messageApi, profileApi, starsApi } from '@/api/im'
+import { messageApi, profileApi } from '@/api/im'
 import { currentBackground, currentPokeSuffix, currentSendKey } from '@/utils/settings'
 import { COUPLE_VISUAL_TIER, couplePendant, coupleVisualOn } from '@/utils/coupleVisual'
 import { detectEffect, detectEggCommand, floatHearts, playEffect } from '@/utils/effects'
@@ -515,9 +451,8 @@ import type { HighlightSegment } from '@/utils/imFormat'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import EmojiPicker from '@/components/im/EmojiPicker.vue'
 import MessageBubble from '@/components/im/MessageBubble.vue'
-import GlobalSearchPanel from '@/components/im/GlobalSearchPanel.vue'
 import ImageLightbox from '@/components/im/ImageLightbox.vue'
-import type { ImMessage, ImStarVO, UserProfileVO } from '@/types'
+import type { ImMessage, UserProfileVO } from '@/types'
 
 const auth = useAuthStore()
 const im = useImStore()
@@ -540,12 +475,9 @@ const dragOver = ref(false)
 // 95 附件面板
 const lightboxOpen = ref(false)
 const lightboxUrl = ref('')
-// 81 全局搜索
-const globalSearchVisible = ref(false)
 
-// 50 只看未读 + 44 分组筛选
+// 50 只看未读
 const onlyUnread = ref(false)
-const activeTag = ref('')
 
 const searchVisible = ref(false)
 const searchKeyword = ref('')
@@ -567,46 +499,14 @@ const forwardVisible = ref(false)
 const forwardChoice = ref('')
 const forwardFrom = ref<ImMessage | null>(null)
 
-// 24 收藏夹
-const starsVisible = ref(false)
-const starsLoading = ref(false)
-const starList = ref<ImStarVO[]>([])
-
-/** 38 快捷短语 */
-const QUICK_PHRASES = ['收到', '好的，稍等', '辛苦了', '明天见', '没问题', '我再看一下']
-
-/** 44 会话列表分组标签（来自好友资料里的 tag） */
-const tagOptions = computed(() => {
-  const tags = new Set<string>()
-  for (const f of im.friends) {
-    if (f.tag) {
-      tags.add(f.tag)
-    }
-  }
-  return [...tags].sort((a, b) => a.localeCompare(b))
-})
-
 const unreadFriendsCount = computed(() => im.friends.filter((f) => f.unread > 0).length)
-
-function selectFilter(tag: string) {
-  activeTag.value = tag
-  onlyUnread.value = false
-}
 
 function toggleUnreadFilter() {
   onlyUnread.value = !onlyUnread.value
-  if (onlyUnread.value) {
-    activeTag.value = ''
-  }
 }
 
 const filteredFriends = computed(() => {
-  let list = im.friends
-  if (onlyUnread.value) {
-    list = list.filter((f) => f.unread > 0)
-  } else if (activeTag.value) {
-    list = list.filter((f) => f.tag === activeTag.value)
-  }
+  const list = onlyUnread.value ? im.friends.filter((f) => f.unread > 0) : im.friends
   const kw = keyword.value.trim()
   if (!kw) {
     return list
@@ -840,11 +740,6 @@ function onPickEmoji(emoji: string) {
   draft.value += emoji
 }
 
-/** 38 快捷短语：追加到输入框 */
-function onPickPhrase(phrase: string) {
-  draft.value = draft.value ? `${draft.value}${phrase}` : phrase
-}
-
 function onEnter(event: Event) {
   if (event instanceof KeyboardEvent) {
     // 52 发送快捷键策略：ctrl-enter 模式下 Enter 换行、Ctrl/Cmd+Enter 发送
@@ -1038,12 +933,6 @@ function openImage(url: string) {
   lightboxOpen.value = true
 }
 
-// ---------- 81 全局搜索（Ctrl+K） ----------
-
-function onGlobalSearchOpen(peer: string) {
-  void openConversation(peer)
-}
-
 async function onRetry(localId: string) {
   try {
     await im.retryMessage(localId)
@@ -1130,7 +1019,7 @@ async function clearHistory() {
   }
 }
 
-// ---------- 回应 / 收藏 / 转发 ----------
+// ---------- 回应 / 转发 ----------
 
 async function onReact(emoji: string, message: ImMessage) {
   try {
@@ -1140,14 +1029,6 @@ async function onReact(emoji: string, message: ImMessage) {
     await im.toggleReaction(message.id, emoji)
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '回应失败')
-  }
-}
-
-async function onStar(message: ImMessage) {
-  try {
-    await im.toggleStar(message.id)
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '收藏操作失败')
   }
 }
 
@@ -1191,20 +1072,7 @@ async function onMarkAllRead() {
   }
 }
 
-// ---------- 收藏夹 / 导出 / 拉黑 ----------
-
-async function openStars() {
-  starsVisible.value = true
-  starsLoading.value = true
-  try {
-    starList.value = await starsApi.list()
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '收藏夹加载失败')
-    starsVisible.value = false
-  } finally {
-    starsLoading.value = false
-  }
-}
+// ---------- 拉黑 ----------
 
 async function toggleBlock(blocked: boolean) {
   const friend = im.activeFriend
@@ -1253,11 +1121,6 @@ async function doSearch() {
 async function onMenuCommand(command: string) {
   const friend = im.activeFriend
   if (!friend) {
-    return
-  }
-  // 24 收藏夹（此前菜单缺分支，点击无响应）
-  if (command === 'stars') {
-    await openStars()
     return
   }
   // 27 拉黑/解除拉黑（此前菜单缺分支，点击无响应）
@@ -1351,12 +1214,6 @@ function onGlobalKeydown(event: KeyboardEvent) {
     if (replyTo.value) {
       replyTo.value = null
     }
-    return
-  }
-  if ((event.ctrlKey || event.metaKey) && (event.key === 'k' || event.key === 'K')) {
-    // 81 全局消息搜索：跨会话 Ctrl+K
-    event.preventDefault()
-    globalSearchVisible.value = true
     return
   }
   if ((event.ctrlKey || event.metaKey) && (event.key === 'f' || event.key === 'F')) {
@@ -1748,16 +1605,7 @@ onUnmounted(() => {
   gap: 10px;
   margin-top: 6px;
 }
-/* 51 字数统计 */
-.char-count {
-  font-size: 11px;
-  color: var(--im-faint, #b9bec7);
-  user-select: none;
-}
-.char-count.near {
-  color: var(--el-color-danger, #f56c6c);
-}
-/* ---- 44/50 会话筛选 ---- */
+/* ---- 50 会话筛选 ---- */
 .conv-filters {
   display: flex;
   flex-wrap: wrap;

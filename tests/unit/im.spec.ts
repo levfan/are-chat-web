@@ -25,9 +25,7 @@ vi.mock('@/api/im', () => ({
     search: vi.fn(),
     edit: vi.fn(),
     toggleReaction: vi.fn(),
-    toggleStar: vi.fn(),
-    // 81/84/85/95 新接口
-    searchGlobal: vi.fn(),
+    // 84/85/95 新接口
     pin: vi.fn(),
     unpin: vi.fn(),
     currentPin: vi.fn(),
@@ -37,9 +35,6 @@ vi.mock('@/api/im', () => ({
     me: vi.fn(),
     update: vi.fn(),
     of: vi.fn(),
-  },
-  starsApi: {
-    list: vi.fn(),
   },
 }))
 
@@ -70,7 +65,6 @@ vi.mock('@/api/auth', () => ({
     users: vi.fn(),
     setUserStatus: vi.fn(),
     resetPassword: vi.fn(),
-    audit: vi.fn(),
     announcements: vi.fn(),
     publishAnnouncement: vi.fn(),
     closeAnnouncement: vi.fn(),
@@ -122,7 +116,6 @@ function makeFriend(overrides: Partial<FriendVO>): FriendVO {
     id: 'friend-1',
     username: PEER,
     remark: '',
-    tag: '',
     pinned: false,
     muted: false,
     blocked: false,
