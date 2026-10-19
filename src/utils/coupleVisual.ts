@@ -10,7 +10,7 @@
  * 输入全部来自前端已有的数据：双方昵称首字、在一起天数、space.theme。
  */
 
-/** 聊天与头像侧用到的四档 key（与后端 CoupleStreakService 的七档顺序一致） */
+/** 聊天与头像侧用到的四档 key（与后端 CoupleStreakService 的六档顺序一致） */
 export const COUPLE_VISUAL_TIER = {
   bubble: 'bubble',
   nicknameGlow: 'nickname-glow',

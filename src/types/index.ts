@@ -225,8 +225,6 @@ export interface ImMessage {
   edited?: boolean
   /** 我是否收藏了这条消息 */
   starred?: boolean
-  /** F36 心动时刻标记时间（毫秒，null/undefined = 未标记） */
-  heartAt?: number | null
   /** 消息表情回应 */
   reactions?: ImReaction[]
   created: number
@@ -724,12 +722,6 @@ export interface CoupleDailyThreeRowVO {
 export interface CoupleDashboardTodoVO {
   kind: string
   text: string
-}
-
-export interface CoupleDashboardMemoryVO {
-  kind: string
-  text: string
-  created: number
 }
 
 export interface CoupleFeelRowVO {
@@ -1480,13 +1472,13 @@ export interface CoupleLaughYearVO {
   summary: string
 }
 
-// ============ 连续互动打卡与七档解锁（streakApi / CoupleStreakBoardVO） ============
+// ============ 连续互动打卡与六档解锁（streakApi / CoupleStreakBoardVO） ============
 // 字段名与顺序逐字对齐后端 CoupleStreakService 的 3 个 record（record 参数顺序 = wire 字段顺序）。
 // 日期一律是服务端 yyyy-MM-dd 字符串（前端不吃本地时钟）；「没有那一天」后端给 null 而不是空串。
 
 /**
- * 七档解锁中的一档。key 按天数升序固定七个：
- * bubble(3) / background(7) / nickname-glow(14) / pendant(21) / title(30) / custom-emoji(50) / easter-egg(100)。
+ * 六档解锁中的一档。key 按天数升序固定六个：
+ * bubble(3) / background(7) / nickname-glow(14) / pendant(21) / title(30) / custom-emoji(50)。
  * unlocked 吃的是 longestStreak（补签补回来的也算），unlockedDay 是达成那天，没解锁为 null。
  */
 export interface CoupleStreakTierVO {
@@ -1611,34 +1603,4 @@ export interface CoupleWishBoardVO {
   limit: number
   titleMax: number
   noteMax: number
-}
-
-// ============ 百日隐藏回顾页（memoryApi / CoupleMemoryVO） ============
-// 逐字对齐后端 CoupleMemoryService 的 2 个 record。daysTogether 是 Java long → number。
-
-/** 回顾时间轴上的一条（kind ∈ space / unlock / streak / question / wish） */
-export interface CoupleMemoryTimelineItemVO {
-  day: string
-  kind: string
-  title: string
-  detail: string
-}
-
-/**
- * 回顾页整页数据（GET /api/couple/memory/page）。
- * unlockedDay=最晚一档（easter-egg 百日）达成那天，还没达成时 null——卡片靠这一位决定「还没到」态。
- * summary 是后端 RelationSummary 整句，前端不拼文案。
- */
-export interface CoupleMemoryVO {
-  summary: string
-  daysTogether: number
-  confirmedDays: number
-  longestStreak: number
-  currentStreak: number
-  makeupDays: number
-  bothAnsweredDays: number
-  fulfilledWishes: number
-  intimacyTitle: string
-  unlockedDay: string | null
-  timeline: CoupleMemoryTimelineItemVO[]
 }

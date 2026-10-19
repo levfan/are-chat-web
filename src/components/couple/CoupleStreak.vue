@@ -7,7 +7,7 @@ import type { CoupleStreakTierVO } from '@/types'
 import CoupleCollapsible from './CoupleCollapsible.vue'
 
 /**
- * 连续互动打卡与七档解锁（卡根 `couple-streak`）。
+ * 连续互动打卡与六档解锁（卡根 `couple-streak`）。
  *
  * 打卡口径只有一条：**双方当天都答完每日一问**，由后端在第二个人交卷时自动结算，
  * 所以这张卡**没有**「点一下打卡」按钮，唯一的写口是补签；看板归 store（头部与 ChatView 要直接读解锁态），
@@ -103,7 +103,7 @@ onMounted(() => {
     </p>
 
     <section v-if="board" class="tiers">
-      <h5 class="line-title">🧱 七档解锁进度墙</h5>
+      <h5 class="line-title">🧱 六档解锁进度墙</h5>
       <ul class="tier-list">
         <li v-for="t in board.tiers" :key="t.key" class="tier" :class="{ locked: !t.unlocked }"
             :data-testid="`couple-streak-tier-${t.key}`">

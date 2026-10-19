@@ -5,8 +5,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import CoupleStreak from '@/components/couple/CoupleStreak.vue'
 import CoupleQuestion from '@/components/couple/CoupleQuestion.vue'
 import CoupleWish from '@/components/couple/CoupleWish.vue'
-import CoupleMemory from '@/components/couple/CoupleMemory.vue'
-import { coupleApi, memoryApi, questionApi, streakApi, wishApi } from '@/api/couple'
+import { coupleApi, questionApi, streakApi, wishApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
@@ -20,16 +19,15 @@ import type {
   CoupleStreakTierVO,
   CoupleWishBoardVO,
   CoupleWishVO,
-  CoupleMemoryVO,
 } from '@/types'
 
 /**
- * 批次八新增的四张可见卡（couple-streak / couple-question / couple-wish / couple-memory）单测。
+ * 批次八留下的三张可见卡（couple-streak / couple-question / couple-wish）单测。
  *
  * 口径与 couple.spec.ts 一致：断言「真的发了哪个请求、带什么参数、界面按返回的哪一块更新」，
  * 尤其看后端的闸门位（canMakeup / bothAnswered / preparableFlag / canFulfillFlag / tierUnlocked）
  * 有没有被照位渲染——前端只镜像闸门，不自己另判一遍。
- * mock 工厂把 api/couple.ts 存活的 26 个方法逐个列出来（不用 Proxy 兜底），漏一个这里先红。
+ * mock 工厂把 api/couple.ts 存活的 25 个方法逐个列出来（不用 Proxy 兜底），漏一个这里先红。
  */
 
 vi.mock('@/api/couple', () => {
@@ -50,7 +48,6 @@ vi.mock('@/api/couple', () => {
       wishBoard: vi.fn(), wishAdd: vi.fn(), wishPrepare: vi.fn(), wishUnprepare: vi.fn(),
       wishFulfill: vi.fn(), wishNote: vi.fn(), wishRemove: vi.fn(),
     },
-    memoryApi: { memoryPage: vi.fn() },
   }
 })
 
@@ -68,7 +65,7 @@ function overviewWithSpace(): CoupleOverview {
   return { space, incoming: [], outgoing: [] }
 }
 
-/** 七档里的一档（后端 TierVO 七个字段；unlockedDay 只有解锁了才有值） */
+/** 六档里的一档（后端 TierVO 七个字段；unlockedDay 只有解锁了才有值） */
 function tier(key: string, days: number, unlocked: boolean): CoupleStreakTierVO {
   return {
     key, days, label: `${key} 档`, icon: '🫧', detail: `连满 ${days} 天解锁的小东西`,
@@ -114,16 +111,6 @@ function wishBoard(over: Partial<CoupleWishBoardVO> = {}): CoupleWishBoardVO {
   return { open: [], prepared: [], fulfilled: [], openCount: 0, limit: 30, titleMax: 80, noteMax: 200, ...over }
 }
 
-function memoryPage(over: Partial<CoupleMemoryVO> = {}): CoupleMemoryVO {
-  return {
-    summary: '一百天里你们谁都没落下。', daysTogether: 100, confirmedDays: 100, longestStreak: 100,
-    currentStreak: 100, makeupDays: 2, bothAnsweredDays: 61, fulfilledWishes: 4, intimacyTitle: '小星星',
-    unlockedDay: '2026-10-04',
-    timeline: [{ day: '2026-06-27', kind: 'space', title: '情侣空间开启 🎉', detail: '这一天你们点头了' }],
-    ...over,
-  }
-}
-
 let pinia = createPinia()
 
 function mountCard(component: Component) {
@@ -143,7 +130,7 @@ beforeEach(() => {
   vi.spyOn(ElMessage, 'error')
   vi.spyOn(ElMessage, 'success')
   useAuthStore().username = 'alice'
-  // 四张卡的初始读接口默认给「能用但空」的状态，用例各自覆盖要看的字段
+  // 三张卡的初始读接口默认给「能用但空」的状态，用例各自覆盖要看的字段
   vi.mocked(streakApi.streakBoard).mockResolvedValue(streakBoard())
   vi.mocked(streakApi.streakMakeup).mockResolvedValue(streakBoard())
   vi.mocked(questionApi.questionToday).mockResolvedValue(questionToday())
@@ -154,7 +141,6 @@ beforeEach(() => {
     wishApi.wishNote, wishApi.wishRemove]) {
     vi.mocked(fn).mockResolvedValue(wishBoard())
   }
-  vi.mocked(memoryApi.memoryPage).mockResolvedValue(memoryPage())
 })
 
 describe('CoupleStreak 连续互动打卡', () => {
@@ -166,7 +152,6 @@ describe('CoupleStreak 连续互动打卡', () => {
     expect(streakApi.streakBoard).toHaveBeenCalledTimes(1)
     expect(questionApi.questionToday).not.toHaveBeenCalled()
     expect(wishApi.wishBoard).not.toHaveBeenCalled()
-    expect(memoryApi.memoryPage).not.toHaveBeenCalled()
     expect(coupleApi.overview).not.toHaveBeenCalled()
   })
 
@@ -240,13 +225,12 @@ describe('CoupleStreak 连续互动打卡', () => {
     establish()
     vi.mocked(streakApi.streakBoard).mockResolvedValue(streakBoard({
       currentStreak: 5,
-      tiers: [tier('bubble', 3, true), tier('background', 7, false), tier('easter-egg', 100, false), tier('title', 30, false)],
+      tiers: [tier('bubble', 3, true), tier('background', 7, false), tier('title', 30, false)],
     }))
     const wrapper = mountCard(CoupleStreak)
     await flushPromises()
     expect(wrapper.find('[data-testid="couple-streak-tier-bubble-done"]').text()).toContain('2026-09-20')
     expect(wrapper.find('[data-testid="couple-streak-tier-background-left"]').text()).toBe('还差 2 天')
-    expect(wrapper.find('[data-testid="couple-streak-tier-easter-egg-left"]').text()).toBe('还差 95 天')
     expect(wrapper.find('[data-testid="couple-streak-tier-title-left"]').text()).toBe('还差 25 天')
     expect(wrapper.find('[data-testid="couple-streak-tier-bubble-left"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="couple-streak-tier-background"]').classes()).toContain('locked')
@@ -306,7 +290,6 @@ describe('CoupleQuestion 每日一问', () => {
     expect(questionApi.questionHistory).not.toHaveBeenCalled()
     expect(streakApi.streakBoard).not.toHaveBeenCalled()
     expect(wishApi.wishBoard).not.toHaveBeenCalled()
-    expect(memoryApi.memoryPage).not.toHaveBeenCalled()
   })
 
   it('未建空间时不发 questionToday', async () => {
@@ -472,7 +455,6 @@ describe('CoupleWish 愿望清单', () => {
     expect(wishApi.wishBoard).toHaveBeenCalledTimes(1)
     expect(streakApi.streakBoard).not.toHaveBeenCalled()
     expect(questionApi.questionToday).not.toHaveBeenCalled()
-    expect(memoryApi.memoryPage).not.toHaveBeenCalled()
   })
 
   it('未建空间时不发 wishBoard', async () => {
@@ -659,98 +641,25 @@ describe('CoupleWish 愿望清单', () => {
   })
 })
 
-describe('CoupleMemory 百日隐藏回顾页', () => {
-  it('百日档没解锁：一个请求都不发，只渲染锁态', async () => {
+describe('三张卡一起挂：接口全挂也不往外抛', () => {
+  it('初始读接口全 500 时三张卡都只留下空壳', async () => {
     establish()
-    useCoupleStore().streak = streakBoard({ tiers: [tier('bubble', 3, true), tier('easter-egg', 100, false)] })
-    const wrapper = mountCard(CoupleMemory)
-    await flushPromises()
-    expect(wrapper.find('[data-testid="couple-memory"]').exists()).toBe(true)
-    expect(memoryApi.memoryPage).not.toHaveBeenCalled()
-    expect(wrapper.find('[data-testid="couple-memory-locked"]').text()).toContain('连续打卡 100 天才能打开')
-    expect(wrapper.find('[data-testid="couple-memory-summary"]').exists()).toBe(false)
-    // store 里恰好有看板时顺手报一句还差几天，仍然不发请求
-    expect(wrapper.find('[data-testid="couple-memory-left"]').text()).toContain('还要再打 95 天')
-    expect(streakApi.streakBoard).not.toHaveBeenCalled()
-  })
-
-  it('连打卡看板都没拉过时也不发请求——档位只认 tiers 里真 unlocked 的那一行', async () => {
-    establish()
-    const wrapper = mountCard(CoupleMemory)
-    await flushPromises()
-    expect(memoryApi.memoryPage).not.toHaveBeenCalled()
-    expect(useCoupleStore().tierUnlocked('easter-egg')).toBe(false)
-    expect(wrapper.find('[data-testid="couple-memory-left"]').exists()).toBe(false)
-  })
-
-  it('未建空间时不发任何请求', async () => {
-    mountCard(CoupleMemory)
-    await flushPromises()
-    expect(memoryApi.memoryPage).not.toHaveBeenCalled()
-    expect(streakApi.streakBoard).not.toHaveBeenCalled()
-  })
-
-  it('解锁后才拉整页：summary、统计与时间轴条目都渲染出来', async () => {
-    establish()
-    useCoupleStore().streak = streakBoard({ tiers: [tier('bubble', 3, true), tier('easter-egg', 100, true)] })
-    vi.mocked(memoryApi.memoryPage).mockResolvedValue(memoryPage({
-      summary: '一百天里你们谁都没落下。',
-      timeline: [
-        { day: '2026-06-27', kind: 'space', title: '情侣空间开启 🎉', detail: '这一天你们点头了' },
-        { day: '2026-09-27', kind: 'unlock', title: '连续 100 天 🔓', detail: '隐藏页亮了' },
-        { day: '2026-10-03', kind: 'wish', title: '「想去海边」实现啦 🌟', detail: '是 TA 记下的那条' },
-      ],
-    }))
-    const wrapper = mountCard(CoupleMemory)
-    await flushPromises()
-    expect(memoryApi.memoryPage).toHaveBeenCalledTimes(1)
-    expect(wrapper.find('[data-testid="couple-memory-locked"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="couple-memory-summary"]').text()).toContain('一百天里你们谁都没落下')
-    expect(wrapper.find('[data-testid="couple-memory-stats"]').text()).toContain('补签 2 次')
-    expect(wrapper.find('[data-testid="couple-memory-unlocked-day"]').text()).toContain('2026-10-04')
-    expect(wrapper.findAll('[data-testid^="couple-memory-item-"]')).toHaveLength(3)
-    expect(wrapper.find('[data-testid="couple-memory-item-2"]').text()).toContain('想去海边')
-  })
-
-  it('memoryPage 挂了静默降级成「还没写出来」，不抛未捕获异常', async () => {
-    establish()
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    useCoupleStore().streak = streakBoard({ tiers: [tier('easter-egg', 100, true)] })
-    vi.mocked(memoryApi.memoryPage).mockRejectedValue(new Error('请求失败（HTTP 400）'))
-    const wrapper = mountCard(CoupleMemory)
-    await flushPromises()
-    expect(wrapper.find('[data-testid="couple-memory"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="couple-memory-empty"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="couple-memory-timeline"]').exists()).toBe(false)
-    expect(spy).not.toHaveBeenCalled()
-    spy.mockRestore()
-  })
-})
-
-describe('四张卡一起挂：接口全挂也不往外抛', () => {
-  it('初始读接口全 500 时四张卡都只留下空壳', async () => {
-    establish()
-    useCoupleStore().streak = streakBoard({ tiers: [tier('easter-egg', 100, true)] })
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(streakApi.streakBoard).mockRejectedValue(new Error('请求失败（HTTP 500）'))
     vi.mocked(questionApi.questionToday).mockRejectedValue(new Error('请求失败（HTTP 500）'))
     vi.mocked(wishApi.wishBoard).mockRejectedValue(new Error('请求失败（HTTP 500）'))
-    vi.mocked(memoryApi.memoryPage).mockRejectedValue(new Error('请求失败（HTTP 500）'))
 
     const streak = mountCard(CoupleStreak)
     const question = mountCard(CoupleQuestion)
     const wish = mountCard(CoupleWish)
-    const memory = mountCard(CoupleMemory)
     await flushPromises()
 
     expect(streak.find('[data-testid="couple-streak"]').exists()).toBe(true)
     expect(question.find('[data-testid="couple-question"]').exists()).toBe(true)
     expect(wish.find('[data-testid="couple-wish"]').exists()).toBe(true)
-    expect(memory.find('[data-testid="couple-memory"]').exists()).toBe(true)
     expect(streak.find('[data-testid="couple-streak-count"]').exists()).toBe(false)
     expect(question.find('[data-testid="couple-question-text"]').exists()).toBe(false)
     expect(wish.find('[data-testid="couple-wish-open"]').exists()).toBe(false)
-    expect(memory.find('[data-testid="couple-memory-timeline"]').exists()).toBe(false)
     expect(useCoupleStore().streak).toBeNull()
     expect(useCoupleStore().question).toBeNull()
     expect(spy).not.toHaveBeenCalled()

@@ -119,7 +119,6 @@
           <li>🫶 <b>今天</b>——先答掉今天那一问，两个人都答完这一天就算打卡了</li>
           <li>🔥 <b>连续</b>——连着答完的天数攒成连续，满七天这屏会长出会动的背景，往后一档档还有爱称发光、挂件、称号</li>
           <li>🌟 <b>愿望清单</b>——想要的先记下来，对方能偷偷标「已准备」，许愿这一侧永远看不到</li>
-          <li>🥚 <b>隐藏角落</b>——连续满 100 天，页签里会多出一个只给你们俩看的回顾页</li>
         </ol>
         <p class="anniv-tip">顶部页签随便逛，这条提示只出现一次～</p>
         <template #footer>
@@ -127,7 +126,7 @@
         </template>
       </el-dialog>
 
-      <!-- 四张卡三个页签：今天两张（一问 + 打卡）、愿望清单一张、隐藏角落满 100 天才出现 -->
+      <!-- 三张卡两个页签：今天两张（一问 + 打卡）、愿望清单一张 -->
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
           <el-tab-pane label="🫶 今天" name="today">
@@ -141,11 +140,6 @@
             <TabExtras tab="wish" />
             <div class="tab-stack">
               <CoupleWish />
-            </div>
-          </el-tab-pane>
-          <el-tab-pane v-if="secretTabOpen" label="🥚 隐藏角落" name="secret" lazy>
-            <div class="tab-stack">
-              <CoupleMemory />
             </div>
           </el-tab-pane>
         </el-tabs>
@@ -241,7 +235,6 @@ import CoupleProfile from '@/components/couple/CoupleProfile.vue'
 import CoupleStreak from '@/components/couple/CoupleStreak.vue'
 import CoupleQuestion from '@/components/couple/CoupleQuestion.vue'
 import CoupleWish from '@/components/couple/CoupleWish.vue'
-import CoupleMemory from '@/components/couple/CoupleMemory.vue'
 import { couplePendant } from '@/utils/coupleVisual'
 
 const auth = useAuthStore()
@@ -440,8 +433,8 @@ const headerBackground = computed(() => {
 /** 植物四阶段：背景解锁时是种子，之后每多解锁一档往上长一格。 */
 const PLANT_STAGES = ['🌱', '🌿', '🪴', '🌳'] as const
 
-/** 已解锁档位数（easter-egg 本身不算成长，它是另一个页签）。 */
-const unlockedCount = computed(() => couple.unlockedTierKeys.filter((k) => k !== 'easter-egg').length)
+/** 已解锁档位数（六档都算进成长）。 */
+const unlockedCount = computed(() => couple.unlockedTierKeys.length)
 
 /** 背景只在连满 7 天之后生长，阶段 1-4；没解锁就是 0（不渲染植物）。 */
 const bgStage = computed(() => {
@@ -472,9 +465,6 @@ const titleGlowOn = computed(() => couple.tierUnlocked('nickname-glow'))
 const pendantEmoji = computed(() =>
   couple.tierUnlocked('pendant') ? couplePendant(couple.space?.theme) : undefined,
 )
-
-/** 隐藏角落只在连满 100 天后存在（服务端同样有一道闸）。 */
-const secretTabOpen = computed(() => couple.tierUnlocked('easter-egg'))
 
 function openAnnivEdit() {
   annivEditDate.value = couple.space?.anniversary ?? null
@@ -534,22 +524,17 @@ async function onDissolve() {
 }
 
 onMounted(async () => {
-  // 深链直达：?tab=today|wish|secret 指定首屏页签，白名单外的值忽略
+  // 深链直达：?tab=today|wish 指定首屏页签，白名单外的值忽略
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
   if (['today', 'wish'].includes(tab)) {
     activeTab.value = tab
   }
   // MainLayout 已在登录后 init 过：这里兜底刷新总览（邀请状态可能变化）
   await couple.init()
-  if (tab === 'secret') {
-    // 隐藏页签要先知道解没解锁；init 里那次 loadStreak 是不等待发出的，这里显式取一次
-    await couple.loadStreak()
-    if (secretTabOpen.value) activeTab.value = 'secret'
-  }
   // 头部心动值 & 恋爱等级
   if (!couple.established) return
   void couple.loadIntimacy()
-  // 头部第二格读的是 couple.question：落在 wish/secret 页签时今天那张卡没挂载，这里补一次。
+  // 头部第二格读的是 couple.question：落在 wish 页签时今天那张卡没挂载，这里补一次。
   // 但要先看数据在不在——今天页签里卡片已经先请求过并落地了，再发一次就是白打一趟；
   // 它还在飞的时候 store 的并发去重会把两次调用合成一个请求。
   if (!couple.question) void couple.loadQuestion()

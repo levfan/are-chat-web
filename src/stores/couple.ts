@@ -18,7 +18,7 @@ import type {
  *
  * 留在这里的：总览与邀请、心动值、通知中心、连续互动打卡看板（streak）、每日一问（question）。
  * streak / question 上 store 是有理由的——解锁态要被 ChatView 与 CoupleView 头部直接读走
- * （`tierUnlocked(key)`），卡片自己持有就变成两份真相；愿望清单与百日回顾由组件自持。
+ * （`tierUnlocked(key)`），卡片自己持有就变成两份真相；愿望清单由组件自持。
  * 已下线的域（心情日记 / 贴贴 / 求抱抱 / 情绪同步）不再留壳：后端既没有对应的端点，
  * 也没有 WS 生产者，留一个空 ref 只会让人以为还有数据。
  *

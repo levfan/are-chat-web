@@ -49,16 +49,16 @@
       </div>
       <div class="feature-intro">
         <div class="feature-item">
-          <span class="feature-emoji">🤝</span>
-          <div><b>双向待办 / 约定</b><p>口头承诺变成可追踪的甜蜜记录，兑现打卡、逾期可爱提醒</p></div>
+          <span class="feature-emoji">🫶</span>
+          <div><b>每日一问</b><p>两人各答各的，答完之前看不到 TA 的答案</p></div>
         </div>
         <div class="feature-item">
-          <span class="feature-emoji">🌅</span>
-          <div><b>每日小仪式</b><p>互道早晚安解锁专属背景贴纸，每天一问拼出两个人的答案</p></div>
+          <span class="feature-emoji">🔥</span>
+          <div><b>连续互动打卡</b><p>每天都答完攒连续，一档档解锁背景、爱称发光、挂件与称号</p></div>
         </div>
         <div class="feature-item">
-          <span class="feature-emoji">🗓️</span>
-          <div><b>共享空间</b><p>想看的电影、想吃的餐厅、纪念日约会日，双方一起维护</p></div>
+          <span class="feature-emoji">🌟</span>
+          <div><b>愿望清单</b><p>想要的先记下来，对方能偷偷标「已准备」，兑现后一起收藏</p></div>
         </div>
       </div>
     </el-card>

@@ -12,14 +12,13 @@ import type {
   CoupleQuestionTodayVO,
   CoupleQuestionHistoryVO,
   CoupleWishBoardVO,
-  CoupleMemoryVO,
 } from '@/types'
 
 /**
- * 情侣空间接口：邀请建立 → 空间本体（日子/宣言/主题/爱称）→ 心动值 + 四张功能卡。
+ * 情侣空间接口：邀请建立 → 空间本体（日子/宣言/主题/爱称）→ 心动值 + 三张功能卡。
  *
  * 2026-10-05 二轮裁剪（后端 docs/adr/0010-couple-trim-to-v8-features.md）：产品只留 邀请建立空间 / 每日一问 /
- * 愿望清单 / 连续互动打卡+七档解锁 四件事，44 个端点与 30 个 WS 事件随之下线（70→26、44→14）。
+ * 愿望清单 / 连续互动打卡+六档解锁 四件事，44 个端点与 30 个 WS 事件随之下线（70→25）。
  * 判据不变——本文件的每个方法都对应后端一个存活的 `@*Mapping`，别把已下线的端点再写回来。
  */
 export const coupleApi = {
@@ -62,17 +61,17 @@ export const coupleApi = {
   adminCoupleStats: () => http.get<CoupleAdminStatsVO>('/api/couple/admin/stats'),
 }
 
-// ============ 连续互动打卡与七档解锁 ============
+// ============ 连续互动打卡与六档解锁 ============
 
 /**
- * 连续互动打卡与七档解锁（streakApi，基址 /api/couple/streak）：
+ * 连续互动打卡与六档解锁（streakApi，基址 /api/couple/streak）：
  * 1 个 GET /board + 1 个 POST /makeup，写接口返回整份 StreakBoardVO 前端整体替换。
  * 打卡口径只有一条——**双方当天都答完每日一问**（贴贴卡下线后由 CoupleQuestionService 结算），
  * 前端没有「点一下打卡」这个按钮；补签门槛已由后端 canMakeup 位算好，前端不再自拼。
  * ⚠️ 补签不再花积分（台账随愿望券本一起删了），稀缺性只剩「7 天窗口 + 每自然月 3 次」。
  */
 export const streakApi = {
-  /** 打卡看板（今天日期/连击/最长/已确认天数/七档进度/近 21 格打卡条/补签窗口与本月额度） */
+  /** 打卡看板（今天日期/连击/最长/已确认天数/六档进度/近 21 格打卡条/补签窗口与本月额度） */
   streakBoard: () => http.get<CoupleStreakBoardVO>('/api/couple/streak/board'),
   /** 补签某一天（day 为 yyyy-MM-dd；超出 7 天窗口、本月满 3 次或那天已打卡，后端 400），返回整份看板 */
   streakMakeup: (day: string) => http.postJson<CoupleStreakBoardVO>('/api/couple/streak/makeup', { day }),
@@ -112,12 +111,4 @@ export const wishApi = {
   /** 改一条愿望的备注（note 可空串=清掉） */
   wishNote: (id: string, note: string | null) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/note', { id, note }),
   wishRemove: (id: string) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/remove', { id }),
-}
-
-/**
- * 百日隐藏回顾页（memoryApi，基址 /api/couple/memory）：只有 1 个 GET /page，整页一次拉齐。
- * 这份是只读聚合，没有写接口；unlockedDay 为 null 表示百日档还没达成（页面「还没到」态）。
- */
-export const memoryApi = {
-  memoryPage: () => http.get<CoupleMemoryVO>('/api/couple/memory/page'),
 }

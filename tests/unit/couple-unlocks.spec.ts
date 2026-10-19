@@ -114,7 +114,7 @@ const SELF = 'alice'
 const PARTNER = 'bob'
 const OTHER = 'carol'
 
-/** 七档顺序与后端一致，测试里按需点亮其中几档 */
+/** 六档顺序与后端一致，测试里按需点亮其中几档 */
 const TIER_PLAN: { key: string; days: number }[] = [
   { key: 'bubble', days: 3 },
   { key: 'background', days: 7 },
@@ -122,7 +122,6 @@ const TIER_PLAN: { key: string; days: number }[] = [
   { key: 'pendant', days: 21 },
   { key: 'title', days: 30 },
   { key: 'custom-emoji', days: 50 },
-  { key: 'easter-egg', days: 100 },
 ]
 
 function streakBoard(unlockedKeys: string[]): CoupleStreakBoardVO {

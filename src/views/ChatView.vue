@@ -251,8 +251,6 @@
               @jump="jumpTo"
               @pin="onPinMessage"
               @unpin="onUnpinMessage"
-
-              @heart="onHeart"
             />
           </template>
         </div>
@@ -363,25 +361,6 @@
                   @click="onPickPhrase(phrase)"
                 >
                   {{ phrase }}
-                </button>
-              </div>
-            </el-popover>
-            <el-popover placement="top-start" :width="200" trigger="click">
-              <template #reference>
-                <button type="button" class="tool-btn" title="贴贴" data-testid="sticker-btn">
-                  <span class="sticker-face">🥰</span>
-                </button>
-              </template>
-              <div class="phrase-list">
-                <button
-                  v-for="sticker in QUICK_STICKERS"
-                  :key="sticker"
-                  type="button"
-                  class="phrase-item"
-                  data-testid="sticker-item"
-                  @click="onQuickSticker(sticker)"
-                >
-                  {{ sticker }}
                 </button>
               </div>
             </el-popover>
@@ -1085,21 +1064,6 @@ async function onPoke() {
   }
 }
 
-/** F90 私聊快捷贴贴：一键把亲亲/抱抱/摸摸头拍给对方，附带飘心动画 */
-const QUICK_STICKERS = ['亲亲你 😘', '抱抱你 🤗', '摸摸头 🫳', '举高高 🙌']
-
-async function onQuickSticker(sticker: string) {
-  if (!im.activePeer) {
-    return
-  }
-  try {
-    await im.sendPoke(im.activePeer, sticker)
-    floatHearts(document.querySelector('[data-testid="sticker-btn"]'), '💗')
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '贴贴失败')
-  }
-}
-
 /** 96 撤回后回填输入框：文本消息撤回时把原文放回输入框，方便改了重发 */
 async function onRecall(msgId: string) {
   const target = im.activeMessages.find((m) => m.id === msgId)
@@ -1111,31 +1075,6 @@ async function onRecall(msgId: string) {
     }
   } catch (e) {
     ElMessage.warning(e instanceof Error ? e.message : '撤回失败')
-  }
-}
-
-// ---------- F36 心动时刻标记 ----------
-
-async function onHeart(message: ImMessage) {
-  if (!couple.established) {
-    ElMessage.info('先去「情侣空间」邀请好友建立空间，才能标记心动时刻哦')
-    return
-  }
-  try {
-    const hearted = !message.heartAt
-    await im.markHeart(message.id, hearted)
-    if (hearted) {
-      ElMessage.success('已记入心动时刻 💗 情侣空间可以回顾')
-    }
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '操作失败')
-  }
-}
-
-/** 对方标记了心动时刻：刷新当前会话历史 */
-const onHeartChanged = () => {
-  if (im.activePeer) {
-    void im.refreshHistory(im.activePeer)
   }
 }
 
@@ -1266,37 +1205,6 @@ async function openStars() {
     starsLoading.value = false
   }
 }
-
-/** 37 导出聊天记录为 .txt（标题与发送者均按备注解析） */
-function exportHistory() {
-  const peer = im.activePeer
-  if (!peer) {
-    return
-  }
-  const peerName = displayPeerName.value
-  const lines: string[] = [`与 ${peerName} 的聊天记录（导出于 ${new Date().toLocaleString()}）`, '']
-  for (const m of im.activeMessages) {
-    const author = m.fromUser === auth.username ? '我' : im.displayNameOf(m.fromUser)
-    const time = new Date(m.created).toLocaleString()
-    const body =
-      m.status === 'RECALLED'
-        ? '[已撤回]'
-        : m.msgType === 'image'
-          ? '[图片]'
-          : m.msgType === 'poke'
-            ? '拍了拍对方'
-            : m.content
-    lines.push(`[${time}] ${author}: ${body}`)
-  }
-  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `与${peerName}的聊天记录.txt`
-  link.click()
-  URL.revokeObjectURL(url)
-}
-
 
 async function toggleBlock(blocked: boolean) {
   const friend = im.activeFriend
@@ -1478,8 +1386,6 @@ onMounted(async () => {
   window.addEventListener('arechat:appearance', syncAppearance)
   // 65 对方给我回应时飘心
   window.addEventListener('arechat:reaction', onPeerReaction as EventListener)
-  // F36 对方标记了心动时刻：刷新当前会话让 💗 即时出现
-  window.addEventListener('arechat:heart-changed', onHeartChanged as EventListener)
   await im.init(auth.username)
   const peer = typeof route.query.peer === 'string' ? route.query.peer : ''
   if (peer && im.friends.some((f) => f.username === peer)) {
@@ -1491,7 +1397,6 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeydown)
   window.removeEventListener('arechat:appearance', syncAppearance)
   window.removeEventListener('arechat:reaction', onPeerReaction as EventListener)
-  window.removeEventListener('arechat:heart-changed', onHeartChanged as EventListener)
 })
 </script>
 
