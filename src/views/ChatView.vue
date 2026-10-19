@@ -173,12 +173,6 @@
                 <el-dropdown-item command="clear-history">
                   <el-icon><Brush /></el-icon>清空聊天记录
                 </el-dropdown-item>
-                <el-dropdown-item command="share-card" divided>
-                  <el-icon><Postcard /></el-icon>分享好友名片
-                </el-dropdown-item>
-                <el-dropdown-item command="share-location">
-                  <el-icon><LocationInformation /></el-icon>分享位置
-                </el-dropdown-item>
                 <el-dropdown-item command="block" divided>
                   <el-icon><CircleClose /></el-icon>{{ im.activeFriend?.blocked ? '解除拉黑' : '拉黑好友' }}
                 </el-dropdown-item>
@@ -492,51 +486,6 @@
       </div>
     </el-dialog>
 
-    <!-- 72 分享好友名片 -->
-    <el-dialog v-model="cardVisible" title="分享好友名片" width="360px" draggable>
-      <el-select v-model="cardTarget" placeholder="选择好友" style="width: 100%" data-testid="card-target">
-        <el-option
-          v-for="f in forwardCandidates"
-          :key="f.id"
-          :label="f.remark || f.username"
-          :value="f.username"
-        />
-      </el-select>
-      <p class="dialog-hint">名片会以卡片消息发送到当前会话</p>
-      <template #footer>
-        <el-button @click="cardVisible = false">取消</el-button>
-        <el-button type="primary" :loading="cardLoading" data-testid="card-send" @click="confirmShareCard">
-          发送名片
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 73 分享位置 -->
-    <el-dialog v-model="locationVisible" title="分享位置" width="380px" draggable>
-      <div class="place-grid">
-        <button
-          v-for="p in PLACES"
-          :key="p.name"
-          type="button"
-          class="place-chip"
-          :class="{ active: locationPick === p.name }"
-          data-testid="place-chip"
-          @click="locationPick = p.name"
-        >
-          <span class="place-name">{{ p.name }}</span>
-          <span class="place-addr">{{ p.address }}</span>
-        </button>
-      </div>
-      <template #footer>
-        <el-button @click="locationVisible = false">取消</el-button>
-        <el-button type="primary" data-testid="location-send" @click="confirmShareLocation">
-          发送位置
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 95 附件面板：当前会话图片 / 文件一览 -->
-
     <!-- 81 全局消息搜索（Ctrl+K）：跨会话搜文本 -->
     <GlobalSearchPanel v-model="globalSearchVisible" :self-name="auth.username" @open="onGlobalSearchOpen" />
 
@@ -564,13 +513,11 @@ import {
   Download,
   EditPen,
   FolderOpened,
-  LocationInformation,
   Memo,
   MuteNotification,
   Paperclip,
   Picture,
   Pointer,
-  Postcard,
   Search,
   Setting,
   TopRight,
@@ -591,7 +538,7 @@ import EmojiPicker from '@/components/im/EmojiPicker.vue'
 import MessageBubble from '@/components/im/MessageBubble.vue'
 import GlobalSearchPanel from '@/components/im/GlobalSearchPanel.vue'
 import ImageLightbox from '@/components/im/ImageLightbox.vue'
-import type { ImMessage, ImStarVO, LocationPayload, UserProfileVO } from '@/types'
+import type { ImMessage, ImStarVO, UserProfileVO } from '@/types'
 
 const auth = useAuthStore()
 const im = useImStore()
@@ -1107,9 +1054,6 @@ async function onDrop(event: DragEvent) {
   }
 }
 
-// ---------- 95 附件面板 ----------
-
-
 function openImage(url: string) {
   lightboxUrl.value = url
   lightboxOpen.value = true
@@ -1418,18 +1362,6 @@ async function onMenuCommand(command: string) {
     await clearHistory()
     return
   }
-  // 72 分享好友名片
-  if (command === 'share-card') {
-    cardTarget.value = forwardCandidates.value[0]?.username ?? ''
-    cardVisible.value = true
-    return
-  }
-  // 73 分享位置
-  if (command === 'share-location') {
-    locationPick.value = PLACES[0].name
-    locationVisible.value = true
-    return
-  }
   if (command === 'profile') {
     profileVisible.value = true
     profileLoading.value = true
@@ -1474,60 +1406,6 @@ async function onMenuCommand(command: string) {
     } catch {
       // 用户取消
     }
-  }
-}
-
-// ---------- 72/73 名片 & 位置分享 ----------
-
-const cardVisible = ref(false)
-const cardTarget = ref('')
-const cardLoading = ref(false)
-const locationVisible = ref(false)
-const locationPick = ref('')
-
-const PLACES: LocationPayload[] = [
-  { name: '北京·天安门广场', address: '北京市东城区东长安街' },
-  { name: '上海·外滩', address: '上海市黄浦区中山东一路' },
-  { name: '杭州·西湖断桥', address: '浙江省杭州市西湖区北山街' },
-  { name: '深圳·腾讯滨海大厦', address: '广东省深圳市南山区科技园' },
-  { name: '成都·宽窄巷子', address: '四川省成都市青羊区长顺上街' },
-]
-
-/** 72 发送好友名片：拉取资料后以 card 类型发出 */
-async function confirmShareCard() {
-  if (!im.activePeer || !cardTarget.value) {
-    return
-  }
-  try {
-    cardLoading.value = true
-    const profile = await profileApi.of(cardTarget.value)
-    await im.sendCard(im.activePeer, {
-      username: profile.username,
-      nickname: profile.nickname || profile.username,
-      signature: profile.signature || '',
-      avatar: profile.avatar || '',
-    })
-    cardVisible.value = false
-    ElMessage.success('名片已发送')
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '名片发送失败')
-  } finally {
-    cardLoading.value = false
-  }
-}
-
-/** 73 发送位置卡片 */
-async function confirmShareLocation() {
-  if (!im.activePeer) {
-    return
-  }
-  const place = PLACES.find((p) => p.name === locationPick.value) ?? PLACES[0]
-  try {
-    await im.sendLocation(im.activePeer, place)
-    locationVisible.value = false
-    ElMessage.success('位置已发送')
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '位置发送失败')
   }
 }
 
@@ -1830,59 +1708,6 @@ onUnmounted(() => {
   z-index: 15;
   pointer-events: none;
 }
-/* ---- 95 附件面板 ---- */
-.attachment-grid {
-  margin-top: 12px;
-  min-height: 160px;
-  max-height: 420px;
-  overflow: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
-  align-content: start;
-}
-.attachment-thumb {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid var(--im-border, #e6e8eb);
-  cursor: zoom-in;
-}
-.attachment-file {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--im-border, #e6e8eb);
-  border-radius: 8px;
-  background: transparent;
-  padding: 8px;
-  cursor: pointer;
-  text-align: left;
-}
-.attachment-file:hover {
-  background: var(--im-hover, #f2f3f5);
-}
-.af-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.af-time {
-  font-size: 10px;
-  color: var(--im-muted, #8f959e);
-  flex-shrink: 0;
-}
-.attachment-empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: var(--im-muted, #8f959e);
-  font-size: 13px;
-  padding: 30px 0;
-}
 /* ---- 搜索浮层 ---- */
 .search-layer {
   position: absolute;
@@ -2113,47 +1938,6 @@ onUnmounted(() => {
 .card-meta {
   font-size: 12px;
   color: var(--xx-accent, #ec5f92);
-}
-
-/* ---- 72/73 名片与位置分享 ---- */
-.dialog-hint {
-  margin: 10px 0 0;
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-}
-.place-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.place-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 9px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--im-border, #e6e8eb);
-  background: var(--im-panel, #fff);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.15s, background 0.15s;
-}
-.place-chip:hover {
-  border-color: var(--xx-accent, #ec5f92);
-}
-.place-chip.active {
-  border-color: var(--xx-accent, #ec5f92);
-  background: var(--xx-accent-soft, rgba(51, 112, 255, 0.1));
-}
-.place-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--im-text, #1f2329);
-}
-.place-addr {
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
 }
 
 /* ============ 手机端适配（≤768px：单面板布局） ============ */

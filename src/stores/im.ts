@@ -351,16 +351,6 @@ export const useImStore = defineStore('im', () => {
     return sendOutgoing(peer, suffix.slice(0, 100), 'poke', null)
   }
 
-  /** 72 分享好友名片：content 为卡片 JSON */
-  async function sendCard(peer: string, card: FriendCardPayload) {
-    return sendOutgoing(peer, JSON.stringify(card), 'card', null)
-  }
-
-  /** 73 分享位置：content 为位置卡片 JSON */
-  async function sendLocation(peer: string, place: LocationPayload) {
-    return sendOutgoing(peer, JSON.stringify(place), 'location', null)
-  }
-
   /** 重发失败消息：找到本地 FAILED 记录，原样重发并替换 */
   async function retryMessage(localId: string) {
     for (const [peer, list] of Object.entries(messages.value)) {
@@ -912,8 +902,6 @@ export const useImStore = defineStore('im', () => {
     sendImage,
     sendFile,
     sendPoke,
-    sendCard,
-    sendLocation,
     retryMessage,
     recallMessage,
     searchMessages,

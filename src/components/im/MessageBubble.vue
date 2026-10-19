@@ -160,23 +160,6 @@
       </div>
     </div>
 
-    <!-- 74 hover 快捷表情条：一键回应 -->
-    <div
-      v-if="message.status === 'SENT'"
-      class="quick-reacts"
-      :class="{ self }"
-      data-testid="quick-reacts"
-    >
-      <button
-        v-for="emoji in REACTION_QUICK"
-        :key="`quick-${emoji}`"
-        class="quick-emoji"
-        type="button"
-        :title="`回应 ${emoji}`"
-        @click="emit('react', emoji, message)"
-      >{{ emoji }}</button>
-    </div>
-
     <!-- 回应表情面板：内联展开 6×6 宫格（不用传送浮层，绝不漂移出消息框/屏幕） -->
     <div v-if="pickerOpen" class="react-grid" data-testid="react-grid">
       <button
@@ -309,8 +292,6 @@ const REACTION_ALL = [
   '😎', '🥳', '👍', '👎', '🙌', '👏',
   '✌️', '🙈', '🔥', '🎉', '🌹', '⛵',
 ]
-/** hover 快捷条：全集里最常用的 8 个 */
-const REACTION_QUICK = ['👍', '❤️', '😂', '😮', '😢', '🥰', '🎉', '🔥']
 
 const props = withDefaults(
   defineProps<{
@@ -815,41 +796,6 @@ const quoteText = computed(() => {
   animation: center-in 0.22s ease-out both;
 }
 
-/* ============ 74 hover 快捷表情条 ============ */
-.quick-reacts {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  align-self: center;
-  padding: 2px 4px;
-  border-radius: 999px;
-  background: var(--im-panel, #fff);
-  border: 1px solid var(--im-border, #e6e8eb);
-  box-shadow: var(--im-shadow, 0 8px 30px rgba(0, 0, 0, 0.08));
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.14s ease, transform 0.14s ease;
-  pointer-events: none;
-}
-.row:hover .quick-reacts {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-.quick-emoji {
-  border: none;
-  background: transparent;
-  font-size: 16px;
-  line-height: 1;
-  padding: 3px 4px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-.quick-emoji:hover {
-  background: var(--im-hover, #f2f3f5);
-  transform: scale(1.25);
-}
-
 /* ============ 72 好友名片卡片 ============ */
 .card-msg {
   position: relative;
@@ -998,10 +944,6 @@ const quoteText = computed(() => {
   }
   .row.self.actions-open .hover-actions {
     justify-content: flex-end;
-  }
-  /* hover 快捷表情条在触屏上无法触发，隐藏避免占位 */
-  .quick-reacts {
-    display: none;
   }
 }
 
