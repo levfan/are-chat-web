@@ -196,15 +196,6 @@ export interface PinVO {
   createdBy: string
 }
 
-/** 95 会话附件条目 */
-export interface AttachmentVO {
-  id: string
-  name: string
-  size: number
-  url: string
-  fromUser: string
-  created: number
-}
 
 /** 70 新消息浮动卡片条目 */
 export interface ToastItem {

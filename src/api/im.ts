@@ -1,6 +1,5 @@
 import { http } from './http'
 import type {
-  AttachmentVO,
   FriendBirthdayVO,
   FriendRequestVO,
   FriendSuggestion,
@@ -44,8 +43,6 @@ export const messageApi = {
   markRead: (peer: string) => http.postJson<void>(`/api/messages/${enc(peer)}/read`, {}),
   recall: (msgId: string) => http.postJson<void>(`/api/messages/${enc(msgId)}/recall`, {}),
   search: (peer: string, q: string) => http.get<ImMessage[]>(`/api/messages/${enc(peer)}/search?q=${enc(q)}`),
-  /** 56 导出当前会话全部消息（JSON） */
-  exportConversation: (peer: string) => http.get<ImMessage[]>(`/api/messages/${enc(peer)}/export`),
   edit: (msgId: string, content: string) => http.putJson<ImMessage>(`/api/messages/${enc(msgId)}`, { content }),
   toggleReaction: (msgId: string, emoji: string) =>
     http.postJson<void>(`/api/messages/${enc(msgId)}/reactions`, { emoji }),
@@ -58,9 +55,6 @@ export const messageApi = {
   currentPin: (peer: string) => http.get<PinVO | null>(`/api/messages/${enc(peer)}/pin`),
   /** 85 清空当前会话全部聊天记录（后端会删除双方消息） */
   clear: (peer: string) => http.delete<{ deleted: number }>(`/api/messages/${enc(peer)}`),
-  /** 95 会话附件：type=image|file */
-  attachments: (peer: string, type: 'image' | 'file' = 'image') =>
-    http.get<AttachmentVO[]>(`/api/messages/${enc(peer)}/attachments?type=${type}`),
   /** F36 心动时刻标记/取消标记 */
   markHeart: (msgId: string, hearted: boolean) =>
     http.postJson<ImMessage>(`/api/messages/${enc(msgId)}/heart`, { hearted }),

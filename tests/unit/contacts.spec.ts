@@ -27,13 +27,11 @@ vi.mock('@/api/im', () => ({
     edit: vi.fn(),
     toggleReaction: vi.fn(),
     toggleStar: vi.fn(),
-    exportConversation: vi.fn(),
     searchGlobal: vi.fn(),
     pin: vi.fn(),
     unpin: vi.fn(),
     currentPin: vi.fn(),
     clear: vi.fn(),
-    attachments: vi.fn(),
   },
   profileApi: {
     me: vi.fn(),

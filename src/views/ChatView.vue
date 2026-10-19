@@ -169,16 +169,6 @@
                 <el-dropdown-item command="stars">
                   <el-icon><Collection /></el-icon>收藏夹
                 </el-dropdown-item>
-                <el-dropdown-item command="export">
-                  <el-icon><Download /></el-icon>导出聊天记录
-                </el-dropdown-item>
-                <el-dropdown-item command="export-json">
-                  <el-icon><Document /></el-icon>导出 JSON
-                </el-dropdown-item>
-                <!-- 95 会话附件面板 -->
-                <el-dropdown-item command="attachments">
-                  <el-icon><FolderOpened /></el-icon>附件面板
-                </el-dropdown-item>
                 <!-- 85 清空聊天记录 -->
                 <el-dropdown-item command="clear-history">
                   <el-icon><Brush /></el-icon>清空聊天记录
@@ -546,41 +536,6 @@
     </el-dialog>
 
     <!-- 95 附件面板：当前会话图片 / 文件一览 -->
-    <el-dialog v-model="attachmentsVisible" title="附件面板" width="560px" draggable @open="loadAttachments">
-      <el-radio-group v-model="attachmentTab" size="small" data-testid="attachment-tab" @change="loadAttachments">
-        <el-radio-button value="image">图片</el-radio-button>
-        <el-radio-button value="file">文件</el-radio-button>
-      </el-radio-group>
-      <div v-loading="attachmentsLoading" class="attachment-grid">
-        <template v-if="attachmentTab === 'image'">
-          <img
-            v-for="att in attachmentList"
-            :key="att.id"
-            class="attachment-thumb"
-            :src="att.url"
-            :title="new Date(att.created).toLocaleString()"
-            data-testid="attachment-image"
-            @click="openImage(att.url)"
-          />
-          <p v-if="!attachmentsLoading && attachmentList.length === 0" class="attachment-empty">还没有图片附件</p>
-        </template>
-        <template v-else>
-          <button
-            v-for="att in attachmentList"
-            :key="att.id"
-            type="button"
-            class="attachment-file"
-            data-testid="attachment-file"
-            @click="openImage(att.url)"
-          >
-            <el-icon :size="18"><Document /></el-icon>
-            <span class="af-name">{{ att.name }}</span>
-            <span class="af-time">{{ new Date(att.created).toLocaleDateString() }}</span>
-          </button>
-          <p v-if="!attachmentsLoading && attachmentList.length === 0" class="attachment-empty">还没有文件附件</p>
-        </template>
-      </div>
-    </el-dialog>
 
     <!-- 81 全局消息搜索（Ctrl+K）：跨会话搜文本 -->
     <GlobalSearchPanel v-model="globalSearchVisible" :self-name="auth.username" @open="onGlobalSearchOpen" />
@@ -631,7 +586,6 @@ import { COUPLE_VISUAL_TIER, couplePendant, coupleVisualOn } from '@/utils/coupl
 import { detectEffect, detectEggCommand, floatHearts, playEffect } from '@/utils/effects'
 import { formatChatTime, formatDayLabel, formatLastSeen, highlightSegments } from '@/utils/imFormat'
 import type { HighlightSegment } from '@/utils/imFormat'
-import type { AttachmentVO } from '@/types'
 import ImAvatar from '@/components/im/ImAvatar.vue'
 import EmojiPicker from '@/components/im/EmojiPicker.vue'
 import MessageBubble from '@/components/im/MessageBubble.vue'
@@ -658,10 +612,6 @@ const fileInput = ref<HTMLInputElement | null>(null)
 // 83 拖拽发送
 const dragOver = ref(false)
 // 95 附件面板
-const attachmentsVisible = ref(false)
-const attachmentsLoading = ref(false)
-const attachmentTab = ref<'image' | 'file'>('image')
-const attachmentList = ref<AttachmentVO[]>([])
 const lightboxOpen = ref(false)
 const lightboxUrl = ref('')
 // 81 全局搜索
@@ -1159,19 +1109,6 @@ async function onDrop(event: DragEvent) {
 
 // ---------- 95 附件面板 ----------
 
-async function loadAttachments() {
-  if (!im.activePeer) {
-    return
-  }
-  attachmentsLoading.value = true
-  try {
-    attachmentList.value = await messageApi.attachments(im.activePeer, attachmentTab.value)
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '附件加载失败')
-  } finally {
-    attachmentsLoading.value = false
-  }
-}
 
 function openImage(url: string) {
   lightboxUrl.value = url
@@ -1416,33 +1353,6 @@ function exportHistory() {
   URL.revokeObjectURL(url)
 }
 
-/** 56 导出当前会话全部消息为 JSON（服务端全量，不止已加载分页） */
-async function exportHistoryJson() {
-  const peer = im.activePeer
-  if (!peer) {
-    return
-  }
-  try {
-    const all = await messageApi.exportConversation(peer)
-    const payload = {
-      system: '小帆船',
-      peer,
-      exportedAt: new Date().toISOString(),
-      count: all.length,
-      messages: all,
-    }
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `与${peer}的聊天记录.json`
-    link.click()
-    URL.revokeObjectURL(url)
-    ElMessage.success(`已导出 ${all.length} 条消息`)
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '导出失败')
-  }
-}
 
 async function toggleBlock(blocked: boolean) {
   const friend = im.activeFriend
@@ -1491,15 +1401,6 @@ async function doSearch() {
 async function onMenuCommand(command: string) {
   const friend = im.activeFriend
   if (!friend) {
-    return
-  }
-  if (command === 'export-json') {
-    await exportHistoryJson()
-    return
-  }
-  // 95 附件面板
-  if (command === 'attachments') {
-    attachmentsVisible.value = true
     return
   }
   // 24 收藏夹（此前菜单缺分支，点击无响应）
