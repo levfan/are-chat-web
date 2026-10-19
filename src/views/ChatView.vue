@@ -100,9 +100,6 @@
           <button type="button" class="head-btn" title="发送文件" data-testid="file-btn" @click="pickFile">
             <el-icon :size="17"><Paperclip /></el-icon>
           </button>
-          <button type="button" class="head-btn" title="拍一拍" data-testid="poke-btn" @click="onPoke">
-            <el-icon :size="17"><Pointer /></el-icon>
-          </button>
           <button type="button" class="head-btn" title="聊天记录搜索" data-testid="search-open-btn" @click="openSearch">
             <el-icon :size="17"><Search /></el-icon>
           </button>
@@ -378,7 +375,6 @@ import {
   MuteNotification,
   Paperclip,
   Picture,
-  Pointer,
   Search,
   Setting,
   TopRight,
@@ -865,18 +861,6 @@ async function onRetry(localId: string) {
     await im.retryMessage(localId)
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '重试失败')
-  }
-}
-
-// 67 拍一拍
-async function onPoke() {
-  if (!im.activePeer) {
-    return
-  }
-  try {
-    await im.sendPoke(im.activePeer)
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '拍一拍失败')
   }
 }
 

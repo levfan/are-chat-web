@@ -336,11 +336,6 @@ export const useImStore = defineStore('im', () => {
     return sendOutgoing(peer, JSON.stringify(payload), 'file', null)
   }
 
-  /** 67 拍一拍：可带自定义后缀（如「的小脑袋」），留空用默认文案 */
-  async function sendPoke(peer: string, suffix = '') {
-    return sendOutgoing(peer, suffix.slice(0, 100), 'poke', null)
-  }
-
   /** 重发失败消息：找到本地 FAILED 记录，原样重发并替换 */
   async function retryMessage(localId: string) {
     for (const [peer, list] of Object.entries(messages.value)) {
@@ -831,7 +826,6 @@ export const useImStore = defineStore('im', () => {
     sendText,
     sendImage,
     sendFile,
-    sendPoke,
     retryMessage,
     recallMessage,
     searchMessages,

@@ -42,8 +42,6 @@ declare module 'vue' {
     ElRadioGroup: typeof import('element-plus/es')['ElRadioGroup']
     ElResult: typeof import('element-plus/es')['ElResult']
     ElSelect: typeof import('element-plus/es')['ElSelect']
-    ElStep: typeof import('element-plus/es')['ElStep']
-    ElSteps: typeof import('element-plus/es')['ElSteps']
     ElSwitch: typeof import('element-plus/es')['ElSwitch']
     ElTable: typeof import('element-plus/es')['ElTable']
     ElTableColumn: typeof import('element-plus/es')['ElTableColumn']
@@ -56,7 +54,6 @@ declare module 'vue' {
     ImAvatar: typeof import('./components/im/ImAvatar.vue')['default']
     MessageBubble: typeof import('./components/im/MessageBubble.vue')['default']
     ProfileDialog: typeof import('./components/im/ProfileDialog.vue')['default']
-    PwaInstallGuide: typeof import('./components/im/PwaInstallGuide.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
