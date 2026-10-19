@@ -66,15 +66,6 @@
               <span class="stat-label">在一起的天数</span>
             </div>
             <div class="stat">
-              <!-- 这一格只读已加载好的问答位与看板连击，不为它多发一次请求；「—」是没拉到，不等于没答 -->
-              <span
-                class="stat-num today-line"
-                data-testid="couple-header-today-question"
-                :title="todayQuestionTitle"
-              >{{ todayQuestionLine }}</span>
-              <span class="stat-label">今天（一问 · 连续）</span>
-            </div>
-            <div class="stat">
               <span class="stat-num" data-testid="couple-intimacy-score">{{ couple.intimacy?.score ?? 0 }}</span>
               <span class="stat-label">{{ intimacyStatLabel }}</span>
             </div>
@@ -223,30 +214,6 @@ function closeGuide() {
   guideVisible.value = false
 }
 
-/**
- * 头部第二格：今天那一问答完没有 + 当前连续天数。
- *
- * 一律现读已经加载好的两块——`couple.question`（今天页签那张卡或 WS 拉回）与
- * `couple.streak`（登录后 init 顺带拉的看板），这一格自己不发请求。
- * 没拉到就是「—」，不等于「没答」，所以再挂一句 title 说清是哪种空态。
- */
-const todayQuestionLine = computed(() => {
-  const answered = couple.question ? (couple.question.answeredByMe ? '✅ 已答' : '○ 待答') : '—'
-  const streak = couple.streak ? `连 ${couple.streak.currentStreak} 天` : '—'
-  return `${answered} · ${streak}`
-})
-
-const todayQuestionTitle = computed(() => {
-  const q = couple.question
-  const s = couple.streak
-  return [
-    q
-      ? `今天这一问：我${q.answeredByMe ? '已答' : '还没答'} · TA${q.answeredByPartner ? '已答' : '还没答'}`
-      : '今天的每日一问还没拉到',
-    s ? `当前连续 ${s.currentStreak} 天（两个人都答完当天那一问就算一天）` : '打卡看板还没拉到',
-  ].join('；')
-})
-
 /** F27 空间主题：应用双方选定的空间主题渐变，没选过就走今日色板 */
 const THEME_GRADIENTS: Record<string, string> = {
   classic: 'linear-gradient(90deg, #fff0f0, #ffe3ec)',
@@ -366,10 +333,6 @@ onMounted(async () => {
   // 头部心动值 & 恋爱等级
   if (!couple.established) return
   void couple.loadIntimacy()
-  // 头部第二格读的是 couple.question：落在 wish 页签时今天那张卡没挂载，这里补一次。
-  // 但要先看数据在不在——今天页签里卡片已经先请求过并落地了，再发一次就是白打一趟；
-  // 它还在飞的时候 store 的并发去重会把两次调用合成一个请求。
-  if (!couple.question) void couple.loadQuestion()
 })
 </script>
 
@@ -545,11 +508,6 @@ onMounted(async () => {
   font-size: 22px;
   font-weight: 700;
   color: #f56c6c;
-}
-/* 第二格是一句话不是单个数字，字号收一档免得把头部三格挤散 */
-.stat-num.today-line {
-  font-size: 15px;
-  white-space: nowrap;
 }
 .stat-label {
   font-size: 11px;

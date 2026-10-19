@@ -137,7 +137,6 @@ function streakBoard(unlockedKeys: string[]): CoupleStreakBoardVO {
     confirmedDays: 0,
     checkedToday: true,
     missedYesterday: false,
-    lastCheckinDay: null,
     tiers,
     nextTierKey: null,
     nextTierLabel: null,

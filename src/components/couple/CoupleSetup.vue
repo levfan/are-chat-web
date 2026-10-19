@@ -47,20 +47,6 @@
           <el-icon class="btn-ico"><MagicStick /></el-icon>邀请好友建立情侣空间
         </el-button>
       </div>
-      <div class="feature-intro">
-        <div class="feature-item">
-          <span class="feature-emoji">🫶</span>
-          <div><b>每日一问</b><p>两人各答各的，答完之前看不到 TA 的答案</p></div>
-        </div>
-        <div class="feature-item">
-          <span class="feature-emoji">🔥</span>
-          <div><b>连续互动打卡</b><p>每天都答完攒连续，一档档解锁背景、爱称发光、挂件与称号</p></div>
-        </div>
-        <div class="feature-item">
-          <span class="feature-emoji">🌟</span>
-          <div><b>愿望清单</b><p>想要的先记下来，对方能偷偷标「已准备」，兑现后一起收藏</p></div>
-        </div>
-      </div>
     </el-card>
 
     <!-- 发出的邀请：等待对方处理 -->
@@ -255,33 +241,6 @@ async function onCancel(invite: CoupleInviteVO) {
 }
 .btn-ico {
   margin-right: 4px;
-}
-.feature-intro {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 8px;
-}
-.feature-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  background: var(--im-bg, #f7f8fa);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-.feature-emoji {
-  font-size: 20px;
-  line-height: 1.4;
-}
-.feature-item b {
-  font-size: 13px;
-}
-.feature-item p {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: var(--im-muted, #8f959e);
-  line-height: 1.6;
 }
 .invite-row {
   display: flex;

@@ -178,15 +178,6 @@ export interface PinVO {
 }
 
 
-/** 70 新消息浮动卡片条目 */
-export interface ToastItem {
-  id: number
-  peer: string
-  name: string
-  body: string
-  avatar: string
-}
-
 export interface ImReaction {
   username: string
   emoji: string
@@ -1455,7 +1446,6 @@ export interface CoupleStreakBoardVO {
   confirmedDays: number
   checkedToday: boolean
   missedYesterday: boolean
-  lastCheckinDay: string | null
   tiers: CoupleStreakTierVO[]
   nextTierKey: string | null
   nextTierLabel: string | null
@@ -1491,24 +1481,8 @@ export interface CoupleQuestionTodayVO {
   answerMax: number
 }
 
-/** 一问历史的一行（双方都没答的行不会出现，myAnswer/partnerAnswer 至少一个非 null） */
-export interface CoupleQuestionHistoryItemVO {
-  day: string
-  question: string
-  myAnswer: string | null
-  partnerAnswer: string | null
-  bothAnswered: boolean
-}
-
-/** 一问历史列表（GET /api/couple/question/history?days=N，day 倒序） */
-export interface CoupleQuestionHistoryVO {
-  items: CoupleQuestionHistoryItemVO[]
-  answeredDays: number
-  bothAnsweredDays: number
-}
-
 // ============ 愿望清单（wishApi / CoupleWishBoardVO） ============
-// 逐字对齐后端 CoupleWishService 的 2 个 record。7 个 POST 全部原样返回整份看板，前端整体替换。
+// 逐字对齐后端 CoupleWishService 的 2 个 record。6 个 POST 全部原样返回整份看板，前端整体替换。
 // 四个位（preparableFlag/canFulfillFlag/...）都由后端算好下发，前端只读不自算。
 
 /**

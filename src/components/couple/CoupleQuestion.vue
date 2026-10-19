@@ -3,25 +3,19 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { questionApi } from '@/api/couple'
 import { useCoupleStore } from '@/stores/couple'
-import type { CoupleQuestionHistoryVO } from '@/types'
 import CoupleCollapsible from './CoupleCollapsible.vue'
 
 /**
  * 每日一问（卡根 `couple-question`）：一题两答，**双方都答完才互看**。
  *
  * 今日那一问归 store（WS 推 question-answered 时由 store 统一重拉），
- * 交卷返回的整份 TodayVO 直接替换 store 那一份；回看列表是这张卡自己的临时数据。
+ * 交卷返回的整份 TodayVO 直接替换 store 那一份。
  */
 const couple = useCoupleStore()
 const today = computed(() => couple.question)
-/** 回看窗口：只是「拉几天」，字数与可见性闸门一律吃后端下发的数字 */
-const RECENT_DAYS = 14
 
 const answer = ref('')
 const sending = ref(false)
-const history = ref<CoupleQuestionHistoryVO | null>(null)
-const historyOpen = ref(false)
-const loadingHistory = ref(false)
 
 async function onAnswer() {
   const v = today.value
@@ -53,22 +47,6 @@ async function onAnswer() {
 
 function startEdit() {
   answer.value = today.value?.mine?.answer ?? ''
-}
-
-async function toggleHistory() {
-  historyOpen.value = !historyOpen.value
-  if (!historyOpen.value) {
-    return
-  }
-  loadingHistory.value = true
-  try {
-    history.value = await questionApi.questionHistory(RECENT_DAYS)
-  } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '回看没拉到')
-    history.value = null
-  } finally {
-    loadingHistory.value = false
-  }
 }
 
 onMounted(() => {
@@ -116,35 +94,6 @@ onMounted(() => {
         {{ today.answeredByMe ? '你答完了，还差 TA 那一笔 🙈' : '这一格要等你俩都答完才打开 👀' }}
       </p>
     </div>
-
-    <div v-if="today" class="history">
-      <el-button link type="primary" :loading="loadingHistory" data-testid="couple-question-history-btn"
-                 @click="toggleHistory">
-        {{ historyOpen ? '收起回看' : `回看最近 ${RECENT_DAYS} 天 🔁` }}
-      </el-button>
-
-      <template v-if="historyOpen && history">
-        <p class="counts" data-testid="couple-question-history-count">
-          答过 {{ history.answeredDays }} 天 · 一起答完 {{ history.bothAnsweredDays }} 天
-        </p>
-        <ul v-if="history.items.length" class="list" data-testid="couple-question-history">
-          <li v-for="h in history.items" :key="h.day" class="item"
-              :data-testid="`couple-question-history-item-${h.day}`">
-            <span class="day">{{ h.day }}</span>
-            <span class="q">{{ h.question }}</span>
-            <span class="ans mine" :data-testid="`couple-question-history-mine-${h.day}`">
-              我：{{ h.myAnswer ?? '没答' }}
-            </span>
-            <span v-if="h.partnerAnswer" class="ans partner"
-                  :data-testid="`couple-question-history-partner-${h.day}`">TA：{{ h.partnerAnswer }}</span>
-            <span v-else class="ans locked" :data-testid="`couple-question-history-locked-${h.day}`">
-              {{ h.bothAnswered ? 'TA：空着' : '还没互看 👀' }}
-            </span>
-          </li>
-        </ul>
-        <p v-else class="empty" data-testid="couple-question-history-empty">这几天一题都没答，先从今天的写起嘛</p>
-      </template>
-    </div>
   </CoupleCollapsible>
 </template>
 
@@ -161,14 +110,4 @@ onMounted(() => {
 .empty { margin: 0; font-size: 13px; color: var(--im-muted, #909399); }
 .form { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
 .form .el-button { align-self: flex-start; }
-.history { margin-top: 10px; }
-.counts { margin: 6px 0; font-size: 12px; color: var(--im-muted, #909399); }
-.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.item { display: flex; flex-direction: column; gap: 2px; font-size: 13px;
-        border-bottom: 1px dashed var(--im-border, #eee); padding-bottom: 5px; }
-.item .day { font-size: 12px; color: var(--im-muted, #909399); }
-.item .q { color: #0f766e; }
-.item .ans { font-size: 12px; }
-.item .ans.partner { color: #0f766e; }
-.item .ans.locked { color: var(--im-muted, #909399); }
 </style>

@@ -8,7 +8,6 @@ import type {
   CoupleSpaceVO,
   CoupleStreakBoardVO,
   CoupleQuestionTodayVO,
-  CoupleQuestionHistoryVO,
   CoupleWishBoardVO,
 } from '@/types'
 
@@ -16,7 +15,8 @@ import type {
  * 情侣空间接口：邀请建立 → 空间本体（日子/宣言/主题/爱称）→ 心动值 + 三张功能卡。
  *
  * 2026-10-05 二轮裁剪（后端 docs/adr/0010-couple-trim-to-v8-features.md）：产品只留 邀请建立空间 / 每日一问 /
- * 愿望清单 / 连续互动打卡+六档解锁 四件事，44 个端点与 30 个 WS 事件随之下线（70→25）。
+ * 愿望清单 / 连续互动打卡+六档解锁 四件事，44 个端点与 30 个 WS 事件随之下线（70→25）；
+ * 2026-10-20 四轮再删问答回看与愿望改备注（→20）。
  * 判据不变——本文件的每个方法都对应后端一个存活的 `@*Mapping`，别把已下线的端点再写回来。
  */
 export const coupleApi = {
@@ -69,8 +69,7 @@ export const streakApi = {
 }
 
 /**
- * 每日一问（questionApi，基址 /api/couple/question）：
- * 1 个 GET /today + 1 个 POST /answer（都返回整份 TodayVO）+ 1 个 GET /history。
+ * 每日一问（questionApi，基址 /api/couple/question）：1 个 GET /today + 1 个 POST /answer。
  * 题目由后端按天定题，两人各答各的；答完之前都看不到 TA 的答案，bothAnswered 才是解锁位。
  */
 export const questionApi = {
@@ -79,13 +78,10 @@ export const questionApi = {
   /** 答今天这一问（可改写自己的答案；超 answerMax 字后端 400），返回整份 TodayVO */
   questionAnswer: (answer: string) =>
     http.postJson<CoupleQuestionTodayVO>('/api/couple/question/answer', { answer }),
-  /** 回看最近 N 天的一问一答（1-90，后端默认 14），按 day 倒序 */
-  questionHistory: (days = 14) =>
-    http.get<CoupleQuestionHistoryVO>(`/api/couple/question/history?days=${days}`),
 }
 
 /**
- * 愿望清单（wishApi，基址 /api/couple/wish）：1 个 GET /board + 6 个 POST，写接口一律返回整份
+ * 愿望清单（wishApi，基址 /api/couple/wish）：1 个 GET /board + 5 个 POST，写接口一律返回整份
  * WishBoardVO 前端整体替换。可准备/可兑现这些闸门全在后端（preparableFlag/canFulfillFlag），
  * 前端照位渲染即可；条数超 limit、标题/备注超 titleMax/noteMax 都是后端 400 直透。
  */
@@ -99,7 +95,5 @@ export const wishApi = {
   wishUnprepare: (id: string) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/unprepare', { id }),
   /** 兑现一条（只有被许的那位能点，后端 400 直透） */
   wishFulfill: (id: string) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/fulfill', { id }),
-  /** 改一条愿望的备注（note 可空串=清掉） */
-  wishNote: (id: string, note: string | null) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/note', { id, note }),
   wishRemove: (id: string) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/remove', { id }),
 }

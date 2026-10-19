@@ -85,10 +85,6 @@ onMounted(() => {
     <p v-if="board" class="today" :class="{ lit: board.checkedToday }" data-testid="couple-streak-today">
       {{ board.checkedToday ? '✅ 今天这一格已经亮了，明儿见' : '🫧 今天还空着——不用找按钮，两个人各答完每日一问它就自己亮了' }}
     </p>
-    <p v-if="board?.lastCheckinDay" class="hint" data-testid="couple-streak-last">
-      最近亮着的一天：{{ board.lastCheckinDay }}
-    </p>
-
     <div v-if="board" class="strip" data-testid="couple-streak-strip">
       <span v-for="cell in board.strip" :key="cell.day" class="cell"
             :class="{ on: cell.checked, makeup: cell.makeupFlag, today: cell.todayFlag }"

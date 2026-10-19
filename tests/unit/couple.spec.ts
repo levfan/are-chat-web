@@ -46,7 +46,7 @@ const FIX = vi.hoisted(() => {
   }
   const emptyStreakBoard = {
     day: '2026-10-04', currentStreak: 0, longestStreak: 0, confirmedDays: 0,
-    checkedToday: false, missedYesterday: false, lastCheckinDay: null,
+    checkedToday: false, missedYesterday: false,
     tiers: [] as { key: string; days: number; label: string; icon: string; detail: string; unlocked: boolean; unlockedDay: string | null }[],
     nextTierKey: 'bubble', nextTierLabel: '双人专属气泡', daysToNext: 3,
     strip: [], makeupWindowDays: 7, makeupLeftThisMonth: 3, canMakeup: false,
@@ -77,12 +77,11 @@ vi.mock('@/api/couple', () => ({
   questionApi: {
     questionToday: vi.fn().mockResolvedValue(FIX.emptyQuestion),
     questionAnswer: vi.fn().mockResolvedValue(FIX.emptyQuestion),
-    questionHistory: vi.fn().mockResolvedValue({ items: [], answeredDays: 0, bothAnsweredDays: 0 }),
   },
   wishApi: {
     wishBoard: vi.fn().mockResolvedValue(FIX.emptyWishBoard), wishAdd: vi.fn().mockResolvedValue(FIX.emptyWishBoard),
     wishPrepare: vi.fn().mockResolvedValue(FIX.emptyWishBoard), wishUnprepare: vi.fn().mockResolvedValue(FIX.emptyWishBoard),
-    wishFulfill: vi.fn().mockResolvedValue(FIX.emptyWishBoard), wishNote: vi.fn().mockResolvedValue(FIX.emptyWishBoard),
+    wishFulfill: vi.fn().mockResolvedValue(FIX.emptyWishBoard),
     wishRemove: vi.fn().mockResolvedValue(FIX.emptyWishBoard),
   },
 }))
@@ -114,7 +113,7 @@ function boardWithTiers(tiers: CoupleStreakTierVO[]): CoupleStreakBoardVO {
   return {
     ...emptyStreakBoard,
     currentStreak: 3, longestStreak: 3, confirmedDays: 3, checkedToday: true,
-    lastCheckinDay: '2026-10-03', tiers, nextTierKey: 'background', nextTierLabel: '空间背景', daysToNext: 4,
+    tiers, nextTierKey: 'background', nextTierLabel: '空间背景', daysToNext: 4,
     strip: [{ day: '2026-10-04', checked: true, makeupFlag: false, todayFlag: true }],
   }
 }
@@ -184,10 +183,9 @@ beforeEach(() => {
   vi.mocked(streakApi.streakMakeup).mockResolvedValue(boardWithTiers([]))
   vi.mocked(questionApi.questionToday).mockResolvedValue(emptyQuestion)
   vi.mocked(questionApi.questionAnswer).mockResolvedValue(emptyQuestion)
-  vi.mocked(questionApi.questionHistory).mockResolvedValue({ items: [], answeredDays: 0, bothAnsweredDays: 0 })
   vi.mocked(wishApi.wishBoard).mockResolvedValue(emptyWishBoard)
   for (const fn of [wishApi.wishAdd, wishApi.wishPrepare, wishApi.wishUnprepare,
-    wishApi.wishFulfill, wishApi.wishNote, wishApi.wishRemove]) {
+    wishApi.wishFulfill, wishApi.wishRemove]) {
     vi.mocked(fn).mockResolvedValue(emptyWishBoard)
   }
 })
@@ -250,34 +248,6 @@ describe('空间骨架', () => {
     expect(coupleApi.overview).toHaveBeenCalledTimes(1)
   })
 
-  it('头部第二格：今天问答与连续天数都读已加载好的数据，不再问后端要一次', async () => {
-    vi.mocked(questionApi.questionToday).mockResolvedValue({
-      ...emptyQuestion, answeredByMe: true, answeredByPartner: false,
-    })
-    vi.mocked(streakApi.streakBoard).mockResolvedValue(boardWithTiers([streakTier('bubble', 3, true)]))
-    const wrapper = mountView()
-    await flushPromises()
-    const slot = wrapper.find('[data-testid="couple-header-today-question"]')
-    expect(slot.exists()).toBe(true)
-    expect(slot.text()).toContain('✅ 已答')
-    expect(slot.text()).toContain('连 3 天')
-    // title 里补上「TA 还没答」这件事：视觉只放一个信号，另一条走 tooltip
-    expect(slot.attributes('title')).toContain('TA还没答')
-    // 这一格不发第二次请求：问答与看板各只有一次（今天页签的卡 + init 顺带拉的看板）
-    expect(questionApi.questionToday).toHaveBeenCalledTimes(1)
-    expect(streakApi.streakBoard).toHaveBeenCalledTimes(1)
-  })
-
-  it('问答与看板都没拉到时，第二格给「—」而不是空白或 NaN', async () => {
-    vi.mocked(questionApi.questionToday).mockRejectedValue(new Error('请求失败（HTTP 500）'))
-    vi.mocked(streakApi.streakBoard).mockRejectedValue(new Error('请求失败（HTTP 500）'))
-    const wrapper = mountView()
-    await flushPromises()
-    const slot = wrapper.find('[data-testid="couple-header-today-question"]')
-    expect(slot.text()).toBe('— · —')
-    expect(slot.attributes('title')).toContain('今天的每日一问还没拉到')
-    expect(slot.attributes('title')).toContain('打卡看板还没拉到')
-  })
 })
 
 /** 爱称：独立的 PUT /couple/bond/pet-name 已随贴贴卡下线，只剩 updateProfile 这一条通道 */
@@ -397,9 +367,9 @@ describe('api 契约守卫', () => {
     expect(Object.keys(groups).sort()).toEqual(
       ['coupleApi', 'questionApi', 'streakApi', 'wishApi'],
     )
-    // 22 = 二轮裁剪后再删收藏/全局搜索/通知中心/运营看板：
-    // coupleApi 10（地基 8 + 心动值 1 + 旁支读取 1）+ streak 2 + question 3 + wish 7
-    expect(total).toBe(22)
+    // 20 = 二轮裁剪后再删收藏/全局搜索/通知中心/运营看板，四轮再删问答回看与愿望改备注：
+    // coupleApi 10（地基 8 + 心动值 1 + 旁支读取 1）+ streak 2 + question 2 + wish 6
+    expect(total).toBe(20)
   })
 
   it('已下线的卡片端点在 api/couple.ts 与 store 里一个字都搜不到', () => {
@@ -414,8 +384,8 @@ describe('api 契约守卫', () => {
       expect(paths.filter((p) => p.split('/').includes(dead.replace(/^\//, ''))),
         `api/couple.ts 还在打 ${dead}`).toEqual([])
     }
-    // 存活的 22 个路径逐个落在白名单里，一个多余的都没有
-    expect(paths).toHaveLength(22)
+    // 存活的 20 个路径逐个落在白名单里，一个多余的都没有
+    expect(paths).toHaveLength(20)
     for (const dead of ['stickers', 'makeupCost', 'moodSync', 'comfortBoard', 'bondStats', 'setPetName']) {
       expect(store, `stores/couple.ts 里还留着 ${dead}`).not.toContain(dead)
       expect(api, `api/couple.ts 里还留着 ${dead}`).not.toContain(dead)

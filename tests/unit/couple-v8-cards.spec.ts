@@ -11,7 +11,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import type {
   CoupleOverview,
-  CoupleQuestionHistoryVO,
   CoupleQuestionTodayVO,
   CoupleSpaceVO,
   CoupleStreakBoardVO,
@@ -42,10 +41,10 @@ vi.mock('@/api/couple', () => {
       intimacy: vi.fn(), relationshipOf: vi.fn(),
     },
     streakApi: { streakBoard: vi.fn(), streakMakeup: vi.fn() },
-    questionApi: { questionToday: vi.fn(), questionAnswer: vi.fn(), questionHistory: vi.fn() },
+    questionApi: { questionToday: vi.fn(), questionAnswer: vi.fn() },
     wishApi: {
       wishBoard: vi.fn(), wishAdd: vi.fn(), wishPrepare: vi.fn(), wishUnprepare: vi.fn(),
-      wishFulfill: vi.fn(), wishNote: vi.fn(), wishRemove: vi.fn(),
+      wishFulfill: vi.fn(), wishRemove: vi.fn(),
     },
   }
 })
@@ -80,7 +79,7 @@ function stripCell(day: string, checked: boolean, makeup = false, today = false)
 function streakBoard(over: Partial<CoupleStreakBoardVO> = {}): CoupleStreakBoardVO {
   return {
     day: '2026-10-04', currentStreak: 5, longestStreak: 5, confirmedDays: 5,
-    checkedToday: true, missedYesterday: false, lastCheckinDay: '2026-10-03',
+    checkedToday: true, missedYesterday: false,
     tiers: [tier('bubble', 3, true)], nextTierKey: 'background', nextTierLabel: '空间背景', daysToNext: 2,
     strip: [stripCell('2026-10-04', true, false, true)],
     makeupWindowDays: 7, makeupLeftThisMonth: 3, canMakeup: false,
@@ -134,10 +133,9 @@ beforeEach(() => {
   vi.mocked(streakApi.streakMakeup).mockResolvedValue(streakBoard())
   vi.mocked(questionApi.questionToday).mockResolvedValue(questionToday())
   vi.mocked(questionApi.questionAnswer).mockResolvedValue(questionToday())
-  vi.mocked(questionApi.questionHistory).mockResolvedValue({ items: [], answeredDays: 0, bothAnsweredDays: 0 })
   vi.mocked(wishApi.wishBoard).mockResolvedValue(wishBoard())
   for (const fn of [wishApi.wishAdd, wishApi.wishPrepare, wishApi.wishUnprepare, wishApi.wishFulfill,
-    wishApi.wishNote, wishApi.wishRemove]) {
+    wishApi.wishRemove]) {
     vi.mocked(fn).mockResolvedValue(wishBoard())
   }
 })
@@ -286,7 +284,6 @@ describe('CoupleQuestion 每日一问', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="couple-question"]').exists()).toBe(true)
     expect(questionApi.questionToday).toHaveBeenCalledTimes(1)
-    expect(questionApi.questionHistory).not.toHaveBeenCalled()
     expect(streakApi.streakBoard).not.toHaveBeenCalled()
     expect(wishApi.wishBoard).not.toHaveBeenCalled()
   })
@@ -389,37 +386,7 @@ describe('CoupleQuestion 每日一问', () => {
     expect(questionApi.questionAnswer).toHaveBeenCalledWith('楼下的猫和我')
   })
 
-  it('回看是点出来的：questionHistory 带窗口天数，没互看的行不显示对方答案', async () => {
-    establish()
-    const history: CoupleQuestionHistoryVO = {
-      items: [
-        { day: '2026-10-03', question: '最近有什么想看的电影？', myAnswer: '那场雨', partnerAnswer: '海街日记', bothAnswered: true },
-        { day: '2026-10-02', question: '今天想被怎么安慰？', myAnswer: null, partnerAnswer: null, bothAnswered: false },
-        { day: '2026-10-01', question: '谁今天更辛苦？', myAnswer: 'TA 吧', partnerAnswer: null, bothAnswered: false },
-      ],
-      answeredDays: 3,
-      bothAnsweredDays: 1,
-    }
-    vi.mocked(questionApi.questionHistory).mockResolvedValue(history)
-    const wrapper = mountCard(CoupleQuestion)
-    await flushPromises()
-    await wrapper.find('[data-testid="couple-question-history-btn"]').trigger('click')
-    await flushPromises()
-    expect(questionApi.questionHistory).toHaveBeenCalledWith(14)
-    expect(wrapper.find('[data-testid="couple-question-history-count"]').text()).toContain('答过 3 天')
-    expect(wrapper.find('[data-testid="couple-question-history-partner-2026-10-03"]').text()).toContain('海街日记')
-    const row2 = wrapper.find('[data-testid="couple-question-history-item-2026-10-02"]')
-    expect(row2.text()).toContain('还没互看')
-    expect(row2.text()).toContain('我：没答')
-    expect(wrapper.find('[data-testid="couple-question-history-partner-2026-10-02"]').exists()).toBe(false)
-    // 只有我答了、TA 没答：这一行同样不许冒出一句 TA 的话
-    const row1 = wrapper.find('[data-testid="couple-question-history-item-2026-10-01"]')
-    expect(row1.text()).toContain('我：TA 吧')
-    expect(wrapper.find('[data-testid="couple-question-history-partner-2026-10-01"]').exists()).toBe(false)
-    expect(row1.text()).toContain('还没互看')
-  })
-
-  it('questionToday 挂了静默降级，历史接口挂了只把后端原文说一句', async () => {
+  it('questionToday 挂了静默降级，不往外抛', async () => {
     establish()
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(questionApi.questionToday).mockRejectedValue(new Error('请求失败（HTTP 500）'))
@@ -428,18 +395,6 @@ describe('CoupleQuestion 每日一问', () => {
     expect(wrapper.find('[data-testid="couple-question"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="couple-question-text"]').exists()).toBe(false)
     expect(useCoupleStore().question).toBeNull()
-    // 今日那一问都没拉到，回看入口也就不铺出来，不会顺手多发一次请求
-    expect(wrapper.find('[data-testid="couple-question-history-btn"]').exists()).toBe(false)
-    expect(questionApi.questionHistory).not.toHaveBeenCalled()
-
-    vi.mocked(questionApi.questionToday).mockResolvedValue(questionToday())
-    vi.mocked(questionApi.questionHistory).mockRejectedValue(new Error('历史还没准备好'))
-    const second = mountCard(CoupleQuestion)
-    await flushPromises()
-    await second.find('[data-testid="couple-question-history-btn"]').trigger('click')
-    await flushPromises()
-    expect(ElMessage.error).toHaveBeenCalledWith('历史还没准备好')
-    expect(second.find('[data-testid="couple-question-history"]').exists()).toBe(false)
     expect(spy).not.toHaveBeenCalled()
     spy.mockRestore()
   })
@@ -479,8 +434,7 @@ describe('CoupleWish 愿望清单', () => {
     expect(wrapper.find('[data-testid="couple-wish-prepare-w-mine"]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('已准备')
     expect(wrapper.find('[data-testid="couple-wish-w-mine"]').text()).toContain('想去海边')
-    // 记录人不是自己，所以改说明/划掉也不给；只剩折叠钮 + 「我收到啦」两颗
-    expect(wrapper.find('[data-testid="couple-wish-note-btn-w-mine"]').exists()).toBe(false)
+    // 记录人不是自己，所以划掉也不给；只剩折叠钮 + 「我收到啦」两颗
     expect(wrapper.find('[data-testid="couple-wish-remove-w-mine"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="couple-wish-fulfill-w-mine"]').exists()).toBe(true)
     // 这一行上只有一颗「我收到啦」，没有第二颗能暴露惊喜的钮
@@ -584,7 +538,7 @@ describe('CoupleWish 愿望清单', () => {
     expect(wishApi.wishAdd).toHaveBeenLastCalledWith('陪 TA 逛一次展', '周六下午', 'bob')
   })
 
-  it('改说明与划掉只给记录人；说明清空传 null', async () => {
+  it('划掉只给记录人', async () => {
     establish()
     // 后端每个写口都原样返回整份看板，这里回同一份，行才不会一改就消失
     const withRows = wishBoard({
@@ -595,20 +549,11 @@ describe('CoupleWish 愿望清单', () => {
       openCount: 2,
     })
     vi.mocked(wishApi.wishBoard).mockResolvedValue(withRows)
-    vi.mocked(wishApi.wishNote).mockResolvedValue(withRows)
     vi.mocked(wishApi.wishRemove).mockResolvedValue(withRows)
     const wrapper = mountCard(CoupleWish)
     await flushPromises()
-    expect(wrapper.find('[data-testid="couple-wish-note-btn-w-mine-note"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="couple-wish-remove-w-mine-note"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="couple-wish-note-btn-w-theirs"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="couple-wish-remove-w-theirs"]').exists()).toBe(false)
-
-    await wrapper.find('[data-testid="couple-wish-note-btn-w-mine-note"]').trigger('click')
-    await wrapper.find('[data-testid="couple-wish-note-edit-input"]').setValue('')
-    await wrapper.find('[data-testid="couple-wish-note-edit-submit"]').trigger('click')
-    await flushPromises()
-    expect(wishApi.wishNote).toHaveBeenCalledWith('w-mine-note', null)
 
     await wrapper.find('[data-testid="couple-wish-remove-w-mine-note"]').trigger('click')
     await flushPromises()

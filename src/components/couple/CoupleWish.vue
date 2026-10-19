@@ -23,8 +23,6 @@ const title = ref('')
 const note = ref('')
 const pickedOwner = ref('')
 const sending = ref(false)
-const noteId = ref('')
-const noteText = ref('')
 
 const myName = computed(() => auth.username)
 const partnerUsername = computed(() => couple.space?.partner?.username ?? '')
@@ -49,7 +47,7 @@ async function refresh() {
   }
 }
 
-/** 六个写口共用：成功就把后端返回的整份看板换掉，失败直透后端中文 */
+/** 五个写口共用：成功就把后端返回的整份看板换掉，失败直透后端中文 */
 async function write(call: () => Promise<CoupleWishBoardVO>, done: string, fallback: string) {
   try {
     board.value = await call()
@@ -105,26 +103,6 @@ function onRemove(id: string) {
   void write(() => wishApi.wishRemove(id), '🧹 从清单上划掉了', '删不掉这条')
 }
 
-function startNote(id: string, current: string | null) {
-  noteId.value = id
-  noteText.value = current ?? ''
-}
-
-function onSaveNote() {
-  const v = board.value
-  if (!v) {
-    return
-  }
-  const n = noteText.value.trim()
-  if (n.length > v.noteMax) {
-    ElMessage.warning(`补充说明最多 ${v.noteMax} 字`)
-    return
-  }
-  const id = noteId.value
-  noteId.value = ''
-  void write(() => wishApi.wishNote(id, n || null), '📝 说明改好了', '说明没存上')
-}
-
 onMounted(() => {
   if (couple.established) {
     void refresh()
@@ -138,9 +116,7 @@ onMounted(() => {
       🌟 愿望清单 <span class="sub">想要的先记下，对方偷偷备</span>
     </template>
 
-    <p v-if="board" class="counts" data-testid="couple-wish-count">
-      还挂着 {{ board.openCount }} 条 · 上限 {{ board.limit }} 条 · 标题 {{ board.titleMax }} 字 · 说明 {{ board.noteMax }} 字
-    </p>
+    <p v-if="board" class="counts" data-testid="couple-wish-count">还挂着 {{ board.openCount }} 条</p>
 
     <section v-if="board" class="group">
       <h5 class="line-title">🌈 还挂着的</h5>
@@ -159,10 +135,6 @@ onMounted(() => {
             <el-button v-if="w.canFulfillFlag" link type="primary" size="small"
                        :data-testid="`couple-wish-fulfill-${w.id}`" @click="onFulfill(w.id)">
               我收到啦 ✅
-            </el-button>
-            <el-button v-if="w.creatorUser === myName" link size="small"
-                       :data-testid="`couple-wish-note-btn-${w.id}`" @click="startNote(w.id, w.note)">
-              改说明
             </el-button>
             <el-button v-if="w.creatorUser === myName" link type="danger" size="small"
                        :data-testid="`couple-wish-remove-${w.id}`" @click="onRemove(w.id)">
@@ -213,12 +185,6 @@ onMounted(() => {
       <el-button type="primary" :loading="sending" data-testid="couple-wish-submit" @click="onAdd">
         记一条 🌟
       </el-button>
-    </div>
-
-    <div v-if="noteId" class="form">
-      <el-input v-model="noteText" :maxlength="board?.noteMax" placeholder="把这条说清楚一点"
-                data-testid="couple-wish-note-edit-input" @keyup.enter="onSaveNote" />
-      <el-button data-testid="couple-wish-note-edit-submit" @click="onSaveNote">存好 ✍️</el-button>
     </div>
   </CoupleCollapsible>
 </template>
