@@ -1,9 +1,9 @@
 # API 层
 
 > 本页回答：`src/api/` 有哪些文件与分组对象、每个对象的方法与路径、与后端 `/api/couple/*` 路由的对应关系。
-> **2026-10-20 删除通知中心与运营看板后**：`couple.ts` 收敛到 **22 个方法 / 4 个分组对象 / 105 行**，与后端 22 个存活端点一一对齐
+> **2026-10-20 四轮裁剪后**：`couple.ts` 收敛到 **20 个方法 / 4 个分组对象 / 99 行**，与后端 20 个存活端点一一对齐
 > （判据见 `are-chat/docs/adr/0010-couple-trim-to-v8-features.md`；`tests/unit/couple.spec.ts` 的「api 契约守卫」
-> 用例逐方法断言 mock 工厂覆盖 + 总数为 22）。
+> 用例逐方法断言 mock 工厂覆盖 + 总数为 20）。
 
 ## 非 couple 分组（未动）
 
@@ -17,14 +17,14 @@
 | `files.ts` | `filesApi` | `/api/files` |
 | `system.ts` | `presenceApi` / `systemApi` / `announcementApi` | `/api/presence` `/api/system` `/api/announcements` |
 
-## couple 分组对象（4 个 / 22 个方法）
+## couple 分组对象（4 个 / 20 个方法）
 
 | 导出对象 | base 路径 | 方法数 | 职责 |
 |---|---|---:|---|
 | `coupleApi` | `/api/couple` | 10 | 地基：总览/邀请建立/纪念日/空间个性化/心动值/恋爱徽章 |
 | `streakApi` | `/api/couple/streak` | 2 | 卡 `couple-streak` 连续互动打卡 + 六档解锁 |
-| `questionApi` | `/api/couple/question` | 3 | 卡 `couple-question` 每日一问（它同时是打卡的触发源） |
-| `wishApi` | `/api/couple/wish` | 7 | 卡 `couple-wish` 愿望清单 |
+| `questionApi` | `/api/couple/question` | 2 | 卡 `couple-question` 每日一问（它同时是打卡的触发源） |
+| `wishApi` | `/api/couple/wish` | 6 | 卡 `couple-wish` 愿望清单 |
 
 **已随裁剪整体下线、不得再写回**：`pinApi`（F207 常用收藏）、`memoryApi`（百日隐藏回顾页）、`diningApi`（饭桌）、`ceremonyApi`（愿望券本）、
 `factoryApi`（家务轮盘）、`echoApi`（好事簿）、`questApi`（加班留灯）、`catchApi`（安全词复盘），
@@ -52,18 +52,17 @@
 
 | 方法 | HTTP | 路径 | 说明 |
 |---|---|---|---|
-| `streakBoard` | GET | `/api/couple/streak/board` | 打卡看板：15 个字段一次拉齐（tiers 六档 / strip 近 21 格 / `makeupWindowDays`/`makeupLeftThisMonth`/`canMakeup`）；**没有 `makeupCost`/`balance`**——积分台账已删，补签不花钱 |
+| `streakBoard` | GET | `/api/couple/streak/board` | 打卡看板：14 个字段一次拉齐（tiers 六档 / strip 近 21 格 / `makeupWindowDays`/`makeupLeftThisMonth`/`canMakeup`）；**没有 `makeupCost`/`balance`**——积分台账已删，补签不花钱 |
 | `streakMakeup` | POST | `/api/couple/streak/makeup` | 补签某天（body `{day}`），返回整份看板；闸门（7 天窗口、本月 3 次、今天不许补）全由后端 `canMakeup` 位算好 |
 
-#### `questionApi`（3）
+#### `questionApi`（2）
 
 | 方法 | HTTP | 路径 | 说明 |
 |---|---|---|---|
 | `questionToday` | GET | `/api/couple/question/today` | 今天这一问 + 我的作答 + 对方答案（`bothAnswered` 才下发） |
 | `questionAnswer` | POST | `/api/couple/question/answer` | 交卷/改写（≤`answerMax` 字后端 400），返回整份 TodayVO；**双方都答完时后端在这里触发打卡** |
-| `questionHistory` | GET | `/api/couple/question/history?days={days}` | 回看最近 N 天（1-90 默认 14） |
 
-#### `wishApi`（7）
+#### `wishApi`（6）
 
 | 方法 | HTTP | 路径 | 说明 |
 |---|---|---|---|
@@ -72,7 +71,6 @@
 | `wishPrepare` | POST | `/api/couple/wish/prepare` | 偷偷标「已准备」（只有对方能标，对许愿人保密，不推任何事件） |
 | `wishUnprepare` | POST | `/api/couple/wish/unprepare` | 撤回「已准备」 |
 | `wishFulfill` | POST | `/api/couple/wish/fulfill` | 兑现（只有被许的那位能点） |
-| `wishNote` | POST | `/api/couple/wish/note` | 改备注（note 可空串=清掉） |
 | `wishRemove` | POST | `/api/couple/wish/remove` | 划掉一条 |
 
 ## 约定

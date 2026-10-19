@@ -38,7 +38,7 @@
 | `layouts/MainLayout.vue` | 登录后壳：侧栏导航、WS 状态、调用 `im.init`/`couple.init`，登出时 `reset` |
 | `router/index.ts` | 路由表 + 守卫（requiresAuth / requiresAdmin）+ 页签标题 |
 | `components/couple/` | 情侣空间 6 个组件 = 3 张卡（Question/Streak/Wish）+ `CoupleSetup`/`CoupleProfile` + `CoupleCollapsible` 卡壳；另 `coupleCards.registry.ts` 是 3 卡索引表（`?card=` 深链与 e2e-live 巡检用，不再服务搜索/收藏——那两个功能已随 ADR-0010 下线；清单见 [页面与路由](pages-routing.md)） |
-| `components/im/` | 聊天组件 7 个：`ImAvatar`/`MessageBubble`/`EmojiPicker`/`ImageLightbox`/`NewMessageToast`/`ProfileDialog`/`PwaInstallGuide` |
+| `components/im/` | 聊天组件 6 个：`ImAvatar`/`MessageBubble`/`EmojiPicker`/`ImageLightbox`/`ProfileDialog`/`PwaInstallGuide` |
 | `types/index.ts` | 全部 TS 类型（1549 行，情侣 VO 在专属区块；裁剪删掉 50 个作废类型） |
 | `utils/` | `effects.ts`（彩蛋指令）、`format.ts`、`imFormat.ts`、`sound.ts`、`notify.ts`、`pwa.ts`、`image.ts`、`settings.ts`、`theme.ts`、`favicon.ts`、`draggable-message-box.ts` |
 | `constants.ts` / `main.ts` / `style.css` / `App.vue` | 常量（如 `CURRENT_USER_KEY`、`APP_NAME`）与入口全局样式 |
@@ -59,7 +59,7 @@
 - `api/auth.ts` → `authApi`（登录/短信/注册申请/登出/me/改密/注销）、`adminApi`（审批/公告/待办数）
 - `api/im.ts` → `friendApi`、`messageApi`、`profileApi`、`presenceApi`
 - `api/files.ts` → `filesApi`；`api/system.ts` → `presenceApi`/`systemApi`/`announcementApi`
-- `api/couple.ts`（105 行）→ **4 个并列对象**：**`coupleApi`**（10 个方法，空间地基：总览/邀请/纪念日/个性化/心动值/徽章）、**`streakApi`**（2，连续互动打卡）、**`questionApi`**（3，每日一问）、**`wishApi`**（7，愿望清单），合计 22 个方法与后端存活端点一一对应
+- `api/couple.ts`（99 行）→ **4 个并列对象**：**`coupleApi`**（10 个方法，空间地基：总览/邀请/纪念日/个性化/心动值/徽章）、**`streakApi`**（2，连续互动打卡）、**`questionApi`**（2，每日一问）、**`wishApi`**（6，愿望清单），合计 20 个方法与后端存活端点一一对应
 
 新接口按批次归属加进对应对象；独立功能域倾向新开分组对象而非继续膨胀 `coupleApi`。全量方法表见 [API 层](api-layer.md)。
 
