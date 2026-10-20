@@ -318,7 +318,10 @@
     <el-dialog v-model="forwardVisible" title="转发消息" width="360px" draggable>
       <div class="forward-body">
         <p class="forward-brief">{{ forwardBrief }}</p>
-        <div class="forward-list">
+        <p v-if="forwardCandidates.length === 0" class="forward-empty" data-testid="forward-empty">
+          {{ forwardEmptyHint }}
+        </p>
+        <div v-else class="forward-list">
           <label
             v-for="friend in forwardCandidates"
             :key="friend.id"
@@ -898,6 +901,13 @@ async function onReact(emoji: string, message: ImMessage) {
 
 const forwardCandidates = computed(() => im.friends.filter((f) => f.username !== im.activePeer))
 
+/** 候选为空的两种成因要分开说：一个好友都没有，还是只有正在聊的这一个 */
+const forwardEmptyHint = computed(() =>
+  im.friends.length === 0
+    ? '还没有好友：先到「通讯录」添加好友，再回来转发'
+    : '唯一的好友就是当前聊天对象，没有可转发的人',
+)
+
 const forwardBrief = computed(() => {
   const m = forwardFrom.value
   if (!m) {
@@ -1265,6 +1275,63 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* ---- 33 转发弹窗 ---- */
+.forward-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.forward-brief {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--im-text-2, #51565f);
+  background: var(--im-center-bg, rgba(23, 68, 116, 0.05));
+  border: 1px solid var(--im-border, #e6e8eb);
+  border-radius: 8px;
+  max-height: 64px;
+  overflow: hidden;
+  word-break: break-all;
+}
+.forward-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.forward-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.forward-item:hover {
+  background: var(--im-hover, #f2f3f5);
+}
+.forward-item.picked {
+  background: var(--im-active, #eef3fe);
+  border-left-color: var(--xx-accent, #0ea5e9);
+}
+.forward-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.forward-empty {
+  margin: 0;
+  padding: 18px 10px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--im-muted, #8f959e);
 }
 /* ---- 83 拖拽遮罩 ---- */
 .drop-overlay {
