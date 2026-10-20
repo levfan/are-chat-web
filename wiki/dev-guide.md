@@ -24,18 +24,17 @@
 完整规则以 `agents.md`（根目录）与两个专项 skill 为准，此处只列骨架：
 
 1. **开工**：必读 `.agents/skills/are-chat-web-map/SKILL.md`（新功能标准链路/惯例/撞名备忘）；本 wiki 提供全景背景（见 [Home](Home.md)）。
-2. **编码**：新 VO 加 `Couple`+域前缀并先 grep `types`/`api` 防撞名；**不改默认页签 `today`**；types 改动同步测试 mock（见 [测试](testing.md)）。
+2. **编码**：新 VO 加 `Couple`+域前缀并先 grep `types`/`api` 防撞名；types 改动同步测试 mock（见 [测试](testing.md)）。
 3. **构建门禁**：提交前 `pnpm build` 必过；涉逻辑改动 `pnpm test` 全绿。
 4. **提交**：按改动性质分组，一 commit 一性质（依赖/组件页面/样式/文档）；信息格式 `type(scope): 中文描述`；每完成一个功能必须产生 commit。→ 细节见 `.agents/skills/git-commit/SKILL.md`
 5. **推送**：commit → `git pull --no-rebase` → push；失败保留本地 commit 并报告，**不 force push**。
 6. **版本**：`package.json` version 是**唯一版本源**，任何代码/文案/测试禁止写死版本号；agent 按判级参考自主升版（alpha → rc → stable 阶梯）、独立 commit、不建 tag；**用户说「发版/发布版本」= 无条件立即执行完整发版流程**（判级→改 version→build→独立 commit→pull→push，不反问不拖延）。→ 细节见 `.agents/skills/version-release/SKILL.md`
-7. **收尾**：新增/删除组件、页签、接口、WS 事件 → 同步更新 map skill 对应小节，与功能同批提交。
+7. **收尾**：新增/删除组件、页面结构、接口、WS 事件 → 同步更新 map skill 对应小节，与功能同批提交。
 
 ## 产品红线（用户长期约束）
 
 - 情侣功能**情绪价值优先**：一切功能先问"甜不甜、有没有被在乎的感觉"。
 - **不做照片/视频上传类功能**（对服务器部署资源要求高，长期禁止）。
-- **默认页签 `today` 不改**（单测依赖，见 [测试](testing.md)）。
 - **新 VO 必须加 `Couple` 域前缀防撞名**（历史撞名处理备忘详见 map skill 第三节，如 `CoupleReunionLetterVO`/`CoupleLoveWeatherVO`/`coach*`/`spark*` 前缀的由来）。
 - 交互文案：可爱口语化 + emoji；错误提示直接透出后端 `e.message`（后端文案已是中文人话）。
 

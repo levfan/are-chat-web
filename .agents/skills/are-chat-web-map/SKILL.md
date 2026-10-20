@@ -14,7 +14,7 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 - 版本号唯一来源 `package.json` 的 version（alpha → rc → stable 阶梯，升级独立 commit，规范见 `.agents/skills/version-release/SKILL.md`）
 - 站名唯一来源 `src/constants.ts` 的 `APP_NAME`（天枢，代号 `APP_CODENAME` = DUBHE）；改名只动这一处 + `index.html`/`public/manifest.webmanifest` 三处静态文案
 - 视觉基调：**全站科技冷色**（电光青 `#0ea5e9` + 深空蓝侧栏 `#0a1524`，暗色 `#22d3ee` / `#070d18`），**只有情侣空间保留暖色**——`CoupleView` 根元素挂 `.couple-scope`，`style.css` 里那一层把 `--im-*` 与 `--el-*` 整套覆盖回暖色。新组件默认吃令牌，别在 `.vue` 里硬编码颜色
-- 规模快照（2026-10-20 新增经期记录、亲密记录与亲密日历后实测）：5 个主页面 / CoupleView **2 个页签**（today 今天、wish 愿望清单）/ 情侣组件 **9 个 `.vue`**（6 张卡 + CoupleSetup + CoupleProfile + CoupleCollapsible 卡壳）+ 注册表 **6 条卡** / `api/couple.ts` **28 个方法·7 个 api 组·149 行** / `types/index.ts` 1608 行 / `stores/couple.ts` **281 行** / `utils/coupleVisual.ts`（解锁门禁与专属贴纸生成，纯函数可单测）与 `utils/coupleRecordBus.ts`（记录卡→日历卡的本页刷新信号）/ 单测基线 **187 用例·12 个文件**（`couple.spec.ts` 54 条含「api 契约守卫」；`couple-v8-cards.spec.ts` 29 条覆盖三张老卡；`couple-calendar.spec.ts` 15 条覆盖日历卡；`couple-period.spec.ts` 11 条覆盖经期卡；`couple-intimate.spec.ts` 11 条覆盖亲密卡；`couple-unlocks.spec.ts` 18 条覆盖视觉解锁）；后端配套见 are-chat-map（7 情侣 Controller / 28 情侣端点 / 8 张 couple_* 表，其中 `couple_notify` 已无代码 / 437 用例基线）
+- 规模快照（2026-10-20 三轮裁剪后实测，用户指令「保留在一起天数、纪念日、美柚app上的日历记录，其它功能都不要了」）：5 个主页面 / CoupleView **一页两屏、不分页签**（头部卡「在一起天数 + 纪念日 + 解除」+ 一张亲密日历，中间只夹里程碑横幅）/ 情侣组件 **3 个 `.vue`**（CoupleCalendar + CoupleSetup + CoupleCollapsible 卡壳；卡索引表 `coupleCards.registry.ts` 只剩一张卡、失去对象已删）/ `api/couple.ts` **14 个方法·4 个 api 组·74 行** / `types/index.ts` 1420 行 / `stores/couple.ts` **138 行**（只剩总览与邀请那棵树）/ `utils/coupleVisual.ts`（打卡档位驱动的聊天侧情侣特效）与 `utils/coupleRecordBus.ts`（记录卡→日历卡的本页刷新信号）都已删 / 单测基线 **92 用例·8 个文件**（`couple.spec.ts` 16 条含「api 契约守卫」，断言 4 个分组 / 14 个方法 / 14 条路径；`couple-calendar.spec.ts` 27 条锁日历卡的排版与三个记录入口；`couple-v8-cards.spec.ts`、`couple-unlocks.spec.ts`、`couple-period.spec.ts`、`couple-intimate.spec.ts` 随所测功能删除）；后端配套见 are-chat-map（同一轮裁剪，端点与表数量以后端仓库的地图为准）
 
 ## 二、目录地图与关键文件
 
@@ -30,40 +30,40 @@ are-chat-web/
 │   ├── layouts/MainLayout.vue        # 登录后壳：侧栏 + 绑定 couple store init 的 WS 事件
 │   ├── views/                        # 5 页：LoginView / ChatView / ContactsView / CoupleView / AdminView
 │   ├── components/
-│   │   ├── couple/                   # ★ 情侣空间 8 个 .vue + 注册表（5 张卡 + Setup/Profile/Collapsible，页签树见第三节）
-│   │   │   ├── CoupleCollapsible.vue # F205 折叠包装组件（新分区卡必须使用）
-│   │   │   └── coupleCards.registry.ts # 卡注册表：key=卡根 data-testid（?card= 深链与 e2e-live 巡检依赖；搜索/收藏已随 ADR-0010 下线）
+│   │   ├── couple/                   # ★ 情侣空间 3 个 .vue（CoupleCalendar 一张卡 + Setup + Collapsible，页面结构见第三节）
+│   │   │   ├── CoupleCalendar.vue    # 亲密日历：唯一的功能卡，也是经期/亲密记录的唯一入口（月度读口 + 五个写口）
+│   │   │   └── CoupleCollapsible.vue # F205 折叠包装组件（新分区卡必须使用）
 │   │   └── im/                       # 聊天组件 5 个（消息流/输入框/头像等；GlobalSearchPanel、NewMessageToast、PwaInstallGuide 已删）
-│   ├── api/                          # auth.ts / couple.ts(149 行) / im.ts / files.ts / system.ts / http.ts(封装层)
-│   ├── stores/                       # auth / im(WS 宿主) / couple(281 行：总览与邀请·心动值·打卡解锁·每日一问)
-│   ├── types/index.ts                # 全部 TS 类型按域分节（当前 1608 行；裁剪删 50 个作废类型，历史孤儿约 100 个未动）
-│   ├── utils/                        # effects.ts(彩蛋指令)、format.ts/imFormat.ts、sound.ts、notify.ts、settings.ts、theme.ts、coupleVisual.ts(解锁门禁+贴纸) 等
+│   ├── api/                          # auth.ts / couple.ts(74 行·4 组·14 法) / im.ts / files.ts / system.ts / http.ts(封装层)
+│   ├── stores/                       # auth / im(WS 宿主) / couple(138 行：只剩总览与邀请那棵树)
+│   ├── types/index.ts                # 全部 TS 类型按域分节（当前 1420 行；三轮裁剪又删 10 个作废情侣 VO，历史孤儿约 100 个未动）
+│   ├── utils/                        # effects.ts(彩蛋指令)、format.ts/imFormat.ts、sound.ts、notify.ts、settings.ts、theme.ts 等（coupleVisual.ts / coupleRecordBus.ts 已删）
 │   └── constants.ts                  # 全局常量
-├── tests/unit/                       # 12 个文件（当前基线 187 用例；整页挂载用例成本高，vite.config.ts 已把 testTimeout 提到 20s）
+├── tests/unit/                       # 8 个文件（当前基线 92 用例；整页挂载用例成本高，vite.config.ts 已把 testTimeout 提到 20s）
 ├── AGENTS.md / docs/ / wiki/         # 仓库约束与文档（后端配套地图见 are-chat 仓库 are-chat-map skill）
 ```
 
-- **API 分组对象**（新增经期记录、亲密记录与亲密日历后 `src/api/couple.ts` 共 7 组）：**`coupleApi`**（10 法：总览/邀请四连/纪念日/`updateProfile`(slogan·theme·petName 三合一)/intimacy/relationshipOf）/ **`streakApi`**（连续打卡与六档解锁，2 法）/ **`questionApi`**（每日一问，2 法）/ **`wishApi`**（愿望清单，6 法）/ **`periodApi`**（经期记录，4 法：`periodBoard`/`periodAdd`/`periodEnd`/`periodRemove`）/ **`intimateApi`**（亲密记录，3 法：`intimateBoard`/`intimateAdd`/`intimateRemove`）/ **`calendarApi`**（亲密日历，1 法：`calendarMonth`，一个月度只读口把经期覆盖日与亲密标记一次给齐）。**判据**：这 28 个方法与后端 `@*Mapping` 抽出的 28 个存活情侣端点一一对上，新增方法时照此对齐，别把已下线端点再写回来（守卫在 `couple.spec.ts`「api 契约守卫」，现读源码断言总数与死路径）。
+- **API 分组对象**（三轮裁剪后 `src/api/couple.ts` 共 4 组）：**`coupleApi`**（8 法：`overview`/邀请四连 `invite`·`acceptInvite`·`rejectInvite`·`cancelInvite`/`setAnniversary`/`dissolve` + 旁支读取 `relationshipOf`）/ **`periodApi`**（经期写口，3 法：`periodAdd`/`periodEnd`/`periodRemove`）/ **`intimateApi`**（亲密写口，2 法：`intimateAdd`/`intimateRemove`）/ **`calendarApi`**（亲密日历，1 法：`calendarMonth`，一个月度读口把经期覆盖日、区间、周期统计与亲密标记一次给齐，也是唯一的记录展示口）。**判据**：这 14 个方法与后端 `@*Mapping` 抽出的 14 个存活情侣端点一一对上，新增方法时照此对齐，别把已下线端点（`streakApi`/`questionApi`/`wishApi` 三组、`coupleApi.updateProfile`/`coupleApi.intimacy`、`periodApi.periodBoard`/`intimateApi.intimateBoard`）再写回来（守卫在 `couple.spec.ts`「api 契约守卫」，现读源码断言分组数、方法总数、路径总数与死路径段）。
 - **端口与联调**：前端 dev 5173 → 代理转发后端 8080；登录态走 Cookie(HttpSession)，`http.ts` 统一 `withCredentials`；WS 会话 `/ws/chat/{name}` 由 im store 维护，情侣事件经 `arechat:couple` 自定义事件转发。
-- **数据流（情侣空间两条路）**：① store 域——`stores/couple.ts` 四域（总览与邀请、心动值、**打卡解锁 streak**、**每日一问 question**），头部/**ChatView 的解锁外观**读它；② 组件自持域——**Wish**（看板 + 五个写方法整份替换）、**Period**（看板 + 三个写方法整份替换，后端不推事件）、**Intimate**（看板 + 两个写方法整份替换，后端不推事件）与 **Calendar**（一个月度只读口，翻页只换 `month` 重取，不写库也不推事件）在组件内自持，不进 store。**streak 与 question 必须进 store**：ChatView 的气泡/昵称光效/挂件/贴纸要读解锁态（`tierUnlocked(key)`），卡片自己持有就变成两份真相；`loadStreak`/`loadQuestion` 各带 in-flight 去重。新卡默认照「组件自持」写，只有需要被别的页面读到的状态才上 store。**日历是个反例的修正**：它需要经期的覆盖日，但让前端自己去拉 `/period/board` 会让同页出现两次请求与两份真相，所以改成后端一份月度读模型（`calendarApi`），而不是把 period 域搬进 store。
+- **数据流（情侣空间两条路）**：① store 域——`stores/couple.ts` 只剩**总览与邀请**这一棵树（`overview` + 派生 `space`/`established`/`incomingInvites`/`outgoingInvites`），MainLayout 登录后拉、CoupleView 头部与侧栏角标读它；② 组件自持域——**Calendar**（一个月度读口 `calendarMonth`，翻页只换 `month` 重取；五个写口——`periodApi` 三个 + `intimateApi` 两个——都不回数据，写完按当前可见月重拉这一次读口）在组件内自持，不进 store、不接 WS。心动值、打卡解锁 streak、每日一问 question、愿望清单 wish 这几个域（前两个曾进 store，因为 ChatView 的解锁外观要读 `tierUnlocked(key)`）连同 `loadStreak`/`loadQuestion` 的 in-flight 去重一起随三轮裁剪整域删除，没留空壳——后端既没有端点也没有 WS 生产者，留一个空 ref 只会让人以为还有数据。新卡默认照「组件自持」写，只有需要被别的页面读到的状态才上 store。**日历是个反例的修正**：它需要经期的覆盖日，但让前端自己去拉 `/period/board` 会让同页出现两次请求与两份真相，所以改成后端一份月度读模型（`calendarApi`），而不是把 period 域搬进 store；两张记录卡并进日历卡后，页内刷新信号 `coupleRecordBus.ts` 也一起删了。
 - **命令**：开发 `pnpm dev`；测试 `pnpm test`（vitest run）；构建门禁 `pnpm build`（vite build + vue-tsc --noEmit，提交前必过）。
 
-## 三、情侣空间前端全景（2026-10-20 新增经期记录与亲密记录后的现役口径）
+## 三、情侣空间前端全景（2026-10-20 三轮裁剪后的现役口径）
 
-`views/CoupleView.vue` 用 el-tabs 组织 **2 个页签**（`name` 即路由 `?tab=` 白名单成员，`today` 是默认页签且**不 lazy**，`wish` lazy）。
+`views/CoupleView.vue`（269 行）**不再分页签**：`el-tabs` 与 `?tab=` 深链一起撤了，单栏自上而下就两屏——头部卡 + 一张亲密日历卡，中间只在命中里程碑时夹一条横幅。
 
-| 页签 name | 组件 | 内容 |
+| 区块 | 组件 | 内容 |
 |---|---|---|
-| `today` 🫶 今天 | **CoupleQuestion** · **CoupleStreak** · **CoupleCalendar** · **CouplePeriod** · **CoupleIntimate** | **每日一问（今天一题，我答完且 TA 也答完才互看；双方都答完即自动打卡）**／**连续互动打卡（当前·最长·21 格打卡条·一行解锁摘要·补签，没有「点一下打卡」按钮——双方当天都答完每日一问由后端自动确认；补签不花钱，只受 7 天窗口与每月 3 次两道闸门）**／**亲密日历（月历格子：经期覆盖日 🩸、性生活 💞、边缘 ✨、预计下次 🌱，点一天摊开那天的记录与备注；翻页只换 `month` 参数重取；数据只有一个月度只读口 `GET /calendar/month`，经期哪几天算覆盖、预测日全由后端算，前端只排版；不推 WS）**／**姨妈记录（记开始日、补结束日、删错记；平均周期与下次预计全吃后端 `averageCycleDays`/`predictedNextDay`/`daysUntilNext`，前端只显示、不自己数天数；四个接口都不推 WS）**／**亲密记录（记一次边缘/性生活、日期不选未来、备注选填 ≤60；状态行与本月分类计数全吃后端 `lastDay`/`monthCount`/`monthEdgeCount`/`monthSexCount`/`totalCount`，最近 30 条列表截断但统计覆盖全量；三个接口都不推 WS）** |
-| `wish` 🌟 愿望清单 | **CoupleWish** | 想要的先记下，对方可偷偷标「已准备」——许愿人这一侧永远看不到；分组与文案全吃后端下发的位（preparableFlag/canFulfillFlag）；表单只剩标题，备注与许愿对象选择已删 |
+| 头部卡 | `CoupleView.vue` 内联（根 `couple-space`） | 双人头像（`couple-partner-avatar`，挂件与光效已随解锁外观下线）+ 在一起天数（`couple-days`）+ 纪念日行（`couple-anniv-line`，没定时显示「还没定纪念日」）+「纪念日」按钮（`couple-anniv-edit`，弹窗里 `el-date-picker` 只准选今天以前，保存后重拉总览）+「解除关系」（`couple-dissolve`，先过 `ElMessageBox.confirm`）。**F206 搜索框与 F207 收藏 popover、F41 通知铃铛、F47 周年庆横幅、F208 首访提示条、F98 新手引导弹窗都已删**；心动值格（`couple-intimacy-score`）、恋爱称号徽章（`couple-love-title`）、爱称弹窗（`couple-pet-*`）与可编辑宣言区同批下线 |
+| 里程碑横幅 | `CoupleView.vue` 内联 | 只在天数命中 100/200/365/520/666/888/1000/1314/2000 时出现（`couple-milestone-banner`），其余日子不打扰 |
+| 亲密日历 | **CoupleCalendar**（外面套 `CoupleCollapsible` 卡壳，根 `couple-calendar`） | 经期与亲密记录的**唯一入口**：月历按周一开头排，经期覆盖日 🩸、性生活 💞、边缘 ✨、预计下次 🌱 四种图标铺在格子上；点某天就在下面记那天的行为（三个记录按钮：记经期开始 / 记一笔边缘 / 记一次性生活，未来那天全部禁用）、看那天的记录与备注（含「我记的/TA 记的」）、删记错的，补结束日只能记「今天」所以挂在区间行上；摘要行与周期行照后端 `averageCycleDays`/`cycleSampleCount`/`predictedNextDay`/`daysUntilNext`/`intimateTotal` 说，前端不判区间也不数天数；翻页只换 `month` 参数重取；数据只有 `GET /calendar/month` 一个读口，五个写口都不回数据；不推 WS |
+| 未建空间 | **CoupleSetup** | 整页替代，邀请建立流程（这一屏删不掉：没有空间就没有在一起天数） |
 
-头部区（带解锁外观）：双人头像（**21 天起挂联动挂件 `pendant`，取法与聊天侧共用 `utils/coupleVisual` 的 `couplePendant(theme)`，免得同一个人两处不同款**）+ 在一起天数（`couple-days`）+ 心动值与恋爱等级（`couple-intimacy-score`；**30 天起称号另挂 `couple-love-title` 徽章**）+ 爱称（**14 天起带 `.couple-name-glow`，与聊天页共用 style.css 的同一个类**；改爱称走 `PUT /profile` 的 `petName`，空串=清除）+ **7 天起头部有流动背景与角落一棵按解锁档数长高的电子植物（`couple-plant-stage-N`）** + 纪念日弹窗 + 爱称弹窗 + F43 里程碑横幅。**F206 搜索框与 F207 收藏 popover 已删**；**F41 通知铃铛、F47 空间周年庆横幅、F208 页签首访提示条、F98 新手引导弹窗也在 2026-10-20 删除**（WS 提醒仍用右上角 `ElNotification` 弹出）；头部背景底色只读 `space.theme`，主题选择网格已删，`CoupleProfile` 只剩一句可编辑宣言（`ElMessageBox.prompt`）。
+已删文件：`CoupleQuestion.vue`、`CoupleStreak.vue`、`CoupleWish.vue`、`CoupleProfile.vue`、`CouplePeriod.vue`、`CoupleIntimate.vue`，以及卡索引表 `coupleCards.registry.ts`——只剩一张卡，这张表失去对象，`?card=` 深链与 `e2e-live/couple-audit.spec.ts` 的覆盖率核对一起没了对象（该脚本仍 import 它，但 `e2e-live/` 不在 `tsconfig.json` 与 Vitest 的 include 里，`pnpm build`/`pnpm test` 都不会报错）。
 
-注册表 `coupleCards.registry.ts` 现役 **6 条**（`COUPLE_CARDS` = { key, label, tab }），`COUPLE_TAB_LABELS` 两个页签。**加卡先改这张表，否则 e2e-live 巡检与 `?card=` 深链点不到它**。
+WS 事件：`stores/couple.ts` 的 `handleCoupleEvent` 只认 **6 个**——`invite`/`invite-accepted`/`invite-rejected`/`anniversary-updated` 弹提醒并重拉总览、`dissolved` 先 `reset()` 清场再重拉、`anniversary-reminder`（定时任务发的纪念日倒数）只弹提醒不动数据。**其余老推送一律不认识、不发请求、不弹提醒，别加兜底分支**：`streak-*`/`question-*`/`wish-*`/`space-themed`/`pet-name-changed` 对应的功能已经下线，接回来等于把死功能重新接上电。**经期与亲密记录的每个接口都不推事件**（隐私）；日历卡也不接 WS——它自己就是写口，写完直接重拉当月，原先两张记录卡之间的页内信号 `arechat:couple-record-changed` 随 `utils/coupleRecordBus.ts` 一起删除。
 
-WS 事件：现役 **15 个**（后端 `pushCoupleEvent*` 抽取），`stores/couple.ts` 的 `handleCoupleEvent` 按族处理：建立流程 3 个与 `dissolved`/`anniversary-updated`/`space-themed`/`pet-name-changed` 重拉总览、`anniversary-reminder` 只弹提醒、`streak-*` 刷看板+心动值、`question-*` 刷今日一问、`wish-*` 只弹提醒（看板组件自持）。**不认识的旧事件一律忽略，别加兜底分支**。**后端刻意没有 `wish-prepared`**：偷偷标记「已准备」不推任何事件，前端也不许自己从 `preparedAt` 反推出来。**经期与亲密记录同理：两组端点的每个接口都不推事件，卡片只在挂载时拉一次 board，写完用返回的整份看板替换。** 日历卡也不接 WS：两张记录卡写成功后派发页内自定义事件 `arechat:couple-record-changed`（`utils/coupleRecordBus.ts`），日历监听它重拉当月——私密记录不出页面，但同一页的格子得跟着亮。
-
-聊天页现役口径（2026-10-20 五轮）：**消息收藏/全局搜索（Ctrl+K）/快捷短语/字数统计/好友分组标签/会话筛选条/一键全部已读/会话菜单里的资料与备注入口/聊天背景/聊天字号/拍一拍自定义后缀/拍一拍发送入口/浮动消息卡片/移动端 PWA 安装横幅已删**（历史 poke 消息仍按灰字展示），保留转发/编辑/撤回/表态/会话内搜索/文件发送/浏览器系统通知；联系人页不再有快捷账号与逐行「发消息」钮（整行可点），置顶/免打扰仍走右键菜单；设置弹窗只剩皮肤、发送键、免打扰时段；后台只保留审批/用户/公告三个页签（审计日志与情侣运营看板已删）。
+聊天页现役口径（2026-10-20 五轮）：**消息收藏/全局搜索（Ctrl+K）/快捷短语/字数统计/好友分组标签/会话筛选条/一键全部已读/会话菜单里的资料与备注入口/聊天背景/聊天字号/拍一拍自定义后缀/拍一拍发送入口/浮动消息卡片/移动端 PWA 安装横幅已删**（历史 poke 消息仍按灰字展示），**情侣侧的解锁外观（专属气泡/昵称光效/头像挂件/专属贴纸包）也在三轮裁剪整段下线，ChatView 不再 import couple store**；保留转发/编辑/撤回/表态/会话内搜索/文件发送/浏览器系统通知；联系人页不再有快捷账号与逐行「发消息」钮（整行可点），置顶/免打扰仍走右键菜单；设置弹窗只剩皮肤、发送键、免打扰时段；后台只保留审批/用户/公告三个页签（审计日志与情侣运营看板已删）。
 
 ## 四、惯例与红线
 
@@ -71,18 +71,17 @@ WS 事件：现役 **15 个**（后端 `pushCoupleEvent*` 抽取），`stores/co
 - 交互文案：**情侣空间内**可爱口语化 + emoji；聊天/通讯录/后台/登录这些非情侣页面一律中性口语，不要再撒情话与爱心（2026-10-20 按用户要求把情侣风收进情侣空间）。错误提示直接 `ElMessage.error(e instanceof Error ? e.message : '兜底文案')`（后端 message 已是中文人话）
 - 样式：组件内 scoped；间距/圆角参考现有组件；颜色一律走 `style.css` 的令牌（`var(--im-*)` / `var(--xx-accent)`，兜底值写冷色），情侣页专属的暖色留在 `src/components/couple/` 内
 - 类型红线：`pnpm build` 会做 vue-tsc 检查——改了 types 里的接口（如给 VO 加字段），**必须同步改 tests/unit/couple.spec.ts 的 mock 工厂**，否则构建失败
-- 测试：`tests/unit/couple.spec.ts` 依赖默认页签 `today`（新增页签不要改默认值）；新组件核心交互应补用例；**动了 `src/api/couple.ts` 的方法集必须同步 mock 工厂**，否则「api 契约守卫」那条用例会红（它现读源码断言 28 个方法与死路径）
+- 测试：基线 **92 用例 / 8 个文件**；`tests/unit/couple.spec.ts` 断言这一页没有页签（`.el-tabs__item` 数量为 0）且七个老 testid 都不在，别把页签或已下线的卡加回来；新组件核心交互应补用例；**动了 `src/api/couple.ts` 的方法集必须同步 mock 工厂**，否则「api 契约守卫」那条用例会红（它现读源码断言 4 个分组、14 个方法、14 条路径与死路径段）
 - HTTP 封装在 `api/http.ts`：`http.get<T>(url)`、`http.postJson<T>(url, body)`、`http.putJson`、`http.delete`
-- **解锁外观一律问 store，不许自己算天数**：唯一入口是 `couple.tierUnlocked(key)`（key 是后端 `StreakTier` 的 wire 值：`bubble`/`background`/`nickname-glow`/`pendant`/`title`/`custom-emoji`，上线即冻结，改了等于没收已解锁用户的外观）。聊天侧的门禁函数、挂件取法与专属贴纸生成都在 `src/utils/coupleVisual.ts`（纯函数，`couple-unlocks.spec.ts` 逐条测过），CoupleView 与 ChatView 共用同一份，不要各写一份哈希。
-- 气泡皮肤走 `.dm-area[data-couple-bubble]` + `style.css` 里的 `--couple-*` 令牌，靠 CSS 自定义属性的元素级优先覆盖用户全局皮肤，**不改 MessageBubble 的 scoped 样式、也不加后端字段**；`prefers-reduced-motion: reduce` 下所有解锁动效必须关闭，且解锁信息不能只靠动效承载。
-- **产品红线**：不做照片/视频上传，所以 50 天「定制 emoji」也只能是纯 unicode 组合（`buildCoupleStickers` 只取昵称码点，输入不可能塞进 URL 或标签；`isStickerText` 会拒含 `http(s):`/`www.`/`data:`/`//`/`<`/`>` 或超 12 码点的值）。
+- **情侣解锁外观整条已下线，别再接回来**：档位来源（连续互动打卡）没了，专属气泡 / 昵称光效 / 头像挂件 / 专属贴纸包这条线随之撤掉——`couple.tierUnlocked(key)` 与 `src/utils/coupleVisual.ts`（门禁函数、挂件取法、贴纸生成）已删除，`style.css` 里那段 `--couple-bubble-*` / `--couple-glow-*` 令牌与 `.dm-area[data-couple-bubble]`、`.couple-name-glow` 规则一并删除，`ImAvatar.vue` 去掉 `pendant` prop、`EmojiPicker.vue` 回到只有通用表情分组、`ChatView.vue` 不再 import couple store。原先「解锁外观一律问 store、不许自己算天数」的口径作废（现在没有任何外观要读档位了）；动效本身仍要在 `prefers-reduced-motion: reduce` 下关闭，且不能只靠动效承载信息。
+- **产品红线**：不做照片/视频上传——所以当年 50 天「定制 emoji」也只能是纯 unicode 组合（`buildCoupleStickers` 只取昵称码点、`isStickerText` 拒含 `http(s):`/`www.`/`data:`/`//`/`<`/`>` 或超 12 码点的值）；这两个函数随贴纸包一起删除，但这条红线长期有效。
 
 ## 五、交付门禁（硬性流程，给 agent 的快速上手路径）
 
 规范全集在专项 skill（git-commit / version-release）里，本节只做流程串联与红线登记，不复述细节：
 
 1. **开工**：必读本 skill；提交拆分/架构师复审清单 → `.agents/skills/git-commit/SKILL.md`；升版/发版判级 → `.agents/skills/version-release/SKILL.md`；对应后端模块地图见 are-chat 仓库的 `are-chat-map` skill
-2. **编码**：走第三节「数据流」；加新卡抄现成结构——自持数据卡照 `CoupleWish.vue`（`CoupleCollapsible` + `onMounted` safeLoad + 写接口返回整份聚合 VO 整体替换），走 store 的卡照 `CoupleStreak.vue`/`CoupleQuestion.vue`；新 VO 类型加 Couple+域前缀并先 grep 防撞名；后端新事件须在前端 `stores/couple.ts` 的 `handleCoupleEvent` 加分支；不改默认页签 `today`
+2. **编码**：走第三节「数据流」；加新卡抄现成结构——自持数据卡照 `CoupleCalendar.vue`（`CoupleCollapsible` 包壳 + `onMounted` safeLoad + 写完按当前可见月重拉那一个读口），只有需要被别的页面读到、或要靠 `arechat:couple` 刷新的状态才进 store（照 `stores/couple.ts` 剩下的总览那棵树）；新 VO 类型加 Couple+域前缀并先 grep 防撞名；后端新事件须在前端 `stores/couple.ts` 的 `handleCoupleEvent` 加分支；CoupleView 已不分页签，别把 `el-tabs` 与 `?tab=` 加回来
 3. **构建**：提交前 `pnpm build`（含 vue-tsc）必过，改了逻辑跑 `pnpm test` 全绿；types 改动同步测试 mock 工厂（红线见第四节）
 4. **提交**：按改动性质分组（依赖/组件页面/样式/文档），一 commit 一性质；信息 `type(scope): 中文描述`
 5. **推送**：commit → `git pull --no-rebase` → push；失败保留本地 commit 并报告，不 force push

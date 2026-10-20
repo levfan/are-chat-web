@@ -37,12 +37,12 @@
 | `views/` | 5 个页面：Login/Chat/Contacts/Couple/Admin |
 | `layouts/MainLayout.vue` | 登录后壳：侧栏导航、WS 状态、调用 `im.init`/`couple.init`，登出时 `reset` |
 | `router/index.ts` | 路由表 + 守卫（requiresAuth / requiresAdmin）+ 页签标题 |
-| `components/couple/` | 情侣空间 9 个组件 = 6 张卡（Question/Streak/Calendar/Period/Intimate/Wish）+ `CoupleSetup`/`CoupleProfile` + `CoupleCollapsible` 卡壳；另 `coupleCards.registry.ts` 是 6 卡索引表（`?card=` 深链与 e2e-live 巡检用，不再服务搜索/收藏——那两个功能已随 ADR-0010 下线；清单见 [页面与路由](pages-routing.md)） |
+| `components/couple/` | 情侣空间 3 个组件 = 1 张卡（`CoupleCalendar`，经期/亲密的唯一记录入口）+ `CoupleSetup`（未建空间整页替代）+ `CoupleCollapsible` 卡壳；原 `coupleCards.registry.ts` 卡索引表只剩一张卡、失去对象，随三轮裁剪删除（`?card=` 深链与 e2e-live 巡检的覆盖率核对一起没了；清单见 [页面与路由](pages-routing.md)） |
 | `components/im/` | 聊天组件 5 个：`ImAvatar`/`MessageBubble`/`EmojiPicker`/`ImageLightbox`/`ProfileDialog` |
-| `types/index.ts` | 全部 TS 类型（1608 行，情侣 VO 在专属区块；裁剪删掉 50 个作废类型） |
-| `utils/` | `effects.ts`（彩蛋指令）、`format.ts`、`imFormat.ts`、`sound.ts`、`notify.ts`、`image.ts`、`settings.ts`、`theme.ts`、`favicon.ts`、`draggable-message-box.ts`、`coupleVisual.ts`（解锁门禁与专属贴纸）、`coupleRecordBus.ts`（记录卡 → 日历卡的本页刷新信号） |
+| `types/index.ts` | 全部 TS 类型（1420 行，情侣 VO 在专属区块；三轮裁剪又删掉心动值/打卡看板/每日一问/愿望清单/主题等 10 个作废类型，`CoupleSpaceVO` 去掉 `slogan`/`theme`、`CouplePartnerVO` 去掉 `petName`） |
+| `utils/` | `effects.ts`（彩蛋指令）、`format.ts`、`imFormat.ts`、`sound.ts`、`notify.ts`、`image.ts`、`settings.ts`、`theme.ts`、`favicon.ts`、`draggable-message-box.ts`；`coupleVisual.ts`（打卡档位驱动的聊天侧解锁外观）与 `coupleRecordBus.ts`（记录卡 → 日历卡的本页刷新信号）都随三轮裁剪删除——前者没了档位来源，后者合并成一张卡后同组件内部不需要跨卡通知 |
 | `constants.ts` / `main.ts` / `style.css` / `App.vue` | 常量（如 `CURRENT_USER_KEY`、`APP_NAME`）与入口全局样式 |
-| `tests/unit/` | 12 个 Vitest spec 文件 |
+| `tests/unit/` | 8 个 Vitest spec 文件（92 用例基线，见 [测试](testing.md)） |
 
 ## http.ts 封装
 
@@ -59,7 +59,7 @@
 - `api/auth.ts` → `authApi`（登录/短信/注册申请/登出/me/改密/注销）、`adminApi`（审批/公告/待办数）
 - `api/im.ts` → `friendApi`、`messageApi`、`profileApi`、`presenceApi`
 - `api/files.ts` → `filesApi`；`api/system.ts` → `presenceApi`/`systemApi`/`announcementApi`
-- `api/couple.ts`（149 行）→ **7 个并列对象**：**`coupleApi`**（10 个方法，空间地基：总览/邀请/纪念日/个性化/心动值/徽章）、**`streakApi`**（2，连续互动打卡）、**`questionApi`**（2，每日一问）、**`wishApi`**（6，愿望清单）、**`periodApi`**（4，经期记录：看板/记开始日/补结束日/删错记）、**`intimateApi`**（3，亲密记录：看板/记一次/删一条）、**`calendarApi`**（1，亲密日历的月度只读口），合计 28 个方法与后端存活端点一一对应
+- `api/couple.ts`（74 行）→ **4 个并列对象**：**`coupleApi`**（8 个方法，空间地基：总览/邀请四连/纪念日/解除 + `relationshipOf` 恋爱徽章）、**`periodApi`**（3，经期写口：记开始日/补结束日/删错记）、**`intimateApi`**（2，亲密写口：记一笔/删一条）、**`calendarApi`**（1，亲密日历的月度读口，也是唯一的记录展示口），合计 14 个方法与后端存活端点一一对应。已下线的 `streakApi`/`questionApi`/`wishApi` 三个分组与 `coupleApi.updateProfile`/`coupleApi.intimacy` 不得再写回来
 
 新接口按批次归属加进对应对象；独立功能域倾向新开分组对象而非继续膨胀 `coupleApi`。全量方法表见 [API 层](api-layer.md)。
 
@@ -70,17 +70,17 @@
 1. `:root` 浅色 + `html.dark` 暗色两套 `--im-*` / `--xx-*` 令牌，基调是冷灰蓝面板、深空蓝侧栏（`--im-rail: #0a1524`）、电光青强调（`--xx-accent: #0ea5e9`，暗色 `#22d3ee`），圆角收到 6px/4px。**Element Plus 的 `--el-bg-color / --el-fill-color-blank / --el-border-color* / --el-text-color-*` 必须同时映射**：EP 的暗色变量表用的选择器就是 `html.dark`，只在 `:root` 里映射会被同权重且先加载的它盖回去（实测 `--el-bg-color` 仍是 `#141414`），所以暗色那份写在 `html.dark {}` 里，靠 `main.ts` 最后导入本文件取胜。
 2. `html[data-skin='xxx']` 皮肤层：默认 `quantum`（量子青），`sakura/blue/night/forest/sunset/ocean` 是用户可选项（`utils/settings.ts` 的 `SKINS` 与之一一对应，新增皮肤两处都要加）。
 3. `.couple-scope` 作用域：`CoupleView` 根元素挂这个类，把 `--im-*` 与 `--el-*` 整套覆盖回暖色（浅 `#faf6f8/#ec5f92`、暗 `#1d1619/#e0679c`），因此**情侣空间是全站唯一保留情侣观感的地方**，侧栏/聊天/通讯录/后台都走冷色。自定义属性在声明它的那一层就完成替换，所以 EP 那套映射必须在作用域内再写一遍，否则情侣页的卡片会继承 html 上的冷色面板。
-4. 情侣解锁外观（`--couple-*`、`.couple-name-glow`、`.dm-area[data-couple-bubble]`）与情侣页组件里硬编码的 `#d94f70/#8e5cd9` 等一律不动——它们本来就只服务情侣功能。
-5. 暗色下情侣头部那块主题渐变横幅：背景由空间主题写死是浅色，EP 在暗色下会配浅色文字，故 `html.dark .couple-scope .header-card` 单独把文字令牌按回深色。
+4. 情侣页组件里硬编码的 `#d94f70/#8e5cd9` 等暖色一律不动——它们本来就只服务情侣功能。原先那段聊天侧的解锁外观（`--couple-bubble-*` / `--couple-glow-*` 令牌、`.dm-area[data-couple-bubble]`、`.couple-name-glow`）已在 2026-10-20 三轮裁剪里整段删除：档位来源（打卡）没了，聊天气泡/昵称光效/头像挂件/专属贴纸包这条线一起下线，`ImAvatar.vue` 的 `pendant` prop 与 `EmojiPicker.vue` 的专属分组也随之撤掉。
+5. 暗色下情侣头部那张卡：`html.dark .couple-scope .header-card` 仍单独把卡内文字令牌按回深色（写法沿用早期「背景由空间主题写死成浅色」时代的规则）；现在 `space.theme` 已随空间个性化下线、不再有浅色渐变，这条规则属于尚未清理的遗留，改情侣页样式时留意它在暗色下的实际效果。
 
 ## 数据放哪：store 模式 vs 组件自持模式
 
 | 模式 | 用法 | 适用 | 例子 |
 |---|---|---|---|
-| **couple store 集中式** | 状态 ref + `loadXxx`/操作函数进 `stores/couple.ts`，`handleCoupleEvent` 加分支，`reset()` 清理，return 导出 | 需要 **WS 事件驱动提醒/刷新**、跨组件共享（头部心动值与今日一问格、邀请入口、ChatView 读解锁档位）的数据 | 现役进 store 的卡：`CoupleQuestion`/`CoupleStreak`（头部与聊天侧共用）；`CoupleProfile`/`CoupleSetup` 也读 store 但无独立域 |
-| **组件自持数据** | 组件内 `onMounted` safeLoad，状态留在组件里，写接口拿返回的整份聚合 VO 整体替换，不进 store、不接 WS 刷新 | 单卡自用、无跨页签联动需求 | `CoupleWish`（看板 + 六个写方法整份替换）、`CouplePeriod`（看板 + 三个写方法整份替换，且后端不推事件）、`CoupleIntimate`（看板 + 两个写方法整份替换，且后端不推事件）、`CoupleCalendar`（一个月度只读口，翻页只换 `month` 参数重取；写仍归两张记录卡，它只监听 `arechat:couple-record-changed` 重拉） |
+| **couple store 集中式** | 状态 ref + `loadXxx`/操作函数进 `stores/couple.ts`，`handleCoupleEvent` 加分支，`reset()` 清理，return 导出 | 需要 **WS 事件驱动提醒/刷新**、跨页面共享（MainLayout 登录后就要拉、侧栏角标计数）的数据 | 现役进 store 的只剩总览与邀请那棵树：`overview` + 派生 `space`/`established`/`incomingInvites`/`outgoingInvites`；`CoupleSetup` 与 `CoupleView` 头部读它，没有独立的卡片域了 |
+| **组件自持数据** | 组件内 `onMounted` safeLoad，状态留在组件里，写完按当前可见月重拉那一个读口，不进 store、不接 WS 刷新 | 单卡自用、没有别的读者 | `CoupleCalendar`（一个月度读口 `calendarMonth` + 五个不回数据的写口 `periodApi`/`intimateApi`，翻页只换 `month` 参数重取；经期与亲密的记录入口都在它内部）。心动值、打卡看板、每日一问、愿望清单这几个曾经进 store 或自持看板的域，都随三轮裁剪整域删除，没留空壳 |
 
-取舍逻辑：store 现在只有 281 行，是刻意压下来的结果（`loaded` 惰性门控已随心情/贴贴/求抱抱三域删除，刷新兜底改由「数据在不在」判断 + in-flight 合并承担；通知中心随后也删除）——新需求若没有跨页签/事件联动需求，一律优先组件自持；一旦确实需要 `arechat:couple` 刷新或全局提醒，再迁移进 store（走 map skill 的「新功能标准链路」）。
+取舍逻辑：store 现在只有 138 行（三轮裁剪前是 281 行），是刻意压下来的结果（`loaded` 惰性门控已随心情/贴贴/求抱抱三域删除，`intimacy`/`streak`/`question` 三个域与 `tierUnlocked` 派生一起下线，通知中心随后也删除）——新需求若没有被别的页面读、或不需要事件驱动刷新，一律优先组件自持；一旦确实需要 `arechat:couple` 刷新或全局提醒，再迁移进 store（走 map skill 的「新功能标准链路」）。
 
 ---
 
