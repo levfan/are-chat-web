@@ -9,6 +9,7 @@ import type {
   CoupleStreakBoardVO,
   CoupleQuestionTodayVO,
   CoupleWishBoardVO,
+  CouplePeriodBoardVO,
 } from '@/types'
 
 /**
@@ -16,7 +17,7 @@ import type {
  *
  * 2026-10-05 二轮裁剪（后端 docs/adr/0010-couple-trim-to-v8-features.md）：产品只留 邀请建立空间 / 每日一问 /
  * 愿望清单 / 连续互动打卡+六档解锁 四件事，44 个端点与 30 个 WS 事件随之下线（70→25）；
- * 2026-10-20 四轮再删问答回看与愿望改备注（→20）。
+ * 2026-10-20 四轮再删问答回看与愿望改备注（→20），随后新增经期记录 4 个端点（→24）。
  * 判据不变——本文件的每个方法都对应后端一个存活的 `@*Mapping`，别把已下线的端点再写回来。
  */
 export const coupleApi = {
@@ -96,4 +97,21 @@ export const wishApi = {
   /** 兑现一条（只有被许的那位能点，后端 400 直透） */
   wishFulfill: (id: string) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/fulfill', { id }),
   wishRemove: (id: string) => http.postJson<CoupleWishBoardVO>('/api/couple/wish/remove', { id }),
+}
+
+/**
+ * 经期记录（periodApi，基址 /api/couple/period）：1 个 GET /board + 3 个 POST，
+ * 写接口一律返回整份 PeriodBoardVO 前端整体替换。
+ * 平均周期与下次预计都由后端读时算好（averageCycleDays/predictedNextDay/daysUntilNext），
+ * 前端只负责显示「按记录推算」，不自己数天数、也不做任何健康判断。
+ */
+export const periodApi = {
+  /** 经期看板（全部记录 + 平均周期 + 下次预计） */
+  periodBoard: () => http.get<CouplePeriodBoardVO>('/api/couple/period/board'),
+  /** 记一个开始日（yyyy-MM-dd，不能是将来；同一天重复记后端 400） */
+  periodAdd: (startDay: string) => http.postJson<CouplePeriodBoardVO>('/api/couple/period/add', { startDay }),
+  /** 给还没结束的那次补上今天的结束日 */
+  periodEnd: (id: string) => http.postJson<CouplePeriodBoardVO>('/api/couple/period/end', { id }),
+  /** 删掉一条错记（双方都能删） */
+  periodRemove: (id: string) => http.postJson<CouplePeriodBoardVO>('/api/couple/period/remove', { id }),
 }

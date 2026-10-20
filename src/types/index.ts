@@ -1521,3 +1521,29 @@ export interface CoupleWishBoardVO {
   titleMax: number
   noteMax: number
 }
+
+// ============ 经期记录（periodApi / CouplePeriodBoardVO） ============
+// 逐字对齐后端 CouplePeriodService 的 2 个 record。3 个 POST 全部原样返回整份看板，前端整体替换。
+// 日期一律是服务端 yyyy-MM-dd 字符串；平均周期与下次预计由后端读时算，前端不自己数天数。
+
+/** 一次经期记录：开始日必填，结束日还没记就是 null */
+export interface CouplePeriodRecordVO {
+  id: string
+  startDay: string
+  endDay: string | null
+  recorderUser: string
+  created: number | null
+}
+
+/**
+ * 经期看板（GET /api/couple/period/board）。
+ * averageCycleDays 没有有效样本时是默认 28；cycleSampleCount=0 表示「还在按默认估」。
+ * 一条记录都没有时 predictedNextDay/daysUntilNext 为 null；daysUntilNext 为负表示预计日已过。
+ */
+export interface CouplePeriodBoardVO {
+  records: CouplePeriodRecordVO[]
+  averageCycleDays: number
+  predictedNextDay: string | null
+  daysUntilNext: number | null
+  cycleSampleCount: number
+}
