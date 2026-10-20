@@ -97,6 +97,7 @@
               <CoupleQuestion />
               <CoupleStreak />
               <CouplePeriod />
+              <CoupleIntimate />
             </div>
           </el-tab-pane>
           <el-tab-pane label="🌟 愿望清单" name="wish" lazy>
@@ -162,6 +163,7 @@ import CoupleProfile from '@/components/couple/CoupleProfile.vue'
 import CoupleStreak from '@/components/couple/CoupleStreak.vue'
 import CoupleQuestion from '@/components/couple/CoupleQuestion.vue'
 import CouplePeriod from '@/components/couple/CouplePeriod.vue'
+import CoupleIntimate from '@/components/couple/CoupleIntimate.vue'
 import CoupleWish from '@/components/couple/CoupleWish.vue'
 import { couplePendant } from '@/utils/coupleVisual'
 

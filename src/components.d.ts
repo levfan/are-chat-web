@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     CoupleCollapsible: typeof import('./components/couple/CoupleCollapsible.vue')['default']
+    CoupleIntimate: typeof import('./components/couple/CoupleIntimate.vue')['default']
     CouplePeriod: typeof import('./components/couple/CouplePeriod.vue')['default']
     CoupleProfile: typeof import('./components/couple/CoupleProfile.vue')['default']
     CoupleQuestion: typeof import('./components/couple/CoupleQuestion.vue')['default']

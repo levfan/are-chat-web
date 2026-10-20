@@ -1547,3 +1547,34 @@ export interface CouplePeriodBoardVO {
   daysUntilNext: number | null
   cycleSampleCount: number
 }
+
+// ============ 亲密记录（intimateApi / CoupleIntimateBoardVO） ============
+// 逐字对齐后端 CoupleIntimateLogService 的 2 个 record。3 个写/读接口都返回整份看板，前端整体替换。
+// EDGE=边缘亲昵、SEX=性生活；同一天允许多条。统计（本月/累计）全由后端算好，前端不自己数。
+
+export type CoupleIntimateKind = 'EDGE' | 'SEX'
+
+/** 一次亲密记录：日期必填，备注可空 */
+export interface CoupleIntimateLogVO {
+  id: string
+  day: string
+  kind: CoupleIntimateKind
+  note: string | null
+  recorderUser: string
+  created: number | null
+}
+
+/**
+ * 亲密看板（GET /api/couple/intimate/board）。
+ * records 只下发最近 30 条；monthCount/totalCount 按全量算，不受列表上限影响。
+ * 一条记录都没有时 lastDay/lastKind 为 null。
+ */
+export interface CoupleIntimateBoardVO {
+  records: CoupleIntimateLogVO[]
+  lastDay: string | null
+  lastKind: CoupleIntimateKind | null
+  monthCount: number
+  monthEdgeCount: number
+  monthSexCount: number
+  totalCount: number
+}
