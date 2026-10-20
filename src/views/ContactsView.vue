@@ -722,13 +722,13 @@ onMounted(() => {
   color: var(--im-text-2, #51565f);
   text-align: center;
 }
-/* F44 恋爱中徽章 */
+/* F44 恋爱中徽章：状态照实显示，配色跟随全站冷色（情侣观感只留在情侣空间里） */
 .card-relationship {
   margin-top: 8px;
   padding: 5px 14px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #ffe3ec, #fff0f0);
-  color: #c45656;
+  background: linear-gradient(90deg, #e0f2fe, #dbeafe);
+  color: #0b6fa8;
   font-size: 12px;
   font-weight: 600;
 }
@@ -746,13 +746,13 @@ onMounted(() => {
   flex-wrap: wrap;
   padding: 10px 14px;
   border-radius: 10px;
-  background: linear-gradient(90deg, #fff8e6, #fff0f0);
-  border: 1px solid #f8d3a3;
+  background: linear-gradient(90deg, #eef6fd, #e0f2fe);
+  border: 1px solid #b9d9f2;
   margin-bottom: 14px;
 }
 .birthday-text {
   font-size: 13px;
   font-weight: 600;
-  color: #c45656;
+  color: #0b6fa8;
 }
 </style>

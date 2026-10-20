@@ -1,21 +1,20 @@
 <template>
   <div class="login-page">
-    <!-- 情侣风：背景飘浮爱心装饰（纯 CSS，无资源依赖） -->
-    <div class="hearts-field" aria-hidden="true">
-      <span v-for="h in LOGIN_HEARTS" :key="h.id" class="float-heart" :style="h.style">{{ h.char }}</span>
+    <!-- 科技风底纹：冷色网格 + 节点微光 + 一条缓慢扫过的扫描线（纯 CSS，无资源依赖） -->
+    <div class="grid-field" aria-hidden="true">
+      <span class="scan-line" />
+      <i v-for="n in LOGIN_NODES" :key="n.id" class="node" :style="n.style" />
     </div>
     <div class="login-card">
       <div class="brand">
-        <div class="brand-mark">⛵</div>
-        <div class="brand-name">小帆船</div>
+        <div class="brand-mark">✦</div>
+        <div class="brand-name">{{ APP_NAME }}<span class="brand-code">{{ APP_CODENAME }}</span></div>
       </div>
-      <p class="brand-sub">{{ mode === 'login' ? '登录后与心爱的人保持联系' : '提交注册申请，管理员审批通过后即可登录' }}</p>
-      <!-- 93 节日登录页文案：特别的日子说应景的话 -->
+      <p class="brand-sub">{{ mode === 'login' ? '登录后接入通讯中枢' : '提交注册申请，管理员审批通过后即可登录' }}</p>
+      <!-- 93 节日登录页文案：特别的日子说一句应景的话 -->
       <p v-if="festival" class="festival-line" data-testid="login-festival">
         {{ festival.emoji }} {{ festival.text }}
       </p>
-      <!-- F49 今日情话：每天换一句，登录页的小温柔 -->
-      <p class="daily-love" data-testid="login-daily-love">💌 {{ todayLove }}</p>
 
       <el-radio-group v-model="mode" class="mode-tabs" data-testid="auth-mode">
         <el-radio-button value="login">登录</el-radio-button>
@@ -151,7 +150,7 @@
       </div>
 
       <!-- 100 系统版本与构建时间：不参与交互，一眼确认部署版本 -->
-      <p class="app-version" data-testid="app-version">小帆船 v{{ appVersion }} · 构建于 {{ buildTime }}</p>
+      <p class="app-version" data-testid="app-version">{{ APP_NAME }} v{{ appVersion }} · 构建于 {{ buildTime }}</p>
     </div>
 
     <!-- 登录成功 → 进入系统之间的过渡遮罩：路由懒加载 + 首屏数据拉取有 1~2 秒，这期间给明确反馈 -->
@@ -160,7 +159,7 @@
         <div class="entering-box">
           <span class="entering-icon" aria-hidden="true">✓</span>
           <p class="entering-title">登录成功</p>
-          <p class="entering-sub">正在进入小帆船…</p>
+          <p class="entering-sub">正在进入{{ APP_NAME }}…</p>
           <span class="entering-bar" aria-hidden="true" />
         </div>
       </div>
@@ -175,6 +174,7 @@ import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/api/auth'
 import { systemApi } from '@/api/system'
+import { APP_CODENAME, APP_NAME } from '@/constants'
 
 const route = useRoute()
 
@@ -182,49 +182,34 @@ const route = useRoute()
 const appVersion = __APP_VERSION__
 const buildTime = __BUILD_TIME__
 
-/** 情侣风登录页：飘浮爱心装饰的位置/大小/节奏参数 */
-const LOGIN_HEARTS = [
-  { id: 1, char: '💕', style: { left: '8%', fontSize: '22px', animationDuration: '13s', animationDelay: '0s', opacity: 0.5 } },
-  { id: 2, char: '💗', style: { left: '20%', fontSize: '15px', animationDuration: '17s', animationDelay: '3s', opacity: 0.4 } },
-  { id: 3, char: '💖', style: { left: '36%', fontSize: '18px', animationDuration: '15s', animationDelay: '6s', opacity: 0.45 } },
-  { id: 4, char: '💕', style: { left: '55%', fontSize: '14px', animationDuration: '19s', animationDelay: '1.5s', opacity: 0.4 } },
-  { id: 5, char: '💗', style: { left: '72%', fontSize: '24px', animationDuration: '14s', animationDelay: '4.5s', opacity: 0.5 } },
-  { id: 6, char: '✨', style: { left: '86%', fontSize: '16px', animationDuration: '18s', animationDelay: '8s', opacity: 0.45 } },
-  { id: 7, char: '💕', style: { left: '93%', fontSize: '13px', animationDuration: '16s', animationDelay: '10s', opacity: 0.35 } },
+/** 科技风登录页：底纹节点的位置/大小/呼吸节奏参数（纯装饰，不参与任何逻辑） */
+const LOGIN_NODES = [
+  { id: 1, style: { left: '7%', top: '18%', width: '7px', animationDelay: '0s' } },
+  { id: 2, style: { left: '18%', top: '72%', width: '5px', animationDelay: '1.2s' } },
+  { id: 3, style: { left: '33%', top: '31%', width: '6px', animationDelay: '2.4s' } },
+  { id: 4, style: { left: '48%', top: '84%', width: '5px', animationDelay: '0.6s' } },
+  { id: 5, style: { left: '63%', top: '12%', width: '7px', animationDelay: '1.8s' } },
+  { id: 6, style: { left: '78%', top: '58%', width: '6px', animationDelay: '3s' } },
+  { id: 7, style: { left: '91%', top: '26%', width: '5px', animationDelay: '2.1s' } },
 ]
 const router = useRouter()
 const auth = useAuthStore()
 
-// ---------- F49 今日情话：按天轮换，登录页的小温柔 ----------
-const LOVE_WORDS = [
-  '想你的日子，连风都是甜的。',
-  '世上温柔那么多，我只想给你一个人。',
-  '今天也是爱你的一天，比昨天多一点。',
-  '遇见你之后，人间忽然值得。',
-  '我走过的路里，最想去的是你心里。',
-  '月亮很亮，亮也没用，没用也亮；我喜欢你，喜欢也没用，没用也喜欢。',
-  '余生请你指教，也请多关照我的小朋友脾气。',
-  '你是我温暖的手套，冰凉的啤酒，带着阳光味道的衬衫。',
-  '把星星揉碎，掺进晚安里给你。',
-  '喜欢你不是三分钟热度，是蓄谋已久。',
-]
-const todayLove = LOVE_WORDS[Math.floor(Date.now() / 86400000) % LOVE_WORDS.length]
-
 // 93 节日登录页文案：今天若是特别的日子，先说一句应景的话
 const FESTIVAL_LINES: Record<string, { emoji: string; text: string }> = {
-  '01-01': { emoji: '🎊', text: '新的一年，第一句早安也要说给同一个人听' },
-  '02-14': { emoji: '🌹', text: '今天全世界都在帮我说那三个字' },
-  '03-08': { emoji: '🌷', text: '她值得世界上所有的温柔，今天尤其' },
-  '05-01': { emoji: '🌿', text: '假期快乐！最好的休息是和你待在一起' },
-  '05-20': { emoji: '💗', text: '520，我 You，早就说过了，今天再大声一遍' },
-  '06-01': { emoji: '🎈', text: '谁说大人不能过儿童节，在你面前我永远可以' },
-  '08-04': { emoji: '✨', text: '今天银河帮忙传话：我想你了' },
-  '09-10': { emoji: '📖', text: '谢师之后，也谢谢你教会我什么是爱' },
-  '10-01': { emoji: '🇨🇳', text: '家和国都团圆的日子，别忘记说晚安' },
-  '11-11': { emoji: '🛒', text: '别人过光棍节，我们过「一加一等于全世界」节' },
-  '12-24': { emoji: '🎄', text: '今晚的苹果和月亮，都替我抱抱你' },
-  '12-25': { emoji: '🔔', text: '圣诞老人没来没关系，我来了' },
-  '12-31': { emoji: '🎆', text: '谢谢你陪我走完这一年，明年也请多指教' },
+  '01-01': { emoji: '🎊', text: '新年第一天，先把要常联系的人加进列表' },
+  '02-14': { emoji: '🌹', text: '今天适合把那句拖了很久的话说出口' },
+  '03-08': { emoji: '🌷', text: '节日快乐，也别忘了把谢谢真的说出来' },
+  '05-01': { emoji: '🌿', text: '假期快乐，休息也是正事' },
+  '05-20': { emoji: '💬', text: '今天消息多，重要的那条先发出' },
+  '06-01': { emoji: '🎈', text: '六一，给老朋友发一句没头没尾的问候' },
+  '08-04': { emoji: '✨', text: '七夕，隔着多远也能把话送到' },
+  '09-10': { emoji: '📖', text: '教师节快乐，谢谢那个把你教明白的人' },
+  '10-01': { emoji: '🇨🇳', text: '长假出行，记得报个平安' },
+  '11-11': { emoji: '📦', text: '双十一，先回完消息再下单' },
+  '12-24': { emoji: '🍎', text: '平安夜，天冷早点回' },
+  '12-25': { emoji: '🔔', text: '圣诞快乐，问候别攒到明年' },
+  '12-31': { emoji: '🎆', text: '年末清一清未读，再开下一年' },
 }
 const festival = computed(() => {
   const now = new Date()
@@ -281,7 +266,7 @@ onUnmounted(() => {
   }
 })
 
-/** 后端 greeting 形如 "success:欢迎进入小帆船！"：去掉状态前缀后作为成功提示，取不到就退回兜底文案 */
+/** 后端 greeting 形如 "success:欢迎进入天枢！"：去掉状态前缀后作为成功提示，取不到就退回兜底文案 */
 function greetingText(greeting: string | undefined): string {
   const text = (greeting ?? '').replace(/^[a-zA-Z]+:/, '').trim()
   return text || '登录成功，正在进入…'
@@ -422,51 +407,90 @@ function backToLogin() {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  /* 情侣风：粉紫暖渐变背景 */
-  background: linear-gradient(160deg, #ffeaf3 0%, #fdf0f6 42%, #f4ecfb 100%);
+  /* 科技风：冷色渐变 + 一层细网格 */
+  background: linear-gradient(160deg, #eef4fb 0%, #dfeaf6 46%, #e6f2fb 100%);
 }
 html.dark .login-page {
-  background: linear-gradient(160deg, #1c1117 0%, #231522 48%, #1b1424 100%);
+  background: linear-gradient(160deg, #060d18 0%, #0a1828 52%, #071020 100%);
 }
-/* 飘浮爱心：从底部缓缓升到顶部，循环 */
-.hearts-field {
+/* 底纹层：网格线 + 呼吸节点 + 扫描线，全部 pointer-events:none，不抢任何交互 */
+.grid-field {
   position: absolute;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
+  background-image: linear-gradient(rgba(14, 165, 233, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 165, 233, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(120% 90% at 50% 45%, #000 30%, transparent 78%);
 }
-.float-heart {
+.node {
   position: absolute;
-  bottom: -40px;
-  animation-name: login-heart-float;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  user-select: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 10px 2px rgba(56, 189, 248, 0.55);
+  animation: login-node-pulse 4.5s ease-in-out infinite;
 }
-@keyframes login-heart-float {
-  0% {
-    transform: translateY(0) rotate(-8deg);
+html.dark .node {
+  background: #22d3ee;
+  box-shadow: 0 0 12px 3px rgba(34, 211, 238, 0.45);
+}
+@keyframes login-node-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
   }
   50% {
-    transform: translateY(-52vh) translateX(18px) rotate(10deg);
+    opacity: 0.9;
+    transform: scale(1.15);
+  }
+}
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.5), transparent);
+  animation: login-scan 9s linear infinite;
+}
+@keyframes login-scan {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
   }
   100% {
-    transform: translateY(-110vh) translateX(-10px) rotate(-6deg);
+    transform: translateY(100vh);
+    opacity: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .float-heart {
+  .node,
+  .scan-line {
     animation: none;
-    opacity: 0.25;
+  }
+  .scan-line {
+    opacity: 0.35;
   }
 }
 .login-card {
   /* 手机浏览器（~375px 视口）不横向溢出 */
   width: min(400px, calc(100vw - 24px));
+  position: relative;
+  z-index: 1;
   background: var(--im-panel, #fff);
-  border: 1px solid var(--im-border, #f0e3e9);
-  border-radius: 20px;
-  box-shadow: var(--im-shadow, 0 12px 40px rgba(180, 80, 120, 0.16));
+  border: 1px solid var(--im-border, #dde6f0);
+  border-radius: 12px;
+  box-shadow: var(--im-shadow, 0 12px 40px rgba(15, 45, 85, 0.16));
   padding: 32px;
   text-align: center;
 }
@@ -479,44 +503,51 @@ html.dark .login-page {
 .brand-mark {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #ff9ec4, #e9487f);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #38bdf8, #0369a1);
   color: #fff;
-  font-size: 20px;
+  font-size: 19px;
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
-  box-shadow: 0 4px 12px rgba(233, 72, 127, 0.35);
+  box-shadow: 0 4px 14px rgba(3, 105, 161, 0.35);
 }
 .brand-name {
   font-size: 21px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+/* 英文代号：小字距拉开，当标识用 */
+.brand-code {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2.4px;
+  color: var(--im-muted, #7b8ca1);
 }
 .brand-sub {
   color: var(--im-muted, #8f959e);
   font-size: 13px;
   margin: 8px 0 18px;
 }
-/* F49 今日情话 */
-.daily-love {
-  margin: -10px 0 14px;
-  font-size: 12px;
-  color: #c45656;
-  background: linear-gradient(90deg, #fff0f0, #fff8e6);
-  border-radius: 8px;
-  padding: 6px 10px;
-}
 /* 93 节日登录页文案 */
 .festival-line {
   margin: -14px 0 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #ad3b8e;
-  background: linear-gradient(90deg, #fdeef9, #fdf3e6);
-  border-radius: 8px;
+  color: #0b6fa8;
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.12), rgba(34, 211, 238, 0.06));
+  border-left: 2px solid #0ea5e9;
+  border-radius: 6px;
   padding: 6px 10px;
+  text-align: left;
+}
+html.dark .festival-line {
+  color: #7dd3fc;
 }
 .mode-tabs {
   margin-bottom: 16px;
@@ -535,7 +566,7 @@ html.dark .login-page {
 .dev-code {
   margin: -2px 0 10px;
   font-size: 12px;
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
   text-align: left;
 }
 .btn {
@@ -610,18 +641,18 @@ html.dark .entering-mask {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ff9ec4, #e9487f);
+  background: linear-gradient(135deg, #38bdf8, #0369a1);
   color: #fff;
   font-size: 28px;
   line-height: 1;
-  box-shadow: 0 8px 20px rgba(233, 72, 127, 0.32);
+  box-shadow: 0 8px 20px rgba(3, 105, 161, 0.32);
   animation: login-entering-pop 0.36s ease-out;
 }
 .entering-title {
   margin: 14px 0 4px;
   font-size: 17px;
   font-weight: 700;
-  color: var(--im-text, #3a2e34);
+  color: var(--im-text, #14202e);
 }
 .entering-sub {
   margin: 0;
@@ -643,7 +674,7 @@ html.dark .entering-mask {
   width: 40%;
   height: 100%;
   border-radius: 2px;
-  background: linear-gradient(90deg, #ff9ec4, #e9487f);
+  background: linear-gradient(90deg, #22d3ee, #0ea5e9);
   animation: login-entering-bar 1s ease-in-out infinite;
 }
 .entering-fade-enter-active {
