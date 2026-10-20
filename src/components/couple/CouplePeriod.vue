@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { periodApi } from '@/api/couple'
 import { useCoupleStore } from '@/stores/couple'
+import { notifyCoupleRecordChanged } from '@/utils/coupleRecordBus'
 import type { CouplePeriodBoardVO, CouplePeriodRecordVO } from '@/types'
 import CoupleCollapsible from './CoupleCollapsible.vue'
 
@@ -10,7 +11,8 @@ import CoupleCollapsible from './CoupleCollapsible.vue'
  * 经期记录（卡根 `couple-period`）：记下开始日，结束日可后补，历史可删。
  *
  * 平均周期与下次日期全部由后端读时算好，前端只显示、不自己数天数，
- * 文案写明「按记录推算」——它不是医学判断。看板自持，写接口返回整份看板直接替换。
+ * 文案写明「按记录推算」——它不是医学判断。看板自持，写接口返回整份看板直接替换；
+ * 写完给同页的日历卡发一次刷新信号（这条链路不推 WS，本页内自己对齐）。
  */
 const couple = useCoupleStore()
 
@@ -71,6 +73,7 @@ async function refresh() {
 async function write(call: () => Promise<CouplePeriodBoardVO>, done: string, fallback: string) {
   try {
     board.value = await call()
+    notifyCoupleRecordChanged()
     ElMessage.success(done)
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : fallback)

@@ -11,6 +11,7 @@ import type {
   CoupleWishBoardVO,
   CouplePeriodBoardVO,
   CoupleIntimateBoardVO,
+  CoupleCalendarVO,
   CoupleIntimateKind,
 } from '@/types'
 
@@ -19,8 +20,8 @@ import type {
  *
  * 2026-10-05 二轮裁剪（后端 docs/adr/0010-couple-trim-to-v8-features.md）：产品只留 邀请建立空间 / 每日一问 /
  * 愿望清单 / 连续互动打卡+六档解锁 四件事，44 个端点与 30 个 WS 事件随之下线（70→25）；
- * 2026-10-20 四轮再删问答回看与愿望改备注（→20），随后新增经期记录 4 个端点（→24）
- * 与亲密记录 3 个端点（→27）。
+ * 2026-10-20 四轮再删问答回看与愿望改备注（→20），随后新增经期记录 4 个端点（→24）、
+ * 亲密记录 3 个端点（→27）与亲密日历整月读口 1 个端点（→28）。
  * 判据不变——本文件的每个方法都对应后端一个存活的 `@*Mapping`，别把已下线的端点再写回来。
  */
 export const coupleApi = {
@@ -123,6 +124,7 @@ export const periodApi = {
  * 亲密记录（intimateApi，基址 /api/couple/intimate）：1 个 GET /board + 2 个 POST，
  * 写接口一律返回整份 IntimateBoardVO 前端整体替换。
  * EDGE=边缘亲昵、SEX=性生活，同一天允许多条；本月/累计次数全由后端算好，前端只显示。
+ * 看板只有最近 30 条，翻不到历史月份——按月的日历视图另走下面的 calendarApi。
  * 这条链路没有 WS 事件——私密账本不因对方操作弹提醒。
  */
 export const intimateApi = {
@@ -133,4 +135,15 @@ export const intimateApi = {
     http.postJson<CoupleIntimateBoardVO>('/api/couple/intimate/add', { day, kind, note }),
   /** 删掉一笔错记（双方都能删） */
   intimateRemove: (id: string) => http.postJson<CoupleIntimateBoardVO>('/api/couple/intimate/remove', { id }),
+}
+
+/**
+ * 亲密日历（calendarApi，基址 /api/couple/calendar）：只有一个月度读口。
+ * 后端把经期的覆盖日/开始日/结束日、预计下次与本月的亲密标记一次算齐——
+ * 日历若自己去拼两张卡的看板，同一页会打两次 /period/board 并留下两份经期真相。
+ */
+export const calendarApi = {
+  /** 整月日历；month=yyyy-MM，格式错后端 400，没建空间 404 */
+  calendarMonth: (month: string) =>
+    http.get<CoupleCalendarVO>(`/api/couple/calendar/month?month=${encodeURIComponent(month)}`),
 }

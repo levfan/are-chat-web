@@ -89,13 +89,14 @@
       <!-- 空间个性化：我们的宣言 -->
       <CoupleProfile />
 
-      <!-- 四张卡两个页签：今天三张（一问 + 打卡 + 经期记录）、愿望清单一张 -->
+      <!-- 六张卡两个页签：今天五张（一问 + 打卡 + 亲密日历 + 经期记录 + 亲密记录）、愿望清单一张 -->
       <el-card shadow="never" class="panel">
         <el-tabs v-model="activeTab" class="couple-tabs">
           <el-tab-pane label="🫶 今天" name="today">
             <div class="tab-stack">
               <CoupleQuestion />
               <CoupleStreak />
+              <CoupleCalendar />
               <CouplePeriod />
               <CoupleIntimate />
             </div>
@@ -162,6 +163,7 @@ import CoupleSetup from '@/components/couple/CoupleSetup.vue'
 import CoupleProfile from '@/components/couple/CoupleProfile.vue'
 import CoupleStreak from '@/components/couple/CoupleStreak.vue'
 import CoupleQuestion from '@/components/couple/CoupleQuestion.vue'
+import CoupleCalendar from '@/components/couple/CoupleCalendar.vue'
 import CouplePeriod from '@/components/couple/CouplePeriod.vue'
 import CoupleIntimate from '@/components/couple/CoupleIntimate.vue'
 import CoupleWish from '@/components/couple/CoupleWish.vue'

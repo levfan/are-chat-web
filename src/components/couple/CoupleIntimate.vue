@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { intimateApi } from '@/api/couple'
 import { useCoupleStore } from '@/stores/couple'
+import { notifyCoupleRecordChanged } from '@/utils/coupleRecordBus'
 import type { CoupleIntimateBoardVO, CoupleIntimateKind } from '@/types'
 import CoupleCollapsible from './CoupleCollapsible.vue'
 
@@ -11,7 +12,7 @@ import CoupleCollapsible from './CoupleCollapsible.vue'
  *
  * 同一天允许多条；本月与累计次数全部由后端算好，前端只显示、不自己数。
  * 这条链路没有 WS 事件，对方操作不会弹提醒——私密账本，安静地留在这一页。
- * 看板自持，写接口返回整份看板直接替换。
+ * 看板自持，写接口返回整份看板直接替换；写完给同页的日历卡发一次刷新信号。
  */
 const couple = useCoupleStore()
 
@@ -72,6 +73,7 @@ async function onAdd() {
   try {
     board.value = await intimateApi.intimateAdd(day.value, kind.value, note.value.trim() || null)
     note.value = ''
+    notifyCoupleRecordChanged()
     ElMessage.success('💞 记下了，只有你们两个人知道')
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '记不上这一笔')
@@ -83,6 +85,7 @@ async function onAdd() {
 async function onRemove(id: string) {
   try {
     board.value = await intimateApi.intimateRemove(id)
+    notifyCoupleRecordChanged()
     ElMessage.success('🧹 删掉这条记录')
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '删不掉这条')

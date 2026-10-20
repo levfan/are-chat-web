@@ -1549,8 +1549,9 @@ export interface CouplePeriodBoardVO {
 }
 
 // ============ 亲密记录（intimateApi / CoupleIntimateBoardVO） ============
-// 逐字对齐后端 CoupleIntimateLogService 的 2 个 record。3 个写/读接口都返回整份看板，前端整体替换。
+// 逐字对齐后端 CoupleIntimateLogService 的 2 个 record。board/add/remove 都返回整份看板，前端整体替换。
 // EDGE=边缘亲昵、SEX=性生活；同一天允许多条。统计（本月/累计）全由后端算好，前端不自己数。
+// 下面紧跟的 CoupleCalendarVO 对齐的是 CoupleCalendarService（日历卡的月度只读口），不是这个 Service。
 
 export type CoupleIntimateKind = 'EDGE' | 'SEX'
 
@@ -1577,4 +1578,31 @@ export interface CoupleIntimateBoardVO {
   monthEdgeCount: number
   monthSexCount: number
   totalCount: number
+}
+
+/**
+ * 某个月的亲密标记（GET /api/couple/calendar/month 的一部分）。
+ * 日历只用来铺图标与展开当天详情，删除仍回记录卡，所以这里没有 id/created。
+ */
+export interface CoupleCalendarIntimateVO {
+  day: string
+  kind: CoupleIntimateKind
+  note: string | null
+  recorderUser: string
+}
+
+/**
+ * 亲密日历整月读模型（GET /api/couple/calendar/month）。
+ * 经期覆盖日由后端判（PeriodRecord.covers）：记了结束日含首含尾，没记结束日只到今天，
+ * 前端不再自己数区间；periodStartDays/periodEndDays 是覆盖日里哪两天算开始、哪两天算结束。
+ * predictedNextDay 原样搬经期推算结果（可能落在下个月）；一条记录都没有时为 null。
+ * intimate 是本月全部亲密记录（不受看板 30 条上限影响），日期正序。
+ */
+export interface CoupleCalendarVO {
+  month: string
+  periodDays: string[]
+  periodStartDays: string[]
+  periodEndDays: string[]
+  predictedNextDay: string | null
+  intimate: CoupleCalendarIntimateVO[]
 }
