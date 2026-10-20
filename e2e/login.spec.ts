@@ -61,10 +61,10 @@ test('登录成功到进入系统之间展示「登录成功」提示', async ({
   await page.getByTestId('login-input').fill('alice')
   await page.getByTestId('login-password').fill('arechat123')
   await page.getByTestId('login-btn').click()
-  // 跳转完成前：登录页上盖着「登录成功 / 正在进入小帆船…」遮罩
+  // 跳转完成前：登录页上盖着「登录成功 / 正在进入天枢…」遮罩
   await expect(page.getByTestId('login-success')).toBeVisible()
   await expect(page.getByTestId('login-success')).toContainText('登录成功')
-  await expect(page.getByTestId('login-success')).toContainText('正在进入小帆船')
+  await expect(page.getByTestId('login-success')).toContainText('正在进入天枢')
   // 跳转完成后遮罩随登录页一起消失，且问候语（去掉 success: 前缀）仍留在提示里
   await expect(page).toHaveURL(/\/chat/)
   await expect(page.getByTestId('login-success')).toHaveCount(0)
