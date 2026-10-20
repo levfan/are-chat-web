@@ -1,9 +1,9 @@
 # API 层
 
 > 本页回答：`src/api/` 有哪些文件与分组对象、每个对象的方法与路径、与后端 `/api/couple/*` 路由的对应关系。
-> **2026-10-20 四轮裁剪 + 经期记录 + 亲密记录后**：`couple.ts` 收敛到 **27 个方法 / 6 个分组对象 / 136 行**，与后端 27 个存活端点一一对齐
+> **2026-10-20 四轮裁剪 + 经期记录 + 亲密记录 + 亲密日历后**：`couple.ts` 收敛到 **28 个方法 / 7 个分组对象 / 149 行**，与后端 28 个存活端点一一对齐
 > （裁剪判据见 `are-chat/docs/adr/0010-couple-trim-to-v8-features.md`；`tests/unit/couple.spec.ts` 的「api 契约守卫」
-> 用例逐方法断言 mock 工厂覆盖 + 总数为 27）。
+> 用例逐方法断言 mock 工厂覆盖 + 总数为 28）。
 
 ## 非 couple 分组（未动）
 
@@ -17,7 +17,7 @@
 | `files.ts` | `filesApi` | `/api/files` |
 | `system.ts` | `presenceApi` / `systemApi` / `announcementApi` | `/api/presence` `/api/system` `/api/announcements` |
 
-## couple 分组对象（6 个 / 27 个方法）
+## couple 分组对象（7 个 / 28 个方法）
 
 | 导出对象 | base 路径 | 方法数 | 职责 |
 |---|---|---:|---|
@@ -27,6 +27,7 @@
 | `wishApi` | `/api/couple/wish` | 6 | 卡 `couple-wish` 愿望清单 |
 | `periodApi` | `/api/couple/period` | 4 | 卡 `couple-period` 经期记录（双方都能记，无 WS 事件） |
 | `intimateApi` | `/api/couple/intimate` | 3 | 卡 `couple-intimate` 亲密记录（边缘/性生活，同日可多条，无 WS 事件） |
+| `calendarApi` | `/api/couple/calendar` | 1 | 卡 `couple-calendar` 亲密日历：一个月度只读口，经期覆盖日与亲密标记一次给齐 |
 
 **已随裁剪整体下线、不得再写回**：`pinApi`（F207 常用收藏）、`memoryApi`（百日隐藏回顾页）、`diningApi`（饭桌）、`ceremonyApi`（愿望券本）、
 `factoryApi`（家务轮盘）、`echoApi`（好事簿）、`questApi`（加班留灯）、`catchApi`（安全词复盘），
@@ -96,9 +97,19 @@
 
 两个写接口都返回整份 `IntimateBoardVO`。**这条链路同样不推任何 WS 事件**、不参与心动值；组件只在挂载与写操作后刷新。
 
+#### `calendarApi`（1）
+
+| 方法 | HTTP | 路径 | 说明 |
+|---|---|---|---|
+| `calendarMonth` | GET | `/api/couple/calendar/month?month=yyyy-MM` | 整月日历：`periodDays`（本月被经期覆盖的天）/`periodStartDays`/`periodEndDays`/`predictedNextDay` + `intimate`（本月亲密标记，day/kind/note/recorderUser，日期正序） |
+
+`month` 缺参或空白 → 400「要看哪个月呀？给我 yyyy-MM 这样的」，格式错 → 400「月份得是 yyyy-MM 这样的」，无空间 → 404（卡片静默收起）。未来的月份正常返回空数组。
+**日历不自己拼两张卡的看板**：那样同一页会打两次 `/period/board`、留下两份经期真相，所以区间判定（含「没记结束日的只到今天」）留在后端 `PeriodRecord.covers`，前端只按下发的天列表铺格子。
+亲密标记里没有 `id`/`created`——日历只看不删，删除回 `intimateApi`/`periodApi` 各自的端点。这条链路也不推 WS 事件；两张记录卡写完后派发 `arechat:couple-record-changed`（`utils/coupleRecordBus.ts`），日历监听它重拉当月。
+
 ## 约定
 
 - 一律走 `http.ts` 的 `get / postJson / putJson / delete / postForm`，`withCredentials` 已内置；后端返回 `ApiResponse{code,message,data}`，解包后只给业务 `data`。
 - 后端业务失败是 400/404 + **中文 message**，组件侧一律 `ElMessage.error(e.message)` 直透，不在前端重写文案。
 - 写接口返回**整份聚合 VO** 的（streak/question/wish/period/intimate），组件拿返回值整体替换本地状态，不再单独拉一次。
-- 新增方法前先看后端有没有这个端点：**判据是 `@*Mapping`，不是文档**；五张卡之外的功能已被 `docs/adr/0010` 判死，别顺着旧文档把它们加回来。
+- 新增方法前先看后端有没有这个端点：**判据是 `@*Mapping`，不是文档**；六张卡之外的功能已被 `docs/adr/0010` 判死，别顺着旧文档把它们加回来。

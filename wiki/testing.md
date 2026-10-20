@@ -15,16 +15,17 @@
 | `css` | `true` | 让 element-plus 的样式导入走 Vite 转换，否则 Node 原生 ESM 加载 `.css` 报错 |
 | `server.deps.inline` | `['element-plus']` | 同上，element-plus 需内联编译 |
 
-命令：`pnpm test`（单次）/ `pnpm test:watch`。`pnpm test:e2e`（Playwright）另有 `e2e/`（本地 mock）与 `e2e-live/`（打真后端的实时巡检，`couple-audit.spec.ts` 用 `COUPLE_CARDS` 注册表核对五张卡全覆盖）。
+命令：`pnpm test`（单次）/ `pnpm test:watch`。`pnpm test:e2e`（Playwright）另有 `e2e/`（本地 mock）与 `e2e-live/`（打真后端的实时巡检，`couple-audit.spec.ts` 用 `COUPLE_CARDS` 注册表核对六张卡全覆盖）。
 
-## tests/unit 文件与覆盖范围（2026-10-20 新增经期记录 + 亲密记录后实测）
+## tests/unit 文件与覆盖范围（2026-10-20 新增亲密日历后实测）
 
 | 文件 | 用例数 | 覆盖 |
 |---|---|---|
-| `couple.spec.ts` | 54 | 挂载整个 `CoupleView`（`mountView()` + `openTab()` 按文案点页签，因为 el-tabs 导航项没有 data-testid）：2 个页签与 5 张卡根、老页签（life/gift）不再出现、未建空间只出邀请入口且一个卡片接口都不敲、爱称走 `PUT /profile` 的 petName（空串=清除）、宣言编辑只交 slogan 且主题网格/贴纸墙都不在、注册表 5 条、**api 契约守卫（mock 工厂覆盖全部 27 方法 + 存活 6 个分组 + 27 条存活路径 + 已下线路径按段判死）**、五张卡主链路、心动值头部、解锁态派生、WS 15 个事件的逐个刷新口径 |
+| `couple.spec.ts` | 54 | 挂载整个 `CoupleView`（`mountView()` + `openTab()` 按文案点页签，因为 el-tabs 导航项没有 data-testid）：2 个页签与 6 张卡根、老页签（life/gift）不再出现、未建空间只出邀请入口且一个卡片接口都不敲、爱称走 `PUT /profile` 的 petName（空串=清除）、宣言编辑只交 slogan 且主题网格/贴纸墙都不在、注册表 6 条、**api 契约守卫（mock 工厂覆盖全部 28 方法 + 存活 7 个分组 + 28 条存活路径 + 已下线路径按段判死）**、三张老卡主链路、心动值头部、解锁态派生、WS 15 个事件的逐个刷新口径 |
 | `couple-v8-cards.spec.ts` | 29 | 三张老卡逐个：打卡（补签交 board.day 前一天、canMakeup/missedYesterday 双闸门、一行解锁摘要、21 格打卡条）、每日一问（bothAnswered 才互看、answerMax 吃后端下发）、愿望清单（「已准备」对许愿人保密、preparableFlag/canFulfillFlag 双位、闸门全吃后端数字、表单只剩标题、400 直透）、三卡同挂接口全挂也不抛 |
-| `couple-period.spec.ts` | 10 | 经期记录卡：未建空间不发 board、空看板引导、状态行按后端 averageCycleDays/predictedNextDay/daysUntilNext 照位渲染（含「先按 28 天估」与「已推迟」）、记开始日交选中日期并整体替换看板、空日期前端拦下、结束钮只挂最新未结束记录、双方都能删、后端 400 中文直透、board 404 静默收起 |
-| `couple-intimate.spec.ts` | 10 | 亲密记录卡：未建空间不发 board、空看板引导、状态行按后端上次/本月分类/累计数字照位渲染、记一次交 day/kind/去空白 note 并整体替换看板、空备注发 null、空日期前端拦下、删除交 id 且行消失、后端 400 中文直透、404 静默收起、记录超过 30 条时给截断提示 |
+| `couple-calendar.spec.ts` | 15 | 亲密日历卡（`vi.useFakeTimers({toFake:['Date']})` + `vi.setSystemTime` 把今天钉在 2026-10-20，格子数才可比）：未建空间不发请求、挂载只发一次月度读口且**不再敲 `/period/board`**（同页两份经期真相就是缺陷）、周一开头的 3 空格 + 31 天、覆盖日/开始日/结束日三个列表照位渲染、EDGE+SEX 同日双图标与条数角标、🌱 只标预测那一天且被经期日压掉、点天摊开经期阶段与每条标记（含备注与「我记的/TA 记的」）、开始即结束同一天、空白天与未来日文案、摘要行数字、翻月只换参数重取、「本月」禁用态、收到 `arechat:couple-record-changed` 重拉且 unmount 后失效、404 静默收起。**每个用例都得 unmount**——监听挂在 window 上，不卸载会让上一个用例的实例继续数请求 |
+| `couple-period.spec.ts` | 11 | 经期记录卡：未建空间不发 board、空看板引导、状态行按后端 averageCycleDays/predictedNextDay/daysUntilNext 照位渲染（含「先按 28 天估」与「已推迟」）、记开始日交选中日期并整体替换看板、写成功发日历刷新信号而写失败不发、空日期前端拦下、结束钮只挂最新未结束记录、双方都能删、后端 400 中文直透、board 404 静默收起 |
+| `couple-intimate.spec.ts` | 11 | 亲密记录卡：未建空间不发 board、空看板引导、状态行按后端上次/本月分类/累计数字照位渲染、记一次交 day/kind/去空白 note 并整体替换看板、空备注发 null、空日期前端拦下、删除交 id 且行消失、写成功发日历刷新信号、后端 400 中文直透、404 静默收起、记录超过 30 条时给截断提示 |
 | `couple-unlocks.spec.ts` | 18 | 聊天侧视觉解锁：挂件 prop、`coupleVisualOn` 门禁（未建空间/未解锁/对象不是 TA 都不生效）、ChatView 三档联挂、专属贴纸包生成器（确定性、红线=纯 unicode 无图片） |
 | `im.spec.ts` | 21 | im store：会话、消息、未读、WS 推送处理等 |
 | `LoginView.spec.ts` | 8 | 登录、注册审批申请流（register/registerStatus） |
@@ -33,11 +34,11 @@
 | `http.spec.ts` | 4 | http.ts 封装：code 判错、401 清登录态、ApiError |
 | `format.spec.ts` | 4 | utils/format：formatBytes/formatTime |
 
-合计 **170 用例 / 11 个 spec 文件**（`pnpm test` 基线，2026-10-20 新增经期记录 + 亲密记录后实测 `Test Files 11 passed / Tests 170 passed`）。
+合计 **187 用例 / 12 个 spec 文件**（`pnpm test` 基线，2026-10-20 新增亲密日历后实测 `Test Files 12 passed / Tests 187 passed`）。
 
 ## 全量显式 mock 模式（couple.spec.ts 开头）
 
-`vi.mock('@/api/couple', () => {...})` 工厂返回**六个对象**，与真实导出同名：`coupleApi`(10) / `streakApi`(2) / `questionApi`(2) / `wishApi`(6) / `periodApi`(4) / `intimateApi`(3)，共 27 个方法**逐个显式列出**——Proxy 兜底已废弃，而且被证明守不住（见下）。`couple-v8-cards.spec.ts`、`couple-period.spec.ts` 与 `couple-intimate.spec.ts` 各自也带一份同口径的显式工厂。
+`vi.mock('@/api/couple', () => {...})` 工厂返回**七个对象**，与真实导出同名：`coupleApi`(10) / `streakApi`(2) / `questionApi`(2) / `wishApi`(6) / `periodApi`(4) / `intimateApi`(3) / `calendarApi`(1)，共 28 个方法**逐个显式列出**——Proxy 兜底已废弃，而且被证明守不住（见下）。`couple-v8-cards.spec.ts`、`couple-calendar.spec.ts`、`couple-period.spec.ts` 与 `couple-intimate.spec.ts` 各自也带一份同口径的显式工厂。
 
 - 读接口预置形状正确的空数据（`mockResolvedValue(...)`），写接口多数只 `vi.fn()`，需要断言返回值的在 `beforeEach` 里重新 `mockResolvedValue`。
 - `updateProfile` 的 mock 是**照后端语义回显**的 `mockImplementation`：null/未传=该项不动、空串=清除，返回整份 `SpaceVO`——因为 store 直接拿返回值换掉 `overview.space`，mock 返回 null 会让「保存爱称后界面跟着变」这条断言测的是空气。
@@ -47,7 +48,7 @@
 
 **真正的守卫**是「api 契约守卫」两条：它用 `readFileSync(process.cwd() + '/src/api/couple.ts')` 现读源码——
 
-1. `requestPaths()` 抽出所有带引号的 `/api/couple...` 请求路径，断言**恰好 27 条**且逐条落在存活清单里；
+1. `requestPaths()` 抽出所有带引号的 `/api/couple...` 请求路径，断言**恰好 28 条**且逐条落在存活清单里；
 2. 已下线的路径段（`moods/bond/care/dining/factory/quest/ceremony/echo/surprise/pin/anniversaries`）**按 `/` 分段判死**——不能用 `includes('/quest')` 这种子串匹配，`/quest` 会把现役的 `/question/today` 也算成命中，一条会误报的守卫下次就直接被人删掉，比没有守卫更糟。
 
 ## 必须记住的坑
