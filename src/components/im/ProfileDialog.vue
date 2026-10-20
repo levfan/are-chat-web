@@ -171,7 +171,7 @@
       本次登录：{{ formatChatTime(auth.loginAt) }}
     </div>
     <!-- 100 系统版本与构建时间 -->
-    <div class="session-info" data-testid="app-version">小帆船 v{{ appVersion }} · 构建于 {{ buildTime }}</div>
+    <div class="session-info" data-testid="app-version">{{ APP_NAME }} v{{ appVersion }} · 构建于 {{ buildTime }}</div>
     <template #footer>
       <el-button @click="visible = false">{{ activeTab === 'profile' ? '取消' : '关闭' }}</el-button>
       <el-button v-if="activeTab === 'profile'" type="primary" data-testid="profile-save" @click="onSave">
@@ -211,6 +211,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Check } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useImStore } from '@/stores/im'
+import { APP_NAME } from '@/constants'
 import { authApi } from '@/api/auth'
 import { AVATAR_COLORS, isAvatarColorKey } from '@/utils/imFormat'
 import { formatChatTime } from '@/utils/imFormat'
