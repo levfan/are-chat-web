@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ElDatePicker, ElMessage } from 'element-plus'
 import CouplePeriod from '@/components/couple/CouplePeriod.vue'
 import { coupleApi, periodApi, questionApi, streakApi, wishApi } from '@/api/couple'
+import { COUPLE_RECORD_CHANGED } from '@/utils/coupleRecordBus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import type {
@@ -151,6 +152,24 @@ describe('CouplePeriod 经期记录', () => {
     expect(periodApi.periodAdd).toHaveBeenCalledWith('2026-09-28')
     expect(wrapper.find('[data-testid="couple-period-p-new"]').exists()).toBe(true)
     expect(ElMessage.success).toHaveBeenCalledWith('🩸 记下了，下次提前心疼你')
+  })
+
+  it('写成功给日历卡发一次刷新信号，写失败不发（信号只说「账本变了」）', async () => {
+    establish()
+    const seen = vi.fn()
+    window.addEventListener(COUPLE_RECORD_CHANGED, seen)
+    const wrapper = mountCard()
+    await flushPromises()
+    await wrapper.find('[data-testid="couple-period-add"]').trigger('click')
+    await flushPromises()
+    expect(seen).toHaveBeenCalledTimes(1)
+
+    vi.mocked(periodApi.periodAdd).mockRejectedValue(new Error('这一天已经记过啦'))
+    await wrapper.find('[data-testid="couple-period-add"]').trigger('click')
+    await flushPromises()
+    expect(seen).toHaveBeenCalledTimes(1)
+    window.removeEventListener(COUPLE_RECORD_CHANGED, seen)
+    wrapper.unmount()
   })
 
   it('没选日子时前端就拦下，不发这次注定 400 的请求', async () => {

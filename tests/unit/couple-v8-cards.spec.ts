@@ -48,6 +48,7 @@ vi.mock('@/api/couple', () => {
     },
     periodApi: { periodBoard: vi.fn(), periodAdd: vi.fn(), periodEnd: vi.fn(), periodRemove: vi.fn() },
     intimateApi: { intimateBoard: vi.fn(), intimateAdd: vi.fn(), intimateRemove: vi.fn() },
+    calendarApi: { calendarMonth: vi.fn() },
   }
 })
 

@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ElDatePicker, ElMessage, ElSelect } from 'element-plus'
 import CoupleIntimate from '@/components/couple/CoupleIntimate.vue'
 import { coupleApi, intimateApi } from '@/api/couple'
+import { COUPLE_RECORD_CHANGED } from '@/utils/coupleRecordBus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
 import type {
@@ -36,6 +37,7 @@ vi.mock('@/api/couple', () => ({
   },
   periodApi: { periodBoard: vi.fn(), periodAdd: vi.fn(), periodEnd: vi.fn(), periodRemove: vi.fn() },
   intimateApi: { intimateBoard: vi.fn(), intimateAdd: vi.fn(), intimateRemove: vi.fn() },
+  calendarApi: { calendarMonth: vi.fn() },
 }))
 
 const space: CoupleSpaceVO = {
@@ -186,6 +188,22 @@ describe('CoupleIntimate 亲密记录', () => {
     expect(intimateApi.intimateRemove).toHaveBeenCalledWith('i-a')
     expect(wrapper.find('[data-testid="couple-intimate-i-a"]').exists()).toBe(false)
     expect(ElMessage.success).toHaveBeenCalledWith('🧹 删掉这条记录')
+  })
+
+  it('写成功会给同页的日历卡发一次刷新信号（这条链路不推 WS，本页内自己对齐）', async () => {
+    establish()
+    const seen = vi.fn()
+    window.addEventListener(COUPLE_RECORD_CHANGED, seen)
+    const wrapper = mountCard()
+    await flushPromises()
+    await wrapper.find('[data-testid="couple-intimate-add"]').trigger('click')
+    await flushPromises()
+    expect(seen).toHaveBeenCalledTimes(1)
+    await wrapper.find('[data-testid="couple-intimate-add"]').trigger('click')
+    await flushPromises()
+    expect(seen).toHaveBeenCalledTimes(2)
+    window.removeEventListener(COUPLE_RECORD_CHANGED, seen)
+    wrapper.unmount()
   })
 
   it('后端 400 的中文 message 原样透出', async () => {

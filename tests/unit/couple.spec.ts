@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
-import { coupleApi, intimateApi, periodApi, questionApi, streakApi, wishApi } from '@/api/couple'
+import { calendarApi, coupleApi, intimateApi, periodApi, questionApi, streakApi, wishApi } from '@/api/couple'
 import { COUPLE_CARDS, COUPLE_TAB_LABELS, findCardByKey } from '@/components/couple/coupleCards.registry'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
@@ -17,11 +17,12 @@ import type {
   CoupleWishBoardVO,
   CouplePeriodBoardVO,
   CoupleIntimateBoardVO,
+  CoupleCalendarVO,
 } from '@/types'
 
 /**
- * 情侣空间新增经期/亲密记录后的整页单测：五张卡（每日一问 / 连续互动打卡 / 姨妈记录 / 亲密记录 / 愿望清单）
- * + 裁剪后的空间骨架（页签、头部、爱称、注册表、store 与 WS 口径）。
+ * 情侣空间新增经期/亲密记录与亲密日历后的整页单测：六张卡（每日一问 / 连续互动打卡 / 亲密日历 /
+ * 姨妈记录 / 亲密记录 / 愿望清单）+ 裁剪后的空间骨架（页签、头部、爱称、注册表、store 与 WS 口径）。
  *
  * 口径：断言锁「真的发了哪个请求、带什么参数、界面按返回的哪一块更新」，
  * 而不是组件里改了一个本地 ref。后端 400 的中文 message 一律直透，用例也按直透断言。
@@ -66,7 +67,13 @@ const FIX = vi.hoisted(() => {
   const emptyIntimateBoard = {
     records: [], lastDay: null, lastKind: null, monthCount: 0, monthEdgeCount: 0, monthSexCount: 0, totalCount: 0,
   }
-  return { emptyIntimacy, emptyStreakBoard, emptyQuestion, emptyWishBoard, emptyPeriodBoard, emptyIntimateBoard }
+  const emptyCalendar = {
+    month: '2026-10', periodDays: [], periodStartDays: [], periodEndDays: [], predictedNextDay: null, intimate: [],
+  }
+  return {
+    emptyIntimacy, emptyStreakBoard, emptyQuestion, emptyWishBoard,
+    emptyPeriodBoard, emptyIntimateBoard, emptyCalendar,
+  }
 })
 
 vi.mock('@/api/couple', () => ({
@@ -103,6 +110,9 @@ vi.mock('@/api/couple', () => ({
     intimateAdd: vi.fn().mockResolvedValue(FIX.emptyIntimateBoard),
     intimateRemove: vi.fn().mockResolvedValue(FIX.emptyIntimateBoard),
   },
+  calendarApi: {
+    calendarMonth: vi.fn().mockResolvedValue(FIX.emptyCalendar),
+  },
 }))
 
 const space: CoupleSpaceVO = {
@@ -137,8 +147,8 @@ function boardWithTiers(tiers: CoupleStreakTierVO[]): CoupleStreakBoardVO {
   }
 }
 
-/** 现役五张卡（注册表就是它们的清单：?card= 深链与 e2e-live 巡检按 key 找 DOM） */
-const CARDS = ['couple-question', 'couple-streak', 'couple-period', 'couple-intimate', 'couple-wish']
+/** 现役六张卡（注册表就是它们的清单：?card= 深链与 e2e-live 巡检按 key 找 DOM） */
+const CARDS = ['couple-question', 'couple-streak', 'couple-calendar', 'couple-period', 'couple-intimate', 'couple-wish']
 
 /** 用例里直接引用的缺量常量（与 mock 工厂是同一份对象，改一处就够） */
 const emptyIntimacy = FIX.emptyIntimacy
@@ -147,6 +157,7 @@ const emptyQuestion = FIX.emptyQuestion as unknown as CoupleQuestionTodayVO
 const emptyWishBoard = FIX.emptyWishBoard as CoupleWishBoardVO
 const emptyPeriodBoard = FIX.emptyPeriodBoard as CouplePeriodBoardVO
 const emptyIntimateBoard = FIX.emptyIntimateBoard as CoupleIntimateBoardVO
+const emptyCalendar = FIX.emptyCalendar as CoupleCalendarVO
 
 /**
  * 抽出源码里真正发出的 `/api/couple...` 请求路径（单引号与模板字面量都算）。
@@ -211,23 +222,27 @@ beforeEach(() => {
   }
   vi.mocked(periodApi.periodBoard).mockResolvedValue(emptyPeriodBoard)
   vi.mocked(intimateApi.intimateBoard).mockResolvedValue(emptyIntimateBoard)
+  vi.mocked(calendarApi.calendarMonth).mockResolvedValue(emptyCalendar)
 })
 
-/** 现役 2 个页签与五张卡根 */
+/** 现役 2 个页签与六张卡根 */
 describe('空间骨架', () => {
-  it('未解锁时只有 今天/愿望清单 两个页签，今天页里是问答、打卡、经期与亲密记录四张卡', async () => {
+  it('未解锁时只有 今天/愿望清单 两个页签，今天页里是问答、打卡、日历、经期与亲密记录五张卡', async () => {
     const wrapper = mountView()
     await flushPromises()
     const items = wrapper.findAll('.el-tabs__item')
     expect(items.map((n) => n.text()).sort()).toEqual(['🫶 今天', '🌟 愿望清单'].sort())
 
-    // 今天（默认页签，不 lazy）：每日一问 → 连续互动打卡 → 姨妈记录 → 亲密记录，四张卡的根都在
+    // 今天（默认页签，不 lazy）：每日一问 → 连续互动打卡 → 亲密日历 → 姨妈记录 → 亲密记录，五张卡的根都在
     expect(wrapper.find('[data-testid="couple-question"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="couple-streak"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-calendar"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="couple-period"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="couple-intimate"]').exists()).toBe(true)
     expect(periodApi.periodBoard).toHaveBeenCalledTimes(1)
     expect(intimateApi.intimateBoard).toHaveBeenCalledTimes(1)
+    // 日历卡只打自己那一个月度读口：经期覆盖日由后端算，不在这里再敲一次 /period/board
+    expect(calendarApi.calendarMonth).toHaveBeenCalledTimes(1)
     // 愿望清单是 lazy：没点开之前不该挂载、更不该发 wishBoard
     expect(wrapper.find('[data-testid="couple-wish"]').exists()).toBe(false)
     expect(wishApi.wishBoard).not.toHaveBeenCalled()
@@ -266,12 +281,13 @@ describe('空间骨架', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="couple-invite-open"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="couple-space"]').exists()).toBe(false)
-    // 没空间 = 不打问答 / 看板 / 清单 / 经期 / 亲密 / 心动值这六个注定 404 的请求
+    // 没空间 = 不打问答 / 看板 / 清单 / 经期 / 亲密 / 日历 / 心动值这七个注定 404 的请求
     expect(questionApi.questionToday).not.toHaveBeenCalled()
     expect(streakApi.streakBoard).not.toHaveBeenCalled()
     expect(wishApi.wishBoard).not.toHaveBeenCalled()
     expect(periodApi.periodBoard).not.toHaveBeenCalled()
     expect(intimateApi.intimateBoard).not.toHaveBeenCalled()
+    expect(calendarApi.calendarMonth).not.toHaveBeenCalled()
     expect(coupleApi.intimacy).not.toHaveBeenCalled()
     // 只剩总览 + 好友列表（邀请入口要选人）这两类请求
     expect(coupleApi.overview).toHaveBeenCalledTimes(1)
@@ -336,12 +352,12 @@ describe('空间宣言 CoupleProfile', () => {
 })
 
 /** 注册表：导航功能已下线，但它仍是 ?card= 深链与 e2e-live 巡检的卡索引 */
-describe('功能卡注册表（5 条）', () => {
-  it('五张卡、页签归属正确', () => {
+describe('功能卡注册表（6 条）', () => {
+  it('六张卡、页签归属正确', () => {
     expect(COUPLE_CARDS.map((c) => c.key)).toEqual(CARDS)
     expect(COUPLE_CARDS.map((c) => `${c.key}:${c.tab}`)).toEqual([
-      'couple-question:today', 'couple-streak:today', 'couple-period:today',
-      'couple-intimate:today', 'couple-wish:wish',
+      'couple-question:today', 'couple-streak:today', 'couple-calendar:today',
+      'couple-period:today', 'couple-intimate:today', 'couple-wish:wish',
     ])
     // 每张卡都标得出来，深链按 key 找得到
     for (const key of CARDS) expect(findCardByKey(key)?.key).toBe(key)
@@ -379,7 +395,7 @@ describe('api 契约守卫', () => {
       if (depth <= 0) cur = null
     }
     const mocked: Record<string, Record<string, unknown>> = {
-      coupleApi, streakApi, questionApi, wishApi, periodApi, intimateApi,
+      coupleApi, streakApi, questionApi, wishApi, periodApi, intimateApi, calendarApi,
     }
     const missing: string[] = []
     let total = 0
@@ -392,13 +408,13 @@ describe('api 契约守卫', () => {
       }
     }
     expect(missing, 'mock 工厂缺：' + missing.join(', ')).toEqual([])
-    // 存活分组就是这六个：pinApi/diningApi/ceremonyApi/factoryApi/echoApi/questApi/catchApi 都已随端点一起下线
+    // 存活分组就是这七个：pinApi/diningApi/ceremonyApi/factoryApi/echoApi/questApi/catchApi 都已随端点一起下线
     expect(Object.keys(groups).sort()).toEqual(
-      ['coupleApi', 'intimateApi', 'periodApi', 'questionApi', 'streakApi', 'wishApi'],
+      ['calendarApi', 'coupleApi', 'intimateApi', 'periodApi', 'questionApi', 'streakApi', 'wishApi'],
     )
-    // 27 = 四轮裁剪后 20 + 经期记录 4 + 亲密记录 3：
-    // coupleApi 10（地基 8 + 心动值 1 + 旁支读取 1）+ streak 2 + question 2 + wish 6 + period 4 + intimate 3
-    expect(total).toBe(27)
+    // 28 = 四轮裁剪后 20 + 经期记录 4 + 亲密记录 3 + 亲密日历 1：
+    // coupleApi 10（地基 8 + 心动值 1 + 旁支读取 1）+ streak 2 + question 2 + wish 6 + period 4 + intimate 3 + calendar 1
+    expect(total).toBe(28)
   })
 
   it('已下线的卡片端点在 api/couple.ts 与 store 里一个字都搜不到', () => {
@@ -413,8 +429,8 @@ describe('api 契约守卫', () => {
       expect(paths.filter((p) => p.split('/').includes(dead.replace(/^\//, ''))),
         `api/couple.ts 还在打 ${dead}`).toEqual([])
     }
-    // 存活的 27 个路径逐个落在白名单里，一个多余的都没有
-    expect(paths).toHaveLength(27)
+    // 存活的 28 个路径逐个落在白名单里，一个多余的都没有
+    expect(paths).toHaveLength(28)
     for (const dead of ['stickers', 'makeupCost', 'moodSync', 'comfortBoard', 'bondStats', 'setPetName']) {
       expect(store, `stores/couple.ts 里还留着 ${dead}`).not.toContain(dead)
       expect(api, `api/couple.ts 里还留着 ${dead}`).not.toContain(dead)
