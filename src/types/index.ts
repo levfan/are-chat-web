@@ -272,12 +272,7 @@ export interface CouplePartnerVO {
   nickname: string
   avatar: string
   online: boolean
-  /** 我给 TA 起的专属爱称（空 = 没起，展示时回退昵称） */
-  petName: string | null
 }
-
-/** 空间主题五档后端白名单未变（CoupleSpace.THEMES）；装扮只剩宣言 + 主题两件事，贴纸墙随 v8 裁剪下线 */
-export type CoupleSpaceTheme = 'classic' | 'cherry' | 'ocean' | 'forest' | 'night'
 
 export interface CoupleSpaceVO {
   id: string
@@ -287,10 +282,6 @@ export interface CoupleSpaceVO {
   anniversary: string | null
   /** 在一起天数（建立当天 = 第 1 天） */
   days: number
-  /** 我们的宣言（只有彼此懂的一句话，可空） */
-  slogan: string | null
-  /** 空间主题（classic/cherry/ocean/forest/night） */
-  theme: CoupleSpaceTheme
 }
 
 export interface CoupleOverview {
@@ -301,7 +292,7 @@ export interface CoupleOverview {
   outgoing: CoupleInviteVO[]
 }
 
-// ============ 情侣空间：心情日记 / 时光轴 / 心动值 ============
+// ============ 情侣空间：心情日记 / 时光轴 ============
 
 /** 时光轴事件：type = space/ritual/question/promise/item/anniversary */
 export interface CoupleTimelineEvent {
@@ -310,30 +301,6 @@ export interface CoupleTimelineEvent {
   detail: string
   byUser: string | null
   at: number | null
-}
-
-/**
- * 心动值明细：五项全部来自现役功能（后端 CoupleService.IntimacyBreakdown）。
- * 裁剪前那六项里的心情/贴贴/好事/留灯/复盘/积分已随功能一并下线。
- */
-export interface CoupleIntimacyBreakdown {
-  daysTogether: number
-  checkinDays: number
-  longestStreak: number
-  answerDays: number
-  wishFulfilled: number
-}
-
-export interface CoupleIntimacyVO {
-  score: number
-  level: number
-  title: string
-  icon: string
-  /** 下一等级所需分数，满级为 null */
-  nextLevelAt: number | null
-  /** 距下一级进度 0-100（满级=100） */
-  levelProgress: number
-  breakdown: CoupleIntimacyBreakdown
 }
 
 // ============ 情侣空间：悄悄话信箱 / 一问历史 ============
@@ -1406,203 +1373,48 @@ export interface CoupleLaughYearVO {
   summary: string
 }
 
-// ============ 连续互动打卡与六档解锁（streakApi / CoupleStreakBoardVO） ============
-// 字段名与顺序逐字对齐后端 CoupleStreakService 的 3 个 record（record 参数顺序 = wire 字段顺序）。
-// 日期一律是服务端 yyyy-MM-dd 字符串（前端不吃本地时钟）；「没有那一天」后端给 null 而不是空串。
-
-/**
- * 六档解锁中的一档。key 按天数升序固定六个：
- * bubble(3) / background(7) / nickname-glow(14) / pendant(21) / title(30) / custom-emoji(50)。
- * unlocked 吃的是 longestStreak（补签补回来的也算），unlockedDay 是达成那天，没解锁为 null。
- */
-export interface CoupleStreakTierVO {
-  key: string
-  days: number
-  label: string
-  icon: string
-  detail: string
-  unlocked: boolean
-  unlockedDay: string | null
-}
-
-/** 打卡条上的一格（后端给最近 STRIP_DAYS 天，含今天；makeupFlag=这格是补签来的） */
-export interface CoupleStreakStripCellVO {
-  day: string
-  checked: boolean
-  makeupFlag: boolean
-  todayFlag: boolean
-}
-
-/**
- * 打卡看板（GET /api/couple/streak/board；POST /makeup 原样返回整份，前端整体替换）。
- * nextTierKey/nextTierLabel 满档时为 null；daysToNext 是距下一档还差几天。
- * canMakeup 由后端算（昨天确实断了 + 在 7 天窗口里 + 本月还有额度），前端不要再自己拼这三个条件。
- * 积分台账随裁剪一起下线，补签不花钱。
- */
-export interface CoupleStreakBoardVO {
-  day: string
-  currentStreak: number
-  longestStreak: number
-  confirmedDays: number
-  checkedToday: boolean
-  missedYesterday: boolean
-  tiers: CoupleStreakTierVO[]
-  nextTierKey: string | null
-  nextTierLabel: string | null
-  daysToNext: number
-  strip: CoupleStreakStripCellVO[]
-  makeupWindowDays: number
-  makeupLeftThisMonth: number
-  canMakeup: boolean
-}
-
-// ============ 每日一问（questionApi / CoupleQuestionTodayVO） ============
-// 逐字对齐后端 CoupleQuestionService 的 4 个 record。mine 没答是 null；
-// partnerAnswer 直接给答案原文（后端没下发对方那一行的时间戳）。
-
-/** 某人对今天这一问的作答（createdAt/updatedAt 是 epoch 毫秒，没写过为 null） */
-export interface CoupleQuestionAnswerVO {
-  username: string
-  answer: string
-  createdAt: number | null
-  updatedAt: number | null
-}
-
-/** 今日一问（GET /api/couple/question/today；POST /answer 原样返回整份）。index 是题号。 */
-export interface CoupleQuestionTodayVO {
-  day: string
-  index: number
-  question: string
-  mine: CoupleQuestionAnswerVO | null
-  partnerAnswer: string | null
-  answeredByMe: boolean
-  answeredByPartner: boolean
-  bothAnswered: boolean
-  answerMax: number
-}
-
-// ============ 愿望清单（wishApi / CoupleWishBoardVO） ============
-// 逐字对齐后端 CoupleWishService 的 2 个 record。6 个 POST 全部原样返回整份看板，前端整体替换。
-// 四个位（preparableFlag/canFulfillFlag/...）都由后端算好下发，前端只读不自算。
-
-/**
- * 一条愿望。ownerUser=许愿的人（想要它的那位）、creatorUser=把它记下来的那只手（可以是对方）；
- * status 是**按请求者视角脱敏后**的三态：OPEN / PREPARED / FULFILLED——
- * 对方给我标的「已准备」在我这里就是 OPEN，这是"偷偷"的全部实现，别在前端反推。
- * mineFlag=我是这条愿望的主人（ownerUser 就是我）；
- * preparedFlag=真状态是 PREPARED 且对我可见（=我是那个偷偷准备的人）；
- * preparableFlag=对方许的愿、还没实现也没被标过 → 该我偷偷准备；
- * canFulfillFlag=我自己许的愿且还没实现 → 只有我能点「我收到啦」（点了才公开）。
- * preparedAt 对许愿人本人返回 null；fulfilledAt/created 是 epoch 毫秒，没发生为 null。
- */
-export interface CoupleWishVO {
-  id: string
-  ownerUser: string
-  creatorUser: string
-  title: string
-  note: string | null
-  status: string
-  mineFlag: boolean
-  preparedFlag: boolean
-  preparableFlag: boolean
-  canFulfillFlag: boolean
-  preparedAt: number | null
-  fulfilledAt: number | null
-  created: number | null
-}
-
-/** 愿望清单看板（GET /api/couple/wish/board）：三档分好列表 + 未兑现数 + 上限与字数闸门 */
-export interface CoupleWishBoardVO {
-  open: CoupleWishVO[]
-  prepared: CoupleWishVO[]
-  fulfilled: CoupleWishVO[]
-  openCount: number
-  limit: number
-  titleMax: number
-  noteMax: number
-}
-
-// ============ 经期记录（periodApi / CouplePeriodBoardVO） ============
-// 逐字对齐后端 CouplePeriodService 的 2 个 record。3 个 POST 全部原样返回整份看板，前端整体替换。
-// 日期一律是服务端 yyyy-MM-dd 字符串；平均周期与下次预计由后端读时算，前端不自己数天数。
-
-/** 一次经期记录：开始日必填，结束日还没记就是 null */
-export interface CouplePeriodRecordVO {
-  id: string
-  startDay: string
-  endDay: string | null
-  recorderUser: string
-  created: number | null
-}
-
-/**
- * 经期看板（GET /api/couple/period/board）。
- * averageCycleDays 没有有效样本时是默认 28；cycleSampleCount=0 表示「还在按默认估」。
- * 一条记录都没有时 predictedNextDay/daysUntilNext 为 null；daysUntilNext 为负表示预计日已过。
- */
-export interface CouplePeriodBoardVO {
-  records: CouplePeriodRecordVO[]
-  averageCycleDays: number
-  predictedNextDay: string | null
-  daysUntilNext: number | null
-  cycleSampleCount: number
-}
-
-// ============ 亲密记录（intimateApi / CoupleIntimateBoardVO） ============
-// 逐字对齐后端 CoupleIntimateLogService 的 2 个 record。board/add/remove 都返回整份看板，前端整体替换。
-// EDGE=边缘亲昵、SEX=性生活；同一天允许多条。统计（本月/累计）全由后端算好，前端不自己数。
-// 下面紧跟的 CoupleCalendarVO 对齐的是 CoupleCalendarService（日历卡的月度只读口），不是这个 Service。
+// ============ 亲密日历（calendarApi + 经期/亲密写口） ============
+// 逐字对齐后端 CoupleCalendarService 的 3 个 record。经期与亲密的独立看板已随卡片合并下线，
+// 展示只有这一份：五个写口（period add/end/remove、intimate add/remove）都只回成功与否，
+// 前端写完按当前可见月重拉一次 calendarMonth，格子与摘要一起刷新。
+// 日期一律是服务端 yyyy-MM-dd 字符串；覆盖日、平均周期、下次预计与累计次数全由后端算，前端不自己数。
 
 export type CoupleIntimateKind = 'EDGE' | 'SEX'
 
-/** 一次亲密记录：日期必填，备注可空 */
-export interface CoupleIntimateLogVO {
+/** 日历上的一次亲密标记：带 id 才删得掉 */
+export interface CoupleCalendarIntimateVO {
   id: string
   day: string
   kind: CoupleIntimateKind
   note: string | null
   recorderUser: string
-  created: number | null
+}
+
+/** 与本月经期有关的一次记录：endDay 为 null 就是还没结束，据此给「今天结束了」 */
+export interface CoupleCalendarPeriodVO {
+  id: string
+  startDay: string
+  endDay: string | null
 }
 
 /**
- * 亲密看板（GET /api/couple/intimate/board）。
- * records 只下发最近 30 条；monthCount/totalCount 按全量算，不受列表上限影响。
- * 一条记录都没有时 lastDay/lastKind 为 null。
- */
-export interface CoupleIntimateBoardVO {
-  records: CoupleIntimateLogVO[]
-  lastDay: string | null
-  lastKind: CoupleIntimateKind | null
-  monthCount: number
-  monthEdgeCount: number
-  monthSexCount: number
-  totalCount: number
-}
-
-/**
- * 某个月的亲密标记（GET /api/couple/calendar/month 的一部分）。
- * 日历只用来铺图标与展开当天详情，删除仍回记录卡，所以这里没有 id/created。
- */
-export interface CoupleCalendarIntimateVO {
-  day: string
-  kind: CoupleIntimateKind
-  note: string | null
-  recorderUser: string
-}
-
-/**
- * 亲密日历整月读模型（GET /api/couple/calendar/month）。
- * 经期覆盖日由后端判（PeriodRecord.covers）：记了结束日含首含尾，没记结束日只到今天，
- * 前端不再自己数区间；periodStartDays/periodEndDays 是覆盖日里哪两天算开始、哪两天算结束。
- * predictedNextDay 原样搬经期推算结果（可能落在下个月）；一条记录都没有时为 null。
- * intimate 是本月全部亲密记录（不受看板 30 条上限影响），日期正序。
+ * 整月日历（GET /api/couple/calendar/month）。
+ * periodDays/periodStartDays/periodEndDays 只含本月的天（跨月的经期各月铺各的那段），
+ * 覆盖判定在后端 PeriodRecord.covers：记了结束日含首含尾，没记结束日只到今天。
+ * averageCycleDays 没有有效样本时是默认 28、cycleSampleCount=0 表示「还在按默认估」；
+ * 一条记录都没有时 predictedNextDay/daysUntilNext 为 null，daysUntilNext 为负表示预计日已过。
+ * intimateTotal 是累计次数（不受本月列表条数影响）。
  */
 export interface CoupleCalendarVO {
   month: string
   periodDays: string[]
   periodStartDays: string[]
   periodEndDays: string[]
+  periods: CoupleCalendarPeriodVO[]
   predictedNextDay: string | null
+  averageCycleDays: number
+  cycleSampleCount: number
+  daysUntilNext: number | null
+  intimateTotal: number
   intimate: CoupleCalendarIntimateVO[]
 }

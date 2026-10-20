@@ -13,13 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     CoupleCalendar: typeof import('./components/couple/CoupleCalendar.vue')['default']
     CoupleCollapsible: typeof import('./components/couple/CoupleCollapsible.vue')['default']
-    CoupleIntimate: typeof import('./components/couple/CoupleIntimate.vue')['default']
-    CouplePeriod: typeof import('./components/couple/CouplePeriod.vue')['default']
-    CoupleProfile: typeof import('./components/couple/CoupleProfile.vue')['default']
-    CoupleQuestion: typeof import('./components/couple/CoupleQuestion.vue')['default']
     CoupleSetup: typeof import('./components/couple/CoupleSetup.vue')['default']
-    CoupleStreak: typeof import('./components/couple/CoupleStreak.vue')['default']
-    CoupleWish: typeof import('./components/couple/CoupleWish.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAutocomplete: typeof import('element-plus/es')['ElAutocomplete']
     ElBadge: typeof import('element-plus/es')['ElBadge']

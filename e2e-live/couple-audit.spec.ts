@@ -1,14 +1,16 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
-import { COUPLE_CARDS } from '../src/components/couple/coupleCards.registry'
 
 /**
- * 实时全链路巡检：真实后端（不 mock），按注册表逐页签逐功能卡逐按钮点一遍，采集
+ * 实时全链路巡检（情侣空间）：真实后端（不 mock），逐张卡把按钮点一遍，采集
  *  - error：HTTP 5xx/404、页面 JS 异常、控制台报错
  *  - dead ：点下去既没请求、DOM 没变、没弹窗、没提示（"点了没反应"）
  *  - http ：4xx（多为正常校验，留档看文案是否可见）
  * 每点一次立刻追加 live-audit.jsonl + 进度行，超时也不丢进度。
+ *
+ * 2026-10-20 三轮裁剪后情侣空间只剩一页（头部 + 一张亲密日历）：原来那份「卡注册表 + 11 个页签
+ * + 子页签」的索引随 registry 一起删了，卡清单改成下面三张根，页面上不存在的那条自动跳过。
  */
 const OUT = process.env.AUDIT_OUT ?? path.resolve(process.cwd(), '.audit-live')
 const DANGER = /解散|注销|删除账号|退出登录|清空全部|恢复出厂|删除空间|分手|解除|拆掉|不要了/
@@ -18,6 +20,31 @@ const BLOCKED = ['**/api/couple/dissolve', '**/api/auth/logout', '**/api/auth/de
 const MAX_CLICKS_PER_CARD = Number(process.env.MAX_CLICKS || 8)
 /** FILL=1 时先把卡内输入框填上样本值，再点按钮——用来真走写入链路而不只是撞空态守卫 */
 const FILL = process.env.FILL === '1'
+
+/** 现役三张卡根：未建空间时的引导、建好后的头部、亲密日历 */
+const CARD_ROOTS = ['couple-setup', 'couple-space', 'couple-calendar']
+/** 只想验某一张时用：ONLY_KEY_RE=couple-calendar */
+const KEY_RE = process.env.ONLY_KEY_RE ? new RegExp(process.env.ONLY_KEY_RE) : null
+
+type Hit = {
+  card: string
+  control: string
+  kind: 'error' | 'dead' | 'http'
+  detail: string
+  requests: string[]
+}
+const hits: Hit[] = []
+const probed = new Set<string>()
+let current: { requests: string[]; consoleErrors: string[]; pageErrors: string[] } | null = null
+
+function record(hit: Hit) {
+  hits.push(hit)
+  fs.appendFileSync(`${OUT}/live-audit.jsonl`, JSON.stringify(hit) + '\n')
+}
+
+function progress(line: string) {
+  fs.appendFileSync(`${OUT}/live-audit.progress`, line + '\n')
+}
 
 function sampleFor(placeholder: string) {
   if (/分钟|时长|天数|次数|几|小时/.test(placeholder)) return '10'
@@ -37,42 +64,9 @@ async function fillCardInputs(page: Page, card: Locator) {
     const type = (await el.getAttribute('type').catch(() => '')) || 'text'
     if (cls.includes('el-date') || type === 'date' || type === 'time' || el.getAttribute('readonly')) continue
     if ((await el.inputValue().catch(() => '')) !== '') continue
-    const ph = (await el.getAttribute('placeholder').catch(() => '')) || ''
-    await el.fill(sampleFor(ph)).catch(() => {})
+    await el.fill(sampleFor((await el.getAttribute('placeholder').catch(() => '')) || '')).catch(() => {})
   }
   await page.waitForTimeout(120)
-}
-
-const TABS = [
-  'bond', 'promises', 'rituals', 'growth', 'surprise', 'letters',
-  'mood', 'care', 'shared', 'badges', 'timeline',
-]
-/** 只巡指定页签 / 子页签（调试新交付批次用）：ONLY_TABS=timeline ONLY_SUBS=legacy */
-const RUN_TABS = process.env.ONLY_TABS ? process.env.ONLY_TABS.split(',') : TABS
-const RUN_SUBS = process.env.ONLY_SUBS ? process.env.ONLY_SUBS.split(',') : null
-/** 只巡 testid 命中该正则的卡（同一子页签里只想验新交付那几张时用），如 ONLY_KEY_RE=couple-echo- */
-const KEY_RE = process.env.ONLY_KEY_RE ? new RegExp(process.env.ONLY_KEY_RE) : null
-
-type Hit = {
-  tab: string
-  card: string
-  control: string
-  kind: 'error' | 'dead' | 'http'
-  detail: string
-  requests: string[]
-}
-const hits: Hit[] = []
-const probed = new Set<string>()
-let current: { requests: string[]; consoleErrors: string[]; pageErrors: string[] } | null = null
-let activeTab = ''
-
-function record(hit: Hit) {
-  hits.push(hit)
-  fs.appendFileSync(`${OUT}/live-audit.jsonl`, JSON.stringify(hit) + '\n')
-}
-
-function progress(line: string) {
-  fs.appendFileSync(`${OUT}/live-audit.progress`, line + '\n')
 }
 
 function attachCollectors(page: Page) {
@@ -101,7 +95,7 @@ async function probeCard(page: Page, card: Locator, testid: string) {
   const selector = 'button:not([disabled]):visible'
   const total = Math.min(await card.locator(selector).count(), MAX_CLICKS_PER_CARD)
   const disabled = await card.locator('button[disabled]:visible').count()
-  progress(`${activeTab} ${testid} buttons=${total} disabled=${disabled}`)
+  progress(`${testid} buttons=${total} disabled=${disabled}`)
   for (let i = 0; i < total; i++) {
     const btn = card.locator(selector).nth(i)
     if (!(await btn.isVisible().catch(() => false))) continue
@@ -128,7 +122,7 @@ async function probeCard(page: Page, card: Locator, testid: string) {
     const badHttp = snap.requests.filter((r) => /^(5\d\d|404)/.test(r))
     const softHttp = snap.requests.filter((r) => /^4\d\d/.test(r))
     const changed = after !== before || dialogsAfter !== dialogsBefore || toastCount > 0
-    const base = { tab: activeTab, card: testid, control: label, requests: snap.requests }
+    const base = { card: testid, control: label, requests: snap.requests }
 
     if (snap.pageErrors.length || snap.consoleErrors.length || badHttp.length) {
       record({
@@ -157,63 +151,6 @@ async function probeCard(page: Page, card: Locator, testid: string) {
   }
 }
 
-/** 探本 tab（含子页签）注册表里的功能卡，子页签靠固定点切换直到全部探完 */
-async function sweepTab(page: Page, pane: Locator) {
-  const remaining = new Set(COUPLE_CARDS
-    .filter((c) => c.tab === activeTab && (!RUN_SUBS || (c.sub && RUN_SUBS.includes(c.sub)))
-      && (!KEY_RE || KEY_RE.test(c.key)))
-    .map((c) => c.key))
-  const seenSub = new Set<string>()
-  for (let round = 0; round < 8 && remaining.size; round++) {
-    for (const id of [...remaining]) {
-      const card = page.locator(`[data-testid="${id}"]`).first()
-      if (!(await card.isVisible().catch(() => false))) continue
-      remaining.delete(id)
-      if (!probed.has(id)) {
-        probed.add(id)
-        await probeCard(page, card, id)
-      }
-    }
-    if (!remaining.size) break
-    const subs = pane.locator('.el-tabs__item')
-    const texts = (await subs.allInnerTexts()).map((t) => t.trim()).filter(Boolean)
-    const next = texts.find((t) => !seenSub.has(t))
-    if (!next) break
-    seenSub.add(next)
-    await subs.filter({ hasText: next }).first().click().catch(() => {})
-    await page.waitForTimeout(400)
-  }
-  if (remaining.size) progress(`${activeTab} 未探到（页面上不存在）：${[...remaining].join(', ')}`)
-}
-
-async function openSpace(page: Page, tab: string) {
-  // 首屏加载期的接口错误不发生在点击窗口内，单开一个收集器兜住（否则整页空壳也查不出来）
-  current = { requests: [], consoleErrors: [], pageErrors: [] }
-  await page.goto('/couple')
-  if ((await page.locator('.el-tabs__item').count()) === 0) {
-    await page.reload()
-    await page.waitForTimeout(1_500)
-  }
-  await expect(page.locator('.el-tabs__item').first()).toBeVisible({ timeout: 20_000 })
-  await page.waitForTimeout(1_000)
-  const snap = current
-  current = null
-  const bad = snap.requests.filter((r) => /^[45]\d\d/.test(r))
-  if (bad.length || snap.pageErrors.length) {
-    record({
-      tab,
-      card: '(整页加载)',
-      control: '(首屏请求)',
-      kind: 'error',
-      detail: [...bad, ...snap.pageErrors].join(' | ').slice(0, 400),
-      requests: snap.requests,
-    })
-  }
-  await page.locator(`[role="tab"][aria-controls$="pane-${tab}"]`).first().click({ timeout: 5_000 })
-  await page.waitForTimeout(800)
-  return page.locator(`[role="tabpanel"][id$="pane-${tab}"]`)
-}
-
 test.describe('实时巡检', () => {
   test.beforeEach(async ({ page }) => {
     attachCollectors(page)
@@ -229,19 +166,43 @@ test.describe('实时巡检', () => {
     }
   })
 
-  for (const tab of RUN_TABS) {
-    test(`页签 ${tab}`, async ({ page }) => {
-      activeTab = tab
-      const pane = await openSpace(page, tab)
-      await sweepTab(page, pane)
-    })
-  }
+  test('情侣空间一页逐卡探测', async ({ page }) => {
+    // 首屏加载期的接口错误不发生在点击窗口内，单开一个收集器兜住（否则整页空壳也查不出来）
+    current = { requests: [], consoleErrors: [], pageErrors: [] }
+    await page.goto('/couple')
+    await expect(page.locator('[data-testid="couple-space"], [data-testid="couple-setup"]').first())
+      .toBeVisible({ timeout: 20_000 })
+    await page.waitForTimeout(1_000)
+    const snap = current
+    current = null
+    const bad = snap.requests.filter((r) => /^[45]\d\d/.test(r))
+    if (bad.length || snap.pageErrors.length || snap.consoleErrors.length) {
+      record({
+        card: '(整页加载)',
+        control: '(首屏请求)',
+        kind: 'error',
+        detail: [...bad, ...snap.pageErrors, ...snap.consoleErrors].filter(Boolean).join(' | ').slice(0, 400),
+        requests: snap.requests,
+      })
+    }
+
+    for (const id of CARD_ROOTS) {
+      if (KEY_RE && !KEY_RE.test(id)) continue
+      const card = page.locator(`[data-testid="${id}"]`).first()
+      if (!(await card.isVisible().catch(() => false))) {
+        progress(`${id} 页面上不存在，跳过`)
+        continue
+      }
+      probed.add(id)
+      await probeCard(page, card, id)
+    }
+  })
 
   test.afterAll(() => {
     const byKind = { error: [] as Hit[], dead: [] as Hit[], http: [] as Hit[] }
     for (const h of hits) byKind[h.kind].push(h)
     const lines = [
-      `# 实时巡检报告（真实后端 H2 + 真账号 alice/bob，注册表 ${COUPLE_CARDS.length} 卡）`,
+      '# 实时巡检报告（真实后端 + 真账号，情侣空间一页）',
       ``,
       `实际点开探测 ${probed.size} 张；异常 ${byKind.error.length}，点了没反应 ${byKind.dead.length}，4xx ${byKind.http.length}`,
       ``,
@@ -249,7 +210,7 @@ test.describe('实时巡检', () => {
     for (const kind of ['error', 'dead', 'http'] as const) {
       lines.push(`## ${kind === 'error' ? '异常（必须修）' : kind === 'dead' ? '点了没反应' : '4xx（看文案是否可见）'}`)
       if (!byKind[kind].length) lines.push('（无）')
-      for (const h of byKind[kind]) lines.push(`- **[${h.tab}] ${h.card} → 「${h.control}」**  ${h.detail}`)
+      for (const h of byKind[kind]) lines.push(`- **[${h.card}] 「${h.control}」**  ${h.detail}`)
       lines.push('')
     }
     fs.writeFileSync(`${OUT}/live-audit.md`, lines.join('\n'))
