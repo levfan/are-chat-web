@@ -14,7 +14,7 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 - 版本号唯一来源 `package.json` 的 version（alpha → rc → stable 阶梯，升级独立 commit，规范见 `.agents/skills/version-release/SKILL.md`）
 - 站名唯一来源 `src/constants.ts` 的 `APP_NAME`（天枢，代号 `APP_CODENAME` = DUBHE）；改名只动这一处 + `index.html`/`public/manifest.webmanifest` 三处静态文案
 - 视觉基调：**全站科技冷色**（电光青 `#0ea5e9` + 深空蓝侧栏 `#0a1524`，暗色 `#22d3ee` / `#070d18`），**只有情侣空间保留暖色**——`CoupleView` 根元素挂 `.couple-scope`，`style.css` 里那一层把 `--im-*` 与 `--el-*` 整套覆盖回暖色。新组件默认吃令牌，别在 `.vue` 里硬编码颜色
-- 规模快照（2026-10-20 三轮裁剪后实测，用户指令「保留在一起天数、纪念日、美柚app上的日历记录，其它功能都不要了」）：5 个主页面 / CoupleView **一页两屏、不分页签**（头部卡「在一起天数 + 纪念日 + 解除」+ 一张亲密日历，中间只夹里程碑横幅）/ 情侣组件 **3 个 `.vue`**（CoupleCalendar + CoupleSetup + CoupleCollapsible 卡壳；卡索引表 `coupleCards.registry.ts` 只剩一张卡、失去对象已删）/ `api/couple.ts` **14 个方法·4 个 api 组·74 行** / `types/index.ts` 1420 行 / `stores/couple.ts` **138 行**（只剩总览与邀请那棵树）/ `utils/coupleVisual.ts`（打卡档位驱动的聊天侧情侣特效）与 `utils/coupleRecordBus.ts`（记录卡→日历卡的本页刷新信号）都已删 / 单测基线 **92 用例·8 个文件**（`couple.spec.ts` 16 条含「api 契约守卫」，断言 4 个分组 / 14 个方法 / 14 条路径；`couple-calendar.spec.ts` 27 条锁日历卡的排版与三个记录入口；`couple-v8-cards.spec.ts`、`couple-unlocks.spec.ts`、`couple-period.spec.ts`、`couple-intimate.spec.ts` 随所测功能删除）；后端配套见 are-chat-map（同一轮裁剪，端点与表数量以后端仓库的地图为准）
+- 规模快照（2026-10-20 三轮裁剪后实测，用户指令「保留在一起天数、纪念日、美柚app上的日历记录，其它功能都不要了」）：5 个主页面 / CoupleView **一页两屏、不分页签**（头部卡「在一起天数 + 纪念日 + 解除」+ 一张亲密日历，中间只夹里程碑横幅）/ 情侣组件 **3 个 `.vue`**（CoupleCalendar + CoupleSetup + CoupleCollapsible 卡壳；卡索引表 `coupleCards.registry.ts` 只剩一张卡、失去对象已删）/ `api/couple.ts` **14 个方法·4 个 api 组·74 行** / `types/index.ts` 1420 行 / `stores/couple.ts` **138 行**（只剩总览与邀请那棵树）/ `utils/coupleVisual.ts`（打卡档位驱动的聊天侧情侣特效）与 `utils/coupleRecordBus.ts`（记录卡→日历卡的本页刷新信号）都已删 / 单测基线 **96 用例·9 个文件**（`couple.spec.ts` 16 条含「api 契约守卫」，断言 4 个分组 / 14 个方法 / 14 条路径；`couple-calendar.spec.ts` 27 条锁日历卡的排版与三个记录入口；`chat-view.spec.ts` 4 条锁 ChatView 的模板-样式成对与转发空态；`couple-v8-cards.spec.ts`、`couple-unlocks.spec.ts`、`couple-period.spec.ts`、`couple-intimate.spec.ts` 随所测功能删除）；后端配套见 are-chat-map（同一轮裁剪，端点与表数量以后端仓库的地图为准）
 
 ## 二、目录地图与关键文件
 
@@ -39,7 +39,7 @@ are-chat-web/
 │   ├── types/index.ts                # 全部 TS 类型按域分节（当前 1420 行；三轮裁剪又删 10 个作废情侣 VO，历史孤儿约 100 个未动）
 │   ├── utils/                        # effects.ts(彩蛋指令)、format.ts/imFormat.ts、sound.ts、notify.ts、settings.ts、theme.ts 等（coupleVisual.ts / coupleRecordBus.ts 已删）
 │   └── constants.ts                  # 全局常量
-├── tests/unit/                       # 8 个文件（当前基线 92 用例；整页挂载用例成本高，vite.config.ts 已把 testTimeout 提到 20s）
+├── tests/unit/                       # 9 个文件（当前基线 96 用例；整页挂载用例成本高，vite.config.ts 已把 testTimeout 提到 20s）
 ├── AGENTS.md / docs/ / wiki/         # 仓库约束与文档（后端配套地图见 are-chat 仓库 are-chat-map skill）
 ```
 
@@ -71,7 +71,7 @@ WS 事件：`stores/couple.ts` 的 `handleCoupleEvent` 只认 **6 个**——`in
 - 交互文案：**情侣空间内**可爱口语化 + emoji；聊天/通讯录/后台/登录这些非情侣页面一律中性口语，不要再撒情话与爱心（2026-10-20 按用户要求把情侣风收进情侣空间）。错误提示直接 `ElMessage.error(e instanceof Error ? e.message : '兜底文案')`（后端 message 已是中文人话）
 - 样式：组件内 scoped；间距/圆角参考现有组件；颜色一律走 `style.css` 的令牌（`var(--im-*)` / `var(--xx-accent)`，兜底值写冷色），情侣页专属的暖色留在 `src/components/couple/` 内
 - 类型红线：`pnpm build` 会做 vue-tsc 检查——改了 types 里的接口（如给 VO 加字段），**必须同步改 tests/unit/couple.spec.ts 的 mock 工厂**，否则构建失败
-- 测试：基线 **92 用例 / 8 个文件**；`tests/unit/couple.spec.ts` 断言这一页没有页签（`.el-tabs__item` 数量为 0）且七个老 testid 都不在，别把页签或已下线的卡加回来；新组件核心交互应补用例；**动了 `src/api/couple.ts` 的方法集必须同步 mock 工厂**，否则「api 契约守卫」那条用例会红（它现读源码断言 4 个分组、14 个方法、14 条路径与死路径段）
+- 测试：基线 **96 用例 / 9 个文件**；`tests/unit/couple.spec.ts` 断言这一页没有页签（`.el-tabs__item` 数量为 0）且七个老 testid 都不在，别把页签或已下线的卡加回来；`tests/unit/chat-view.spec.ts` 是 ChatView 的读源码守卫（整页挂载太贵），断言模板用到的类名都有样式规则、转发弹窗有 `forward-empty` 空态分支——**新写 class 就必须同文件补规则，否则这条会红**（五个历史欠账类名记在 `KNOWN_UNSTYLED` 里，补一个就从名单删一个）；新组件核心交互应补用例；**动了 `src/api/couple.ts` 的方法集必须同步 mock 工厂**，否则「api 契约守卫」那条用例会红（它现读源码断言 4 个分组、14 个方法、14 条路径与死路径段）
 - HTTP 封装在 `api/http.ts`：`http.get<T>(url)`、`http.postJson<T>(url, body)`、`http.putJson`、`http.delete`
 - **情侣解锁外观整条已下线，别再接回来**：档位来源（连续互动打卡）没了，专属气泡 / 昵称光效 / 头像挂件 / 专属贴纸包这条线随之撤掉——`couple.tierUnlocked(key)` 与 `src/utils/coupleVisual.ts`（门禁函数、挂件取法、贴纸生成）已删除，`style.css` 里那段 `--couple-bubble-*` / `--couple-glow-*` 令牌与 `.dm-area[data-couple-bubble]`、`.couple-name-glow` 规则一并删除，`ImAvatar.vue` 去掉 `pendant` prop、`EmojiPicker.vue` 回到只有通用表情分组、`ChatView.vue` 不再 import couple store。原先「解锁外观一律问 store、不许自己算天数」的口径作废（现在没有任何外观要读档位了）；动效本身仍要在 `prefers-reduced-motion: reduce` 下关闭，且不能只靠动效承载信息。
 - **产品红线**：不做照片/视频上传——所以当年 50 天「定制 emoji」也只能是纯 unicode 组合（`buildCoupleStickers` 只取昵称码点、`isStickerText` 拒含 `http(s):`/`www.`/`data:`/`//`/`<`/`>` 或超 12 码点的值）；这两个函数随贴纸包一起删除，但这条红线长期有效。

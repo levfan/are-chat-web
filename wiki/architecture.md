@@ -42,7 +42,7 @@
 | `types/index.ts` | 全部 TS 类型（1420 行，情侣 VO 在专属区块；三轮裁剪又删掉心动值/打卡看板/每日一问/愿望清单/主题等 10 个作废类型，`CoupleSpaceVO` 去掉 `slogan`/`theme`、`CouplePartnerVO` 去掉 `petName`） |
 | `utils/` | `effects.ts`（彩蛋指令）、`format.ts`、`imFormat.ts`、`sound.ts`、`notify.ts`、`image.ts`、`settings.ts`、`theme.ts`、`favicon.ts`、`draggable-message-box.ts`；`coupleVisual.ts`（打卡档位驱动的聊天侧解锁外观）与 `coupleRecordBus.ts`（记录卡 → 日历卡的本页刷新信号）都随三轮裁剪删除——前者没了档位来源，后者合并成一张卡后同组件内部不需要跨卡通知 |
 | `constants.ts` / `main.ts` / `style.css` / `App.vue` | 常量（如 `CURRENT_USER_KEY`、`APP_NAME`）与入口全局样式 |
-| `tests/unit/` | 8 个 Vitest spec 文件（92 用例基线，见 [测试](testing.md)） |
+| `tests/unit/` | 9 个 Vitest spec 文件（96 用例基线，见 [测试](testing.md)） |
 
 ## http.ts 封装
 

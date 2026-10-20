@@ -23,6 +23,7 @@
 |---|---|---|
 | `couple.spec.ts` | 16 | 挂载整个 `CoupleView`（`mountView()`，页面不再分页签，也就不需要 `openTab()`）：空间骨架 4 条（头部 + 一张日历、`.el-tabs__item` 数量为 0、七个已下线 testid 一个都不在、日历是唯一读口且挂载只敲一次、未建空间只出邀请入口且一个卡片接口都不敲、里程碑横幅只在整百那天出）、纪念日与解除 4 条（没选日期前端挡下、保存交日期后重拉总览、解除先确认再清场重拉、取消确认框一个请求都不发）、**api 契约守卫 2 条（从源码抽分组与方法，断言 mock 工厂覆盖全部 14 个方法 + 恰好 4 个分组 + 14 条存活路径，并把 `question`/`streak`/`wish`/`intimacy`/`profile`/`board`/`pin`/`dining` 八个路径段按 `/` 分段判死，同时断言 api 与 store 源码里搜不到 `streakApi`/`questionApi`/`wishApi`/`loadIntimacy`/`updateProfile`/`tierUnlocked`）**、WS 口径 6 条（`invite-accepted`/`anniversary-updated` 重拉总览、`dissolved` 先清场再重拉、`anniversary-reminder` 只弹提醒、已下线卡片的老推送不发请求不弹提醒、没有空间时 init 不敲卡片接口且 reset 清总览） |
 | `couple-calendar.spec.ts` | 27 | 亲密日历卡（`vi.useFakeTimers({toFake:['Date']})` + `vi.setSystemTime` 把今天钉在 2026-10-20，格子数才可比）。展示 13 条：未建空间一个请求都不发也不铺网格、挂载只发一次月度读口且标题是当月、周一开头的 3 个空格 + 31 天、覆盖日/开始日/结束日三个列表照位渲染、亲密标记按类型出图标（同日两种都出、条数只在大于一时当角标）、🌱 只标后端给的那一天且落在经期日上时让位给 🩸、摘要行与周期行照后端数字说不自己估（含「先按 28 天估」「已推迟」「没有记录时给引导而不是数字」）、点一天摊开那天的经期阶段与每条标记（备注与「我记的/TA 记的」）、空白天给引导未来天提醒先记今天。记与删 14 条：三个记录入口（记经期开始 / 记一笔 EDGE 或 SEX / 补今天结束日）交的都是选中的那天且写完重拉当月、这天的开始已记过就前端拦下、未来那天的三个按钮都是禁用态硬点也不发请求、翻月清空选中后提醒「先点一个日子」、备注留空交 null 不把空串塞给后端、删标记与删区间各交自己的 id、已结束的区间不给「今天结束了」按钮、请求在飞时连点不重复提交、翻月只换 `month` 参数重取一次、「本月」在当月禁用翻走再点回到当月并重新选中今天、后端 400 中文直透、月度读口 404 整卡静默收起。**每个用例都得 unmount**（`afterEach` 里 `while (mounted.length) pop().unmount()`）——不卸载会让上一个用例的实例继续数请求 |
+| `chat-view.spec.ts` | 4 | ChatView 读源码守卫（整页挂载成本过高，只锁「模板与样式必须成对」）：转发弹窗用到的类名都要有样式规则、全页模板的无样式类名只剩已记账的五个欠账（`block-banner`/`context-bar`/`context-text`/`editing`/`jump-btn`）、没有可转发好友时必须有 `forward-empty` 提示分支与 `forwardEmptyHint`、未选中好友时发送按钮保持禁用 |
 | `im.spec.ts` | 21 | im store：会话、消息、未读、WS 推送处理等 |
 | `LoginView.spec.ts` | 8 | 登录、注册审批申请流（register/registerStatus） |
 | `contacts.spec.ts` | 7 | ContactsView 通讯录（好友功能合并，含邀请建情侣空间入口） |
@@ -30,7 +31,7 @@
 | `http.spec.ts` | 4 | http.ts 封装：code 判错、401 清登录态、ApiError |
 | `format.spec.ts` | 4 | utils/format：formatBytes/formatTime |
 
-合计 **92 用例 / 8 个 spec 文件**（`pnpm test` 基线，2026-10-20 三轮裁剪后实测 `Test Files 8 passed / Tests 92 passed`）。这一轮删掉的 spec：`couple-v8-cards.spec.ts`（三张老卡逐个）、`couple-unlocks.spec.ts`（聊天侧视觉解锁）、`couple-period.spec.ts` 与 `couple-intimate.spec.ts`（两张独立看板卡，用例并入 `couple-calendar.spec.ts`）。
+合计 **96 用例 / 9 个 spec 文件**（`pnpm test` 基线，2026-10-21 修转发弹窗时实测 `Test Files 9 passed / Tests 96 passed`）。上一轮（2026-10-20 三轮裁剪）删掉的 spec：`couple-v8-cards.spec.ts`（三张老卡逐个）、`couple-unlocks.spec.ts`（聊天侧视觉解锁）、`couple-period.spec.ts` 与 `couple-intimate.spec.ts`（两张独立看板卡，用例并入 `couple-calendar.spec.ts`）。
 
 ## 全量显式 mock 模式（couple.spec.ts 开头）
 
