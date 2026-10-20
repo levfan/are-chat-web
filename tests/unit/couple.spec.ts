@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CoupleView from '@/views/CoupleView.vue'
-import { coupleApi, questionApi, streakApi, wishApi } from '@/api/couple'
+import { coupleApi, periodApi, questionApi, streakApi, wishApi } from '@/api/couple'
 import { COUPLE_CARDS, COUPLE_TAB_LABELS, findCardByKey } from '@/components/couple/coupleCards.registry'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
@@ -15,10 +15,11 @@ import type {
   CoupleStreakBoardVO,
   CoupleStreakTierVO,
   CoupleWishBoardVO,
+  CouplePeriodBoardVO,
 } from '@/types'
 
 /**
- * 情侣空间裁剪后的整页单测：三张卡（每日一问 / 连续互动打卡 / 愿望清单）
+ * 情侣空间新增经期记录后的整页单测：四张卡（每日一问 / 连续互动打卡 / 姨妈记录 / 愿望清单）
  * + 裁剪后的空间骨架（页签、头部、爱称、注册表、store 与 WS 口径）。
  *
  * 口径：断言锁「真的发了哪个请求、带什么参数、界面按返回的哪一块更新」，
@@ -58,7 +59,10 @@ const FIX = vi.hoisted(() => {
   const emptyWishBoard = {
     open: [], prepared: [], fulfilled: [], openCount: 0, limit: 30, titleMax: 80, noteMax: 200,
   }
-  return { emptyIntimacy, emptyStreakBoard, emptyQuestion, emptyWishBoard }
+  const emptyPeriodBoard = {
+    records: [], averageCycleDays: 28, predictedNextDay: null, daysUntilNext: null, cycleSampleCount: 0,
+  }
+  return { emptyIntimacy, emptyStreakBoard, emptyQuestion, emptyWishBoard, emptyPeriodBoard }
 })
 
 vi.mock('@/api/couple', () => ({
@@ -83,6 +87,12 @@ vi.mock('@/api/couple', () => ({
     wishPrepare: vi.fn().mockResolvedValue(FIX.emptyWishBoard), wishUnprepare: vi.fn().mockResolvedValue(FIX.emptyWishBoard),
     wishFulfill: vi.fn().mockResolvedValue(FIX.emptyWishBoard),
     wishRemove: vi.fn().mockResolvedValue(FIX.emptyWishBoard),
+  },
+  periodApi: {
+    periodBoard: vi.fn().mockResolvedValue(FIX.emptyPeriodBoard),
+    periodAdd: vi.fn().mockResolvedValue(FIX.emptyPeriodBoard),
+    periodEnd: vi.fn().mockResolvedValue(FIX.emptyPeriodBoard),
+    periodRemove: vi.fn().mockResolvedValue(FIX.emptyPeriodBoard),
   },
 }))
 
@@ -118,14 +128,15 @@ function boardWithTiers(tiers: CoupleStreakTierVO[]): CoupleStreakBoardVO {
   }
 }
 
-/** 现役三张卡（注册表就是它们的清单：?card= 深链与 e2e-live 巡检按 key 找 DOM） */
-const CARDS = ['couple-question', 'couple-streak', 'couple-wish']
+/** 现役四张卡（注册表就是它们的清单：?card= 深链与 e2e-live 巡检按 key 找 DOM） */
+const CARDS = ['couple-question', 'couple-streak', 'couple-period', 'couple-wish']
 
 /** 用例里直接引用的缺量常量（与 mock 工厂是同一份对象，改一处就够） */
 const emptyIntimacy = FIX.emptyIntimacy
 const emptyStreakBoard = FIX.emptyStreakBoard as CoupleStreakBoardVO
 const emptyQuestion = FIX.emptyQuestion as unknown as CoupleQuestionTodayVO
 const emptyWishBoard = FIX.emptyWishBoard as CoupleWishBoardVO
+const emptyPeriodBoard = FIX.emptyPeriodBoard as CouplePeriodBoardVO
 
 /**
  * 抽出源码里真正发出的 `/api/couple...` 请求路径（单引号与模板字面量都算）。
@@ -190,17 +201,19 @@ beforeEach(() => {
   }
 })
 
-/** 现役 2 个页签与三张卡根 */
+/** 现役 2 个页签与四张卡根 */
 describe('空间骨架', () => {
-  it('未解锁时只有 今天/愿望清单 两个页签，今天页里是问答与打卡两张卡', async () => {
+  it('未解锁时只有 今天/愿望清单 两个页签，今天页里是问答、打卡与经期记录三张卡', async () => {
     const wrapper = mountView()
     await flushPromises()
     const items = wrapper.findAll('.el-tabs__item')
     expect(items.map((n) => n.text()).sort()).toEqual(['🫶 今天', '🌟 愿望清单'].sort())
 
-    // 今天（默认页签，不 lazy）：每日一问 → 连续互动打卡，两张卡的根都在
+    // 今天（默认页签，不 lazy）：每日一问 → 连续互动打卡 → 姨妈记录，三张卡的根都在
     expect(wrapper.find('[data-testid="couple-question"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="couple-streak"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="couple-period"]').exists()).toBe(true)
+    expect(periodApi.periodBoard).toHaveBeenCalledTimes(1)
     // 愿望清单是 lazy：没点开之前不该挂载、更不该发 wishBoard
     expect(wrapper.find('[data-testid="couple-wish"]').exists()).toBe(false)
     expect(wishApi.wishBoard).not.toHaveBeenCalled()
@@ -239,10 +252,11 @@ describe('空间骨架', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="couple-invite-open"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="couple-space"]').exists()).toBe(false)
-    // 没空间 = 不打问答 / 看板 / 清单 / 心动值这四个注定 404 的请求
+    // 没空间 = 不打问答 / 看板 / 清单 / 经期 / 心动值这五个注定 404 的请求
     expect(questionApi.questionToday).not.toHaveBeenCalled()
     expect(streakApi.streakBoard).not.toHaveBeenCalled()
     expect(wishApi.wishBoard).not.toHaveBeenCalled()
+    expect(periodApi.periodBoard).not.toHaveBeenCalled()
     expect(coupleApi.intimacy).not.toHaveBeenCalled()
     // 只剩总览 + 好友列表（邀请入口要选人）这两类请求
     expect(coupleApi.overview).toHaveBeenCalledTimes(1)
@@ -307,11 +321,11 @@ describe('空间宣言 CoupleProfile', () => {
 })
 
 /** 注册表：导航功能已下线，但它仍是 ?card= 深链与 e2e-live 巡检的卡索引 */
-describe('功能卡注册表（3 条）', () => {
-  it('三张卡、页签归属正确', () => {
+describe('功能卡注册表（4 条）', () => {
+  it('四张卡、页签归属正确', () => {
     expect(COUPLE_CARDS.map((c) => c.key)).toEqual(CARDS)
     expect(COUPLE_CARDS.map((c) => `${c.key}:${c.tab}`)).toEqual([
-      'couple-question:today', 'couple-streak:today', 'couple-wish:wish',
+      'couple-question:today', 'couple-streak:today', 'couple-period:today', 'couple-wish:wish',
     ])
     // 每张卡都标得出来，深链按 key 找得到
     for (const key of CARDS) expect(findCardByKey(key)?.key).toBe(key)
@@ -349,7 +363,7 @@ describe('api 契约守卫', () => {
       if (depth <= 0) cur = null
     }
     const mocked: Record<string, Record<string, unknown>> = {
-      coupleApi, streakApi, questionApi, wishApi,
+      coupleApi, streakApi, questionApi, wishApi, periodApi,
     }
     const missing: string[] = []
     let total = 0
@@ -362,13 +376,13 @@ describe('api 契约守卫', () => {
       }
     }
     expect(missing, 'mock 工厂缺：' + missing.join(', ')).toEqual([])
-    // 存活分组就是这四个：pinApi/diningApi/ceremonyApi/factoryApi/echoApi/questApi/catchApi 都已随端点一起下线
+    // 存活分组就是这五个：pinApi/diningApi/ceremonyApi/factoryApi/echoApi/questApi/catchApi 都已随端点一起下线
     expect(Object.keys(groups).sort()).toEqual(
-      ['coupleApi', 'questionApi', 'streakApi', 'wishApi'],
+      ['coupleApi', 'periodApi', 'questionApi', 'streakApi', 'wishApi'],
     )
-    // 20 = 二轮裁剪后再删收藏/全局搜索/通知中心/运营看板，四轮再删问答回看与愿望改备注：
-    // coupleApi 10（地基 8 + 心动值 1 + 旁支读取 1）+ streak 2 + question 2 + wish 6
-    expect(total).toBe(20)
+    // 24 = 四轮裁剪后 20 + 经期记录 4：
+    // coupleApi 10（地基 8 + 心动值 1 + 旁支读取 1）+ streak 2 + question 2 + wish 6 + period 4
+    expect(total).toBe(24)
   })
 
   it('已下线的卡片端点在 api/couple.ts 与 store 里一个字都搜不到', () => {
@@ -383,8 +397,8 @@ describe('api 契约守卫', () => {
       expect(paths.filter((p) => p.split('/').includes(dead.replace(/^\//, ''))),
         `api/couple.ts 还在打 ${dead}`).toEqual([])
     }
-    // 存活的 20 个路径逐个落在白名单里，一个多余的都没有
-    expect(paths).toHaveLength(20)
+    // 存活的 24 个路径逐个落在白名单里，一个多余的都没有
+    expect(paths).toHaveLength(24)
     for (const dead of ['stickers', 'makeupCost', 'moodSync', 'comfortBoard', 'bondStats', 'setPetName']) {
       expect(store, `stores/couple.ts 里还留着 ${dead}`).not.toContain(dead)
       expect(api, `api/couple.ts 里还留着 ${dead}`).not.toContain(dead)

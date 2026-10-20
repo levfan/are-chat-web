@@ -5,7 +5,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import CoupleStreak from '@/components/couple/CoupleStreak.vue'
 import CoupleQuestion from '@/components/couple/CoupleQuestion.vue'
 import CoupleWish from '@/components/couple/CoupleWish.vue'
-import { coupleApi, questionApi, streakApi, wishApi } from '@/api/couple'
+import { coupleApi, periodApi, questionApi, streakApi, wishApi } from '@/api/couple'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useCoupleStore } from '@/stores/couple'
@@ -26,7 +26,7 @@ import type {
  * 口径与 couple.spec.ts 一致：断言「真的发了哪个请求、带什么参数、界面按返回的哪一块更新」，
  * 尤其看后端的闸门位（canMakeup / bothAnswered / preparableFlag / canFulfillFlag / tierUnlocked）
  * 有没有被照位渲染——前端只镜像闸门，不自己另判一遍。
- * mock 工厂把 api/couple.ts 存活的 25 个方法逐个列出来（不用 Proxy 兜底），漏一个这里先红。
+ * mock 工厂把 api/couple.ts 存活的方法逐个列出来（不用 Proxy 兜底），漏一个这里先红。
  */
 
 vi.mock('@/api/couple', () => {
@@ -46,6 +46,7 @@ vi.mock('@/api/couple', () => {
       wishBoard: vi.fn(), wishAdd: vi.fn(), wishPrepare: vi.fn(), wishUnprepare: vi.fn(),
       wishFulfill: vi.fn(), wishRemove: vi.fn(),
     },
+    periodApi: { periodBoard: vi.fn(), periodAdd: vi.fn(), periodEnd: vi.fn(), periodRemove: vi.fn() },
   }
 })
 
