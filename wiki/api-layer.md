@@ -13,7 +13,7 @@
 | `auth.ts` | `authApi` / `adminApi` | `/api/auth` / `/api/admin` |
 | `im.ts` | `friendApi` / `messageApi` / `profileApi` | `/api/friends` `/api/messages` `/api/profile` |
 
-> 聊天侧的 `starsApi`（消息收藏）与 `messageApi.searchGlobal`（全局搜索）已在 2026-10-20 随入口一起下线；好友 `tag` 字段（分组）也已删除，`friendApi.update` 只剩 `remark/pinned/muted/blocked`。
+> 聊天侧的 `starsApi`（消息收藏）与 `messageApi.searchGlobal`（全局搜索）已在 2026-10-20 随入口一起下线；好友 `tag` 字段（分组）也已删除，`friendApi.update` 只剩 `remark/muted/blocked`（会话置顶入口已从聊天设置中移除）。
 | `files.ts` | `filesApi` | `/api/files` |
 | `system.ts` | `presenceApi` / `systemApi` / `announcementApi` | `/api/presence` `/api/system` `/api/announcements` |
 

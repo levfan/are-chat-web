@@ -216,7 +216,7 @@ export const useImStore = defineStore('im', () => {
     await loadRequests()
   }
 
-  async function updateFriend(id: string, patch: { remark?: string; pinned?: boolean; muted?: boolean; blocked?: boolean }) {
+  async function updateFriend(id: string, patch: { remark?: string; muted?: boolean; blocked?: boolean }) {
     await friendApi.update(id, patch)
     await loadFriends()
   }

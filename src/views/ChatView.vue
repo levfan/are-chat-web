@@ -107,7 +107,6 @@
                   <el-icon><MuteNotification v-if="!im.activeFriend?.muted" /><Bell v-else /></el-icon>
                   {{ im.activeFriend?.muted ? '关闭免打扰' : '会话免打扰' }}
                 </el-dropdown-item>
-                <el-dropdown-item command="pin">{{ im.activeFriend?.pinned ? '取消置顶' : '置顶会话' }}</el-dropdown-item>
                 <!-- 85 清空聊天记录 -->
                 <el-dropdown-item command="clear-history">
                   <el-icon><Brush /></el-icon>清空聊天记录
@@ -992,10 +991,6 @@ async function onMenuCommand(command: string) {
   if (command === 'mute') {
     await im.updateFriend(friend.id, { muted: !friend.muted })
     ElMessage.success(friend.muted ? '已关闭免打扰' : '已开启免打扰')
-    return
-  }
-  if (command === 'pin') {
-    await im.updateFriend(friend.id, { pinned: !friend.pinned })
     return
   }
   if (command === 'delete') {

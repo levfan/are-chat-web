@@ -24,7 +24,7 @@ export const friendApi = {
   outgoing: () => http.get<FriendRequestVO[]>('/api/friends/requests/outgoing'),
   accept: (id: string) => http.postJson<void>(`/api/friends/requests/${id}/accept`, {}),
   reject: (id: string) => http.postJson<void>(`/api/friends/requests/${id}/reject`, {}),
-  update: (id: string, patch: { remark?: string; pinned?: boolean; muted?: boolean; blocked?: boolean }) =>
+  update: (id: string, patch: { remark?: string; muted?: boolean; blocked?: boolean }) =>
     http.putJson<void>(`/api/friends/${id}`, patch),
   remove: (id: string) => http.delete<void>(`/api/friends/${id}`),
 }
