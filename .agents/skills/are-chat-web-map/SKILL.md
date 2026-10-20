@@ -12,6 +12,8 @@ description: are-chat-web 前端项目地图（Vue 3 + Vite + Pinia + Element Pl
 - Vue 3 `<script setup lang="ts">` + Vite 8（Rolldown 打包内核）+ Pinia 4 + Vue Router 5 + Element Plus + TypeScript 6（`vue-tsc` 尚不吃 TS 7，勿升）
 - 测试：Vitest（jsdom），在 `tests/unit/`，命令 `pnpm test`；构建：`pnpm build`（含 vue-tsc 类型检查，何时必跑见第五节）
 - 版本号唯一来源 `package.json` 的 version（alpha → rc → stable 阶梯，升级独立 commit，规范见 `.agents/skills/version-release/SKILL.md`）
+- 站名唯一来源 `src/constants.ts` 的 `APP_NAME`（天枢，代号 `APP_CODENAME` = DUBHE）；改名只动这一处 + `index.html`/`public/manifest.webmanifest` 三处静态文案
+- 视觉基调：**全站科技冷色**（电光青 `#0ea5e9` + 深空蓝侧栏 `#0a1524`，暗色 `#22d3ee` / `#070d18`），**只有情侣空间保留暖色**——`CoupleView` 根元素挂 `.couple-scope`，`style.css` 里那一层把 `--im-*` 与 `--el-*` 整套覆盖回暖色。新组件默认吃令牌，别在 `.vue` 里硬编码颜色
 - 规模快照（2026-10-20 新增经期记录、亲密记录与亲密日历后实测）：5 个主页面 / CoupleView **2 个页签**（today 今天、wish 愿望清单）/ 情侣组件 **9 个 `.vue`**（6 张卡 + CoupleSetup + CoupleProfile + CoupleCollapsible 卡壳）+ 注册表 **6 条卡** / `api/couple.ts` **28 个方法·7 个 api 组·149 行** / `types/index.ts` 1608 行 / `stores/couple.ts` **281 行** / `utils/coupleVisual.ts`（解锁门禁与专属贴纸生成，纯函数可单测）与 `utils/coupleRecordBus.ts`（记录卡→日历卡的本页刷新信号）/ 单测基线 **187 用例·12 个文件**（`couple.spec.ts` 54 条含「api 契约守卫」；`couple-v8-cards.spec.ts` 29 条覆盖三张老卡；`couple-calendar.spec.ts` 15 条覆盖日历卡；`couple-period.spec.ts` 11 条覆盖经期卡；`couple-intimate.spec.ts` 11 条覆盖亲密卡；`couple-unlocks.spec.ts` 18 条覆盖视觉解锁）；后端配套见 are-chat-map（7 情侣 Controller / 28 情侣端点 / 8 张 couple_* 表，其中 `couple_notify` 已无代码 / 437 用例基线）
 
 ## 二、目录地图与关键文件
@@ -66,8 +68,8 @@ WS 事件：现役 **15 个**（后端 `pushCoupleEvent*` 抽取），`stores/co
 ## 四、惯例与红线
 
 
-- 交互文案：情侣场景，可爱口语化 + emoji；错误提示直接 `ElMessage.error(e instanceof Error ? e.message : '兜底文案')`（后端 message 已是中文人话）
-- 样式：组件内 scoped；间距/圆角参考现有组件；主题色 `#f56c6c`（粉红），跟随暗色变量（`var(--im-muted)` 等）
+- 交互文案：**情侣空间内**可爱口语化 + emoji；聊天/通讯录/后台/登录这些非情侣页面一律中性口语，不要再撒情话与爱心（2026-10-20 按用户要求把情侣风收进情侣空间）。错误提示直接 `ElMessage.error(e instanceof Error ? e.message : '兜底文案')`（后端 message 已是中文人话）
+- 样式：组件内 scoped；间距/圆角参考现有组件；颜色一律走 `style.css` 的令牌（`var(--im-*)` / `var(--xx-accent)`，兜底值写冷色），情侣页专属的暖色留在 `src/components/couple/` 内
 - 类型红线：`pnpm build` 会做 vue-tsc 检查——改了 types 里的接口（如给 VO 加字段），**必须同步改 tests/unit/couple.spec.ts 的 mock 工厂**，否则构建失败
 - 测试：`tests/unit/couple.spec.ts` 依赖默认页签 `today`（新增页签不要改默认值）；新组件核心交互应补用例；**动了 `src/api/couple.ts` 的方法集必须同步 mock 工厂**，否则「api 契约守卫」那条用例会红（它现读源码断言 28 个方法与死路径）
 - HTTP 封装在 `api/http.ts`：`http.get<T>(url)`、`http.postJson<T>(url, body)`、`http.putJson`、`http.delete`

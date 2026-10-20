@@ -8,7 +8,7 @@ whenToUse: 完成功能需要升级版本号、用户要求升版/发版/打预�
 
 ## 基本要求
 
-- 版本号唯一来源：`package.json` 的 `version` 字段；登录页与个人中心的「小帆船 vX.Y.Z · 构建于 …」由 Vite 注入 `__APP_VERSION__` 自动读取，禁止在任何代码、文案、测试里写死前端版本号
+- 版本号唯一来源：`package.json` 的 `version` 字段；登录页与个人中心的「站名 vX.Y.Z · 构建于 …」（站名取 `src/constants.ts` 的 `APP_NAME`）由 Vite 注入 `__APP_VERSION__` 自动读取，禁止在任何代码、文案、测试里写死前端版本号
 - 语义化版本 `X.Y.Z`：major 破坏性变更或大版本里程碑；minor 新增功能（含新模块）；patch 缺陷修复与细节打磨
 - 升级版本号必须独立成 commit（`build(version): …`），不与功能代码混提；提交前 `pnpm build` 通过（涉及逻辑改动跑 `pnpm test`）
 - 用户明确指定目标版本时，以用户指定为准

@@ -10,7 +10,7 @@
 | 构建 | Vite 8（Rolldown 打包内核，替代 Rollup+esbuild；`vite.config.ts` 同时是 Vitest 配置入口） | `unplugin-auto-import` + `unplugin-vue-components` 自动导入 vue/vue-router/pinia 与 Element Plus，生成 `src/auto-imports.d.ts`、`src/components.d.ts` |
 | 状态 | Pinia 4，setup-store 风格（`defineStore('xxx', () => {...})`） | 见 [状态管理](state-management.md) |
 | 路由 | Vue Router 5，history 模式 | 见 [页面与路由](pages-routing.md) |
-| UI | Element Plus 2.14（主题色 `#f56c6c`，暗色跟随 `var(--im-muted)` 等 CSS 变量） | 图标 `@element-plus/icons-vue` |
+| UI | Element Plus 2.14（主题色 `#0ea5e9` 电光青，暗色跟随 `var(--im-muted)` 等 CSS 变量） | 图标 `@element-plus/icons-vue`；样式令牌见下节 |
 | 语言 | TypeScript 6.0，类型集中在 `src/types/index.ts`（按域分节） | `pnpm build` 跑 `vue-tsc --noEmit`。**6.0 是当前上限**：TS 7 不再导出 `typescript/lib/tsc`，vue-tsc 会 `ERR_PACKAGE_PATH_NOT_EXPORTED`；官方桥接包 `@typescript/typescript6` 也只是转装 `typescript@^6`，同样拿不到 TS 7 编译器。等 vuejs/language-tools 适配后再升 |
 | 测试 | Vitest 5 + @vue/test-utils + jsdom | 见 [测试](testing.md)；另有 `@playwright/test` 依赖与 `playwright.config.ts`（testDir 指向 `./e2e`，当前仓库无 e2e 用例） |
 | 数据获取 | 原生 `fetch` 自封装（`src/api/http.ts`），无 axios | WS 用原生 `WebSocket`（im store 管理） |
@@ -62,6 +62,16 @@
 - `api/couple.ts`（149 行）→ **7 个并列对象**：**`coupleApi`**（10 个方法，空间地基：总览/邀请/纪念日/个性化/心动值/徽章）、**`streakApi`**（2，连续互动打卡）、**`questionApi`**（2，每日一问）、**`wishApi`**（6，愿望清单）、**`periodApi`**（4，经期记录：看板/记开始日/补结束日/删错记）、**`intimateApi`**（3，亲密记录：看板/记一次/删一条）、**`calendarApi`**（1，亲密日历的月度只读口），合计 28 个方法与后端存活端点一一对应
 
 新接口按批次归属加进对应对象；独立功能域倾向新开分组对象而非继续膨胀 `coupleApi`。全量方法表见 [API 层](api-layer.md)。
+
+## 样式令牌：全站科技冷色，情侣空间单独回暖
+
+`src/style.css` 是唯一的全局样式层，三层结构：
+
+1. `:root` 浅色 + `html.dark` 暗色两套 `--im-*` / `--xx-*` 令牌，基调是冷灰蓝面板、深空蓝侧栏（`--im-rail: #0a1524`）、电光青强调（`--xx-accent: #0ea5e9`，暗色 `#22d3ee`），圆角收到 6px/4px。**Element Plus 的 `--el-bg-color / --el-fill-color-blank / --el-border-color* / --el-text-color-*` 必须同时映射**：EP 的暗色变量表用的选择器就是 `html.dark`，只在 `:root` 里映射会被同权重且先加载的它盖回去（实测 `--el-bg-color` 仍是 `#141414`），所以暗色那份写在 `html.dark {}` 里，靠 `main.ts` 最后导入本文件取胜。
+2. `html[data-skin='xxx']` 皮肤层：默认 `quantum`（量子青），`sakura/blue/night/forest/sunset/ocean` 是用户可选项（`utils/settings.ts` 的 `SKINS` 与之一一对应，新增皮肤两处都要加）。
+3. `.couple-scope` 作用域：`CoupleView` 根元素挂这个类，把 `--im-*` 与 `--el-*` 整套覆盖回暖色（浅 `#faf6f8/#ec5f92`、暗 `#1d1619/#e0679c`），因此**情侣空间是全站唯一保留情侣观感的地方**，侧栏/聊天/通讯录/后台都走冷色。自定义属性在声明它的那一层就完成替换，所以 EP 那套映射必须在作用域内再写一遍，否则情侣页的卡片会继承 html 上的冷色面板。
+4. 情侣解锁外观（`--couple-*`、`.couple-name-glow`、`.dm-area[data-couple-bubble]`）与情侣页组件里硬编码的 `#d94f70/#8e5cd9` 等一律不动——它们本来就只服务情侣功能。
+5. 暗色下情侣头部那块主题渐变横幅：背景由空间主题写死是浅色，EP 在暗色下会配浅色文字，故 `html.dark .couple-scope .header-card` 单独把文字令牌按回深色。
 
 ## 数据放哪：store 模式 vs 组件自持模式
 
