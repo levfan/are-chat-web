@@ -18,16 +18,16 @@ export function formatChatTime(created: number | null | undefined): string {
   return sameYear ? `${md} ${hm}` : `${date.getFullYear()}-${md} ${hm}`
 }
 
-/** 头像配色（8 个情侣风渐变，135° 柔光过渡；按用户名稳定取色，资料页可选 c0..c7） */
+/** 头像配色（8 个冷色渐变，135° 金属光泽；按用户名稳定取色，资料页可选 c0..c7） */
 export const AVATAR_COLORS = [
-  'linear-gradient(135deg, #fda7c4, #ec5f92)', // 樱花粉（默认，跟随主题强调色）
-  'linear-gradient(135deg, #ffb199, #ff7e8a)', // 蜜桃
-  'linear-gradient(135deg, #f9718f, #e0336d)', // 玫瑰
-  'linear-gradient(135deg, #c58ff2, #9b6bd8)', // 薰衣草
-  'linear-gradient(135deg, #ffc2d1, #ff8fab)', // 珊瑚粉
-  'linear-gradient(135deg, #9ad7f0, #5eb6e4)', // 天空
-  'linear-gradient(135deg, #a9e8c9, #67c998)', // 薄荷
-  'linear-gradient(135deg, #ffd8a8, #ffab6b)', // 暖阳
+  'linear-gradient(135deg, #38bdf8, #0369a1)', // 电光青（默认，跟随主题强调色）
+  'linear-gradient(135deg, #60a5fa, #1d4ed8)', // 深蓝
+  'linear-gradient(135deg, #22d3ee, #0e7490)', // 量子青
+  'linear-gradient(135deg, #818cf8, #4338ca)', // 靛蓝
+  'linear-gradient(135deg, #2dd4bf, #0f766e)', // 青绿
+  'linear-gradient(135deg, #94a3b8, #475569)', // 石墨
+  'linear-gradient(135deg, #67e8f9, #0891b2)', // 冰蓝
+  'linear-gradient(135deg, #a3e635, #4d7c0f)', // 荧光绿
 ]
 
 /** 按用户名稳定取一个头像底色 */

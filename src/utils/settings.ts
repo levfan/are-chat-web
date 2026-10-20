@@ -1,4 +1,4 @@
-/** 外观与行为设置：皮肤 × 6、发送快捷键、免打扰时段。 */
+/** 外观与行为设置：皮肤 × 7、发送快捷键、免打扰时段。 */
 
 export interface SkinOption {
   id: string
@@ -9,8 +9,9 @@ export interface SkinOption {
   gradient: string
 }
 
-/** 皮肤 × 6：默认樱花粉（情侣风），晴空蓝保留为可选项。 */
+/** 皮肤 × 7：默认量子青（全站科技风），樱花粉与海洋青等留作用户可选项。 */
 export const SKINS: SkinOption[] = [
+  { id: 'quantum', label: '量子青', color: '#0ea5e9', gradient: 'linear-gradient(135deg, #38bdf8, #0369a1)' },
   { id: 'sakura', label: '樱花粉', color: '#ec5f92', gradient: 'linear-gradient(135deg, #ff9ec4, #e9487f)' },
   { id: 'blue', label: '晴空蓝', color: '#3370ff', gradient: 'linear-gradient(135deg, #5b8cff, #2f66f0)' },
   { id: 'night', label: '暗夜紫', color: '#8b5cf6', gradient: 'linear-gradient(135deg, #a78bfa, #7c3aed)' },
@@ -43,7 +44,7 @@ function safeSet(key: string, value: string) {
 
 export function currentSkin(): string {
   const id = safeGet(SKIN_KEY)
-  return SKINS.some((s) => s.id === id) ? (id as string) : 'sakura'
+  return SKINS.some((s) => s.id === id) ? (id as string) : 'quantum'
 }
 
 export function currentSendKey(): SendKeyMode {

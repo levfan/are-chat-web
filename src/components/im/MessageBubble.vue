@@ -538,7 +538,7 @@ const quoteText = computed(() => {
   word-break: break-word;
 }
 .row.self .bubble {
-  background: var(--im-bubble-gradient, var(--im-bubble-me, #ec5f92));
+  background: var(--im-bubble-gradient, var(--im-bubble-me, #0ea5e9));
   border-color: transparent;
   color: var(--im-bubble-me-text, #fff);
   border-radius: 10px 3px 10px 10px;
@@ -556,7 +556,7 @@ const quoteText = computed(() => {
   opacity: 1;
 }
 .quote {
-  border-left: 3px solid var(--xx-accent, #ec5f92);
+  border-left: 3px solid var(--xx-accent, #0ea5e9);
   background: var(--im-quote-bg, rgba(51, 112, 255, 0.06));
   border-radius: 4px;
   padding: 4px 8px;
@@ -630,7 +630,7 @@ const quoteText = computed(() => {
   color: var(--im-text-2, #51565f);
 }
 .reaction-chip.mine {
-  border-color: var(--xx-accent, #ec5f92);
+  border-color: var(--xx-accent, #0ea5e9);
   background: var(--xx-accent-soft, rgba(51, 112, 255, 0.08));
 }
 .chip-count {
@@ -676,7 +676,7 @@ const quoteText = computed(() => {
   justify-content: flex-end;
 }
 .receipt.read {
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
 }
 .hover-actions {
   display: flex;
@@ -700,7 +700,7 @@ const quoteText = computed(() => {
   white-space: nowrap;
 }
 .hover-btn:hover {
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
   background: var(--im-hover, #f2f3f5);
 }
 .hover-btn.danger:hover {
@@ -775,7 +775,7 @@ const quoteText = computed(() => {
   max-width: 160px;
 }
 .card-user {
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
   font-size: 12px;
   margin-top: 3px;
 }
@@ -799,7 +799,7 @@ const quoteText = computed(() => {
   border: 1px solid var(--im-border, #e6e8eb);
 }
 .file-icon {
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
   flex-shrink: 0;
 }
 .file-body {
@@ -826,7 +826,7 @@ const quoteText = computed(() => {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
   flex-shrink: 0;
 }
 .file-dl:hover {
@@ -854,7 +854,7 @@ const quoteText = computed(() => {
 .loc-pin {
   font-size: 26px;
   animation: halo-pulse 2s ease-out infinite;
-  --halo-color: var(--xx-accent, #ec5f92);
+  --halo-color: var(--xx-accent, #0ea5e9);
   border-radius: 50%;
 }
 .loc-body {

@@ -1172,7 +1172,7 @@ onUnmounted(() => {
 }
 .conv-item.active {
   background: var(--im-active, #eef3fe);
-  border-left-color: var(--xx-accent, #ec5f92);
+  border-left-color: var(--xx-accent, #0ea5e9);
 }
 .conv-main {
   flex: 1;
@@ -1272,7 +1272,7 @@ onUnmounted(() => {
 }
 .head-btn:hover {
   background: var(--im-hover, #f2f3f5);
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
 }
 .dm-area {
   flex: 1;
@@ -1307,7 +1307,7 @@ onUnmounted(() => {
   color: var(--im-text-2, #51565f);
 }
 .pin-banner .el-icon {
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
   flex-shrink: 0;
 }
 .pin-text {
@@ -1326,10 +1326,10 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 2px dashed var(--xx-accent, #ec5f92);
+  border: 2px dashed var(--xx-accent, #0ea5e9);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--xx-accent, #ec5f92) 8%, transparent);
-  color: var(--xx-accent, #ec5f92);
+  background: color-mix(in srgb, var(--xx-accent, #0ea5e9) 8%, transparent);
+  color: var(--xx-accent, #0ea5e9);
   font-size: 14px;
   z-index: 15;
   pointer-events: none;
@@ -1388,7 +1388,7 @@ onUnmounted(() => {
 }
 .hit-from {
   font-size: 12px;
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
   font-weight: 500;
 }
 .hit-content {
@@ -1413,7 +1413,7 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 8px;
   background: var(--im-quote-bg, rgba(51, 112, 255, 0.06));
-  border-left: 3px solid var(--xx-accent, #ec5f92);
+  border-left: 3px solid var(--xx-accent, #0ea5e9);
   border-radius: 6px;
   padding: 4px 10px;
   margin-bottom: 6px;
@@ -1451,7 +1451,7 @@ onUnmounted(() => {
 }
 .tool-btn:hover {
   background: var(--im-hover, #f2f3f5);
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
 }
 /* F90 贴贴按钮里的小表情 */
 .sticker-face {
@@ -1493,7 +1493,7 @@ onUnmounted(() => {
   font-size: 13px;
 }
 .empty-sub a {
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
   text-decoration: none;
 }
 .empty-sub a:hover {
@@ -1516,7 +1516,7 @@ onUnmounted(() => {
 }
 .back-btn:hover {
   background: var(--im-hover, #f2f3f5);
-  color: var(--xx-accent, #ec5f92);
+  color: var(--xx-accent, #0ea5e9);
 }
 @media (max-width: 768px) {
   /* 未选会话：只显示会话列表；选中后：只显示聊天窗 */

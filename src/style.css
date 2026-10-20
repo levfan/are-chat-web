@@ -1,77 +1,106 @@
-/* ============ 设计令牌：暖中性色 + 情侣粉强调色（浅色，默认樱花粉主题） ============ */
+/* ============ 设计令牌：冷灰蓝中性色 + 电光青强调（浅色，默认量子青主题） ============ */
 :root {
-  /* Element Plus 主色对齐（#ec5f92 樱花粉） */
-  --el-color-primary: #ec5f92;
-  --el-color-primary-light-3: #f182a9;
-  --el-color-primary-light-5: #f5aec7;
-  --el-color-primary-light-7: #fad4e1;
-  --el-color-primary-light-8: #fce4ec;
-  --el-color-primary-light-9: #fdf0f5;
-  --el-color-primary-dark-2: #c94e7a;
+  /* Element Plus 主色对齐（#0ea5e9 电光青） */
+  --el-color-primary: #0ea5e9;
+  --el-color-primary-light-3: #52c0f2;
+  --el-color-primary-light-5: #86d3f7;
+  --el-color-primary-light-7: #b9e5fb;
+  --el-color-primary-light-8: #d4effc;
+  --el-color-primary-light-9: #e8f7fe;
+  --el-color-primary-dark-2: #0b83bb;
 
-  /* Element Plus 圆角加大，整体更柔和 */
-  --el-border-radius-base: 8px;
-  --el-border-radius-small: 6px;
+  /* 科技风：圆角收紧、边框更硬，不再走柔和大圆角 */
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
 
-  --xx-bg: #faf5f7;
-  --xx-text: #3a2e34;
-  --xx-accent: #ec5f92;
+  --xx-bg: #eaf0f7;
+  --xx-text: #14202e;
+  --xx-accent: #0ea5e9;
 
-  /* IM 界面（暖粉灰调） */
-  --im-bg: #faf6f8;
+  /* IM 界面（冷灰蓝调 + 深空侧栏） */
+  --im-bg: #f1f5fa;
   --im-panel: #ffffff;
-  --im-border: #f0e3e9;
-  --im-hover: #f7eef2;
-  --im-active: #fdeaf2;
-  --im-text: #3a2e34;
-  --im-text-2: #6d5a63;
-  --im-muted: #a08b95;
-  --im-faint: #c7b3bd;
-  --im-center-bg: rgba(180, 80, 120, 0.04);
+  --im-border: #dde6f0;
+  --im-hover: #e8f0f9;
+  --im-active: #dff0fb;
+  --im-text: #14202e;
+  --im-text-2: #46586e;
+  --im-muted: #7b8ca1;
+  --im-faint: #b0bfd0;
+  --im-center-bg: rgba(23, 68, 116, 0.05);
   --im-bubble-peer: #ffffff;
-  --im-bubble-peer-border: #f0e3e9;
-  --im-bubble-me: #ec5f92;
+  --im-bubble-peer-border: #dde6f0;
+  --im-bubble-me: #0ea5e9;
   --im-bubble-me-text: #ffffff;
-  --im-quote-bg: rgba(236, 95, 146, 0.08);
-  --im-rail: #2a1e28;
-  --im-rail-hover: rgba(255, 214, 230, 0.12);
-  --im-rail-text: #b3a3ad;
-  --im-shadow: 0 8px 30px rgba(180, 80, 120, 0.14);
+  --im-quote-bg: rgba(14, 165, 233, 0.1);
+  --im-rail: #0a1524;
+  --im-rail-hover: rgba(56, 189, 248, 0.16);
+  --im-rail-text: #93a8c0;
+  --im-shadow: 0 8px 30px rgba(15, 45, 85, 0.14);
+
+  /* Element Plus 的面/线/文字令牌全部接到我们这套上：否则输入框、卡片、弹窗会掉回
+     EP 自带的中性灰（浅色 #f0f2f5 / 暗色 #141414），在冷蓝底上显得发乌偏暖。 */
+  --el-bg-color: var(--im-panel);
+  --el-bg-color-overlay: var(--im-panel);
+  --el-fill-color-blank: var(--im-panel);
+  --el-fill-color-light: var(--im-hover);
+  --el-border-color: var(--im-border);
+  --el-border-color-light: var(--im-border);
+  --el-border-color-lighter: var(--im-border);
+  --el-border-color-extra-light: var(--im-border);
+  --el-text-color-primary: var(--im-text);
+  --el-text-color-regular: var(--im-text-2);
+  --el-text-color-secondary: var(--im-muted);
 }
 
-/* ============ 深色模式（暖梅紫调） ============ */
+/* ============ 深色模式（深空蓝黑 + 青蓝辉光） ============ */
 html.dark {
-  --el-color-primary: #e0679c;
-  --el-color-primary-light-3: #b84e7e;
-  --el-color-primary-light-5: #8f3c62;
-  --el-color-primary-light-7: #662b46;
-  --el-color-primary-light-8: #522338;
-  --el-color-primary-light-9: #3e1a2a;
-  --el-color-primary-dark-2: #ec85b1;
+  --el-color-primary: #22d3ee;
+  --el-color-primary-light-3: #1a9fb5;
+  --el-color-primary-light-5: #147585;
+  --el-color-primary-light-7: #0e4b56;
+  --el-color-primary-light-8: #0b3841;
+  --el-color-primary-light-9: #082a31;
+  --el-color-primary-dark-2: #4ee0f5;
 
-  --xx-bg: #14100f;
-  --xx-text: #f0e6ea;
-  --xx-accent: #e0679c;
+  --xx-bg: #060c16;
+  --xx-text: #dbe7f5;
+  --xx-accent: #22d3ee;
 
-  --im-bg: #161114;
-  --im-panel: #1d1619;
-  --im-border: #302228;
-  --im-hover: #261c20;
-  --im-active: #3a2431;
-  --im-text: #f0e6ea;
-  --im-text-2: #b8a4ae;
-  --im-muted: #8a7580;
-  --im-faint: #5e4c55;
-  --im-center-bg: rgba(255, 255, 255, 0.06);
-  --im-bubble-peer: #261c20;
-  --im-bubble-peer-border: #302228;
-  --im-bubble-me: #c94f86;
+  --im-bg: #070d18;
+  --im-panel: #0c1524;
+  --im-border: #1c2b41;
+  --im-hover: #122032;
+  --im-active: #123049;
+  --im-text: #dbe7f5;
+  --im-text-2: #9fb3c9;
+  --im-muted: #6f839c;
+  --im-faint: #43566e;
+  --im-center-bg: rgba(120, 190, 235, 0.08);
+  --im-bubble-peer: #122032;
+  --im-bubble-peer-border: #1c2b41;
+  --im-bubble-me: #0891b2;
   --im-bubble-me-text: #ffffff;
-  --im-quote-bg: rgba(224, 103, 156, 0.14);
-  --im-rail: #170f14;
-  --im-rail-hover: rgba(255, 214, 230, 0.08);
-  --im-rail-text: #9a8791;
-  --im-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --im-quote-bg: rgba(34, 211, 238, 0.14);
+  --im-rail: #040a12;
+  --im-rail-hover: rgba(34, 211, 238, 0.12);
+  --im-rail-text: #7f95ae;
+  --im-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+
+  /* 暗色下必须在这里再声明一遍：Element Plus 的 dark/css-vars.css 用的选择器就是 html.dark，
+     与 :root 同权重而它先加载，只在 :root 里映射会被它盖回去（实测 --el-bg-color 仍是 #141414）。
+     本文件在 main.ts 里最后导入，同权重下后来者胜。 */
+  --el-bg-color: var(--im-panel);
+  --el-bg-color-overlay: var(--im-panel);
+  --el-fill-color-blank: var(--im-panel);
+  --el-fill-color-light: var(--im-hover);
+  --el-border-color: var(--im-border);
+  --el-border-color-light: var(--im-border);
+  --el-border-color-lighter: var(--im-border);
+  --el-border-color-extra-light: var(--im-border);
+  --el-text-color-primary: var(--im-text);
+  --el-text-color-regular: var(--im-text-2);
+  --el-text-color-secondary: var(--im-muted);
 
   color-scheme: dark;
 }
@@ -121,7 +150,7 @@ html.dark *::-webkit-scrollbar-thumb {
   opacity: 0;
 }
 
-/* ============ 63 皮肤：主色 + 我的气泡渐变（Element Plus 主色用 color-mix 跟随） ============ */
+/* ============ 皮肤：主色 + 我的气泡渐变（Element Plus 主色用 color-mix 跟随） ============ */
 html[data-skin] {
   --el-color-primary: var(--xx-accent);
   --el-color-primary-light-3: color-mix(in srgb, var(--xx-accent) 72%, #fff);
@@ -132,7 +161,16 @@ html[data-skin] {
   --el-color-primary-dark-2: color-mix(in srgb, var(--xx-accent) 82%, #000);
 }
 
-/* 晴空蓝：原默认色，改为可选项保留 */
+/* 量子青：全站默认（与 :root 同一套冷色，写出来是为了在皮肤选择器里也能被显式选中） */
+html[data-skin='quantum'] {
+  --xx-accent: #0ea5e9;
+  --xx-accent-soft: color-mix(in srgb, #0ea5e9 12%, transparent);
+  --im-bubble-me: #0ea5e9;
+  --im-bubble-gradient: linear-gradient(135deg, #38bdf8, #0369a1);
+  --im-quote-bg: color-mix(in srgb, #0ea5e9 10%, transparent);
+}
+
+/* 晴空蓝 */
 html[data-skin='blue'] {
   --xx-accent: #3370ff;
   --xx-accent-soft: color-mix(in srgb, #3370ff 12%, transparent);
@@ -141,6 +179,7 @@ html[data-skin='blue'] {
   --im-quote-bg: color-mix(in srgb, #3370ff 10%, transparent);
 }
 
+/* 樱花粉：情侣风皮肤，作为用户可选项保留（全站默认已不再是它） */
 html[data-skin='sakura'] {
   --xx-accent: #ec5f92;
   --xx-accent-soft: color-mix(in srgb, #ec5f92 12%, transparent);
@@ -179,6 +218,98 @@ html[data-skin='ocean'] {
   --im-bubble-me: #06b6d4;
   --im-bubble-gradient: linear-gradient(135deg, #22d3ee, #0891b2);
   --im-quote-bg: color-mix(in srgb, #06b6d4 10%, transparent);
+}
+
+/* ============ 情侣空间：整页保留暖色（科技风只作用于其余页面） ============ */
+/* CoupleView 根元素挂 .couple-scope，靠自定义属性的继承把这一棵子树整体换回暖调：
+   组件里那些硬编码的 #d94f70 / #8e5cd9 不受影响，而 el-card、按钮、输入框这些
+   Element Plus 组件与共享的 --im-* 底色会跟着回来。侧栏、聊天页、后台都在作用域外，仍是科技风。 */
+.couple-scope {
+  --el-color-primary: #ec5f92;
+  --el-color-primary-light-3: #f182a9;
+  --el-color-primary-light-5: #f5aec7;
+  --el-color-primary-light-7: #fad4e1;
+  --el-color-primary-light-8: #fce4ec;
+  --el-color-primary-light-9: #fdf0f5;
+  --el-color-primary-dark-2: #c94e7a;
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+
+  --xx-accent: #ec5f92;
+  --im-bg: #faf6f8;
+  --im-panel: #ffffff;
+  --im-border: #f0e3e9;
+  --im-hover: #f7eef2;
+  --im-active: #fdeaf2;
+  --im-text: #3a2e34;
+  --im-text-2: #6d5a63;
+  --im-muted: #a08b95;
+  --im-faint: #c7b3bd;
+  --im-center-bg: rgba(180, 80, 120, 0.04);
+  --im-quote-bg: rgba(236, 95, 146, 0.08);
+  --im-shadow: 0 8px 30px rgba(180, 80, 120, 0.14);
+
+  /* 自定义属性在声明它的那一层就算完了替换，所以作用域内要再映射一次，
+     否则情侣页里的 el-card / 输入框会继承 html 上那套冷色面板。 */
+  --el-bg-color: var(--im-panel);
+  --el-bg-color-overlay: var(--im-panel);
+  --el-fill-color-blank: var(--im-panel);
+  --el-fill-color-light: var(--im-hover);
+  --el-border-color: var(--im-border);
+  --el-border-color-light: var(--im-border);
+  --el-border-color-lighter: var(--im-border);
+  --el-border-color-extra-light: var(--im-border);
+  --el-text-color-primary: var(--im-text);
+  --el-text-color-regular: var(--im-text-2);
+  --el-text-color-secondary: var(--im-muted);
+}
+html.dark .couple-scope {
+  --el-color-primary: #e0679c;
+  --el-color-primary-light-3: #b84e7e;
+  --el-color-primary-light-5: #8f3c62;
+  --el-color-primary-light-7: #662b46;
+  --el-color-primary-light-8: #522338;
+  --el-color-primary-light-9: #3e1a2a;
+  --el-color-primary-dark-2: #ec85b1;
+
+  --xx-accent: #e0679c;
+  --im-bg: #161114;
+  --im-panel: #1d1619;
+  --im-border: #302228;
+  --im-hover: #261c20;
+  --im-active: #3a2431;
+  --im-text: #f0e6ea;
+  --im-text-2: #b8a4ae;
+  --im-muted: #8a7580;
+  --im-faint: #5e4c55;
+  --im-center-bg: rgba(255, 255, 255, 0.06);
+  --im-quote-bg: rgba(224, 103, 156, 0.14);
+  --im-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+
+  /* 自定义属性在声明它的那一层就算完了替换，所以作用域内要再映射一次，
+     否则情侣页里的 el-card / 输入框会继承 html 上那套冷色面板。 */
+  --el-bg-color: var(--im-panel);
+  --el-bg-color-overlay: var(--im-panel);
+  --el-fill-color-blank: var(--im-panel);
+  --el-fill-color-light: var(--im-hover);
+  --el-border-color: var(--im-border);
+  --el-border-color-light: var(--im-border);
+  --el-border-color-lighter: var(--im-border);
+  --el-border-color-extra-light: var(--im-border);
+  --el-text-color-primary: var(--im-text);
+  --el-text-color-regular: var(--im-text-2);
+  --el-text-color-secondary: var(--im-muted);
+}
+/* 暗色下情侣头部那块浅色渐变横幅：背景由空间主题写死是浅粉，Element Plus 在暗色下会
+   给它配浅色文字，直接糊成一片。这里只在这张卡内把文字令牌按回深色——
+   卡内所有元素都走令牌，所以不用逐个改组件，也不影响页面其余部分。 */
+html.dark .couple-scope .header-card {
+  --el-text-color-primary: #3a2e34;
+  --el-text-color-regular: #55414a;
+  --el-card-text-color: #3a2e34;
+  --im-text: #3a2e34;
+  --im-text-2: #6d5a63;
+  --im-muted: #97748a;
 }
 
 /* ============ 情侣空间·只有彼此看得见的解锁特效（连续互动打卡档位） ============ */

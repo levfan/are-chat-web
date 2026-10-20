@@ -237,12 +237,12 @@ const statusText = computed(
     })[im.status],
 )
 
-// 浏览器标签页未读计数：(3) 💗小帆船 —— F50 标题心跳：有未读时标题带心跳 emoji
+// 浏览器标签页未读计数：(3) 天枢 —— F50 标题提醒：有未读时标题带条数前缀
 watch(
   () => im.totalUnread,
   (count) => {
-    // 页签标题：未读优先（(3) 💗小帆船），无未读时只显示站名
-    document.title = count > 0 ? `(${count}) 💗${APP_NAME}` : APP_NAME
+    // 页签标题：未读优先（(3) 天枢），无未读时只显示站名
+    document.title = count > 0 ? `(${count}) ${APP_NAME}` : APP_NAME
     // 42 favicon 未读角标（启用既有工具）
     updateFaviconBadge(count, accentColor(currentAccent()))
   },
@@ -552,7 +552,7 @@ async function confirmLogout() {
   color: #fff;
 }
 .nav-item.active {
-  background: var(--xx-accent, #ec5f92);
+  background: var(--xx-accent, #0ea5e9);
   color: #fff;
 }
 .nav-badge {

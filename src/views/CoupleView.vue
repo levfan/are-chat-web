@@ -1,5 +1,6 @@
 <template>
-  <div class="couple-page">
+  <!-- .couple-scope 把这一棵子树的令牌换回暖色：全站已是科技冷色，只有情侣空间保留情侣观感 -->
+  <div class="couple-page couple-scope">
     <!-- 未建立：指引建立 -->
     <CoupleSetup v-if="!couple.established" />
 
