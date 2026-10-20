@@ -1,9 +1,9 @@
 # API 层
 
 > 本页回答：`src/api/` 有哪些文件与分组对象、每个对象的方法与路径、与后端 `/api/couple/*` 路由的对应关系。
-> **2026-10-20 四轮裁剪后**：`couple.ts` 收敛到 **20 个方法 / 4 个分组对象 / 99 行**，与后端 20 个存活端点一一对齐
-> （判据见 `are-chat/docs/adr/0010-couple-trim-to-v8-features.md`；`tests/unit/couple.spec.ts` 的「api 契约守卫」
-> 用例逐方法断言 mock 工厂覆盖 + 总数为 20）。
+> **2026-10-20 四轮裁剪 + 经期记录后**：`couple.ts` 收敛到 **24 个方法 / 5 个分组对象 / 117 行**，与后端 24 个存活端点一一对齐
+> （裁剪判据见 `are-chat/docs/adr/0010-couple-trim-to-v8-features.md`；`tests/unit/couple.spec.ts` 的「api 契约守卫」
+> 用例逐方法断言 mock 工厂覆盖 + 总数为 24）。
 
 ## 非 couple 分组（未动）
 
@@ -17,7 +17,7 @@
 | `files.ts` | `filesApi` | `/api/files` |
 | `system.ts` | `presenceApi` / `systemApi` / `announcementApi` | `/api/presence` `/api/system` `/api/announcements` |
 
-## couple 分组对象（4 个 / 20 个方法）
+## couple 分组对象（5 个 / 24 个方法）
 
 | 导出对象 | base 路径 | 方法数 | 职责 |
 |---|---|---:|---|
@@ -25,6 +25,7 @@
 | `streakApi` | `/api/couple/streak` | 2 | 卡 `couple-streak` 连续互动打卡 + 六档解锁 |
 | `questionApi` | `/api/couple/question` | 2 | 卡 `couple-question` 每日一问（它同时是打卡的触发源） |
 | `wishApi` | `/api/couple/wish` | 6 | 卡 `couple-wish` 愿望清单 |
+| `periodApi` | `/api/couple/period` | 4 | 卡 `couple-period` 经期记录（双方都能记，无 WS 事件） |
 
 **已随裁剪整体下线、不得再写回**：`pinApi`（F207 常用收藏）、`memoryApi`（百日隐藏回顾页）、`diningApi`（饭桌）、`ceremonyApi`（愿望券本）、
 `factoryApi`（家务轮盘）、`echoApi`（好事簿）、`questApi`（加班留灯）、`catchApi`（安全词复盘），
@@ -73,9 +74,20 @@
 | `wishFulfill` | POST | `/api/couple/wish/fulfill` | 兑现（只有被许的那位能点） |
 | `wishRemove` | POST | `/api/couple/wish/remove` | 划掉一条 |
 
+#### `periodApi`（4）
+
+| 方法 | HTTP | 路径 | 说明 |
+|---|---|---|---|
+| `periodBoard` | GET | `/api/couple/period/board` | 记录列表 + 平均周期 / 下次预测 / 距今天数（读时算，没有缓存列） |
+| `periodAdd` | POST | `/api/couple/period/add` | 记开始日（body `{startDay}`，yyyy-MM-dd 且不能是未来）；同一天重复记后端 400 |
+| `periodEnd` | POST | `/api/couple/period/end` | 给某次记结束日（body `{id}`，结束日固定为今天；已结束或早于开始日后端 400） |
+| `periodRemove` | POST | `/api/couple/period/remove` | 删掉一条记录（body `{id}`；不在本空间的 id 后端 404） |
+
+四个写接口都返回整份 `PeriodBoardVO`；周期样本不足 2 段时后端按 28 天估，`daysUntilNext` 为负表示已推迟。**这条链路不推任何 WS 事件**（隐私），前端只在挂载与写操作后刷新。
+
 ## 约定
 
 - 一律走 `http.ts` 的 `get / postJson / putJson / delete / postForm`，`withCredentials` 已内置；后端返回 `ApiResponse{code,message,data}`，解包后只给业务 `data`。
 - 后端业务失败是 400/404 + **中文 message**，组件侧一律 `ElMessage.error(e.message)` 直透，不在前端重写文案。
-- 写接口返回**整份聚合 VO** 的（streak/question/wish），组件拿返回值整体替换本地状态，不再单独拉一次。
-- 新增方法前先看后端有没有这个端点：**判据是 `@*Mapping`，不是文档**；三张卡之外的功能已被 `docs/adr/0010` 判死，别顺着旧文档把它们加回来。
+- 写接口返回**整份聚合 VO** 的（streak/question/wish/period），组件拿返回值整体替换本地状态，不再单独拉一次。
+- 新增方法前先看后端有没有这个端点：**判据是 `@*Mapping`，不是文档**；四张卡之外的功能已被 `docs/adr/0010` 判死，别顺着旧文档把它们加回来。
