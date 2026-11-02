@@ -40,7 +40,7 @@ are-chat-web/
 │   ├── utils/                        # effects.ts(彩蛋指令)、format.ts/imFormat.ts、sound.ts、notify.ts、settings.ts、theme.ts 等（coupleVisual.ts / coupleRecordBus.ts 已删）
 │   └── constants.ts                  # 全局常量
 ├── tests/unit/                       # 9 个文件（当前基线 96 用例；整页挂载用例成本高，vite.config.ts 已把 testTimeout 提到 20s）
-├── AGENTS.md / docs/ / wiki/         # 仓库约束与文档（后端配套地图见 are-chat 仓库 are-chat-map skill）
+├── AGENTS.md / wiki/                 # 仓库入口与文档（AGENTS.md 只指路，细则在 .agents/skills；后端配套地图见 are-chat 仓库 are-chat-map skill）
 ```
 
 - **API 分组对象**（三轮裁剪后 `src/api/couple.ts` 共 4 组）：**`coupleApi`**（8 法：`overview`/邀请四连 `invite`·`acceptInvite`·`rejectInvite`·`cancelInvite`/`setAnniversary`/`dissolve` + 旁支读取 `relationshipOf`）/ **`periodApi`**（经期写口，3 法：`periodAdd`/`periodEnd`/`periodRemove`）/ **`intimateApi`**（亲密写口，2 法：`intimateAdd`/`intimateRemove`）/ **`calendarApi`**（亲密日历，1 法：`calendarMonth`，一个月度读口把经期覆盖日、区间、周期统计与亲密标记一次给齐，也是唯一的记录展示口）。**判据**：这 14 个方法与后端 `@*Mapping` 抽出的 14 个存活情侣端点一一对上，新增方法时照此对齐，别把已下线端点（`streakApi`/`questionApi`/`wishApi` 三组、`coupleApi.updateProfile`/`coupleApi.intimacy`、`periodApi.periodBoard`/`intimateApi.intimateBoard`）再写回来（守卫在 `couple.spec.ts`「api 契约守卫」，现读源码断言分组数、方法总数、路径总数与死路径段）。

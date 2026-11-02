@@ -21,7 +21,7 @@
 
 ## 硬性流程摘要（交付门禁）
 
-完整规则以 `agents.md`（根目录）与两个专项 skill 为准，此处只列骨架：
+根目录 `AGENTS.md` 只做入口指路（按场景列出必读 skill，不复述细则），完整规则以 `.agents/skills/` 下的专项 skill 为准，此处只列骨架：
 
 1. **开工**：必读 `.agents/skills/are-chat-web-map/SKILL.md`（新功能标准链路/惯例/撞名备忘）；本 wiki 提供全景背景（见 [Home](Home.md)）。
 2. **编码**：新 VO 加 `Couple`+域前缀并先 grep `types`/`api` 防撞名；types 改动同步测试 mock（见 [测试](testing.md)）。
@@ -40,7 +40,7 @@
 
 ## 延伸阅读
 
-- 根目录 `agents.md` —— git 提交与版本号的硬性规则原文
+- 根目录 `AGENTS.md` —— 按场景指路到三个 skill 的入口（细则以 skill 正文为准）
 - `.agents/skills/are-chat-web-map/SKILL.md` —— 项目地图 + 惯例 + 新功能标准链路
 - `.agents/skills/git-commit/SKILL.md` / `.agents/skills/version-release/SKILL.md` —— 提交拆分与发版判级全集
 - 后端对应模块地图：are-chat 仓库的 `are-chat-map` skill

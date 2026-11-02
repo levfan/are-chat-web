@@ -27,7 +27,7 @@
 ## 新 agent 开工顺序
 
 1. **读本 wiki 看全景**：先看本页 → [architecture.md](architecture.md) → 按任务跳读对应页（改页面结构看 [pages-routing.md](pages-routing.md)，改 store/事件看 [state-management.md](state-management.md) 与 [ws-events.md](ws-events.md)，加接口看 [api-layer.md](api-layer.md)）。
-2. **读 skill 看规范速查**：`.agents/skills/are-chat-web-map/SKILL.md`（新功能标准链路、命名/文案/样式惯例、撞名备忘）+ 根目录 `agents.md`（git 提交与版本号硬性规则）。wiki 讲"项目是什么"，skill 讲"代码怎么写、流程怎么走"，二者互补不重复。
+2. **读 skill 看规范速查**：`.agents/skills/are-chat-web-map/SKILL.md`（新功能标准链路、命名/文案/样式惯例、撞名备忘）+ 根目录 `AGENTS.md`（入口指路：按场景列出必读 skill，不复述细则）。wiki 讲"项目是什么"，skill 讲"代码怎么写、流程怎么走"，二者互补不重复。
 3. **动手前**：涉及提交/发版再看 `.agents/skills/git-commit/SKILL.md`、`.agents/skills/version-release/SKILL.md`。
 4. **改完后**：新增/删除组件、页签、接口、WS 事件时，按规则同步更新 map skill（本 wiki 可按需一并维护，但不属于硬性门禁）。
 
