@@ -85,7 +85,7 @@ WS 事件：`stores/couple.ts` 的 `handleCoupleEvent` 只认 **6 个**——`in
 3. **构建**：提交前 `pnpm build`（含 vue-tsc）必过，改了逻辑跑 `pnpm test` 全绿；types 改动同步测试 mock 工厂（红线见第四节）
 4. **提交**：按改动性质分组（依赖/组件页面/样式/文档），一 commit 一性质；信息 `type(scope): 中文描述`
 5. **推送**：commit → `git pull --no-rebase` → push；失败保留本地 commit 并报告，不 force push
-6. **版本**：`package.json` 为唯一版本源，任何代码/文案/测试禁止写死版本号；agent 按 version-release 判级参考自主升版、独立 commit、不建 tag；用户说「发版/发布版本」= 无条件立即完整发版流程
+6. **版本**：`package.json` 为唯一版本源，任何代码/文案/测试禁止写死版本号；agent 按 version-release 判级参考自主升版、独立 commit，非 major 不建 tag；判到 major 时推送后接 release-assets skill 发 GitHub Releases assets；用户说「发版/发布版本」= 无条件立即完整发版流程
 7. **收尾**：新增/删除组件、页签、接口、WS 事件 → 更新本 skill 对应小节，与功能同批提交（commit type `docs`）
 
 **产品红线（用户长期约束）**：情侣功能注重情绪价值；**不做照片/视频上传类功能**（服务器部署要求高）。

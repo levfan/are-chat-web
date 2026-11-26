@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# release-assets skill 的本地打包输出（zip 与 SHA-256 留底，不入库）
+target/
 coverage/
 playwright-report/
 test-results/

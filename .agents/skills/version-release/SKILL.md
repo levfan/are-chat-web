@@ -1,7 +1,7 @@
 ---
 name: version-release
-description: 版本升级与发布规范：版本号唯一来源 package.json，语义化 X.Y.Z，预发布走 alpha→rc→stable 三段阶梯（beta 可选），升版必须独立成 commit，不建立 git tag；升不升版由 agent 按判级参考自主决定并直接执行，用户说「发布版本」即强制发版
-whenToUse: 完成功能需要升级版本号、用户要求升版/发版/打预发布版本、用户说「发布版本/发版」（强制发版，立即执行），或讨论版本阶段（alpha/beta/rc/stable）时使用
+description: 版本升级与发布规范：版本号唯一来源 package.json，语义化 X.Y.Z，预发布走 alpha→rc→stable 三段阶梯（beta 可选），升版必须独立成 commit，非 major 不建立 git tag，major 由 release-assets 建远端 Release/tag；升不升版由 agent 按判级参考自主决定并直接执行，用户说「发布版本」即强制发版
+whenToUse: 完成功能需要升级版本号、用户要求升版/发版/打预发布版本、用户说「发布版本/发版」（强制发版，立即执行）、讨论版本阶段（alpha/beta/rc/stable），或判到 major 需衔接 release-assets 时使用
 ---
 
 # 版本发布与升级规范（version-release）
@@ -11,6 +11,7 @@ whenToUse: 完成功能需要升级版本号、用户要求升版/发版/打预�
 - 版本号唯一来源：`package.json` 的 `version` 字段；登录页与个人中心的「站名 vX.Y.Z · 构建于 …」（站名取 `src/constants.ts` 的 `APP_NAME`）由 Vite 注入 `__APP_VERSION__` 自动读取，禁止在任何代码、文案、测试里写死前端版本号
 - 语义化版本 `X.Y.Z`：major 破坏性变更或大版本里程碑；minor 新增功能（含新模块）；patch 缺陷修复与细节打磨
 - 升级版本号必须独立成 commit（`build(version): …`），不与功能代码混提；提交前 `pnpm build` 通过（涉及逻辑改动跑 `pnpm test`）
+- 判到 major（`X.0.0`，含 `X.0.0-rc.n`）时，升版 commit 推送后必须立即接 `release-assets` skill 发布静态包资产，不再等用户开口；minor/patch 不发
 - 用户明确指定目标版本时，以用户指定为准
 
 ## 预发布阶梯
@@ -22,7 +23,7 @@ whenToUse: 完成功能需要升级版本号、用户要求升版/发版/打预�
 | alpha | `X.Y.Z-alpha.n` | 功能开发中，自测版 | 可继续加功能，交互可能大改 |
 | beta（可选） | `X.Y.Z-beta.n` | 功能基本齐，联调找问题 | 补缺失细节，小功能可协商加入 |
 | rc | `X.Y.Z-rc.n` | 功能冻结的候选版 | 只修 bug，序号递增（rc.2、rc.3…） |
-| stable | `X.Y.Z` | 正式版 | 去掉后缀转正，不建 tag |
+| stable | `X.Y.Z` | 正式版 | 去掉后缀转正；major 由 release-assets 建 Release/tag，其它版本不建 tag |
 
 - 同一版本内只允许序号 `n` 递增或向后进入下一阶段，禁止回退：rc 之后发现问题继续 rc.2，而不是降回 beta
 - rc 阶段功能冻结：确需新增功能时，不回退已打出的 rc 号，把新功能挪入下一个 minor（`X.(Y+1).0-alpha.1`），或与用户确认后明确推迟发布
@@ -46,7 +47,8 @@ whenToUse: 完成功能需要升级版本号、用户要求升版/发版/打预�
 ## 操作纪律
 
 - 升版提交信息：`build(version): 版本升级至 X.Y.Z[-阶段.n]`
-- 不建立 git tag：版本阶段与是否正式完全由版本号本身表达，不依赖 tag 标记发布点
+- 非 major 不建立 git tag：版本阶段与是否正式完全由版本号本身表达，不依赖 tag 标记发布点
+- major 是唯一例外：`release-assets` skill 在 GitHub 建 `vX.Y.Z[-阶段.n]` Release 及其 tag，本地不手工 `git tag`；其它阶段仍不建 tag
 - 版本号变更不回填历史 commit
 
 ## 示例
